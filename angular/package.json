@@ -19,8 +19,6 @@
     "@abp/ng.identity": "~7.1.1",
     "@abp/ng.setting-management": "~7.1.1",
     "@abp/ng.tenant-management": "~7.1.1",
-    "@abp/ng.theme.shared": "~7.1.1",
-    "@abp/ng.theme.lepton-x": "~2.1.0",
     "@angular/animations": "^15.0.1",
     "@angular/common": "^15.0.1",
     "@angular/compiler": "^15.0.1",
@@ -30,9 +28,9 @@
     "@angular/platform-browser": "^15.0.1",
     "@angular/platform-browser-dynamic": "^15.0.1",
     "@angular/router": "^15.0.1",
-    "bootstrap-icons": "~1.8.3",
     "rxjs": "7.5.6",
     "tslib": "^2.1.0",
+    "bootstrap-icons": "~1.8.3",
     "zone.js": "~0.11.4"
   },
   "devDependencies": {

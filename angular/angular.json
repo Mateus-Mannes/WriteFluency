@@ -46,11 +46,6 @@
                 "bundleName": "layout-bundle"
               },
               {
-                "input": "node_modules/@abp/ng.theme.lepton-x/assets/css/abp-bundle.css",
-                "inject": false,
-                "bundleName": "abp-bundle"
-              },
-              {
                 "input": "node_modules/@volo/ngx-lepton-x.lite/assets/css/bootstrap-dim.rtl.css",
                 "inject": false,
                 "bundleName": "bootstrap-dim.rtl"
@@ -76,11 +71,6 @@
                 "bundleName": "layout-bundle.rtl"
               },
               {
-                "input": "node_modules/@abp/ng.theme.lepton-x/assets/css/abp-bundle.rtl.css",
-                "inject": false,
-                "bundleName": "abp-bundle.rtl"
-              },
-              {
                 "input": "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
                 "inject": true,
                 "bundleName": "fontawesome-all.min"
@@ -99,11 +89,6 @@
                 "input": "node_modules/@swimlane/ngx-datatable/assets/icons.css",
                 "inject": true,
                 "bundleName": "ngx-datatable-icons"
-              },
-              {
-                "input": "node_modules/@swimlane/ngx-datatable/themes/material.css",
-                "inject": true,
-                "bundleName": "ngx-datatable-material"
               },
               "node_modules/bootstrap-icons/font/bootstrap-icons.css",
               "src/styles.scss"

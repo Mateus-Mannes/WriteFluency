@@ -10,7 +10,7 @@ export const environment = {
     logoUrl: '',
   },
   oAuthConfig: {
-    issuer: 'https://localhost:44366/',
+    issuer: 'https://localhost:44317/',
     redirectUri: baseUrl,
     clientId: 'WriteFluency_App',
     responseType: 'code',
@@ -19,7 +19,7 @@ export const environment = {
   },
   apis: {
     default: {
-      url: 'https://localhost:44366',
+      url: 'https://localhost:44317',
       rootNamespace: 'WriteFluency',
     },
   },

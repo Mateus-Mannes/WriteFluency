@@ -251,15 +251,13 @@ paket-files/
 .idea/
 *.sln.iml
 
+
 # WriteFluency
-src/WriteFluency.Web/Logs/*
-src/WriteFluency.Web.Host/Logs/*
-src/WriteFluency.AuthServer/Logs/*
-src/WriteFluency.HttpApi.Host/Logs/*
-src/WriteFluency.HttpApi.Host/Logs/*
-src/WriteFluency.DbMigrator/Logs/*
-src/WriteFluency.Blazor.Server/Logs/*
-src/WriteFluency.Blazor.Server.Tiered/Logs/*
+WriteFluency/Logs/*
+
+*.db
+*.db-shm
+*.db-wal
 
 # Use abp install-libs to restore.
 **/wwwroot/libs/*
