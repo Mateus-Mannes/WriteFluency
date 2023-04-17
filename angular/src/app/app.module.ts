@@ -13,25 +13,27 @@ import { AppComponent } from './app.component';
 import { APP_ROUTE_PROVIDER } from './route.provider';
 import { FeatureManagementModule } from '@abp/ng.feature-management';
 import { AbpOAuthModule } from '@abp/ng.oauth';
+import { SharedModule } from "./shared/shared.module";
 
 @NgModule({
-  imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    CoreModule.forRoot({
-      environment,
-      registerLocaleFn: registerLocale(),
-    }),
-    AbpOAuthModule.forRoot(),
-    AccountConfigModule.forRoot(),
-    IdentityConfigModule.forRoot(),
-    TenantManagementConfigModule.forRoot(),
-    SettingManagementConfigModule.forRoot(),
-    FeatureManagementModule.forRoot(),
-  ],
-  declarations: [AppComponent],
-  providers: [APP_ROUTE_PROVIDER],
-  bootstrap: [AppComponent],
+    declarations: [AppComponent],
+    providers: [APP_ROUTE_PROVIDER],
+    bootstrap: [AppComponent],
+    imports: [
+        BrowserModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        CoreModule.forRoot({
+            environment,
+            registerLocaleFn: registerLocale(),
+        }),
+        AbpOAuthModule.forRoot(),
+        AccountConfigModule.forRoot(),
+        IdentityConfigModule.forRoot(),
+        TenantManagementConfigModule.forRoot(),
+        SettingManagementConfigModule.forRoot(),
+        FeatureManagementModule.forRoot(),
+        SharedModule
+    ]
 })
 export class AppModule {}

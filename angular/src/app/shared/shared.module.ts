@@ -2,9 +2,12 @@ import { CoreModule } from '@abp/ng.core';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { NgModule } from '@angular/core';
 import { NgxValidateCoreModule } from '@ngx-validate/core';
+import { NavbarComponent } from './navbar/navbar.component';
 
 @NgModule({
-  declarations: [],
+  declarations: [
+    NavbarComponent
+  ],
   imports: [
     CoreModule,
     NgbDropdownModule,
@@ -13,7 +16,8 @@ import { NgxValidateCoreModule } from '@ngx-validate/core';
   exports: [
     CoreModule,
     NgbDropdownModule,
-    NgxValidateCoreModule
+    NgxValidateCoreModule,
+    NavbarComponent
   ],
   providers: []
 })

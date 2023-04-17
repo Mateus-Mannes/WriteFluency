@@ -1,0 +1,18 @@
+.navbar{
+    background-color: var(--color-yellow); 
+    position: absolute; 
+    width: 100%; 
+    height: var(--navbar-height);
+}
+
+.navbar-space{
+    padding-bottom: var(--navbar-height);
+}
+
+@media screen and (min-width: 992px) {
+    .dropdown {
+        position: absolute;
+        top: 13px;
+        right: 10px;
+    }
+}
