@@ -6,9 +6,6 @@ FROM mcr.microsoft.com/devcontainers/dotnet:0-7.0
 
 WORKDIR /workspaces/WriteFluency/aspnet-core
 
-COPY . .
-
-RUN dotnet restore
 RUN dotnet tool install --global dotnet-ef --version 7.0.5
 
 # [Optional] Uncomment this line to install global node packages.
