@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/devcontainers/dotnet:0-7.0
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
 
-WORKDIR /home/vscode/.dotnet
+WORKDIR /workspaces/WriteFluency
 
 RUN mkdir -p tools
 
