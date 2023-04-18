@@ -4,7 +4,7 @@
     "name": "C# (.NET) and PostgreSQL",
     "dockerComposeFile": "docker-compose.yml",
     "remoteEnv": {
-        "PATH": "${containerEnv:PATH}:/root/.dotnet/tools"
+        "PATH": "${containerEnv:PATH}:/home/vscode/.dotnet/tools"
     },	    
     "service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
