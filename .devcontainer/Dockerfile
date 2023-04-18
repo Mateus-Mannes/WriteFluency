@@ -12,3 +12,5 @@ RUN dotnet tool install dotnet-ef --tool-path /tools --version 7.0.5
 
 # [Optional] Uncomment this line to install global node packages.
 # RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
+
+#Git hub codespace log creation file: /workspaces/.codespaces/.persistedshare
