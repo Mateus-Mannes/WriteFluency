@@ -1,6 +1,6 @@
 .home-background {
     background: linear-gradient(45deg, var(--color-yellow) 10%, white);
-    height: calc(100vh - var(--navbar-height));
+    height: var(--view-height);
 }
 
 .home {
