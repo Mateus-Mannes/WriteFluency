@@ -1,0 +1,27 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+    --navbar-height: 61.5px;
+    --color-dark: #264653;
+    --color-green: #2a9d8f;
+    --color-yellow: #e9c46a;
+    --color-orange: #f4a261;
+    --color-red: #e76f51;
+}
+
+::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
+
+/* For Internet Explorer and Edge */
+body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* For Firefox */
+body::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
