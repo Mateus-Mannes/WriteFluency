@@ -5,11 +5,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { SharedModule } from './shared/shared.module';
 import { HomeComponent } from './home/home.component';
+import { ListenAndWriteComponent } from './listen-and-write/listen-and-write.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    HomeComponent
+    HomeComponent,
+    ListenAndWriteComponent
   ],
   imports: [
     BrowserModule,
