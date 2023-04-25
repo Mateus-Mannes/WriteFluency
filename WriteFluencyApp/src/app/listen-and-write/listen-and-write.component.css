@@ -1,12 +1,29 @@
 .inputbox{
-    height: var(--view-height);
+    height: calc(var(--view-height) - var(--navbar-height));
+}
+
+.body{
+  background-color: var(--color-yellow-light);
+  height: 100vh;
 }
 
 .form-control {
-    border-color: var(--color-yellow-light);
+  border-color: var(--color-yellow);
   }
 
-.form-control:focus {
+  .form-control:focus {
     border-color: var(--color-yellow);
-    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px var(--color-yellow-light);
-  }
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px var(--color-yellow);
+    }
+
+.btn-primary{
+  background-color: var(--color-green);
+  border-color: var(--color-green);
+}
+
+.btn-primary:active {
+  background-color: var(--color-dark);
+  border-color: var(--color-green);
+}
+
+
