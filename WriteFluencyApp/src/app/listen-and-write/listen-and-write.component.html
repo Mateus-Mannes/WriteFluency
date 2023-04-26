@@ -2,29 +2,16 @@
     <div class="inputbox d-flex flex-column align-items-center justify-content-center">
         <form class="d-flex container" style="padding-bottom: 1em;">
 
-            <div class="btn-group" style="width: 10em; margin-right: 1em;">
-                <button type="button" class="d-flex justify-content-between align-items-center btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div style="width: 90%;">Complexity</div>
-                </button>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="#">Beginner</a></li>
-                  <li><a class="dropdown-item" href="#">Intermediate</a></li>
-                  <li><a class="dropdown-item" href="#">Advanced</a></li>
-                </ul>
-            </div>
+            <app-drop-down style="width: 10em; margin-right: 1em;"
+                [label]="'Complexity'" 
+                [options]="['Beginner', 'Intermediate', 'Advanced']">
+            </app-drop-down>
 
-            <div class="btn-group" style="width: 15em;">
-                <button type="button" class="d-flex justify-content-between align-items-center btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div style="width: 90%;">Subject</div>
-                </button>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="#">Travel and culture</a></li>
-                  <li><a class="dropdown-item" href="#">Business and finance</a></li>
-                  <li><a class="dropdown-item" href="#">Technology and innovation</a></li>
-                  <li><a class="dropdown-item" href="#">Entertainment</a></li>
-                  <li><a class="dropdown-item" href="#">Science</a></li>
-                </ul>
-            </div>
+            <app-drop-down style="width: 15em;"
+                [label]="'Subject'" 
+                [options]="['Travel and culture', 'Business and finance', 'Technology and innovation', 'Entertainment', 'Science']">
+            </app-drop-down>
+
         </form>
         <div class="container" style="height: 60%;">
             <div class="form-floating shadow-sm" style="height: 100%;">
