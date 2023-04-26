@@ -1,0 +1,8 @@
+<div class="btn-group" style="width: 100%;">
+    <button type="button" class="d-flex justify-content-between align-items-center btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <div style="width: 90%;">{{ label }}</div>
+    </button>
+    <ul class="dropdown-menu">
+      <li *ngFor="let op of options"><a class="dropdown-item" (click)="OnOptionSelected(op)">{{ op }}</a></li>
+    </ul>
+</div>
