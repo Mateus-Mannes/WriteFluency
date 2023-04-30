@@ -9,6 +9,12 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+var clients = app.Configuration.GetValue<string>("AlloewdClients").Split(',');
+app.UseCors(x => x
+    .WithOrigins(clients)
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
