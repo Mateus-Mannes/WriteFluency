@@ -1,5 +1,4 @@
 using WriteFluencyApi.ExternalApis.OpenAI;
-using WriteFluencyApi.ExternalApis;
 using WriteFluencyApi.Services.ListenAndWrite;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +12,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add configs
-builder.Services.Configure<ExternalApisConfig>(builder.Configuration.GetSection(ExternalApisConfig.ExternalApis));
+builder.Services.Configure<OpenAIConfig>(builder.Configuration.GetSection(OpenAIConfig.Config));
 
 var app = builder.Build();
 
