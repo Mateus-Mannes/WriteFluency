@@ -4,5 +4,5 @@ namespace WriteFluencyApi.Services.ListenAndWrite;
 
 public interface ITextGenerator
 {
-    Task<string> GenerateText(GenerateTextDto generateTextDto);    
+    Task<string> GenerateTextAsync(GenerateTextDto generateTextDto);    
 }
