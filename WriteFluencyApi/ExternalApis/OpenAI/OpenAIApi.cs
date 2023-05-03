@@ -1,9 +1,8 @@
 using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using WriteFluencyApi.Dtos.ListenAndWrite;
+using WriteFluencyApi.ExternalApis.OpenAI.Requests;
+using WriteFluencyApi.ExternalApis.OpenAI.Responses;
 using WriteFluencyApi.Services.ListenAndWrite;
 
 namespace WriteFluencyApi.ExternalApis.OpenAI;
@@ -25,21 +24,21 @@ public class OpenAIApi : ITextGenerator
 
     public async Task<string> GenerateText(GenerateTextDto generateTextDto)
     {
-        var content = new
+        var request = new CompletionRequest
         {
-            model = "gpt-3.5-turbo",
-            prompt = "Say this is a test!",
-            max_tokens = 700,
-            temperature = 1.0
+            Model = "gpt-3.5-turbo",
+            Prompt = "Say this is a test!",
+            MaxTokens = 700,
+            Temperature = 1.0m
         };
 
-        var response = await _httpClient.PostAsJsonAsync(_openAIConfig.Routes.Completion, content);
+        var response = await _httpClient.PostAsJsonAsync(_openAIConfig.Routes.Completion, request);
 
         if (response.IsSuccessStatusCode)
         {
-            var responseJson = await response.Content.ReadFromJsonAsync<string>();
-            dynamic parsedJson = JsonConvert.DeserializeObject(responseJson);
-            return parsedJson.choices[0].text.ToString().Trim();
+            var result = await response.Content.ReadFromJsonAsync<CompletionResponse>()
+                ?? throw new HttpRequestException("Error fetching data from OpenAI API");
+            return result.Choices[0].Message.Content;
         }
         else
         {
