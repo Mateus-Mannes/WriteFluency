@@ -17,9 +17,9 @@ public class ListenAndWriteController : ControllerBase
 
 
     [HttpPost]
-    public IActionResult GenerateText(GenerateTextDto generateTextDto)
+    public async Task<IActionResult> GenerateText(GenerateTextDto generateTextDto)
     {
-        var text = _textGenerator.GenerateText(generateTextDto);
+        var text = await _textGenerator.GenerateTextAsync(generateTextDto);
         return Ok(text);
     }
 }

@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WriteFluencyApi.Dtos.ListenAndWrite;
 using WriteFluencyApi.ExternalApis.OpenAI.Requests;
@@ -11,23 +12,24 @@ public class OpenAIApi : ITextGenerator
 {
     private readonly HttpClient _httpClient = new HttpClient();
     private readonly OpenAIConfig _openAIConfig;
-    
+
     public OpenAIApi(IOptions<OpenAIConfig> openAIConfig)
     {
         _openAIConfig = openAIConfig.Value;
         _httpClient.BaseAddress = new Uri(_openAIConfig.BaseAddress);
         _httpClient.DefaultRequestHeaders.Accept.Clear();
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Authorization = 
+        _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _openAIConfig.Key);
     }
 
-    public async Task<string> GenerateText(GenerateTextDto generateTextDto)
+    public async Task<string> GenerateTextAsync(GenerateTextDto generateTextDto)
     {
         var request = new CompletionRequest
         {
             Model = "gpt-3.5-turbo",
-            Prompt = "Say this is a test!",
+            Messages = new List<Requests.Message>()
+                { new Requests.Message() { Content = "Say this is a test!" } },
             MaxTokens = 700,
             Temperature = 1.0m
         };
