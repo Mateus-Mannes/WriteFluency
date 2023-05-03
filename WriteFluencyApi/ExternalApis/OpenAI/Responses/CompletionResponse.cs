@@ -19,6 +19,9 @@ public record CompletionResponse {
     [DataMember(Name = "usage")]
     public Usage Usage { get; set; } = null!;
 
+    [DataMember(Name = "choices")]
+    public List<Choice> Choices { get; set; } = null!;
+
 
 }
 
@@ -31,4 +34,23 @@ public record Usage {
 
     [DataMember(Name = "total_tokens")]
     public int TotalTokens { get; set; }
+}
+
+public record Choice {
+    [DataMember(Name = "message")]
+    public Message Message { get; set; } = null!;
+
+    [DataMember(Name = "index")]
+    public int Index { get; set; }
+
+    [DataMember(Name = "finish_reason")]
+    public string FinishReason { get; set; } = null!;
+}
+
+public record Message {
+    [DataMember(Name = "role")]
+    public string Role { get; set; } = null!;
+
+    [DataMember(Name = "content")]
+    public string Content { get; set; } = null!;
 }
