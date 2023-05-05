@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using WriteFluencyApi.Dtos.ListenAndWrite;
 using WriteFluencyApi.ExternalApis.OpenAI.Requests;
@@ -29,8 +28,10 @@ public class OpenAIApi : ITextGenerator
         {
             Model = "gpt-3.5-turbo",
             Messages = new List<Requests.Message>()
-                { new Requests.Message() { Content = "Say this is a test!" } },
-            MaxTokens = 700,
+                { new Requests.Message() { 
+                    Content = Prompts.GenerateText(generateTextDto) 
+                    } },
+            MaxTokens = 1200,
             Temperature = 1.0m
         };
 
