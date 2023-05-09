@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+namespace WriteFluencyApi.Services.ListenAndWrite;
 
-namespace WriteFluencyApi.Services.ListenAndWrite
+public interface ISpeechGenerator
 {
-    public interface ISpeechGenerator
-    {
-        
-    }
+    Task<byte[]> GenerateSpeechAsync(string text);    
 }
