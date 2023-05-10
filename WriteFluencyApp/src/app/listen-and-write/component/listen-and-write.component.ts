@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/enviroments/enviroment';
 import { Topics } from '../entities/topics';
@@ -8,7 +8,7 @@ import { Topics } from '../entities/topics';
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.css']
 })
-export class ListenAndWriteComponent {
+export class ListenAndWriteComponent implements OnInit {
 
   constructor(
     private readonly _httpClient: HttpClient,
