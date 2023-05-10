@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WriteFluencyApi.Dtos.ListenAndWrite;
 using WriteFluencyApi.Services.ListenAndWrite;
+using WriteFluencyApi.Shared.ListenAndWrite;
 
 namespace WriteFluencyApi.Controllers.ListenAndWrite;
 
@@ -32,9 +33,19 @@ public class ListenAndWriteController : ControllerBase
             var audio = await _speechGenerator.GenerateSpeechAsync(text);
             return Ok(new PropositionDto(text, audio));
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return StatusCode(500, "Enable to generate proposition");
         }
+    }
+
+    [HttpGet("topics")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TopicsDto))]
+    public IActionResult GetTopics()
+    {
+        return Ok(new TopicsDto(
+            Enum.GetNames(typeof(ComplexityEnum)),
+            Enum.GetNames(typeof(SubjectEnum))));
     }
 }
