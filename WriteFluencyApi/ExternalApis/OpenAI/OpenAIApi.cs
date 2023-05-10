@@ -22,7 +22,7 @@ public class OpenAIApi : ITextGenerator
             new AuthenticationHeaderValue("Bearer", _openAIConfig.Key);
     }
 
-    public async Task<string> GenerateTextAsync(GenerateTextDto generateTextDto)
+    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto)
     {
         var request = new CompletionRequest
         {
