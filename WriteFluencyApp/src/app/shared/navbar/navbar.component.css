@@ -2,7 +2,6 @@
     background-color: var(--color-yellow); 
     position: absolute; 
     width: 100%; 
-    height: var(--navbar-height);
 }
 
 .navbar-space{
