@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 namespace WriteFluencyApi.Shared.ListenAndWrite;
@@ -5,12 +6,24 @@ namespace WriteFluencyApi.Shared.ListenAndWrite;
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SubjectEnum
 {
-    Travel = 1,
-    Culture = 2,
-    Business = 3,
-    Finance = 4,
-    Work = 5,
-    TechnologyAndInnovation = 6,
-    Entertainment = 7,
-    Science = 8
+    [Description("Curiosities, something interesting that may be new for most people")]
+    Curiosities,
+    [Description("Technology, things related to innovation")]
+    Technology,
+    [Description("Science, something in the word of science (Physics, Chemistry, Biology, Earth Science, Environmental Science)")]
+    Science,
+    [Description("Travel, things that may be interesting for someone who love traveling")]
+    Travel,
+    [Description("Culture, facts about different cultures around the word")]
+    Culture,
+    [Description("Business, corporative and entrepreneur stuff")]
+    Business,
+    [Description("Finance, facts related to money, investing, saving, etc")]
+    Finance,
+    [Description("Movies, about very famous movies")]
+    Movies,
+    [Description("Books, about very famous books and their autors")]
+    Books,
+    [Description("Programming, something into the programmimg word, add some jokes here")]
+    Programming
 }
