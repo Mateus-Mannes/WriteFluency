@@ -19,11 +19,22 @@ public class ListenAndWriteController : ControllerBase
         _speechGenerator = speechGenerator;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> GenerateText(GenerateTextDto generateTextDto)
+    [HttpPost("generate-proposition")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PropositionDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GenerateProposition(GeneratePropositionDto generatePropositionDto)
     {
-        var text = await _textGenerator.GenerateTextAsync(generateTextDto);
-        var audio = await _speechGenerator.GenerateSpeechAsync(text);
-        return Ok(text);
+        try
+        {
+            var text = await _textGenerator.GenerateTextAsync(generatePropositionDto);
+            var audio = await _speechGenerator.GenerateSpeechAsync(text);
+            return Ok(new PropositionDto(text, audio));
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, "Enable to generate proposition");
+        }
     }
 }

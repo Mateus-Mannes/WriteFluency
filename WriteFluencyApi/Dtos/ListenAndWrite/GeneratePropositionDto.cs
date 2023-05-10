@@ -1,9 +1,8 @@
-
 using WriteFluencyApi.Shared.ListenAndWrite;
 
 namespace WriteFluencyApi.Dtos.ListenAndWrite;
 
-public record GenerateTextDto(
+public record GeneratePropositionDto(
     ComplexityEnum Complexity,
     SubjectEnum Subject
 );
