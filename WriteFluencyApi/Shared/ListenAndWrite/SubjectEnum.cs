@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace WriteFluencyApi.Shared.ListenAndWrite;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SubjectEnum
 {
     Travel = 1,
