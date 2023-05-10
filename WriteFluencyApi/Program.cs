@@ -18,13 +18,17 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.Configure<OpenAIConfig>(builder.Configuration.GetSection(OpenAIConfig.Config));
 builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(TextToSpeechConfig.Config));
 
+builder.Services.AddCors();
+
 var app = builder.Build();
 
 var clients = app.Configuration.GetValue<string>("AlloewdClients")?.Split(',');
-app.UseCors(x => x
-    .WithOrigins(clients ?? new string[0])
-    .AllowAnyMethod()
-    .AllowAnyHeader());
+app.UseCors(opts => {
+    if(clients![0] != "*") opts.WithOrigins(clients);
+    else opts.AllowAnyOrigin();
+    opts.AllowAnyMethod();
+    opts.AllowAnyHeader();
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { SharedModule } from './shared/shared.module';
 import { HomeComponent } from './home/home.component';
 import { ListenAndWriteModule } from './listen-and-write/listen-and-write.module';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -16,7 +17,8 @@ import { ListenAndWriteModule } from './listen-and-write/listen-and-write.module
     BrowserModule,
     AppRoutingModule,
     SharedModule,
-    ListenAndWriteModule
+    ListenAndWriteModule,
+    HttpClientModule
   ],
   providers: [],
   bootstrap: [AppComponent]
