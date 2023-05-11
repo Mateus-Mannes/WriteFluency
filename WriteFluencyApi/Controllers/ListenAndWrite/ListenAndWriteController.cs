@@ -6,7 +6,7 @@ using WriteFluencyApi.Shared.ListenAndWrite;
 namespace WriteFluencyApi.Controllers.ListenAndWrite;
 
 [ApiController]
-[Route("[controller]")]
+[Route("listen-and-write")]
 public class ListenAndWriteController : ControllerBase
 {
     private readonly ITextGenerator _textGenerator;
