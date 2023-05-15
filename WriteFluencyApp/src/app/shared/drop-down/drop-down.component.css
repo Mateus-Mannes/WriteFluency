@@ -4,6 +4,11 @@
 }
 
 .btn-primary:active {
-    background-color: var(--color-dark);
-    border-color: var(--color-green);
+    background-color: var(--color-dark) !important;
+    border-color: var(--color-green) !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-dark-green);
+    border-color: var(--color-dark-green);
 }

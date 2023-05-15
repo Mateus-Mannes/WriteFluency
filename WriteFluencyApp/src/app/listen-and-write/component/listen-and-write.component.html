@@ -7,10 +7,12 @@
                 [options]="complexities">
             </app-drop-down>
 
-            <app-drop-down style="width: 15em;"
+            <app-drop-down style="width: 15em; margin-right: 1em;"
                 [label]="'Subject'" 
-                [options]="['Travel', 'Culture', 'Business', 'Finance','Work', 'Technology and innovation', 'Entertainment', 'Science']">
+                [options]="subjects">
             </app-drop-down>
+
+            <button type="button" class="btn btn-primary">Generate Audio</button>
 
         </form>
         <div class="container" style="height: 60%;">
