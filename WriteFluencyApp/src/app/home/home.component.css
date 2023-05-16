@@ -26,6 +26,15 @@
     color: white;
 }
 
+.home__button:hover {
+    background-color: var(--color-dark-green); 
+}
+
+.home__button:active {
+    background-color: var(--color-dark); 
+    color:white;
+}
+
 .home__image{
     max-width: 100%;
     height: auto;

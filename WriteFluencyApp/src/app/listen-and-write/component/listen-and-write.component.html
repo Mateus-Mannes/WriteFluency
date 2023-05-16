@@ -2,17 +2,19 @@
     <div class="inputbox d-flex flex-column align-items-center justify-content-center">
         <form class="d-flex container" style="padding-bottom: 1em;">
 
-            <app-drop-down style="width: 10em; margin-right: 1em;"
-                [label]="'Complexity'" 
+            <app-drop-down #complexity style="width: 10em; margin-right: 1em;" 
                 [options]="complexities">
+                Complexity
             </app-drop-down>
 
-            <app-drop-down style="width: 15em; margin-right: 1em;"
-                [label]="'Subject'" 
+            <app-drop-down #subject style="width: 15em; margin-right: 1em;" 
                 [options]="subjects">
+                Subject
             </app-drop-down>
 
-            <button type="button" class="btn btn-primary">Generate Audio</button>
+            <app-button (click)="generateAudio()">Generate Audio</app-button>
+
+            <audio #audioPlayer controls></audio>
 
         </form>
         <div class="container" style="height: 60%;">
