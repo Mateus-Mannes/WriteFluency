@@ -1,18 +1,17 @@
-.btn-primary {
+.button {
     background-color: var(--color-green);
     border-color: var(--color-green);
+    color: white;
 }
 
-.btn-primary:active {
+.button:active {
     background-color: var(--color-dark) !important;
     border-color: var(--color-green) !important;
+    color: white;
 }
 
-.btn-primary:hover {
+.button:hover {
     background-color: var(--color-dark-green);
     border-color: var(--color-dark-green);
-}
-
-.dropdown-item:active {
-    background-color: var(--color-orange);
+    color: white;
 }

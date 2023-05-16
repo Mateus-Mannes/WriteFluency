@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 
 @Component({
   selector: 'app-drop-down',
@@ -7,10 +7,12 @@ import { Component, Input } from '@angular/core';
 })
 export class DropDownComponent {
 
-  @Input() label: string = '';
   @Input() options: string[] = [];
+  @ViewChild('label') label!: ElementRef;
+  selectedOption!: string;
 
   public OnOptionSelected(option: any): void {
-    this.label = option;
+    this.selectedOption = option;
+    this.label.nativeElement.innerHTML = option;
   }
 }
