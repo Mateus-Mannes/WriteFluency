@@ -4,7 +4,7 @@ import { environment } from 'src/enviroments/enviroment';
 import { Topics } from '../entities/topics';
 import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component';
 import { Proposition } from '../entities/proposition';
-import { take, timer } from 'rxjs';
+import { forkJoin, take, timer } from 'rxjs';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -26,6 +26,7 @@ export class ListenAndWriteComponent implements OnInit {
   @ViewChild('progressBar') progressBar!: ElementRef;
   complexities: string[] = [];
   subjects: string[] = [];
+  loading: boolean = false;
   
   ngOnInit() {
     this._httpClient.get<Topics>(`${this.route}/topics`)
@@ -36,6 +37,7 @@ export class ListenAndWriteComponent implements OnInit {
   }
 
   generateAudio(){
+    this.loading = true;
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
 
@@ -43,22 +45,31 @@ export class ListenAndWriteComponent implements OnInit {
     this.renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
     this.progressBar.nativeElement.hidden = false;
     this.audioPlayer.nativeElement.hidden = true;
+    this.audioPlayer.nativeElement.src = undefined;
+
     const duration = 10; // duration in seconds
     const interval = 100; // update interval in milliseconds
     const steps = duration * 1000 / interval;
     const increment = 100 / steps;
     let width = 0;
 
-    timer(0, interval).pipe(take(steps)).subscribe(() => {
+    const timer$ = timer(0, interval).pipe(take(steps - 10));
+    const post$ = this._httpClient.post<Proposition>(`${this.route}/generate-proposition`, {complexity, subject});
+
+    timer$.subscribe(() => {
       width += increment;
       this.renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
     });
 
-    this._httpClient.post<Proposition>(`${this.route}/generate-proposition`, {complexity, subject})
-      .subscribe(result => {
+    forkJoin([timer$, post$]).subscribe(([_, result]) => {
+      width += increment*10;
+      this.renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
+      setTimeout(() => {
         this.audioPlayer.nativeElement.src = 'data:audio/ogg;base64,' + result.audio;
         this.progressBar.nativeElement.hidden = true;
         this.audioPlayer.nativeElement.hidden = false;
-      });
+        this.loading = false;
+      }, 1500);
+    });
   }
 }
