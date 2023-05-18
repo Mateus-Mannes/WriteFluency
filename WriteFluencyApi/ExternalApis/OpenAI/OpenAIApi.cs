@@ -22,7 +22,7 @@ public class OpenAIApi : ITextGenerator
             new AuthenticationHeaderValue("Bearer", _openAIConfig.Key);
     }
 
-    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto)
+    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1)
     {
         var request = new CompletionRequest
         {
@@ -45,7 +45,9 @@ public class OpenAIApi : ITextGenerator
         }
         else
         {
-            throw new HttpRequestException($"Error fetching data from OpenAI API: {response.StatusCode}");
+            await Task.Delay(1000);
+            if(attempt == 1) return await GenerateTextAsync(generateTextDto, 2);
+            else throw new HttpRequestException($"Error fetching data from OpenAI API: {response.StatusCode}");
         }
     }
 }

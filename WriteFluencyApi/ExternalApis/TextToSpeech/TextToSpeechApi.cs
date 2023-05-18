@@ -20,7 +20,7 @@ public class TextToSpeechApi : ISpeechGenerator
         _httpClient.DefaultRequestHeaders.Add(_textToSpeechConfig.KeyName, _textToSpeechConfig.Key);
     }
 
-    public async Task<byte[]> GenerateSpeechAsync(string text)
+    public async Task<byte[]> GenerateSpeechAsync(string text, int attempt = 1)
     {
         var request = new TextToSpeechRequest(
             new Input(text),
@@ -38,7 +38,9 @@ public class TextToSpeechApi : ISpeechGenerator
         }
         else
         {
-            throw new HttpRequestException($"Error fetching data from TextToSpeech API: {response.StatusCode}");
+            await Task.Delay(1000);
+            if(attempt == 1) return await GenerateSpeechAsync(text, 2);
+            else throw new HttpRequestException($"Error fetching data from TextToSpeech API: {response.StatusCode}");
         }
     }
 }
