@@ -48,7 +48,6 @@ export class ListenAndWriteComponent implements OnInit {
         this.subjects = result.subjects;
         this.loadingPage = false;
       });
-    this._alertService.alert('testinggg ahahahah', 'danger')
   }
 
   generateAudio(){
@@ -77,16 +76,23 @@ export class ListenAndWriteComponent implements OnInit {
       this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
     });
 
-    forkJoin([timer$, post$]).subscribe(([_, result]) => {
-      width += increment*10;
-      this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
-      setTimeout(() => {
+    forkJoin([timer$, post$]).subscribe({
+      next: ([_, result]) => {
+        width += increment*10;
+        this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
         this.audioPlayer.nativeElement.src = 'data:audio/ogg;base64,' + result.audio;
-        this.progressBar.nativeElement.hidden = true;
-        this.audioPlayer.nativeElement.hidden = false;
-        this.loadingAudio = false;
-        this.generateAudioLabel = 'New audio'
-      }, 1500);
+      },
+      error: (error) => {
+        this._alertService.alert('Was not possible to generate the text. Please try again later', 'danger');
+      },
+      complete: () => {
+        setTimeout(() => {
+          this.progressBar.nativeElement.hidden = true;
+          this.audioPlayer.nativeElement.hidden = false;
+          this.loadingAudio = false;
+          this.generateAudioLabel = 'New audio'
+        }, 1500);
+      }
     });
   }
 }
