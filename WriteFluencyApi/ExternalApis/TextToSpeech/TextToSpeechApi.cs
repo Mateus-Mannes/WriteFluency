@@ -8,11 +8,12 @@ namespace WriteFluencyApi.ExternalApis.TextToSpeech;
 
 public class TextToSpeechApi : ISpeechGenerator
 {
-    private readonly HttpClient _httpClient = new HttpClient();
+    private readonly HttpClient _httpClient;
     private readonly TextToSpeechConfig _textToSpeechConfig;
 
-    public TextToSpeechApi(IOptions<TextToSpeechConfig> textToSpeechConfig)
+    public TextToSpeechApi(HttpClient httpClient, IOptions<TextToSpeechConfig> textToSpeechConfig)
     {
+        _httpClient = httpClient;
         _textToSpeechConfig = textToSpeechConfig.Value;
         _httpClient.BaseAddress = new Uri(_textToSpeechConfig.BaseAddress);
         _httpClient.DefaultRequestHeaders.Accept.Clear();

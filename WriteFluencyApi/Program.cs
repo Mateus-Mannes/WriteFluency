@@ -18,6 +18,10 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.Configure<OpenAIConfig>(builder.Configuration.GetSection(OpenAIConfig.Config));
 builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(TextToSpeechConfig.Config));
 
+// add services
+builder.Services.AddHttpClient();
+builder.Services.AddTransient<LevenshteinDistanceService>();
+
 builder.Services.AddCors();
 
 var app = builder.Build();
