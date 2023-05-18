@@ -36,4 +36,47 @@ public class NeedlemanWunschAlignmentService {
         }
         return (scoreMatrix, tracebackMatrix);
     }
+
+    public List<Tuple<string, string>> GetAlignedTokens(List<string> seq1, List<string> seq2, int[,] tracebackMatrix)
+    {
+        List<Tuple<string, string>> alignedTokens = new List<Tuple<string, string>>();
+
+        int i = seq1.Count;
+        int j = seq2.Count;
+
+        while (i > 0 || j > 0)
+        {
+            if (i > 0 && j > 0)
+            {
+                if (tracebackMatrix[i, j] == 1)
+                {
+                    alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], seq2[j - 1]));
+                    i--;
+                    j--;
+                }
+                else if (tracebackMatrix[i, j] == 2)
+                {
+                    alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], "-"));
+                    i--;
+                }
+                else
+                {
+                    alignedTokens.Insert(0, Tuple.Create("-", seq2[j - 1]));
+                    j--;
+                }
+            }
+            else if (i > 0)
+            {
+                alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], "-"));
+                i--;
+            }
+            else
+            {
+                alignedTokens.Insert(0, Tuple.Create("-", seq2[j - 1]));
+                j--;
+            }
+        }
+
+        return alignedTokens;
+    }
 }
