@@ -22,6 +22,7 @@ builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<LevenshteinDistanceService>();
 builder.Services.AddTransient<TokenizeTextService>();
+builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 
 builder.Services.AddCors();
 
