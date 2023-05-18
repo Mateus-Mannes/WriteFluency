@@ -1,6 +1,6 @@
 .body {
   background-color: var(--color-yellow-light);
-  height: 100vh;
+  height: var(--view-height);
 }
 
 .inputbox {

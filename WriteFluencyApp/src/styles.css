@@ -29,3 +29,14 @@ body::-webkit-scrollbar {
     width: 0;
     background: transparent;
 }
+
+.notifications {
+    margin-top: calc(var(--navbar-height) + 12px);
+    position: absolute;
+    width: 100vw;
+}
+  
+#liveAlertPlaceholder {
+    position: absolute;
+    max-width: 600px;
+}
