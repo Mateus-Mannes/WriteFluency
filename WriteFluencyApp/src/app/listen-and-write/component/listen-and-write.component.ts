@@ -5,17 +5,28 @@ import { Topics } from '../entities/topics';
 import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component';
 import { Proposition } from '../entities/proposition';
 import { forkJoin, take, timer } from 'rxjs';
+import { trigger, state, style, animate, transition } from '@angular/animations';
+import { AlertService } from '../../shared/services/alert-service';
 
 @Component({
   selector: 'app-listen-and-write',
   templateUrl: './listen-and-write.component.html',
-  styleUrls: ['./listen-and-write.component.css']
+  styleUrls: ['./listen-and-write.component.css'],
+  animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('600ms', style({ opacity: 1 })),
+      ]),
+    ]),
+  ]
 })
 export class ListenAndWriteComponent implements OnInit {
 
   constructor(
     private readonly _httpClient: HttpClient,
-    private readonly renderer: Renderer2
+    private readonly _renderer: Renderer2,
+    private readonly _alertService: AlertService
   ) {}
 
   private readonly route = `${environment.apiUrl}/listen-and-write`;
@@ -26,23 +37,28 @@ export class ListenAndWriteComponent implements OnInit {
   @ViewChild('progressBar') progressBar!: ElementRef;
   complexities: string[] = [];
   subjects: string[] = [];
-  loading: boolean = false;
+  loadingPage: boolean = true;
+  loadingAudio: boolean = false;
+  generateAudioLabel = 'New audio';
   
   ngOnInit() {
     this._httpClient.get<Topics>(`${this.route}/topics`)
       .subscribe(result  => {
         this.complexities = result.complexities;
         this.subjects = result.subjects;
+        this.loadingPage = false;
       });
+    this._alertService.alert('testinggg ahahahah', 'danger')
   }
 
   generateAudio(){
-    this.loading = true;
+    this.loadingAudio = true;
+    this.generateAudioLabel = 'Generating';
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
 
     // Start the progress bar animation
-    this.renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
+    this._renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
     this.progressBar.nativeElement.hidden = false;
     this.audioPlayer.nativeElement.hidden = true;
     this.audioPlayer.nativeElement.src = undefined;
@@ -58,17 +74,18 @@ export class ListenAndWriteComponent implements OnInit {
 
     timer$.subscribe(() => {
       width += increment;
-      this.renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
+      this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
     });
 
     forkJoin([timer$, post$]).subscribe(([_, result]) => {
       width += increment*10;
-      this.renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
+      this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
       setTimeout(() => {
         this.audioPlayer.nativeElement.src = 'data:audio/ogg;base64,' + result.audio;
         this.progressBar.nativeElement.hidden = true;
         this.audioPlayer.nativeElement.hidden = false;
-        this.loading = false;
+        this.loadingAudio = false;
+        this.generateAudioLabel = 'New audio'
       }, 1500);
     });
   }
