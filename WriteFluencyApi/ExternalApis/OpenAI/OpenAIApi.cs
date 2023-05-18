@@ -9,11 +9,12 @@ namespace WriteFluencyApi.ExternalApis.OpenAI;
 
 public class OpenAIApi : ITextGenerator
 {
-    private readonly HttpClient _httpClient = new HttpClient();
+    private readonly HttpClient _httpClient;
     private readonly OpenAIConfig _openAIConfig;
 
-    public OpenAIApi(IOptions<OpenAIConfig> openAIConfig)
+    public OpenAIApi(HttpClient httpClient, IOptions<OpenAIConfig> openAIConfig)
     {
+        _httpClient = httpClient;
         _openAIConfig = openAIConfig.Value;
         _httpClient.BaseAddress = new Uri(_openAIConfig.BaseAddress);
         _httpClient.DefaultRequestHeaders.Accept.Clear();
