@@ -21,6 +21,7 @@ builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(
 // add services
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<LevenshteinDistanceService>();
+builder.Services.AddTransient<TokenizeTextService>();
 
 builder.Services.AddCors();
 
