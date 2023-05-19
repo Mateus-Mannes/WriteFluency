@@ -17,113 +17,28 @@ public class TextComparisionService {
     public List<TextComparisionDto> CompareTexts(string originalText, string userText) {
 
         if(!IsMinimalSimilar(originalText, userText)) 
-            return new List<TextComparisionDto>() { new TextComparisionDto((0, userText.Length - 1), originalText) };
+            return new List<TextComparisionDto>() { 
+                new TextComparisionDto(
+                    (0, userText.Length - 1), 
+                    (0, originalText.Length - 1)) 
+                };
         
-        List<string> originalTokens = _tokenizeTextService.TokenizeText(originalText);
-        List<string> userTokens = _tokenizeTextService.TokenizeText(userText);
+        var originalTokens = _tokenizeTextService.TokenizeText(originalText);
+        var userTokens = _tokenizeTextService.TokenizeText(userText);
 
-        (int[,] scoreMatrix, int[,] tracebackMatrix) = _needlemanWunschAlignmentService.NeedlemanWunschAlignment(originalTokens, userTokens);
-        List<Tuple<string, string>> alignedTokens = _needlemanWunschAlignmentService.GetAlignedTokens(originalTokens, userTokens, tracebackMatrix);
+        (int[,] scoreMatrix, int[,] tracebackMatrix) = 
+            _needlemanWunschAlignmentService.NeedlemanWunschAlignment(
+                originalTokens.Select(x => x.Token).ToList(), 
+                userTokens.Select(x => x.Token).ToList());
+
+        var alignedTokens = _needlemanWunschAlignmentService.GetAlignedTokens(originalTokens, userTokens, tracebackMatrix);
 
         List<TextComparisionDto> textComparisions = new List<TextComparisionDto>();
 
-        int userInputIndex = 0;
-        int alignedTokenIndex = 0;
-        var arr = userText.ToArray();
-        int jumpedchars = 0;
-        while (userInputIndex < userText.Length && alignedTokenIndex < alignedTokens.Count)
-        {
-            char currentChar = userText[userInputIndex];
+        for(int i = 0; i < alignedTokens.Count; i++) 
+            CompareTokens(i, alignedTokens, textComparisions, originalText, userText);
 
-            if (char.IsWhiteSpace(currentChar) || char.IsPunctuation(currentChar))
-            {
-                jumpedchars++;
-                userInputIndex++;
-                continue;
-            }
-
-            if (alignedTokens[alignedTokenIndex].Item1 != alignedTokens[alignedTokenIndex].Item2)
-            {
-                int startIndex = userInputIndex;
-                IncrementIndexToNextBreak(ref userInputIndex, userText);
-                int endIndex = userInputIndex - 1;
-
-                // Extend the previous highlighted area
-                if(alignedTokens[alignedTokenIndex].Item1 == "-"){
-                    // increment endIndex until the next word
-                    int startOfWord = 0;
-                    while (endIndex < userInput.Length)
-                    {
-                        endIndex++;
-                        if(char.IsWhiteSpace(userInput[endIndex]) || char.IsPunctuation(userInput[endIndex])){
-                            startOfWord++;
-                            if(startOfWord == 2){
-                                break;
-                            }
-                            while(char.IsWhiteSpace(userInput[endIndex]) || char.IsPunctuation(userInput[endIndex])) endIndex++;
-                        }
-                    }
-                    
-                    userInputIndex = endIndex;
-                    endIndex--;
-                }
-
-                if (highlightedAreas.Count > 0 && startIndex == highlightedAreas.Last().Item2 + jumpedchars + 1)
-                {
-                    highlightedAreas[highlightedAreas.Count - 1] = Tuple.Create(highlightedAreas.Last().Item1, endIndex);
-                }
-                else
-                {
-                    // if it is a missing or extra word, mark the surrounding words
-                    int startOfWord = 0;
-                    if(alignedTokens[alignedTokenIndex].Item2 == "-"){
-                        var x = 1;
-                        while (startIndex >= 0)
-                        {
-                            startIndex--;
-                            if(char.IsWhiteSpace(userInput[startIndex]) || char.IsPunctuation(userInput[startIndex])){
-                                startOfWord++;
-                                if(startOfWord == 2){
-                                    startIndex++;
-                                    break;
-                                }
-                                while(char.IsWhiteSpace(userInput[startIndex]) || char.IsPunctuation(userInput[startIndex])) startIndex--;
-                            }
-                        }
-                    }
-                    
-                    if(alignedTokens[alignedTokenIndex].Item1 == "-"){
-                        // increment startIndex until the previous word
-                        startOfWord = 0;
-                        while (startIndex >= 0)
-                        {
-                            startIndex--;
-                            if(char.IsWhiteSpace(userInput[startIndex]) || char.IsPunctuation(userInput[startIndex])){
-                                startOfWord++;
-                                if(startOfWord == 2){
-                                    startIndex++;
-                                    break;
-                                }
-                                while(char.IsWhiteSpace(userInput[startIndex]) || char.IsPunctuation(userInput[startIndex])) startIndex--;
-                            }
-                        }
-                    }
-
-                    // Add a new highlighted area
-                    highlightedAreas.Add(Tuple.Create(startIndex, endIndex));
-                }
-            }
-            else
-                IncrementIndexToNextBreak(ref userInputIndex, userText);
-
-            // Get extra right word if it is a missing word
-            if(alignedTokens[alignedTokenIndex].Item2 == "-" || alignedTokens[alignedTokenIndex].Item1 == "-")
-                alignedTokenIndex++;
-
-            alignedTokenIndex++;
-            jumpedchars = 0;
-        }
-
+        return textComparisions;
     }
 
     private bool IsMinimalSimilar(string originalText, string userText) {
@@ -132,12 +47,48 @@ public class TextComparisionService {
         return similarity >= SimilartyThresholdPercentage;
     }
 
-    private void IncrementIndexToNextBreak(ref int index, string text) {
-        while (IsTextPosition(index, text)) index++;
+    private void CompareTokens(
+        int tokensIndex,
+        List<(TextTokenDto?, TextTokenDto?)> alignedTokens, 
+        List<TextComparisionDto> textComparisions,
+        string originalText,
+        string userText)
+    {
+        var token = alignedTokens[tokensIndex];
+        if(token.Item1 == null || token.Item2 == null)
+        {
+            var priviousToken = alignedTokens.ElementAtOrDefault(tokensIndex - 1);
+            var nextToken = alignedTokens.ElementAtOrDefault(tokensIndex + 1);
+            AddComparision(
+                (priviousToken.Item1?.TextRangeIndex.Item2 ?? 0, 
+                    nextToken.Item1?.TextRangeIndex.Item1 ?? originalText.Length - 1),
+                (priviousToken.Item2?.TextRangeIndex.Item2 ?? 0, 
+                    nextToken.Item2?.TextRangeIndex.Item1 ?? userText.Length - 1),
+                textComparisions
+            );
+        }
+        else if(token.Item1 != token.Item2)
+            AddComparision(token.Item1!.TextRangeIndex, token.Item2!.TextRangeIndex, textComparisions);
     }
 
-    private bool IsTextPosition(int index, string text){
-        return index >= 0 && index < text.Length
-            && !char.IsWhiteSpace(text[index]) && !char.IsPunctuation(text[index]);
+    private void AddComparision(
+        (int, int) originalTextRangeIndex,
+        (int, int) userTextRangeIndex,
+        List<TextComparisionDto> textComparisions)
+    {
+        var lastComparision = textComparisions.LastOrDefault();
+        if(lastComparision != null && lastComparision.UserTextHilightedArea.Item2 
+            == userTextRangeIndex.Item2) 
+        {
+            lastComparision.UserTextHilightedArea = 
+                (lastComparision.UserTextHilightedArea.Item1, userTextRangeIndex.Item2);
+        }
+        else
+        {
+            textComparisions.Add(new TextComparisionDto(
+                (originalTextRangeIndex.Item1, originalTextRangeIndex.Item2),
+                (userTextRangeIndex.Item1, userTextRangeIndex.Item2)));
+        }
     }
+
 }
