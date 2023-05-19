@@ -37,9 +37,9 @@ public class NeedlemanWunschAlignmentService {
         return (scoreMatrix, tracebackMatrix);
     }
 
-    public List<Tuple<string, string>> GetAlignedTokens(List<string> seq1, List<string> seq2, int[,] tracebackMatrix)
+    public List<(TextTokenDto?, TextTokenDto?)> GetAlignedTokens(List<TextTokenDto> seq1, List<TextTokenDto> seq2, int[,] tracebackMatrix)
     {
-        List<Tuple<string, string>> alignedTokens = new List<Tuple<string, string>>();
+        var alignedTokens = new List<(TextTokenDto?, TextTokenDto?)>();
 
         int i = seq1.Count;
         int j = seq2.Count;
@@ -50,29 +50,29 @@ public class NeedlemanWunschAlignmentService {
             {
                 if (tracebackMatrix[i, j] == 1)
                 {
-                    alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], seq2[j - 1]));
+                    alignedTokens.Insert(0, (seq1[i - 1], seq2[j - 1]));
                     i--;
                     j--;
                 }
                 else if (tracebackMatrix[i, j] == 2)
                 {
-                    alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], "-"));
+                    alignedTokens.Insert(0, (seq1[i - 1], null));
                     i--;
                 }
                 else
                 {
-                    alignedTokens.Insert(0, Tuple.Create("-", seq2[j - 1]));
+                    alignedTokens.Insert(0, (null, seq2[j - 1]));
                     j--;
                 }
             }
             else if (i > 0)
             {
-                alignedTokens.Insert(0, Tuple.Create(seq1[i - 1], "-"));
+                alignedTokens.Insert(0, (seq1[i - 1], null));
                 i--;
             }
             else
             {
-                alignedTokens.Insert(0, Tuple.Create("-", seq2[j - 1]));
+                alignedTokens.Insert(0, (null, seq2[j - 1]));
                 j--;
             }
         }
