@@ -11,13 +11,16 @@ public class ListenAndWriteController : ControllerBase
 {
     private readonly ITextGenerator _textGenerator;
     private readonly ISpeechGenerator _speechGenerator;
+    private readonly TextComparisionService _textComparisionService;
 
     public ListenAndWriteController(
         ITextGenerator textGenerator, 
-        ISpeechGenerator speechGenerator)
+        ISpeechGenerator speechGenerator,
+        TextComparisionService textComparisionService)
     {
         _textGenerator = textGenerator;
         _speechGenerator = speechGenerator;
+        _textComparisionService = textComparisionService;
     }
 
     [HttpPost("generate-proposition")]
@@ -47,5 +50,13 @@ public class ListenAndWriteController : ControllerBase
         return Ok(new TopicsDto(
             Enum.GetNames(typeof(ComplexityEnum)),
             Enum.GetNames(typeof(SubjectEnum))));
+    }
+
+    [HttpPost("compare-texts")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TopicsDto))]
+    public IActionResult CompareTexts(string userText, string originalText)
+    {
+        return Ok(_textComparisionService.CompareTexts(userText, originalText));
     }
 }

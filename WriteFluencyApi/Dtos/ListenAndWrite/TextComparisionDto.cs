@@ -1,11 +1,13 @@
 public record TextComparisionDto
 {
-    public (int, int) CorrectTextArea { get; set; }
-    public (int, int) UserTextHilightedArea { get; set; }
+    public int TokenAlignmentIndex { get; set; }
+    public TextRangeDto OriginalTextRange { get; set; }
+    public TextRangeDto UserTextRange { get; set; }
 
-    public TextComparisionDto((int, int) correctTextArea,  (int, int) userTextHilightedArea)
+    public TextComparisionDto(TextRangeDto originalTextRange,  TextRangeDto userTextRange, int tokenAlignmentIndex)
     {
-        CorrectTextArea = correctTextArea;
-        UserTextHilightedArea = userTextHilightedArea;
+        OriginalTextRange = originalTextRange;
+        UserTextRange = userTextRange;
+        TokenAlignmentIndex = tokenAlignmentIndex;
     }
 }

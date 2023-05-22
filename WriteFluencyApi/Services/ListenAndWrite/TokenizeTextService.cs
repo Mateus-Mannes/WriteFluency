@@ -1,6 +1,7 @@
 public class TokenizeTextService {
     public List<TextTokenDto> TokenizeText(string text)
     {
+        string originalText = text;
         // Remove punctuation and convert to lowercase
         string[] punctuation = new string[] { ".", ",", "!", "?", ";", ":" };
         text = text.ToLower().Trim();
@@ -12,12 +13,12 @@ public class TokenizeTextService {
         words.RemoveAll(t => string.IsNullOrWhiteSpace(t));
 
         var tokens = new List<TextTokenDto>();
+        int endIndex = 0;
         foreach(var word in words) 
         {
-            int startIndex = text.IndexOf(word);
-            int endIndex = startIndex + word.Length - 1;
-            tokens.Add(new TextTokenDto(word, (startIndex, endIndex)));
-            text.Remove(startIndex, word.Length);
+            int startIndex = originalText.IndexOf(word, endIndex);
+            endIndex = startIndex + word.Length - 1;
+            tokens.Add(new TextTokenDto(word, new TextRangeDto(startIndex, endIndex)));
         }
 
         return tokens;
