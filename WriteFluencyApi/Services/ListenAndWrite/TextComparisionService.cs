@@ -19,8 +19,9 @@ public class TextComparisionService {
         if(!IsMinimalSimilar(originalText, userText)) 
             return new List<TextComparisionDto>() { 
                 new TextComparisionDto(
-                    (0, userText.Length - 1), 
-                    (0, originalText.Length - 1)) 
+                    new TextRangeDto(0, userText.Length - 1), 
+                    new TextRangeDto(0, originalText.Length - 1),
+                    0) 
                 };
         
         var originalTokens = _tokenizeTextService.TokenizeText(originalText);
@@ -36,7 +37,7 @@ public class TextComparisionService {
         List<TextComparisionDto> textComparisions = new List<TextComparisionDto>();
 
         for(int i = 0; i < alignedTokens.Count; i++) 
-            CompareTokens(i, alignedTokens, textComparisions, originalText, userText);
+            CompareTokens(ref i, alignedTokens, textComparisions, originalText, userText);
 
         return textComparisions;
     }
@@ -48,47 +49,52 @@ public class TextComparisionService {
     }
 
     private void CompareTokens(
-        int tokensIndex,
-        List<(TextTokenDto?, TextTokenDto?)> alignedTokens, 
+        ref int tokenAlignmentIndex,
+        List<AlignedTokensDto> alignedTokens, 
         List<TextComparisionDto> textComparisions,
         string originalText,
         string userText)
     {
-        var token = alignedTokens[tokensIndex];
-        if(token.Item1 == null || token.Item2 == null)
+        var token = alignedTokens[tokenAlignmentIndex];
+        if(token.OriginalToken == null || token.UserToken == null)
         {
-            var priviousToken = alignedTokens.ElementAtOrDefault(tokensIndex - 1);
-            var nextToken = alignedTokens.ElementAtOrDefault(tokensIndex + 1);
+            var privious = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex - 1);
+            var next = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex + 1);
+            if(next != null) tokenAlignmentIndex++;
             AddComparision(
-                (priviousToken.Item1?.TextRangeIndex.Item2 ?? 0, 
-                    nextToken.Item1?.TextRangeIndex.Item1 ?? originalText.Length - 1),
-                (priviousToken.Item2?.TextRangeIndex.Item2 ?? 0, 
-                    nextToken.Item2?.TextRangeIndex.Item1 ?? userText.Length - 1),
-                textComparisions
+                new TextRangeDto(privious?.OriginalToken?.TextRange.InitialIndex ?? 0, 
+                    next?.OriginalToken?.TextRange.FinalIndex ?? originalText.Length - 1),
+                new TextRangeDto(privious?.UserToken?.TextRange.InitialIndex ?? 0, 
+                    next?.UserToken?.TextRange.FinalIndex ?? userText.Length - 1),
+                textComparisions,
+                tokenAlignmentIndex
             );
         }
-        else if(token.Item1 != token.Item2)
-            AddComparision(token.Item1!.TextRangeIndex, token.Item2!.TextRangeIndex, textComparisions);
+        else if(token.OriginalToken.Token != token.UserToken.Token)
+            AddComparision(
+                token.OriginalToken!.TextRange, 
+                token.UserToken!.TextRange, 
+                textComparisions, 
+                tokenAlignmentIndex);
     }
 
     private void AddComparision(
-        (int, int) originalTextRangeIndex,
-        (int, int) userTextRangeIndex,
-        List<TextComparisionDto> textComparisions)
+        TextRangeDto originalTextRange,
+        TextRangeDto userTextRange,
+        List<TextComparisionDto> textComparisions,
+        int tokenAlignmentIndex)
     {
         var lastComparision = textComparisions.LastOrDefault();
-        if(lastComparision != null && lastComparision.UserTextHilightedArea.Item2 
-            == userTextRangeIndex.Item2) 
+        if(lastComparision != null 
+            && (lastComparision.TokenAlignmentIndex == tokenAlignmentIndex - 1
+                || lastComparision.UserTextRange.InitialIndex == userTextRange.InitialIndex)) 
         {
-            lastComparision.UserTextHilightedArea = 
-                (lastComparision.UserTextHilightedArea.Item1, userTextRangeIndex.Item2);
+            lastComparision.UserTextRange = 
+                new TextRangeDto(lastComparision.UserTextRange.InitialIndex, userTextRange.FinalIndex);
+            lastComparision.TokenAlignmentIndex = tokenAlignmentIndex;
         }
         else
-        {
-            textComparisions.Add(new TextComparisionDto(
-                (originalTextRangeIndex.Item1, originalTextRangeIndex.Item2),
-                (userTextRangeIndex.Item1, userTextRangeIndex.Item2)));
-        }
+            textComparisions.Insert(0, new TextComparisionDto(originalTextRange, userTextRange, tokenAlignmentIndex));
     }
 
 }
