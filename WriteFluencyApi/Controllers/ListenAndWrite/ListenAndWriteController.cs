@@ -55,8 +55,8 @@ public class ListenAndWriteController : ControllerBase
     [HttpPost("compare-texts")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TopicsDto))]
-    public IActionResult CompareTexts(string userText, string originalText)
+    public IActionResult CompareTexts(string originalText, string userText)
     {
-        return Ok(_textComparisionService.CompareTexts(userText, originalText));
+        return Ok(_textComparisionService.CompareTexts(originalText, userText));
     }
 }

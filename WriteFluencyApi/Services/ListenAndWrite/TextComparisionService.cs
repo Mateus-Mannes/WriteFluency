@@ -20,8 +20,7 @@ public class TextComparisionService {
             return new List<TextComparisionDto>() { 
                 new TextComparisionDto(
                     new TextRangeDto(0, userText.Length - 1), 
-                    new TextRangeDto(0, originalText.Length - 1),
-                    0) 
+                    new TextRangeDto(0, originalText.Length - 1)) 
                 };
         
         var originalTokens = _tokenizeTextService.TokenizeText(originalText);
@@ -38,6 +37,8 @@ public class TextComparisionService {
 
         for(int i = 0; i < alignedTokens.Count; i++) 
             CompareTokens(ref i, alignedTokens, textComparisions, originalText, userText);
+
+        GetSubStrings(textComparisions, originalText, userText);
 
         return textComparisions;
     }
@@ -66,35 +67,55 @@ public class TextComparisionService {
                     next?.OriginalToken?.TextRange.FinalIndex ?? originalText.Length - 1),
                 new TextRangeDto(privious?.UserToken?.TextRange.InitialIndex ?? 0, 
                     next?.UserToken?.TextRange.FinalIndex ?? userText.Length - 1),
-                textComparisions,
-                tokenAlignmentIndex
+                userText,
+                textComparisions
             );
         }
         else if(token.OriginalToken.Token != token.UserToken.Token)
             AddComparision(
                 token.OriginalToken!.TextRange, 
-                token.UserToken!.TextRange, 
-                textComparisions, 
-                tokenAlignmentIndex);
+                token.UserToken!.TextRange,
+                userText, 
+                textComparisions);
     }
 
     private void AddComparision(
         TextRangeDto originalTextRange,
         TextRangeDto userTextRange,
-        List<TextComparisionDto> textComparisions,
-        int tokenAlignmentIndex)
+        string userText,
+        List<TextComparisionDto> textComparisions)
     {
         var lastComparision = textComparisions.LastOrDefault();
         if(lastComparision != null 
-            && (lastComparision.TokenAlignmentIndex == tokenAlignmentIndex - 1
-                || lastComparision.UserTextRange.InitialIndex == userTextRange.InitialIndex)) 
+            && (IsSequential(userText, lastComparision, userTextRange)
+                || lastComparision.UserTextRange.FinalIndex >= userTextRange.InitialIndex)) 
         {
             lastComparision.UserTextRange = 
                 new TextRangeDto(lastComparision.UserTextRange.InitialIndex, userTextRange.FinalIndex);
-            lastComparision.TokenAlignmentIndex = tokenAlignmentIndex;
+            lastComparision.OriginalTextRange =
+                new TextRangeDto(lastComparision.OriginalTextRange.InitialIndex, originalTextRange.FinalIndex);
         }
         else
-            textComparisions.Insert(0, new TextComparisionDto(originalTextRange, userTextRange, tokenAlignmentIndex));
+            textComparisions.Add(new TextComparisionDto(originalTextRange, userTextRange));
+    }
+
+    private bool IsSequential(string userText, TextComparisionDto lastTextComparision, TextRangeDto userTextRange)
+    {
+        int index = userTextRange.InitialIndex - 1;
+        while(char.IsWhiteSpace(userText[index]) || char.IsPunctuation(userText[index]))
+            index--;
+        return index == lastTextComparision.UserTextRange.FinalIndex;
+    }
+
+    private void GetSubStrings(List<TextComparisionDto> textComparisions, string originalText, string userText)
+    {
+        foreach(var comparision in textComparisions)
+        {
+            comparision.OriginalText =  originalText.Substring(comparision.OriginalTextRange.InitialIndex, 
+                comparision.OriginalTextRange.FinalIndex - comparision.OriginalTextRange.InitialIndex + 1);
+            comparision.userText = userText.Substring(comparision.UserTextRange.InitialIndex, 
+                comparision.UserTextRange.FinalIndex - comparision.UserTextRange.InitialIndex + 1);
+        }
     }
 
 }

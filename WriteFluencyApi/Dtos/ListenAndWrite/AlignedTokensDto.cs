@@ -1,4 +1,4 @@
 public record AlignedTokensDto(
-    TextTokenDto? UserToken,
-    TextTokenDto? OriginalToken
+    TextTokenDto? OriginalToken,
+    TextTokenDto? UserToken
 );
