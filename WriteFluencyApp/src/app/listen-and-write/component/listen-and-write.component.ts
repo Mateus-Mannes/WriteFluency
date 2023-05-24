@@ -7,6 +7,7 @@ import { Proposition } from '../entities/proposition';
 import { forkJoin, take, timer } from 'rxjs';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { AlertService } from '../../shared/services/alert-service';
+import { TextComparision } from '../entities/text-comparision';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -40,6 +41,7 @@ export class ListenAndWriteComponent implements OnInit {
   loadingPage: boolean = true;
   loadingAudio: boolean = false;
   generateAudioLabel = 'New audio';
+  originalText: string = '';
   
   ngOnInit() {
     this._httpClient.get<Topics>(`${this.route}/topics`)
@@ -81,6 +83,7 @@ export class ListenAndWriteComponent implements OnInit {
         width += increment*10;
         this._renderer.setStyle(this.progress.nativeElement, 'width', `${width}%`);
         this.audioPlayer.nativeElement.src = 'data:audio/ogg;base64,' + result.audio;
+        this.originalText = result.text;
       },
       error: (error) => {
         this._alertService.alert('Was not possible to generate the text. Please try again later', 'danger');
@@ -94,5 +97,13 @@ export class ListenAndWriteComponent implements OnInit {
         }, 1500);
       }
     });
+  }
+
+  VerifyText()
+  {
+    let userText = (<HTMLInputElement>document.getElementById("textarea")).value;
+    let originalText = this.originalText;
+    this._httpClient.post<TextComparision[]>(`${this.route}/compare-texts`, {originalText, userText})
+      .subscribe(result => { });
   }
 }
