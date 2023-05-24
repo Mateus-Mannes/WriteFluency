@@ -1,0 +1,1 @@
+public record CompareTextsDto(string OriginalText, string UserText);
