@@ -4,7 +4,7 @@ import { environment } from 'src/enviroments/enviroment';
 import { Topics } from '../entities/topics';
 import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component';
 import { Proposition } from '../entities/proposition';
-import { forkJoin, take, timer } from 'rxjs';
+import { Subject, forkJoin, take, takeUntil, timer } from 'rxjs';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { AlertService } from '../../shared/services/alert-service';
 import { TextComparision } from '../entities/text-comparision';
@@ -70,7 +70,8 @@ export class ListenAndWriteComponent implements OnInit {
     const increment = 100 / steps;
     let width = 0;
 
-    const timer$ = timer(0, interval).pipe(take(steps - 10));
+    const stop$ = new Subject<void>();
+    const timer$ = timer(0, interval).pipe(take(steps - 10), takeUntil(stop$));
     const post$ = this._httpClient.post<Proposition>(`${this.route}/generate-proposition`, {complexity, subject});
 
     timer$.subscribe(() => {
@@ -87,6 +88,10 @@ export class ListenAndWriteComponent implements OnInit {
       },
       error: (error) => {
         this._alertService.alert('Was not possible to generate the text. Please try again later', 'danger');
+        stop$.next();
+        this._renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
+        this.loadingAudio = false;
+        this.generateAudioLabel = 'New audio'
       },
       complete: () => {
         setTimeout(() => {
