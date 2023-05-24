@@ -41,6 +41,10 @@
   height: 38px
 }
 
+.verify-button{
+  width: 300px;
+}
+
 @media screen and (max-width: 992px) {
   form {
     display: flex;

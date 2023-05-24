@@ -19,20 +19,27 @@ export class AlertService  {
   alert(message: string, type: string){
     const wrapper = document.createElement('div')
     wrapper.innerHTML = [
-      `<div id='alertNotification' class="alert alert-${type} alert-dismissible" role="alert">`,
+      `<div id='alertNotification' class="alert alert-${type} alert-dismissible fadeIn" role="alert">`,
       `   <div>${message}</div>`,
-      '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
-      '</div>'
+      '   <button type="button" class="btn-close" aria-label="Close"></button>',
+      '</div>',
     ].join('');
     this.alertPlaceholder?.append(wrapper);
-    setTimeout(this.disalert, 10000)
+    
+    const timeoutId = setTimeout(() => {
+      this.disalert(wrapper.childNodes[0] as HTMLElement);
+    }, 10000);
+
+    wrapper.querySelector('.btn-close')!
+      .addEventListener('click', () => {
+        clearTimeout(timeoutId);
+        this.disalert(wrapper.childNodes[0] as HTMLElement);
+      });
   }
 
-  disalert(){
-    var notification = document.getElementById('alertNotification');
-    if(notification != null){
-      notification.outerHTML = "";
-    }
+  disalert(notification: HTMLElement){
+    notification.className = notification.className.replace("fadeIn", "fadeOut");
+    setTimeout(() => { notification!.outerHTML = ""; }, 500); 
   }
 
   disalertAll(){
