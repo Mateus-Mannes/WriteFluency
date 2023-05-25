@@ -36,15 +36,17 @@
 
         <div class="container" style="height: 60%;">
             <div class="form-floating shadow-sm" style="height: 100%;">
-                <textarea class="form-control" 
+                <textarea spellcheck="false" class="form-control" 
                     placeholder="Write the heard text here" 
-                    id="textarea" style="height: 100%;">
+                    id="textarea" #textarea style="height: 100%;">
                 </textarea>
                 <label for="textarea">Write it down here</label>
             </div>
         </div>
 
-        <app-button class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">Verify text</app-button>
+        <app-button  [disabled]="loadingVerify || originalText == ''" class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">
+            <span>Verify text</span>
+        </app-button>
 
     </div>
 </div>

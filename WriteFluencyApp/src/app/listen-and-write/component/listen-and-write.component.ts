@@ -36,9 +36,11 @@ export class ListenAndWriteComponent implements OnInit {
   @ViewChild('audioPlayer') audioPlayer!: ElementRef;
   @ViewChild('progress') progress!: ElementRef;
   @ViewChild('progressBar') progressBar!: ElementRef;
+  @ViewChild('textarea') textArea!: ElementRef;
   complexities: string[] = [];
   subjects: string[] = [];
   loadingPage: boolean = true;
+  loadingVerify: boolean = false;
   loadingAudio: boolean = false;
   generateAudioLabel = 'New audio';
   originalText: string = '';
@@ -55,6 +57,8 @@ export class ListenAndWriteComponent implements OnInit {
   generateAudio(){
     this.loadingAudio = true;
     this.generateAudioLabel = 'Generating';
+    this.textArea.nativeElement.readOnly = false;
+    this.textArea.nativeElement.value = '';
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
 
@@ -62,7 +66,7 @@ export class ListenAndWriteComponent implements OnInit {
     this._renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
     this.progressBar.nativeElement.hidden = false;
     this.audioPlayer.nativeElement.hidden = true;
-    this.audioPlayer.nativeElement.src = undefined;
+    this.audioPlayer.nativeElement.src = null;
 
     const duration = 10; // duration in seconds
     const interval = 100; // update interval in milliseconds
@@ -106,9 +110,28 @@ export class ListenAndWriteComponent implements OnInit {
 
   VerifyText()
   {
-    let userText = (<HTMLInputElement>document.getElementById("textarea")).value;
+    this.loadingVerify = true;
+    let userText = this.textArea.nativeElement.value;
+
+    if(userText.length/this.originalText.length < 0.6)
+    {
+      this._alertService.alert('The text is too short. Try to transcribe at least 70% of the audio, write the words as you think they are. You can also generate other audio', 'warning', 20000);
+      this.loadingVerify = false;
+      return;
+    }
+
     let originalText = this.originalText;
+    this.textArea.nativeElement.readOnly = true;
     this._httpClient.post<TextComparision[]>(`${this.route}/compare-texts`, {originalText, userText})
-      .subscribe(result => { });
+      .subscribe(
+        result => 
+        { 
+          this.loadingVerify = false;          
+        },
+        error =>
+        {
+          this._alertService.alert('Was not possible to verify the text. Please try again later', 'danger');
+          this.loadingVerify = false;
+        });
   }
 }
