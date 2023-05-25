@@ -16,7 +16,7 @@ export class AlertService  {
 
   alertPlaceholder = document.getElementById('liveAlertPlaceholder')
 
-  alert(message: string, type: string){
+  alert(message: string, type: string, timeout: number = 10000){
     const wrapper = document.createElement('div')
     wrapper.innerHTML = [
       `<div id='alertNotification' class="alert alert-${type} alert-dismissible fadeIn" role="alert">`,
@@ -28,7 +28,7 @@ export class AlertService  {
     
     const timeoutId = setTimeout(() => {
       this.disalert(wrapper.childNodes[0] as HTMLElement);
-    }, 10000);
+    }, timeout);
 
     wrapper.querySelector('.btn-close')!
       .addEventListener('click', () => {
