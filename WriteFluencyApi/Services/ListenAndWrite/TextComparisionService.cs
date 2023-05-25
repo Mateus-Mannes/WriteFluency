@@ -102,7 +102,7 @@ public class TextComparisionService {
     private bool IsSequential(string userText, TextComparisionDto lastTextComparision, TextRangeDto userTextRange)
     {
         int index = userTextRange.InitialIndex - 1;
-        while(char.IsWhiteSpace(userText[index]) || char.IsPunctuation(userText[index]))
+        while(index >= 0 && (char.IsWhiteSpace(userText[index]) || char.IsPunctuation(userText[index])))
             index--;
         return index == lastTextComparision.UserTextRange.FinalIndex;
     }
