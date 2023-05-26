@@ -40,11 +40,16 @@
                     placeholder="Write the heard text here" 
                     id="textarea" #textarea style="height: 100%;">
                 </textarea>
-                <label for="textarea">Write it down here</label>
+                <div id="highlighter" #highlighter class="highlighter">
+                    <div *ngFor="let part of textParts">
+                        <span *ngIf="!part.highlight">{{ part.text }}</span>
+                        <span *ngIf="part.highlight" class="highlight" matTooltip="{{ part.correction }}" style="background-color: yellow">{{ part.text }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <app-button  [disabled]="loadingVerify || originalText == ''" class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">
+        <app-button [disabled]="loadingVerify || originalText == ''" class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">
             <span>Verify text</span>
         </app-button>
 

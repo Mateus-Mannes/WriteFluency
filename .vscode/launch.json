@@ -1,6 +1,13 @@
 {
     "configurations": [
     {
+        "name": "Launch Chrome",
+        "request": "launch",
+        "type": "chrome",
+        "url": "http://localhost:4200",
+        "webRoot": "${workspaceFolder}/WriteFluencyApp"
+    },
+    {
         "name": ".NET Core Launch (web)",
         "type": "coreclr",
         "request": "launch",
