@@ -5,6 +5,7 @@ import { SharedModule } from '../shared/shared.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { VerifyModalComponent } from './verify-modal/verify-modal.component';
 import { MatDialogModule } from '@angular/material/dialog';
+import {MatTooltipModule} from '@angular/material/tooltip';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { MatDialogModule } from '@angular/material/dialog';
     CommonModule,
     SharedModule,
     BrowserAnimationsModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   exports: [
     ListenAndWriteComponent

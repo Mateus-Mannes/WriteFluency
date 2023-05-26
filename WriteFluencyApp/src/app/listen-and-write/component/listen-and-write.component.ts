@@ -8,6 +8,7 @@ import { Subject, forkJoin, take, takeUntil, timer } from 'rxjs';
 import { trigger, state, style, animate, transition } from '@angular/animations';
 import { AlertService } from '../../shared/services/alert-service';
 import { TextComparision } from '../entities/text-comparision';
+import { TextPart } from '../entities/text-part';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -37,6 +38,7 @@ export class ListenAndWriteComponent implements OnInit {
   @ViewChild('progress') progress!: ElementRef;
   @ViewChild('progressBar') progressBar!: ElementRef;
   @ViewChild('textarea') textArea!: ElementRef;
+  @ViewChild('highlighter') highlighter!: ElementRef;
   complexities: string[] = [];
   subjects: string[] = [];
   loadingPage: boolean = true;
@@ -44,6 +46,7 @@ export class ListenAndWriteComponent implements OnInit {
   loadingAudio: boolean = false;
   generateAudioLabel = 'New audio';
   originalText: string = '';
+  textParts: TextPart[] = [];
   
   ngOnInit() {
     this._httpClient.get<Topics>(`${this.route}/topics`)
@@ -59,6 +62,7 @@ export class ListenAndWriteComponent implements OnInit {
     this.generateAudioLabel = 'Generating';
     this.textArea.nativeElement.readOnly = false;
     this.textArea.nativeElement.value = '';
+    this.highlighter.nativeElement.hidden = true;
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
 
@@ -110,6 +114,7 @@ export class ListenAndWriteComponent implements OnInit {
 
   VerifyText()
   {
+    this.HighlightText();
     this.loadingVerify = true;
     let userText = this.textArea.nativeElement.value;
 
@@ -133,5 +138,24 @@ export class ListenAndWriteComponent implements OnInit {
           this._alertService.alert('Was not possible to verify the text. Please try again later', 'danger');
           this.loadingVerify = false;
         });
+  }
+
+  HighlightText()
+  {
+    var text = this.textArea.nativeElement.value;
+
+    let highlights = [{start: 7, end: 13, correction: 'universe'}, {start: 18, end: 22, correction: 'another'}];
+    
+    let lastEnd = 0;
+
+    for (let highlight of highlights) {
+      let { start, end, correction } = highlight;
+      this.textParts.push({ text: text.slice(lastEnd, start), highlight: false });
+      this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
+      lastEnd = end;
+    }
+
+    this.textParts.push({ text: text.slice(lastEnd), highlight: false });
+
   }
 }
