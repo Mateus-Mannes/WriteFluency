@@ -77,6 +77,18 @@
   overflow: hidden; /* this hides the highlight if text is scrolled */
 }
 
+.highlighted {
+  background-color: var(--color-red);
+}
+
+.not-highlighted {
+  background-color: none;
+}
+
+mat-tooltip-component .mdc-tooltip__surface {
+  background-color: var(--color-green) !important;
+}
+
 @media screen and (max-width: 992px) {
   form {
     display: flex;

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2, ViewChild, ViewEncapsulation } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/enviroments/enviroment';
 import { Topics } from '../entities/topics';
@@ -21,7 +21,8 @@ import { TextPart } from '../entities/text-part';
         animate('600ms', style({ opacity: 1 })),
       ]),
     ]),
-  ]
+  ],
+  encapsulation: ViewEncapsulation.None
 })
 export class ListenAndWriteComponent implements OnInit {
 

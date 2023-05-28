@@ -41,10 +41,10 @@
                     id="textarea" #textarea style="height: 100%;"></textarea>
                 <label for="textarea">Write it down here</label>
                 <div id="highlighter" #highlighter class="highlighter">
-                    <span *ngFor="let part of textParts" matTooltip="{{ part.correction }}" 
+                    <span *ngFor="let part of textParts" matTooltip="{{ part.correction }}"
                     [ngStyle]="{
-                        'background-color': part.highlight ? 'yellow' : 'none', 
                         'color': part.highlight ? 'black' : 'transparent'}"
+                    [ngClass]="{'highlighted': part.highlight, 'not-highlighted': !part.highlight}"
                     >{{ part.text }}</span>
                 </div>
             </div>
