@@ -41,10 +41,8 @@
                     id="textarea" #textarea style="height: 100%;">
                 </textarea>
                 <div id="highlighter" #highlighter class="highlighter">
-                    <div *ngFor="let part of textParts">
-                        <span *ngIf="!part.highlight">{{ part.text }}</span>
-                        <span *ngIf="part.highlight" class="highlight" matTooltip="{{ part.correction }}" style="background-color: yellow">{{ part.text }}</span>
-                    </div>
+                    <span *ngFor="let part of textParts" matTooltip="{{ part.correction }}" 
+                    [ngStyle]="{'background-color': part.highlight ? 'yellow' : 'none'}" >{{ part.text }}</span>
                 </div>
             </div>
         </div>

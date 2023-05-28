@@ -59,12 +59,14 @@
 }
 
 #highlighter {
+  border: var(--bs-border-width) solid rgba(0, 0, 0, 0);
+  z-index: 1000;
   height: 100%;
   width: 100%;
   position: absolute;
   top: 0;
   left: 0;
-  pointer-events: all; /* this allows the textarea to be clickable */
+  pointer-events: none; /* this allows the textarea to be clickable */
   white-space: pre-wrap; /* this wraps text in the div like in the textarea */
   overflow: hidden; /* this hides the highlight if text is scrolled */
 }

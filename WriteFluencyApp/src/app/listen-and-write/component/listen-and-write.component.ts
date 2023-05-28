@@ -63,6 +63,7 @@ export class ListenAndWriteComponent implements OnInit {
     this.textArea.nativeElement.readOnly = false;
     this.textArea.nativeElement.value = '';
     this.highlighter.nativeElement.hidden = true;
+    this._renderer.setStyle(this.highlighter.nativeElement, 'pointer-events', `none`);
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
 
@@ -143,6 +144,7 @@ export class ListenAndWriteComponent implements OnInit {
   HighlightText()
   {
     var text = this.textArea.nativeElement.value;
+    this._renderer.setStyle(this.highlighter.nativeElement, 'pointer-events', `all`);
 
     let highlights = [{start: 7, end: 13, correction: 'universe'}, {start: 18, end: 22, correction: 'another'}];
     
@@ -150,12 +152,13 @@ export class ListenAndWriteComponent implements OnInit {
 
     for (let highlight of highlights) {
       let { start, end, correction } = highlight;
-      this.textParts.push({ text: text.slice(lastEnd, start), highlight: false });
+      this.textParts.push({ 
+        text: text.slice(lastEnd, start).split('').map(() => ' ').join(''), highlight: false });
       this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
       lastEnd = end;
     }
 
-    this.textParts.push({ text: text.slice(lastEnd), highlight: false });
+    this.textParts.push({ text: text.slice(lastEnd).split('').map(() => ' ').join(''), highlight: false });
 
   }
 }
