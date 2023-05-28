@@ -38,11 +38,14 @@
             <div class="form-floating shadow-sm" style="height: 100%;">
                 <textarea spellcheck="false" class="form-control" 
                     placeholder="Write the heard text here" 
-                    id="textarea" #textarea style="height: 100%;">
-                </textarea>
+                    id="textarea" #textarea style="height: 100%;"></textarea>
+                <label for="textarea">Write it down here</label>
                 <div id="highlighter" #highlighter class="highlighter">
                     <span *ngFor="let part of textParts" matTooltip="{{ part.correction }}" 
-                    [ngStyle]="{'background-color': part.highlight ? 'yellow' : 'none'}" >{{ part.text }}</span>
+                    [ngStyle]="{
+                        'background-color': part.highlight ? 'yellow' : 'none', 
+                        'color': part.highlight ? 'black' : 'transparent'}"
+                    >{{ part.text }}</span>
                 </div>
             </div>
         </div>
