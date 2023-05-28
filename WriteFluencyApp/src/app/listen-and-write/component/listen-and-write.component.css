@@ -47,20 +47,26 @@
 
 #textarea,
 #highlighter {
-  font-family: monospace;
-  font-size: 14px;
-  line-height: 20px;
+  line-height: 1.25;
+  font-size: 1rem;
+  font-weight: 400;
+  font-family: inherit;
 }
 
-#textarea, #highlighter {
+#highlighter {
   padding-top: 1.625rem;
   padding-bottom: 0.625rem;
-  padding: 1rem 0.75rem;
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+#textarea {
+  z-index: 1;
 }
 
 #highlighter {
   border: var(--bs-border-width) solid rgba(0, 0, 0, 0);
-  z-index: 1000;
+  z-index: 2;
   height: 100%;
   width: 100%;
   position: absolute;

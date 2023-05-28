@@ -153,12 +153,12 @@ export class ListenAndWriteComponent implements OnInit {
     for (let highlight of highlights) {
       let { start, end, correction } = highlight;
       this.textParts.push({ 
-        text: text.slice(lastEnd, start).split('').map(() => ' ').join(''), highlight: false });
+        text: text.slice(lastEnd, start), highlight: false });
       this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
       lastEnd = end;
     }
 
-    this.textParts.push({ text: text.slice(lastEnd).split('').map(() => ' ').join(''), highlight: false });
+    this.textParts.push({ text: text.slice(lastEnd), highlight: false });
 
   }
 }
