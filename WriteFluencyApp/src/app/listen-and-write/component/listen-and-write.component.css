@@ -89,6 +89,10 @@ mat-tooltip-component .mdc-tooltip__surface {
   background-color: var(--color-green) !important;
 }
 
+.check-card {
+  border-color: var(--color-green);
+}
+
 @media screen and (max-width: 992px) {
   form {
     display: flex;

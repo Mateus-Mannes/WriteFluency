@@ -44,6 +44,7 @@ export class ListenAndWriteComponent implements OnInit {
   subjects: string[] = [];
   loadingPage: boolean = true;
   loadingVerify: boolean = false;
+  textVerified: boolean = false;
   loadingAudio: boolean = false;
   generateAudioLabel = 'New audio';
   originalText: string = '';
@@ -63,10 +64,12 @@ export class ListenAndWriteComponent implements OnInit {
     this.generateAudioLabel = 'Generating';
     this.textArea.nativeElement.readOnly = false;
     this.textArea.nativeElement.value = '';
+    this.originalText = '';
     this.highlighter.nativeElement.hidden = true;
     this._renderer.setStyle(this.highlighter.nativeElement, 'pointer-events', `none`);
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
+    this.textVerified = false; 
 
     // Start the progress bar animation
     this._renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
@@ -133,7 +136,8 @@ export class ListenAndWriteComponent implements OnInit {
       .subscribe(
         result => 
         { 
-          this.loadingVerify = false;          
+          this.loadingVerify = false;
+          this.textVerified = true;          
         },
         error =>
         {
