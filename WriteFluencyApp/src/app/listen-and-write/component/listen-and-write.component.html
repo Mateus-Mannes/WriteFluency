@@ -50,8 +50,19 @@
             </div>
         </div>
 
-        <app-button [disabled]="loadingVerify || originalText == ''" class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">
+        <app-button *ngIf="!textVerified" [disabled]="loadingVerify || originalText == ''" class="verify-button container" style="margin-top: 1em;" (onClick)="VerifyText()">
             <span>Verify text</span>
+        </app-button>
+
+        <div style="margin-top: 1em;" class="collapse container" id="check">
+            <div class="card card-body check-card">
+              Some placeholder content for the collapse component. This panel is hidden by default but revealed when the user activates the relevant trigger.
+            </div>
+        </div>
+
+        <app-button *ngIf="textVerified" class="verify-button container" style="margin-top: 1em;"
+        data-bs-toggle="collapse" data-bs-target="#check" aria-expanded="false" aria-controls="check">
+            <span>Check original text</span>
         </app-button>
 
     </div>
