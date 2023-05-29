@@ -65,7 +65,7 @@ export class ListenAndWriteComponent implements OnInit {
     this.textArea.nativeElement.readOnly = false;
     this.textArea.nativeElement.value = '';
     this.originalText = '';
-    this.highlighter.nativeElement.hidden = true;
+    this.textParts = [];
     this._renderer.setStyle(this.highlighter.nativeElement, 'pointer-events', `none`);
     let complexity = this.complexity.selectedOption;
     let subject = this.subject.selectedOption;
@@ -119,7 +119,6 @@ export class ListenAndWriteComponent implements OnInit {
 
   VerifyText()
   {
-    this.HighlightText();
     this.loadingVerify = true;
     let userText = this.textArea.nativeElement.value;
 
@@ -136,6 +135,7 @@ export class ListenAndWriteComponent implements OnInit {
       .subscribe(
         result => 
         { 
+          this.HighlightText(result);
           this.loadingVerify = false;
           this.textVerified = true;          
         },
@@ -146,20 +146,21 @@ export class ListenAndWriteComponent implements OnInit {
         });
   }
 
-  HighlightText()
+  HighlightText(comparisions: TextComparision[])
   {
     var text = this.textArea.nativeElement.value;
     this._renderer.setStyle(this.highlighter.nativeElement, 'pointer-events', `all`);
-
-    let highlights = [{start: 7, end: 13, correction: 'universe'}, {start: 18, end: 22, correction: 'another'}];
+    document.getElementById('originalTextCollapse')!.innerText = this.originalText;
     
     let lastEnd = 0;
 
-    for (let highlight of highlights) {
-      let { start, end, correction } = highlight;
+    for (let comparision of comparisions) {
+      let start = comparision.userTextRange.initialIndex ;
+      let end = comparision.userTextRange.finalIndex;
+      let correction = comparision.originalText;
       this.textParts.push({ 
         text: text.slice(lastEnd, start), highlight: false });
-      this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
+      this.textParts.push({ text: text.slice(start, end + 1), highlight: true, correction });
       lastEnd = end;
     }
 
