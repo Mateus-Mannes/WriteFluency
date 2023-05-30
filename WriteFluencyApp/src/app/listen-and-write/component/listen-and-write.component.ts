@@ -75,7 +75,7 @@ export class ListenAndWriteComponent implements OnInit {
     this._renderer.setStyle(this.progress.nativeElement, 'width', `0%`);
     this.progressBar.nativeElement.hidden = false;
     this.audioPlayer.nativeElement.hidden = true;
-    this.audioPlayer.nativeElement.src = null;
+    this.audioPlayer.nativeElement.src = '';
 
     const duration = 10; // duration in seconds
     const interval = 100; // update interval in milliseconds
