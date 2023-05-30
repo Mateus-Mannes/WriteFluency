@@ -1,0 +1,27 @@
+<form class="d-flex container proposition">
+
+    <div class="proposition__drop-downs d-flex justify-content-between">
+
+        <app-drop-down class="proposition__drop-downs__complexity" #complexity [options]="complexities">
+            Complexity
+        </app-drop-down>
+
+        <app-drop-down class="proposition__drop-downs__subject" #subject [options]="subjects">
+            Subject
+        </app-drop-down>
+
+    </div>
+
+    <app-button class="proposition__new-button" 
+    [disabled]="!complexity.selectedOption || !subject.selectedOption || loadingAudio" 
+    (onClick)="generateAudio()">New audio</app-button>
+
+    <div class="progress proposition__progress" 
+    #progressBar  role="progressbar" aria-label="Audio loading" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar proposition__progress__animated progress-bar-striped progress-bar-animated bg-success" 
+        #progress style="width: 0%"></div>
+    </div>
+    
+    <audio hidden class="proposition__audio" #audioPlayer controls></audio>
+
+</form>
