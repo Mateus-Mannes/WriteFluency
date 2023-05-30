@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { VerifyModalComponent } from './verify-modal.component';
+import { VerificationComponent } from './verification.component';
 
-describe('VerifyModalComponent', () => {
-  let component: VerifyModalComponent;
-  let fixture: ComponentFixture<VerifyModalComponent>;
+describe('VerificationComponent', () => {
+  let component: VerificationComponent;
+  let fixture: ComponentFixture<VerificationComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ VerifyModalComponent ]
+      declarations: [ VerificationComponent ]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(VerifyModalComponent);
+    fixture = TestBed.createComponent(VerificationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
