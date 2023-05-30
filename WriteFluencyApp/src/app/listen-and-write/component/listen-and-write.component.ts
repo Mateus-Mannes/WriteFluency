@@ -156,11 +156,11 @@ export class ListenAndWriteComponent implements OnInit {
 
     for (let comparision of comparisions) {
       let start = comparision.userTextRange.initialIndex ;
-      let end = comparision.userTextRange.finalIndex;
+      let end = comparision.userTextRange.finalIndex + 1;
       let correction = comparision.originalText;
       this.textParts.push({ 
         text: text.slice(lastEnd, start), highlight: false });
-      this.textParts.push({ text: text.slice(start, end + 1), highlight: true, correction });
+      this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
       lastEnd = end;
     }
 
