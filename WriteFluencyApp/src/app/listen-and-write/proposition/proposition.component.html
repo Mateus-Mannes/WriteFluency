@@ -14,7 +14,7 @@
 
     <app-button class="proposition__new-button" 
     [disabled]="!complexity.selectedOption || !subject.selectedOption || loadingAudio" 
-    (onClick)="generateAudio()">New audio</app-button>
+    (onClick)="generateAudio()">{{ loadingAudio ? 'Generating' : 'New audio' }}</app-button>
 
     <div class="progress proposition__progress" 
     #progressBar  role="progressbar" aria-label="Audio loading" aria-valuemin="0" aria-valuemax="100">
