@@ -1,4 +1,4 @@
 export const environment = {
     production: false,
-    apiUrl: "https://mateus-mannes-upgraded-cod-4679qwr6v9p27qq7-44317.preview.app.github.dev"
+    apiUrl: "https://mateus-mannes-cautious-succotash-4679qwr6v4jfjvw4-44317.preview.app.github.dev"
 };

@@ -1,4 +1,22 @@
-<div style="width: 100%;" class="listen-and-write d-flex flex-column align-items-center justify-content-center">
-    <app-proposition style="width: 100%;"></app-proposition>
+<div class="listen-and-write d-flex flex-column align-items-center justify-content-center">
+    
+    <app-proposition #proposition class="listen-and-write__proposition"></app-proposition>
+
+    <div class="container listen-and-write__textarea">
+        <div class="form-floating shadow-sm listen-and-write__textarea__form">
+            <textarea spellcheck="false" 
+                class="form-control listen-and-write__textarea__form__input" 
+                placeholder="Write the heard text here" 
+                id="textarea" #textarea></textarea>
+            <label for="textarea">Write it down here</label>
+        </div>
+    </div>
+
+    <app-button 
+    class="listen-and-write__verify container" 
+    (onClick)="verify()"
+    [disabled]="proposition.propositionText == '' || textarea.nativeElement.value == ''"
+    >Verify text</app-button>
+
 </div>
 
