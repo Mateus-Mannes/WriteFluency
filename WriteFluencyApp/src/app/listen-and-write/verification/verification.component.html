@@ -3,7 +3,9 @@
     <div class="cards__user">
         <div class="cards__user__text card card-body">{{ userText }}</div>
         <div class="cards__user__highlighter card card-body">
-            <span><span *ngFor="let part of textParts" matTooltip="{{ part.correction }}"
+            <span><span *ngFor="let part of textParts" 
+            matTooltip="{{ part.correction }}"
+            matTooltipPositionAtOrigin="true"
             [ngStyle]="{
                 'color': part.highlight ? 'black' : 'transparent'}"
             [ngClass]="{'highlighted': part.highlight, 'not-highlighted': !part.highlight}"
