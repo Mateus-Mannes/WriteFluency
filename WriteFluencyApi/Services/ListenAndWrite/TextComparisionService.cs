@@ -19,8 +19,8 @@ public class TextComparisionService {
         if(!IsMinimalSimilar(originalText, userText)) 
             return new List<TextComparisionDto>() { 
                 new TextComparisionDto(
-                    new TextRangeDto(0, originalText.Length - 1), 
-                    new TextRangeDto(0, userText.Length - 1)) 
+                    new TextRangeDto(0, originalText.Length - 1), originalText, 
+                    new TextRangeDto(0, userText.Length - 1), userText) 
                 };
         
         var originalTokens = _tokenizeTextService.TokenizeText(originalText);
