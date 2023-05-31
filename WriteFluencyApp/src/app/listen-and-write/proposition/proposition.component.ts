@@ -21,6 +21,7 @@ export class PropositionComponent {
   @ViewChild('progress') progress!: ElementRef;
   @ViewChild('progressBar') progressBar!: ElementRef;
   @ViewChild('audioPlayer') audioPlayer!: ElementRef;
+  @Output() audioPlayOrPause = new EventEmitter<void>();
 
   complexities: string[] = [];
   subjects: string[] = [];
@@ -38,6 +39,11 @@ export class PropositionComponent {
           this._alertService.alert('Was not possible to load the page. Please try again later', 'danger');
         }
       });
+  }
+
+  ngAfterViewInit() {
+    this.audioPlayer.nativeElement.onplay = () => { this.audioPlayOrPause.emit(); };
+    this.audioPlayer.nativeElement.onpause  = () => { this.audioPlayOrPause.emit(); };
   }
 
   generateAudio() {

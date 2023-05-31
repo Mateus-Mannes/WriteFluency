@@ -24,4 +24,8 @@ export class ListenAndWriteComponent {
       {data: {originalText: this.proposition.propositionText, 
         userText: this.textAreaContent}});
   }
+
+  audioPlayOrPause() {
+    this.textarea.nativeElement.focus();
+  }
 }
