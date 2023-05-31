@@ -1,0 +1,44 @@
+.cards {
+    padding: 1rem;
+}
+
+.cards__original {
+    border-color: var(--color-green);
+}
+
+.cards__user {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.cards__user__text {
+    z-index: 1;
+    border-color: var(--color-orange);
+}
+
+.cards__user__highlighter {
+    z-index: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    border-color: transparent;
+    pointer-events: all;
+    /* this allows the textarea to be clickable */
+    white-space: pre-wrap;
+    /* this wraps text in the div like in the textarea */
+    overflow: hidden;
+    /* this hides the highlight if text is scrolled */
+}
+
+.highlighted {
+    background-color: var(--color-red);
+}
+
+.not-highlighted {
+    background-color: none;
+}
+
+mat-tooltip-component .mdc-tooltip__surface {
+    background-color: var(--color-green) !important;
+}

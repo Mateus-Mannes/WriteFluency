@@ -1,11 +1,60 @@
-import { Component } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { Component, Inject, ViewEncapsulation } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TextPart } from '../entities/text-part';
+import { ListenAndWriteService } from '../listen-and-write.service';
+import { AlertService } from 'src/app/shared/services/alert-service';
+import { TextComparision } from '../entities/text-comparision';
+
+export interface VerificationData {
+  originalText: string;
+  userText: string;
+}
 
 @Component({
   selector: 'app-verification',
   templateUrl: './verification.component.html',
-  styleUrls: ['./verification.component.css']
+  styleUrls: ['./verification.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class VerificationComponent {
-  constructor(public dialogRef: MatDialogRef<VerificationComponent>) {}
+
+  originalText = this.data.originalText;
+  userText = this.data.userText;
+  textParts: TextPart[] = [];
+
+  constructor(public dialogRef: MatDialogRef<VerificationComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: VerificationData,
+    private readonly _service: ListenAndWriteService,
+    private readonly _alertSrvice: AlertService) 
+    {
+      _service.compareTexts(this.data.originalText, this.data.userText)
+        .subscribe({
+          next: (result) => {
+            this.highlightUserText(result);
+          },
+          error: () => {
+            _alertSrvice.alert('An error occured while comparing texts. Please try again later.', 'danger');
+            this.close();
+          }
+        });
+    }
+
+  close(): void {
+    this.dialogRef.close();
+  }
+
+  highlightUserText(comparisions: TextComparision[]) {
+    let text = this.userText;   
+    let lastEnd = 0;
+    for (let comparision of comparisions) {
+      let start = comparision.userTextRange.initialIndex ;
+      let end = comparision.userTextRange.finalIndex + 1;
+      let correction = comparision.originalText;
+      this.textParts.push({ 
+        text: text.slice(lastEnd, start), highlight: false });
+      this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
+      lastEnd = end;
+    }
+    this.textParts.push({ text: text.slice(lastEnd), highlight: false });
+  }
 }

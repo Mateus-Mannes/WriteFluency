@@ -1,4 +1,4 @@
-import { Component, ElementRef, Renderer2, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Output, Renderer2, ViewChild } from '@angular/core';
 import { ListenAndWriteService } from '../listen-and-write.service';
 import { AlertService } from 'src/app/shared/services/alert-service';
 import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component';
@@ -44,7 +44,7 @@ export class PropositionComponent {
     this.resetAudio();
 
     const progress = this.startProgress();
-    const post$ = this._service.GenerateProposition(this.complexity.selectedOption, this.subject.selectedOption);
+    const post$ = this._service.generateProposition(this.complexity.selectedOption, this.subject.selectedOption);
 
     forkJoin([progress.timer$, post$]).subscribe({
       next: ([_, result]) => {
