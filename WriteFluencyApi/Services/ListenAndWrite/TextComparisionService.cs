@@ -1,6 +1,6 @@
 public class TextComparisionService {
 
-    private const double SimilartyThresholdPercentage = 0.70; 
+    private const double SimilartyThresholdPercentage = 0.60; 
     private readonly LevenshteinDistanceService _levenshteinDistanceService;
     private readonly NeedlemanWunschAlignmentService _needlemanWunschAlignmentService;
     private readonly TokenizeTextService _tokenizeTextService;
@@ -19,8 +19,8 @@ public class TextComparisionService {
         if(!IsMinimalSimilar(originalText, userText)) 
             return new List<TextComparisionDto>() { 
                 new TextComparisionDto(
-                    new TextRangeDto(0, userText.Length - 1), 
-                    new TextRangeDto(0, originalText.Length - 1)) 
+                    new TextRangeDto(0, originalText.Length - 1), 
+                    new TextRangeDto(0, userText.Length - 1)) 
                 };
         
         var originalTokens = _tokenizeTextService.TokenizeText(originalText);
@@ -113,7 +113,7 @@ public class TextComparisionService {
         {
             comparision.OriginalText =  originalText.Substring(comparision.OriginalTextRange.InitialIndex, 
                 comparision.OriginalTextRange.FinalIndex - comparision.OriginalTextRange.InitialIndex + 1);
-            comparision.userText = userText.Substring(comparision.UserTextRange.InitialIndex, 
+            comparision.UserText = userText.Substring(comparision.UserTextRange.InitialIndex, 
                 comparision.UserTextRange.FinalIndex - comparision.UserTextRange.InitialIndex + 1);
         }
     }
