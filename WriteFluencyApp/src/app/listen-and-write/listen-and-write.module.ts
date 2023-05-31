@@ -8,6 +8,8 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import { PropositionComponent } from './proposition/proposition.component';
 import { ListenAndWriteService } from './listen-and-write.service';
 import { VerificationComponent } from './verification/verification.component';
+import { FormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
 
 @NgModule({
   declarations: [
@@ -20,7 +22,9 @@ import { VerificationComponent } from './verification/verification.component';
     SharedModule,
     BrowserAnimationsModule,
     MatDialogModule,
-    MatTooltipModule
+    MatTooltipModule,
+    BrowserModule,
+    FormsModule
   ],
   exports: [
     ListenAndWriteComponent
