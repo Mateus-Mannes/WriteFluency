@@ -10,7 +10,11 @@ public static class Prompts
             Write about some subject related to {dto.Subject.GetDescription()}.
             Maximum of one paragraph, from 250 to 600 characteres.
             Write it in a way that normal people can understand well, without specialist vocabulary.
-            Write just the text please, without title.
+            Write just the text please.
+            Without titles.
+            Without identation, like paragraphs.
+            Without line breaks.
+            Without special characters, like quotes.
             Be creative.
             {dto.Complexity.GetDescription()}
         ";
