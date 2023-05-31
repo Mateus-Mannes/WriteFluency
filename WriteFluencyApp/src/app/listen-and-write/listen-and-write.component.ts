@@ -15,6 +15,8 @@ export class ListenAndWriteComponent {
 
   @ViewChild('textarea') textarea!: ElementRef;
 
+  textAreaContent = '';
+
   verify() {
     const dialog = this._dialog.open(VerificationComponent, this.textarea.nativeElement.value);
   }
