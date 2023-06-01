@@ -21,7 +21,8 @@ export class PropositionComponent {
   @ViewChild('progress') progress!: ElementRef;
   @ViewChild('progressBar') progressBar!: ElementRef;
   @ViewChild('audioPlayer') audioPlayer!: ElementRef;
-  @Output() audioPlayOrPause = new EventEmitter<void>();
+  @Output() onAudioPlayOrPause = new EventEmitter<void>();
+  @Output() onNewAudio = new EventEmitter<void>();
 
   complexities: string[] = [];
   subjects: string[] = [];
@@ -42,12 +43,13 @@ export class PropositionComponent {
   }
 
   ngAfterViewInit() {
-    this.audioPlayer.nativeElement.onplay = () => { this.audioPlayOrPause.emit(); };
-    this.audioPlayer.nativeElement.onpause  = () => { this.audioPlayOrPause.emit(); };
+    this.audioPlayer.nativeElement.onplay = () => { this.onAudioPlayOrPause.emit(); };
+    this.audioPlayer.nativeElement.onpause  = () => { this.onAudioPlayOrPause.emit(); };
   }
 
   generateAudio() {
     this.resetAudio();
+    this.onNewAudio.emit();
 
     const progress = this.startProgress();
     const post$ = this._service.generateProposition(this.complexity.selectedOption, this.subject.selectedOption);
