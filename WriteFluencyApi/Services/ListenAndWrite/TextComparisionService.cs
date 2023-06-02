@@ -59,8 +59,9 @@ public class TextComparisionService {
         var token = alignedTokens[tokenAlignmentIndex];
         if(token.OriginalToken == null || token.UserToken == null)
         {
-            var privious = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex - 1);
-            var next = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex + 1);
+            var privious = GetPriviousAlignement(tokenAlignmentIndex, alignedTokens);
+            var next = GetNextAlignement(tokenAlignmentIndex, alignedTokens);
+
             if(next != null) tokenAlignmentIndex++;
             AddComparision(
                 new TextRangeDto(privious?.OriginalToken?.TextRange.InitialIndex ?? 0, 
@@ -77,6 +78,34 @@ public class TextComparisionService {
                 token.UserToken!.TextRange,
                 userText, 
                 textComparisions);
+    }
+
+    private AlignedTokensDto? GetPriviousAlignement(int tokenAlignmentIndex, List<AlignedTokensDto> alignedTokens)
+    {
+        TextTokenDto? userToken = null;
+        TextTokenDto? originalToken = null;
+        for(int i = 1; tokenAlignmentIndex - i >= 0; i++)
+        {
+            var privious = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex - i);
+            if(userToken == null) userToken = privious?.UserToken;
+            if(originalToken == null) originalToken = privious?.OriginalToken;
+            if(userToken != null && originalToken != null) break;
+        }
+        return new AlignedTokensDto(originalToken, userToken);
+    }
+
+    private AlignedTokensDto? GetNextAlignement(int tokenAlignmentIndex, List<AlignedTokensDto> alignedTokens)
+    {
+        TextTokenDto? userToken = null;
+        TextTokenDto? originalToken = null;
+        for(int i = 1; tokenAlignmentIndex + i < alignedTokens.Count; i++)
+        {
+            var next = alignedTokens.ElementAtOrDefault(tokenAlignmentIndex + i);
+            if(userToken == null) userToken = next?.UserToken;
+            if(originalToken == null) originalToken = next?.OriginalToken;
+            if(userToken != null && originalToken != null) break;
+        }
+        return new AlignedTokensDto(originalToken, userToken);
     }
 
     private void AddComparision(
