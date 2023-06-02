@@ -19,6 +19,8 @@
     class="listen-and-write__verify container" 
     (onClick)="verify()"
     [disabled]="proposition.propositionText == '' || textAreaContent == ''"
-    >Verify text</app-button>
+    ><div *ngIf="!loading">Verify text</div> 
+    <div *ngIf="loading"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading... </div>
+    </app-button>
 </div>
 

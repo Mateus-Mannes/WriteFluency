@@ -1,13 +1,12 @@
 import { Component, Inject, ViewEncapsulation } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { TextPart } from '../entities/text-part';
-import { ListenAndWriteService } from '../listen-and-write.service';
-import { AlertService } from 'src/app/shared/services/alert-service';
 import { TextComparision } from '../entities/text-comparision';
 
 export interface VerificationData {
   originalText: string;
   userText: string;
+  comparisions: TextComparision[];
 }
 
 @Component({
@@ -23,20 +22,9 @@ export class VerificationComponent {
   textParts: TextPart[] = [];
 
   constructor(public dialogRef: MatDialogRef<VerificationComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: VerificationData,
-    private readonly _service: ListenAndWriteService,
-    private readonly _alertSrvice: AlertService) 
+    @Inject(MAT_DIALOG_DATA) public data: VerificationData) 
     {
-      _service.compareTexts(this.data.originalText, this.data.userText)
-        .subscribe({
-          next: (result) => {
-            this.highlightUserText(result);
-          },
-          error: () => {
-            _alertSrvice.alert('An error occured while comparing texts. Please try again later.', 'danger');
-            this.close();
-          }
-        });
+      this.highlightUserText(data.comparisions);  
     }
 
   close(): void {
