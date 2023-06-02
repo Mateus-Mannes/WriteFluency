@@ -25,7 +25,7 @@ export class ListenAndWriteComponent {
   loading = false;
 
   ngAfterViewInit() {
-    this._alertSrvice.alert('Select a complexity level and a subject. Gerenate an audio proposition and try to write it ! Then verify your text.', 'info', 20000);
+    this._alertSrvice.alert('Select a complexity level and a subject. Generate an audio proposition and try to write it ! Then verify your text.', 'info', 20000);
   }
 
   verify() {
