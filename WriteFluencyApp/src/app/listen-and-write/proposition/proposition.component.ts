@@ -57,7 +57,7 @@ export class PropositionComponent {
     forkJoin([progress.timer$, post$]).subscribe({
       next: ([_, result]) => {
         this._renderer.setStyle(this.progress.nativeElement, 'width', `100%`);
-        this.audioPlayer.nativeElement.src = 'data:audio/ogg;base64,' + result.audio;
+        this.audioPlayer.nativeElement.src = 'data:audio/mpeg;base64,' + result.audio;
         this.propositionText = result.text;
       },
       error: (error) => {

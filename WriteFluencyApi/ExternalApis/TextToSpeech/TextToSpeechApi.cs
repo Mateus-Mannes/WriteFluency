@@ -25,7 +25,7 @@ public class TextToSpeechApi : ISpeechGenerator
     {
         var request = new TextToSpeechRequest(
             new Input(text),
-            new AudioConfig("OGG_OPUS"),
+            new AudioConfig("MP3"),
             new Voice("en-US")
         );
 
