@@ -14,6 +14,7 @@
 .cards__user__text {
     z-index: 1;
     border-color: var(--color-orange);
+    white-space: pre-wrap;
 }
 
 .cards__user__highlighter {
@@ -29,6 +30,7 @@
     /* this wraps text in the div like in the textarea */
     overflow: hidden;
     /* this hides the highlight if text is scrolled */
+    white-space: pre-wrap;
 }
 
 .highlighted {
