@@ -15,9 +15,7 @@ public static class Prompts
             Without identation, like paragraphs.
             Without line breaks.
             Without special characters, like quotes. 
-            Don't use %, use 'percent'.
             Don't use $100, use '100 dollars'.
-            Don't write numbers with thousands separator like 100,000.00, write just 100000.00.
             Be creative.
             {dto.Complexity.GetDescription()}
         ";

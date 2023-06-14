@@ -4,8 +4,8 @@ public class TokenizeTextService {
         text = text.ToLower();
         string originalText = text;
 
-        string[] punctuation = new string[] { ".", ",", "!", "?", ";", ":", "\"", "_", "+", "=", "/", "|", "\\", "(", ")", "[", "]", "{", "}"};
-        foreach(var p in punctuation) text = text.Replace(p, "");
+        string[] punctuation = new string[] { ". ", ", ", " !", " ?", "; ", ": ", "\"", "_", "+", "=", "/", "|", "\\", "(", ")", "[", "]", "{", "}"};
+        foreach(var p in punctuation) text = text.Replace(p, " ");
 
         var words = text.Split(' ').ToList();
         words.RemoveAll(t => string.IsNullOrWhiteSpace(t));
@@ -15,9 +15,9 @@ public class TokenizeTextService {
         foreach(var word in words) 
         {
             int startIndex = originalText.IndexOf(word, endIndex);
+            if(startIndex < 0) continue;
             endIndex = startIndex + word.Length - 1;
-            if(startIndex >= 0)
-                tokens.Add(new TextTokenDto(word, new TextRangeDto(startIndex, endIndex)));
+            tokens.Add(new TextTokenDto(word, new TextRangeDto(startIndex, endIndex)));
         }
 
         return tokens;
