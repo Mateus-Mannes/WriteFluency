@@ -6,6 +6,8 @@ public class TokenizeTextService {
 
         string[] punctuation = new string[] { ". ", ", ", " !", " ?", "; ", ": ", "\"", "_", "+", "=", "/", "|", "\\", "(", ")", "[", "]", "{", "}"};
         foreach(var p in punctuation) text = text.Replace(p, " ");
+        if(text.EndsWith(".") || text.EndsWith("?") || text.EndsWith("!")) 
+            text = text[..^1];
 
         var words = text.Split(' ').ToList();
         words.RemoveAll(t => string.IsNullOrWhiteSpace(t));
