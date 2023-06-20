@@ -4,7 +4,7 @@ public class TokenizeTextService {
         text = text.ToLower();
         string originalText = text;
 
-        string[] punctuation = new string[] { ". ", ", ", " !", " ?", "; ", ": ", "\"", "_", "+", "=", "/", "|", "\\", "(", ")", "[", "]", "{", "}"};
+        string[] punctuation = new string[] { ". ", ", ", "! ", "? ", "; ", ": ", "\"", "_", "+", "=", "/", "|", "\\", "(", ")", "[", "]", "{", "}"};
         foreach(var p in punctuation) text = text.Replace(p, " ");
         if(text.EndsWith(".") || text.EndsWith("?") || text.EndsWith("!")) 
             text = text[..^1];
