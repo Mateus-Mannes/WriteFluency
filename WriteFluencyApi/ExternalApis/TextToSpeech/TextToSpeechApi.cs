@@ -1,8 +1,7 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
-using WriteFluencyApi.ExternalApis.TextToSpeech.Requests;
-using WriteFluencyApi.ExternalApis.TextToSpeech.Responses;
-using WriteFluencyApi.Services.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite.Domain;
 
 namespace WriteFluencyApi.ExternalApis.TextToSpeech;
 

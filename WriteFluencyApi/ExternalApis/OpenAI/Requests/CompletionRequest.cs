@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace WriteFluencyApi.ExternalApis.OpenAI.Requests;
+namespace WriteFluencyApi.ExternalApis.OpenAI;
 
 public record CompletionRequest
 {
@@ -10,7 +10,7 @@ public record CompletionRequest
     public string Model { get; set; } = null!;
 
     [JsonPropertyName("messages")]
-    public List<Message> Messages { get; set; } = null!;
+    public List<RequestMessage> Messages { get; set; } = null!;
 
     [JsonPropertyName("max_tokens")]
     public int MaxTokens { get; set; }
@@ -20,7 +20,7 @@ public record CompletionRequest
 }
 
 [DataContract]
-public record Message {
+public record RequestMessage {
     [JsonPropertyName("role")]
     public string Role { get; set; } = "user";
 

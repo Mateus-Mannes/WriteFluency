@@ -1,5 +1,4 @@
-using WriteFluencyApi.Dtos.ListenAndWrite;
-using WriteFluencyApi.Shared;
+using WriteFluencyApi.ListenAndWrite;
 
 namespace WriteFluencyApi.ExternalApis.OpenAI;
 

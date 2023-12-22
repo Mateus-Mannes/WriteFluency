@@ -1,4 +1,4 @@
-namespace WriteFluencyApi.Dtos.ListenAndWrite;
+namespace WriteFluencyApi.ListenAndWrite;
 
 public record PropositionDto(
     string Text,

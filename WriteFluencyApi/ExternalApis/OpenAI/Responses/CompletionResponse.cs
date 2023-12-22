@@ -1,7 +1,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace WriteFluencyApi.ExternalApis.OpenAI.Responses;
+namespace WriteFluencyApi.ExternalApis.OpenAI;
 
 [DataContract]
 public record CompletionResponse {
@@ -39,7 +39,7 @@ public record Usage {
 
 public record Choice {
     [JsonPropertyName("message")]
-    public Message Message { get; set; } = null!;
+    public ResponseMessage Message { get; set; } = null!;
 
     [JsonPropertyName("index")]
     public int Index { get; set; }
@@ -48,7 +48,7 @@ public record Choice {
     public string FinishReason { get; set; } = null!;
 }
 
-public record Message {
+public record ResponseMessage {
     [JsonPropertyName("role")]
     public string Role { get; set; } = null!;
 

@@ -1,20 +1,27 @@
+namespace WriteFluencyApi.ListenAndWrite.Domain;
+
 public class TextComparisionService {
 
     private const double SimilartyThresholdPercentage = 0.60; 
     private readonly LevenshteinDistanceService _levenshteinDistanceService;
     private readonly NeedlemanWunschAlignmentService _needlemanWunschAlignmentService;
     private readonly TokenizeTextService _tokenizeTextService;
+    private readonly TokenAlignmentService _tokenAlignmentService;
 
     public TextComparisionService(LevenshteinDistanceService levenshteinDistanceService, 
         NeedlemanWunschAlignmentService needlemanWunschAlignmentService, 
-        TokenizeTextService tokenizeTextService)
+        TokenizeTextService tokenizeTextService,
+        TokenAlignmentService tokenAlignmentService)
     {
         _levenshteinDistanceService = levenshteinDistanceService;
         _needlemanWunschAlignmentService = needlemanWunschAlignmentService;
         _tokenizeTextService = tokenizeTextService;
+        _tokenAlignmentService = tokenAlignmentService;
     }
 
     public List<TextComparisionDto> CompareTexts(string originalText, string userText) {
+
+        // what is the best way to oraganize this validation keeping single responsability principle?
 
         if(!IsMinimalSimilar(originalText, userText)) 
             return new List<TextComparisionDto>() { 
@@ -31,7 +38,7 @@ public class TextComparisionService {
                 originalTokens.Select(x => x.Token).ToList(), 
                 userTokens.Select(x => x.Token).ToList());
 
-        var alignedTokens = _needlemanWunschAlignmentService.GetAlignedTokens(originalTokens, userTokens, tracebackMatrix);
+        var alignedTokens = _tokenAlignmentService.GetAlignedTokens(originalTokens, userTokens, tracebackMatrix);
 
         List<TextComparisionDto> textComparisions = new List<TextComparisionDto>();
 
