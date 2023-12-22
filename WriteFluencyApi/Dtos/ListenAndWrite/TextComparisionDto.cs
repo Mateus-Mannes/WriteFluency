@@ -1,3 +1,5 @@
+namespace WriteFluencyApi.ListenAndWrite;
+
 public record TextComparisionDto
 {
     public TextRangeDto OriginalTextRange { get; set; }

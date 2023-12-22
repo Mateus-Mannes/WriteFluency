@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 
-namespace WriteFluencyApi.Shared.ListenAndWrite;
+namespace WriteFluencyApi.ListenAndWrite;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SubjectEnum

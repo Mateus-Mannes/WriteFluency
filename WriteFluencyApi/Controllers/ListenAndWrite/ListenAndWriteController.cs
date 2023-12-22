@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using WriteFluencyApi.Dtos.ListenAndWrite;
-using WriteFluencyApi.Services.ListenAndWrite;
-using WriteFluencyApi.Shared.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite.Domain;
 
-namespace WriteFluencyApi.Controllers.ListenAndWrite;
+namespace WriteFluencyApi.ListenAndWrite.Controllers;
 
 [ApiController]
 [Route("listen-and-write")]

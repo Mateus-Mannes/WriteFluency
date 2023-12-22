@@ -1,6 +1,4 @@
-using WriteFluencyApi.Shared.ListenAndWrite;
-
-namespace WriteFluencyApi.Dtos.ListenAndWrite;
+namespace WriteFluencyApi.ListenAndWrite;
 
 public record GeneratePropositionDto(
     ComplexityEnum Complexity,

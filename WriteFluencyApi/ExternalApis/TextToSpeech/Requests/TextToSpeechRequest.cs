@@ -1,4 +1,4 @@
-namespace WriteFluencyApi.ExternalApis.TextToSpeech.Requests;
+namespace WriteFluencyApi.ExternalApis.TextToSpeech;
 
 public record TextToSpeechRequest(
     Input Input,

@@ -1,3 +1,5 @@
+namespace WriteFluencyApi.ListenAndWrite.Domain;
+
 public class LevenshteinDistanceService {
     public int ComputeDistance(string s1, string s2) {
         int len1 = s1.Length;

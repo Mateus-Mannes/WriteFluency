@@ -1,3 +1,5 @@
+namespace WriteFluencyApi.ListenAndWrite.Domain;
+
 public class TokenizeTextService {
     public List<TextTokenDto> TokenizeText(string text)
     {

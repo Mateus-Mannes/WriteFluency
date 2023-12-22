@@ -1,6 +1,6 @@
 using WriteFluencyApi.ExternalApis.OpenAI;
 using WriteFluencyApi.ExternalApis.TextToSpeech;
-using WriteFluencyApi.Services.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +21,7 @@ builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(
 // add services
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<LevenshteinDistanceService>();
+builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
 builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisionService>();

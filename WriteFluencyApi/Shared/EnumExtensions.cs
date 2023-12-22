@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Reflection;
 
-namespace WriteFluencyApi.Shared;
+namespace WriteFluencyApi;
 
 public static class EnumExtensions
 {

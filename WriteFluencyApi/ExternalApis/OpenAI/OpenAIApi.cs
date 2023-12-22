@@ -1,9 +1,7 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
-using WriteFluencyApi.Dtos.ListenAndWrite;
-using WriteFluencyApi.ExternalApis.OpenAI.Requests;
-using WriteFluencyApi.ExternalApis.OpenAI.Responses;
-using WriteFluencyApi.Services.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite;
+using WriteFluencyApi.ListenAndWrite.Domain;
 
 namespace WriteFluencyApi.ExternalApis.OpenAI;
 
@@ -28,8 +26,8 @@ public class OpenAIApi : ITextGenerator
         var request = new CompletionRequest
         {
             Model = "gpt-3.5-turbo",
-            Messages = new List<Requests.Message>()
-                { new Requests.Message() { 
+            Messages = new List<RequestMessage>()
+                { new RequestMessage() { 
                     Content = Prompts.GenerateText(generateTextDto) 
                     } },
             MaxTokens = 1200,

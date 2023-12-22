@@ -1,4 +1,3 @@
-
 namespace WriteFluencyApi.ExternalApis.TextToSpeech;
 
 public class TextToSpeechConfig
