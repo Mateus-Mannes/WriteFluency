@@ -25,6 +25,7 @@ builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
 builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisionService>();
+builder.Services.AddTransient<TextAlignementService>();
 
 builder.Services.AddCors();
 

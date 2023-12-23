@@ -4,41 +4,22 @@ public class TextComparisionService {
 
     private const double SimilartyThresholdPercentage = 0.60; 
     private readonly LevenshteinDistanceService _levenshteinDistanceService;
-    private readonly NeedlemanWunschAlignmentService _needlemanWunschAlignmentService;
-    private readonly TokenizeTextService _tokenizeTextService;
-    private readonly TokenAlignmentService _tokenAlignmentService;
+    private readonly TextAlignementService _textAlignementService;
 
-    public TextComparisionService(LevenshteinDistanceService levenshteinDistanceService, 
-        NeedlemanWunschAlignmentService needlemanWunschAlignmentService, 
-        TokenizeTextService tokenizeTextService,
-        TokenAlignmentService tokenAlignmentService)
+    public TextComparisionService(
+        LevenshteinDistanceService levenshteinDistanceService, 
+        TextAlignementService textAlignementService)
     {
         _levenshteinDistanceService = levenshteinDistanceService;
-        _needlemanWunschAlignmentService = needlemanWunschAlignmentService;
-        _tokenizeTextService = tokenizeTextService;
-        _tokenAlignmentService = tokenAlignmentService;
+        _textAlignementService = textAlignementService;
     }
 
     public List<TextComparisionDto> CompareTexts(string originalText, string userText) {
 
-        // what is the best way to oraganize this validation keeping single responsability principle?
-
         if(!IsMinimalSimilar(originalText, userText)) 
-            return new List<TextComparisionDto>() { 
-                new TextComparisionDto(
-                    new TextRangeDto(0, originalText.Length - 1), originalText, 
-                    new TextRangeDto(0, userText.Length - 1), userText) 
-                };
-        
-        var originalTokens = _tokenizeTextService.TokenizeText(originalText);
-        var userTokens = _tokenizeTextService.TokenizeText(userText);
+            return new() { new TextComparisionDto(originalText, userText) };
 
-        (int[,] scoreMatrix, int[,] tracebackMatrix) = 
-            _needlemanWunschAlignmentService.NeedlemanWunschAlignment(
-                originalTokens.Select(x => x.Token).ToList(), 
-                userTokens.Select(x => x.Token).ToList());
-
-        var alignedTokens = _tokenAlignmentService.GetAlignedTokens(originalTokens, userTokens, tracebackMatrix);
+        var alignedTokens = _textAlignementService.AlignTexts(originalText, userText);
 
         List<TextComparisionDto> textComparisions = new List<TextComparisionDto>();
 
