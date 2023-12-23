@@ -20,4 +20,17 @@ public record TextComparisionDto
         OriginalTextRange = originalTextRange;
         UserTextRange = userTextRange;
     }
+
+    /// <summary>
+    /// Generates a full comparision between the original text and the user text.
+    /// </summary>
+    public TextComparisionDto(string originalText, string userText)
+    : this(
+        new TextRangeDto(0, originalText.Length - 1), 
+        originalText,
+        new TextRangeDto(0, userText.Length - 1), 
+        userText)
+    {
+    }
+
 }
