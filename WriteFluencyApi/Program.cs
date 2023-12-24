@@ -24,8 +24,9 @@ builder.Services.AddTransient<LevenshteinDistanceService>();
 builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
 builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
-builder.Services.AddTransient<TextComparisionService>();
+builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<TextAlignementService>();
+builder.Services.AddTransient<TokenComparisonService>();
 
 builder.Services.AddCors();
 
