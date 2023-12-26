@@ -1,10 +1,11 @@
 namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class NeedlemanWunschAlignmentService {
+public class NeedlemanWunschAlignmentService : INeedlemanWunschAlignmentService
+{
 
-    private readonly LevenshteinDistanceService _levenshteinDistanceService;
+    private readonly ILevenshteinDistanceService _levenshteinDistanceService;
 
-    public NeedlemanWunschAlignmentService(LevenshteinDistanceService levenshteinDistanceService)
+    public NeedlemanWunschAlignmentService(ILevenshteinDistanceService levenshteinDistanceService)
         => _levenshteinDistanceService = levenshteinDistanceService;
     
 

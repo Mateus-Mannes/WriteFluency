@@ -9,12 +9,12 @@ public class ListenAndWriteController : ControllerBase
 {
     private readonly ITextGenerator _textGenerator;
     private readonly ISpeechGenerator _speechGenerator;
-    private readonly TextComparisonService _textComparisonService;
+    private readonly ITextComparisonService _textComparisonService;
 
     public ListenAndWriteController(
         ITextGenerator textGenerator, 
         ISpeechGenerator speechGenerator,
-        TextComparisonService textComparisonService)
+        ITextComparisonService textComparisonService)
     {
         _textGenerator = textGenerator;
         _speechGenerator = speechGenerator;

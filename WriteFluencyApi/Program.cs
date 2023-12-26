@@ -20,13 +20,13 @@ builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(
 
 // add services
 builder.Services.AddHttpClient();
-builder.Services.AddTransient<LevenshteinDistanceService>();
-builder.Services.AddTransient<TokenAlignmentService>();
-builder.Services.AddTransient<TokenizeTextService>();
-builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
-builder.Services.AddTransient<TextComparisonService>();
-builder.Services.AddTransient<TextAlignementService>();
-builder.Services.AddTransient<TokenComparisonService>();
+builder.Services.AddTransient<ILevenshteinDistanceService, LevenshteinDistanceService>();
+builder.Services.AddTransient<ITokenAlignmentService, TokenAlignmentService>();
+builder.Services.AddTransient<ITokenizeTextService, TokenizeTextService>();
+builder.Services.AddTransient<INeedlemanWunschAlignmentService, NeedlemanWunschAlignmentService>();
+builder.Services.AddTransient<ITextComparisonService, TextComparisonService>();
+builder.Services.AddTransient<ITextAlignmentService, TextAlignmentService>();
+builder.Services.AddTransient<ITokenComparisonService, TokenComparisonService>();
 
 builder.Services.AddCors();
 

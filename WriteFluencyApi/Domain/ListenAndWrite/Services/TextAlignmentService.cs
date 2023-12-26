@@ -2,16 +2,16 @@
 
 namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class TextAlignementService
+public class TextAlignmentService : ITextAlignmentService
 {
-    private readonly NeedlemanWunschAlignmentService _needlemanWunschAlignmentService;
-    private readonly TokenizeTextService _tokenizeTextService;
-    private readonly TokenAlignmentService _tokenAlignmentService;
+    private readonly INeedlemanWunschAlignmentService _needlemanWunschAlignmentService;
+    private readonly ITokenizeTextService _tokenizeTextService;
+    private readonly ITokenAlignmentService _tokenAlignmentService;
 
-    public TextAlignementService(
-        NeedlemanWunschAlignmentService needlemanWunschAlignmentService, 
-        TokenizeTextService tokenizeTextService, 
-        TokenAlignmentService tokenAlignmentService)
+    public TextAlignmentService(
+        INeedlemanWunschAlignmentService needlemanWunschAlignmentService, 
+        ITokenizeTextService tokenizeTextService, 
+        ITokenAlignmentService tokenAlignmentService)
     {
         _needlemanWunschAlignmentService = needlemanWunschAlignmentService;
         _tokenizeTextService = tokenizeTextService;
