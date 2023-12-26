@@ -1,19 +1,20 @@
 namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class TextComparisonService {
+public class TextComparisonService : ITextComparisonService
+{
 
     private const double SimilartyThresholdPercentage = 0.60; 
-    private readonly LevenshteinDistanceService _levenshteinDistanceService;
-    private readonly TextAlignementService _textAlignementService;
-    private readonly TokenComparisonService _tokeComparisonService;
+    private readonly ILevenshteinDistanceService _levenshteinDistanceService;
+    private readonly ITextAlignmentService _textAlignmentService;
+    private readonly ITokenComparisonService _tokeComparisonService;
 
     public TextComparisonService(
-        LevenshteinDistanceService levenshteinDistanceService, 
-        TextAlignementService textAlignementService,
-        TokenComparisonService tokeComparisonService)
+        ILevenshteinDistanceService levenshteinDistanceService, 
+        ITextAlignmentService textAlignmentService,
+        ITokenComparisonService tokeComparisonService)
     {
         _levenshteinDistanceService = levenshteinDistanceService;
-        _textAlignementService = textAlignementService;
+        _textAlignmentService = textAlignmentService;
         _tokeComparisonService = tokeComparisonService;
     }
 
@@ -22,7 +23,7 @@ public class TextComparisonService {
         if(!IsMinimalSimilar(originalText, userText)) 
             return new() { new TextComparisonDto(originalText, userText) };
 
-        var alignedTokens = _textAlignementService.AlignTexts(originalText, userText);
+        var alignedTokens = _textAlignmentService.AlignTexts(originalText, userText);
 
         List<TextComparisonDto> textComparisons = new List<TextComparisonDto>();
 

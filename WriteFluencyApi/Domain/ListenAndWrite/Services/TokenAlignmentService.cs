@@ -1,6 +1,6 @@
 ﻿namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class TokenAlignmentService
+public class TokenAlignmentService : ITokenAlignmentService
 {
     public List<AlignedTokensDto> GetAlignedTokens(List<TextTokenDto> seq1, List<TextTokenDto> seq2, int[,] tracebackMatrix)
     {

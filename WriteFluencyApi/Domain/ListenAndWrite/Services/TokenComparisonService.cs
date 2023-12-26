@@ -1,6 +1,6 @@
 ﻿namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class TokenComparisonService
+public class TokenComparisonService : ITokenComparisonService
 {
     public void AddTokenComparison(
         ref int tokenAlignmentIndex,

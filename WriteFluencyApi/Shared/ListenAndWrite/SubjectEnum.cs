@@ -24,6 +24,6 @@ public enum SubjectEnum
     Movies,
     [Description("Books, about very famous books and their autors")]
     Books,
-    [Description("Programming, something into the programmimg word, add some jokes here")]
+    [Description("Programming, something into the programming word, add some jokes here")]
     Programming
 }

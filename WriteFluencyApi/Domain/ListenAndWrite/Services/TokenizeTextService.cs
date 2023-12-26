@@ -1,6 +1,7 @@
 namespace WriteFluencyApi.ListenAndWrite.Domain;
 
-public class TokenizeTextService {
+public class TokenizeTextService : ITokenizeTextService
+{
     public List<TextTokenDto> TokenizeText(string text)
     {
         text = text.ToLower();
