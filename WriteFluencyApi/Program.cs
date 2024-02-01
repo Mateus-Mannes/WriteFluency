@@ -6,8 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddScoped<ITextGenerator, OpenAIApi>();
-builder.Services.AddScoped<ISpeechGenerator, TextToSpeechApi>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -20,6 +18,8 @@ builder.Services.Configure<TextToSpeechConfig>(builder.Configuration.GetSection(
 
 // add services
 builder.Services.AddHttpClient();
+builder.Services.AddTransient<ITextGenerator, OpenAIApi>();
+builder.Services.AddTransient<ISpeechGenerator, TextToSpeechApi>();
 builder.Services.AddTransient<ILevenshteinDistanceService, LevenshteinDistanceService>();
 builder.Services.AddTransient<ITokenAlignmentService, TokenAlignmentService>();
 builder.Services.AddTransient<ITokenizeTextService, TokenizeTextService>();
