@@ -1,11 +1,11 @@
 namespace WriteFluencyApi.ListenAndWrite;
 
-public record TextComparisonDto
+public class TextComparisonDto
 {
     public TextRangeDto OriginalTextRange { get; set; }
-    public string OriginalText { get; set; } = null!;
+    public string? OriginalText { get; set; }
     public TextRangeDto UserTextRange { get; set; }
-    public string UserText { get; set; } = null!;
+    public string? UserText { get; set; }
 
     public TextComparisonDto(TextRangeDto originalTextRange, string originalText,  TextRangeDto userTextRange, string userText)
     {
@@ -35,8 +35,8 @@ public record TextComparisonDto
 
     public void IncrementComparison(TextRangeDto originalTextRange, TextRangeDto userTextRange)
     {
-        UserTextRange = new TextRangeDto(UserTextRange.InitialIndex, userTextRange.FinalIndex);
-        OriginalTextRange = new TextRangeDto(OriginalTextRange.InitialIndex, originalTextRange.FinalIndex);
+        UserTextRange = UserTextRange with { FinalIndex = userTextRange.FinalIndex };
+        OriginalTextRange = OriginalTextRange with { FinalIndex = originalTextRange.FinalIndex };
     }
 
 }

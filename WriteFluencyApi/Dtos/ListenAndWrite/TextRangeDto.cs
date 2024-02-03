@@ -1,19 +1,14 @@
-using static System.Net.Mime.MediaTypeNames;
-
 namespace WriteFluencyApi.ListenAndWrite;
 
-public record TextRangeDto
+public record TextRangeDto(int InitialIndex, int FinalIndex)
 {
-    public int InitialIndex { get; set; }
-    public int FinalIndex { get; set; }
-
-    public TextRangeDto(int initialIndex, int finalIndex)
-    {
-        InitialIndex = initialIndex;
-        FinalIndex = finalIndex;
-    }
-
-    public TextRangeDto(TextTokenDto? previousToken, TextTokenDto? nextToken, string originalText) : this(
+    /// <summary>
+    /// Generates a new text range englobing the text from the previous token to the next token.
+    /// </summary>
+    public TextRangeDto(
+        TextTokenDto? previousToken, 
+        TextTokenDto? nextToken, 
+        string originalText) : this(
         previousToken?.TextRange.InitialIndex ?? 0,
         nextToken?.TextRange.FinalIndex ?? originalText.Length - 1)
     {
