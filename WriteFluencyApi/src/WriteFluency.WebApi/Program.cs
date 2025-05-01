@@ -1,0 +1,101 @@
+using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using WriteFluency.Authentication;
+using WriteFluency.Infrastructure.Data;
+using WriteFluency.Infrastructure.ExternalApis;
+using WriteFluency.Infrastructure.ExternalApis.OpenAI;
+using WriteFluency.Propositions;
+using WriteFluency.TextComparisons;
+using WriteFluency.WebApi;
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddAppSwagger();
+
+builder.AddAppAuthentication();
+
+// Options configuration
+builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
+
+// Adds the database context and identity configuration
+builder.Services.AddDbContext<ApiDbContext>(opts => opts.UseSqlite("Data Source=data.db"));
+builder.Services.AddIdentityCore<IdentityUser>()
+    .AddApiEndpoints()
+    .AddEntityFrameworkStores<ApiDbContext>();
+
+builder.Services.AddTransient<LevenshteinDistanceService>();
+builder.Services.AddTransient<TokenAlignmentService>();
+builder.Services.AddTransient<TokenizeTextService>();
+builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
+builder.Services.AddTransient<TextComparisonService>();
+builder.Services.AddTransient<TextAlignmentService>();
+builder.Services.AddTransient<TokenComparisonService>();
+
+builder.Services.AddTransient<JwtTokenService>();
+
+// Adding http clients
+builder.Services.AddHttpClient<ITextGenerator, OpenAIClient>(client =>
+{
+    var options = builder.Configuration.GetSection(OpenAIOptions.Section).Get<OpenAIOptions>();
+    ArgumentNullException.ThrowIfNull(options);
+    client.BaseAddress = new Uri(options.BaseAddress);
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.Key);
+});
+
+builder.Services.AddHttpClient<ISpeechGenerator, TextToSpeechClient>(client =>
+{
+    var options = builder.Configuration.GetSection(TextToSpeechOptions.Section).Get<TextToSpeechOptions>();
+    ArgumentNullException.ThrowIfNull(options);
+    client.BaseAddress = new Uri(options.BaseAddress);
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.Add(options.KeyName, options.Key);
+});
+
+builder.Services.AddCors();
+
+var app = builder.Build();
+
+var clients = app.Configuration.GetValue<string>("AllowedClients")?.Split(',');
+app.UseCors(opts =>
+{
+    if (clients![0] != "*")
+        opts.WithOrigins(clients)
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    else opts.AllowAnyOrigin();
+});
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        // Configures the swagger ui to use the google login
+        c.OAuthClientId(builder.Configuration["Authentication:Google:ClientId"]);
+        c.OAuthClientSecret(builder.Configuration["Authentication:Google:ClientSecret"]);
+        c.OAuthUsePkce();
+        c.OAuthScopes("openid", "profile", "email");
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

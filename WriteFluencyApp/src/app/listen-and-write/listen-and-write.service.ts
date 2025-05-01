@@ -10,17 +10,18 @@ export class ListenAndWriteService {
     
     constructor(private readonly _httpClient: HttpClient) { }
 
-    route = `${environment.apiUrl}/listen-and-write`;
+    propositionRoute = `${environment.apiUrl}/proposition`;
+    textComparisonRoute = `${environment.apiUrl}/text-comparison`;
 
     getTopics() {
-        return this._httpClient.get<Topics>(`${this.route}/topics`);
+        return this._httpClient.get<Topics>(`${this.propositionRoute}/topics`);
     }
 
     generateProposition(complexity: string, subject: string) {
-        return this._httpClient.post<Proposition>(`${this.route}/generate-proposition`, {complexity, subject});
+        return this._httpClient.post<Proposition>(`${this.propositionRoute}/generate-proposition`, {complexity, subject});
     }
 
     compareTexts(originalText: string, userText: string) {
-        return this._httpClient.post<TextComparision[]>(`${this.route}/compare-texts`, {originalText, userText});
+        return this._httpClient.post<TextComparision[]>(`${this.textComparisonRoute}/compare-texts`, {originalText, userText});
     }
 }

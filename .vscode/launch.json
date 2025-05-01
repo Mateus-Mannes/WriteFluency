@@ -12,7 +12,7 @@
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build",
-        "program": "${workspaceFolder}/WriteFluencyApi/bin/Debug/net7.0/WriteFluencyApi.dll",
+        "program": "${workspaceFolder}/WriteFluencyApi/bin/Debug/net7.0/WriteFluency.WebApi.dll",
         "args": [],
         "cwd": "${workspaceFolder}/WriteFluencyApi",
         "stopAtEntry": false,
