@@ -11,5 +11,6 @@ public class OpenAIOptions
     public class OpenAIRoutes
     {
         public required string Completion { get; set; }
+        public required string Speech { get; set; }
     }
 }

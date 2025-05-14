@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentResults" Version="3.16.0" />
+    <PackageReference Include="FluentValidation" Version="8.5.1" />
   </ItemGroup>
 
 </Project>

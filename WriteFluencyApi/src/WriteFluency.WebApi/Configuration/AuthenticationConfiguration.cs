@@ -24,6 +24,7 @@ public static class AuthenticationConfiguration
                 ValidateIssuerSigningKey = true
             };
         })
+        // TODO: Use dotnet identity cookies default authentication and endpoints instead of this own jwt implementation
         .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters

@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace WriteFluency.Infrastructure.ExternalApis.OpenAI;
+namespace WriteFluency.Infrastructure.ExternalApis;
 
 public record CompletionRequest
 {

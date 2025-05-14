@@ -7,11 +7,11 @@ namespace WriteFluency.Propositions;
 [Route("proposition")]
 public class PropositionController : ControllerBase
 {
-    private readonly ITextGenerator _textGenerator;
-    private readonly ISpeechGenerator _speechGenerator;
+    private readonly IGenerativeAIClient _textGenerator;
+    private readonly ITextToSpeechClient _speechGenerator;
     private readonly ILogger<PropositionController> _logger;
 
-    public PropositionController(ITextGenerator textGenerator, ISpeechGenerator speechGenerator, ILogger<PropositionController> logger)
+    public PropositionController(IGenerativeAIClient textGenerator, ITextToSpeechClient speechGenerator, ILogger<PropositionController> logger)
     {
         _logger = logger;
         _textGenerator = textGenerator;

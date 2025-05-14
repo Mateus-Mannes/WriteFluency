@@ -4,7 +4,8 @@ using WriteFluency.Propositions;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
 
-public class TextToSpeechClient : ISpeechGenerator
+[Obsolete]
+public class TextToSpeechClient : ITextToSpeechClient
 {
     private readonly HttpClient _httpClient;
     private readonly TextToSpeechOptions _options;

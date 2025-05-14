@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using WriteFluency.Authentication;
 using WriteFluency.Infrastructure.Data;
 using WriteFluency.Infrastructure.ExternalApis;
-using WriteFluency.Infrastructure.ExternalApis.OpenAI;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
@@ -43,7 +42,7 @@ builder.Services.AddTransient<TokenComparisonService>();
 builder.Services.AddTransient<JwtTokenService>();
 
 // Adding http clients
-builder.Services.AddHttpClient<ITextGenerator, OpenAIClient>(client =>
+builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
 {
     var options = builder.Configuration.GetSection(OpenAIOptions.Section).Get<OpenAIOptions>();
     ArgumentNullException.ThrowIfNull(options);
@@ -53,7 +52,7 @@ builder.Services.AddHttpClient<ITextGenerator, OpenAIClient>(client =>
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.Key);
 });
 
-builder.Services.AddHttpClient<ISpeechGenerator, TextToSpeechClient>(client =>
+builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>(client =>
 {
     var options = builder.Configuration.GetSection(TextToSpeechOptions.Section).Get<TextToSpeechOptions>();
     ArgumentNullException.ThrowIfNull(options);

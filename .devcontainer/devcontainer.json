@@ -6,9 +6,25 @@
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"service": "app",  
 	"features": {
-		"ghcr.io/devcontainers/features/dotnet:1": {},
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
 		"ghcr.io/devcontainers-contrib/features/angular-cli:2": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-ossdata.vscode-postgresql",
+				"ms-dotnettools.vscode-dotnet-runtime",
+				"ms-dotnettools.csharp",
+				"ms-dotnettools.csdevkit",
+				"ms-azuretools.vscode-docker",
+				"dbaeumer.vscode-eslint",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"ms-dotnettools.vscodeintellicode-csharp",
+				"bierner.markdown-mermaid",
+				"ms-ossdata.vscode-postgresql"
+			]
+		}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
