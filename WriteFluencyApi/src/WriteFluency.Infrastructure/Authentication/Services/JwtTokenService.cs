@@ -17,7 +17,7 @@ public class JwtTokenService
     public JwtTokenService(
         SignInManager<IdentityUser> signInManager,
         IUserStore<IdentityUser> userStorage,
-        IOptions<JwtOptions> jwtOptions,
+        IOptionsSnapshot<JwtOptions> jwtOptions,
         UserManager<IdentityUser> userManager)
     {
         _signInManager = signInManager;

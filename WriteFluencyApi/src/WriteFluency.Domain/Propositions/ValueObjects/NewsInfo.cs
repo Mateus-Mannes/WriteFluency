@@ -1,14 +1,20 @@
-using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace WriteFluency.Propositions;
 
-public class NewsInfo
+public record NewsInfo
 {
-    public required string Id { get; set; }
-    public required string Title { get; set; }
-    public required string Description { get; set; }
-    public required string Url { get; set; }
-    public required string ImageUrl { get; set; }
-    public required string Text { get; set; }
-    public int TextLength { get; set; }
+    [MaxLength(100)]
+    public required string Id { get; init; }
+    [MaxLength(500)]
+    public required string Title { get; init; }
+    [MaxLength(500)]
+    public required string Description { get; init; }
+    [MaxLength(500)]
+    public required string Url { get; init; }
+    [MaxLength(500)]
+    public required string ImageUrl { get; init; }
+    [MaxLength(3000)]
+    public required string Text { get; init; }
+    public required int TextLength { get; init; }
 }

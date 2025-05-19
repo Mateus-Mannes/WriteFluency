@@ -2,12 +2,12 @@ using System.Net.Http.Json;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WriteFluency.Domain.Extensions;
 using WriteFluency.Infrastructure.ExternalApis.OpenAI.Enums;
 using WriteFluency.Infrastructure.Http.Services;
 using WriteFluency.Propositions;
 using WriteFluency.Shared;
 using WriteFluency.TextComparisons;
+using WriteFluency.Extensions;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
 
@@ -15,14 +15,14 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 {
     private readonly OpenAIOptions _options;
 
-    public OpenAIClient(HttpClient httpClient, ILogger<OpenAIClient> logger, IOptions<OpenAIOptions> options)
+    public OpenAIClient(HttpClient httpClient, ILogger<OpenAIClient> logger, IOptionsMonitor<OpenAIOptions> options)
         : base(httpClient, logger)
     {
-        _options = options.Value;
+        _options = options.CurrentValue;
     }
 
     [Obsolete]
-    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1)
+    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default)
     {
         var request = new CompletionRequest
         {
@@ -35,18 +35,18 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             Temperature = 1.0m
         };
 
-        var response = await _httpClient.PostAsJsonAsync(_options.Routes.Completion, request);
+        var response = await _httpClient.PostAsJsonAsync(_options.Routes.Completion, request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
-            var result = await response.Content.ReadFromJsonAsync<CompletionResponse>()
+            var result = await response.Content.ReadFromJsonAsync<CompletionResponse>(cancellationToken)
                 ?? throw new HttpRequestException("Error fetching data from OpenAI API");
             return result.Choices[0].Message.Content;
         }
         else
         {
             await Task.Delay(1000);
-            if (attempt == 1) return await GenerateTextAsync(generateTextDto, 2);
+            if (attempt == 1) return await GenerateTextAsync(generateTextDto, 2, cancellationToken);
             else throw new HttpRequestException($"Error fetching data from OpenAI API: {response.StatusCode}");
         }
     }
@@ -66,7 +66,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             {dto.Complexity.GetDescription()}
         ";
 
-    public async Task<Result<string>> GenerateTextAsync(ComplexityEnum complexity, string articleContent)
+    public async Task<Result<string>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
     {
         var request = new CompletionRequest
         {
@@ -79,7 +79,8 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             Temperature = 1.0m
         };
 
-        var requestResult = await PostAsync(_options.Routes.Completion, request, new CompletionResponseValidator());
+        var requestResult = await PostAsync(_options.Routes.Completion, request,
+            new CompletionResponseValidator(), cancellationToken: cancellationToken);
 
         if (requestResult.IsFailed)
         {
@@ -116,8 +117,8 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
  
             Write only the adapted paragraph.
         ";
-        
-    public async Task<Result<AudioDto>> GenerateAudioAsync(string text)
+
+    public async Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default)
     {
         var voices = Enum.GetValues<VoicesEnum>();
         var voice = voices[new Random().Next(0, voices.Length)].ToString().ToLower();
@@ -127,15 +128,16 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             voice
         );
 
-        var requestResult = await PostAsync<SpeechRequest, byte[]>(_options.Routes.Speech, request);
+        var requestResult = await PostAsync<SpeechRequest, byte[]>(
+            _options.Routes.Speech, request, cancellationToken: cancellationToken);
 
-        if(requestResult.IsFailed)
+        if (requestResult.IsFailed)
         {
             var errorMessage = requestResult.Errors.Message();
             _logger.LogError("Error fetching data from OpenAI API (Speech endpoint): {ErrorMessage}", errorMessage);
             return Result.Fail(new Error($"Error when calling OpenAI API (Speech endpoint). {errorMessage}"));
         }
-       
+
         return Result.Ok(new AudioDto(requestResult.Value, voice));
     }
 }

@@ -5,7 +5,7 @@ namespace WriteFluency.TextComparisons;
 
 public interface IGenerativeAIClient
 {
-    Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1);
-    Task<Result<string>> GenerateTextAsync(ComplexityEnum complexity, string articleContent);
-    Task<Result<AudioDto>> GenerateAudioAsync(string text);
+    Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default);
+    Task<Result<string>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default);
+    Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default);
 }

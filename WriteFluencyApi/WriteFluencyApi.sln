@@ -1,27 +1,27 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.1.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FB36C8D2-A57A-4B83-AD12-56E83908AFB5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.WebApi", "src\WriteFluency.WebApi\WriteFluency.WebApi.csproj", "{5BF6AE33-86A2-4EFB-901C-FB13F0784007}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.WebApi", "src\WriteFluency.WebApi\WriteFluency.WebApi.csproj", "{5BF6AE33-86A2-4EFB-901C-FB13F0784007}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Infrastructure", "src\WriteFluency.Infrastructure\WriteFluency.Infrastructure.csproj", "{477DF490-2839-43D8-B01A-0075BFEF0D55}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Infrastructure", "src\WriteFluency.Infrastructure\WriteFluency.Infrastructure.csproj", "{477DF490-2839-43D8-B01A-0075BFEF0D55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Domain", "src\WriteFluency.Domain\WriteFluency.Domain.csproj", "{E983FC9D-489F-48A9-BBA4-8EA165D3985C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Domain", "src\WriteFluency.Domain\WriteFluency.Domain.csproj", "{E983FC9D-489F-48A9-BBA4-8EA165D3985C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Application", "src\WriteFluency.Application\WriteFluency.Application.csproj", "{D51619D5-1ADE-492B-8964-28519A05EA15}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Application", "src\WriteFluency.Application\WriteFluency.Application.csproj", "{D51619D5-1ADE-492B-8964-28519A05EA15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Application.Contracts", "src\WriteFluency.Application.Contracts\WriteFluency.Application.Contracts.csproj", "{603FDEA7-23C9-4098-850E-064A41174587}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Application.Contracts", "src\WriteFluency.Application.Contracts\WriteFluency.Application.Contracts.csproj", "{603FDEA7-23C9-4098-850E-064A41174587}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Shared", "src\WriteFluency.Shared\WriteFluency.Shared.csproj", "{32902D6D-CB46-490A-9E53-A76E529F4CAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Shared", "src\WriteFluency.Shared\WriteFluency.Shared.csproj", "{32902D6D-CB46-490A-9E53-A76E529F4CAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.NewsWorker", "src\WriteFluency.NewsWorker\WriteFluency.NewsWorker.csproj", "{37D4DB9A-1D51-4BFD-A101-566C65D8EFE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.NewsWorker", "src\WriteFluency.NewsWorker\WriteFluency.NewsWorker.csproj", "{37D4DB9A-1D51-4BFD-A101-566C65D8EFE6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Infrastructure.Tests", "tests\WriteFluency.Infrastructure.Tests\WriteFluency.Infrastructure.Tests.csproj", "{9D12219A-5AEF-4CB4-88A7-4E80D6945362}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriteFluency.Infrastructure.Tests", "tests\WriteFluency.Infrastructure.Tests\WriteFluency.Infrastructure.Tests.csproj", "{9D12219A-5AEF-4CB4-88A7-4E80D6945362}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

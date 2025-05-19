@@ -8,10 +8,15 @@ using WriteFluency.Infrastructure.Http;
 using WriteFluency.NewsWorker;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
+using Microsoft.EntityFrameworkCore;
+using WriteFluency.Data;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddOptions<NewsOptions>().Bind(builder.Configuration.GetSection(NewsOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
 
 builder.Services.AddHttpClient<INewsClient, NewsClient>(client =>
 {
@@ -39,7 +44,7 @@ builder.Services.AddOptions<FileStorageOptions>().Bind(builder.Configuration.Get
 
 var fileStorageOptions = builder.Configuration.GetSection(FileStorageOptions.Section).Get<FileStorageOptions>();
 ArgumentNullException.ThrowIfNull(fileStorageOptions);
-builder.Services.AddMinio(options => 
+builder.Services.AddMinio(options =>
     options.WithEndpoint(fileStorageOptions.Endpoint, 9000)
     .WithCredentials(fileStorageOptions.AccessKey, fileStorageOptions.SecretKey)
     .Build());

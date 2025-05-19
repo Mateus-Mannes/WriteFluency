@@ -4,7 +4,7 @@ WriteFluency is an interactive web application designed to help users practice a
 # About the code
 This repo includes:
 - WriteFluencyApp: a simple angular app with the user interface
-- WriteFluencyApi: a simple .net8 api
+- WriteFluencyApi: a simple .net9 api
 
 # Features
 ## Listen And Write

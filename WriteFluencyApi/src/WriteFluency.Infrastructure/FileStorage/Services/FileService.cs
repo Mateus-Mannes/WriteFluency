@@ -17,14 +17,14 @@ public class FileService : IFileService
         _logger = logger;
     }
 
-    public async Task<Result<Guid>> UploadFileAsync(string bucketName, Stream fileStream)
+    public async Task<Result<Guid>> UploadFileAsync(string bucketName, Stream fileStream, CancellationToken cancellationToken = default)
     {
         try
         {
-            var bucketExists = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
+            var bucketExists = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName), cancellationToken);
             if (!bucketExists)
             {
-                await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
+                await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName), cancellationToken);
             }
             var objectName = Guid.NewGuid().ToString();
             await _minioClient.PutObjectAsync(new PutObjectArgs()
@@ -32,7 +32,7 @@ public class FileService : IFileService
                 .WithObject(objectName)
                 .WithStreamData(fileStream)
                 .WithObjectSize(fileStream.Length)
-                .WithContentType("application/octet-stream"));
+                .WithContentType("application/octet-stream"), cancellationToken);
             return Result.Ok(Guid.NewGuid());
         }
         catch (Exception ex)

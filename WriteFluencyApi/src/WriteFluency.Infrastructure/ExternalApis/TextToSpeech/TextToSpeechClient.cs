@@ -4,16 +4,15 @@ using WriteFluency.Propositions;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
 
-[Obsolete]
 public class TextToSpeechClient : ITextToSpeechClient
 {
     private readonly HttpClient _httpClient;
     private readonly TextToSpeechOptions _options;
 
-    public TextToSpeechClient(HttpClient httpClient, IOptions<TextToSpeechOptions> textToSpeechConfig)
+    public TextToSpeechClient(HttpClient httpClient, IOptionsMonitor<TextToSpeechOptions> textToSpeechConfig)
     {
         _httpClient = httpClient;
-        _options = textToSpeechConfig.Value;
+        _options = textToSpeechConfig.CurrentValue;
     }
 
     public async Task<byte[]> GenerateSpeechAsync(string text, int attempt = 1)

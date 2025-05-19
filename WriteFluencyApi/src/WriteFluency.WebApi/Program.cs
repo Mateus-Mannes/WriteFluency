@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Authentication;
-using WriteFluency.Infrastructure.Data;
+using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
@@ -26,10 +26,10 @@ builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.Ge
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
 
 // Adds the database context and identity configuration
-builder.Services.AddDbContext<ApiDbContext>(opts => opts.UseSqlite("Data Source=data.db"));
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentityCore<IdentityUser>()
     .AddApiEndpoints()
-    .AddEntityFrameworkStores<ApiDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.AddTransient<LevenshteinDistanceService>();
 builder.Services.AddTransient<TokenAlignmentService>();

@@ -1,14 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-
   <ItemGroup>
     <Folder Include="TextComparisons/" />
     <Folder Include="TextComparisons/Dtos/" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="../WriteFluency.Shared/WriteFluency.Shared.csproj" />
+  </ItemGroup>
 </Project>

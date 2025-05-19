@@ -21,13 +21,15 @@ public abstract class BaseHttpClientService
     protected Task<Result<TResponse>> GetAsync<TResponse>(
         string requestUri,
         IValidator<TResponse>? validator = null,
-        int maxAttempts = 2)
+        int maxAttempts = 2,
+        CancellationToken cancellationToken = default)
     {
         return RequestAsync(
             requestUri.Split('?')[0],
-            () => _httpClient.GetAsync(requestUri),
+            () => _httpClient.GetAsync(requestUri, cancellationToken),
             validator,
-            maxAttempts
+            maxAttempts,
+            cancellationToken: cancellationToken
         );
     }
 
@@ -35,13 +37,15 @@ public abstract class BaseHttpClientService
         string requestUri,
         TRequest body,
         IValidator<TResponse>? validator = null,
-        int maxAttempts = 2)
+        int maxAttempts = 2,
+        CancellationToken cancellationToken = default)
     {
         return RequestAsync(
             requestUri,
-            () => _httpClient.PostAsJsonAsync(requestUri, body),
+            () => _httpClient.PostAsJsonAsync(requestUri, body, cancellationToken),
             validator,
-            maxAttempts
+            maxAttempts,
+            cancellationToken: cancellationToken
         );
     }
 
@@ -50,7 +54,8 @@ public abstract class BaseHttpClientService
         Func<Task<HttpResponseMessage>> sendRequest,
         IValidator<TResponse>? validator,
         int maxAttempts,
-        int attempt = 1)
+        int attempt = 1,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -61,15 +66,15 @@ public abstract class BaseHttpClientService
                 LogHttpFailure(context, response, attempt, maxAttempts);
                 if (attempt == maxAttempts) return Fail($"Failed to fetch data from {context}: {response.ReasonPhrase}");
                 await Task.Delay(1000);
-                return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1);
+                return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1, cancellationToken);
             }
 
-            var result = await DeserializeResponse<TResponse>(response, context);
+            var result = await DeserializeResponseAsync<TResponse>(response, context, cancellationToken);
             if (result.IsFailed) return result;
 
             if (validator != null)
             {
-                var validation = await validator.ValidateAsync(result.Value);
+                var validation = await validator.ValidateAsync(result.Value, cancellationToken);
                 if (!validation.IsValid)
                 {
                     LogValidationFailure(context, validation);
@@ -84,7 +89,7 @@ public abstract class BaseHttpClientService
             _logger.LogError(ex, "Network error when calling {Context} API", context);
             if (attempt == maxAttempts) return Fail($"Network error when calling {context} API");
             await Task.Delay(1000);
-            return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1);
+            return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -93,15 +98,16 @@ public abstract class BaseHttpClientService
         }
     }
 
-    private async Task<Result<TResponse>> DeserializeResponse<TResponse>(HttpResponseMessage response, string context)
+    private async Task<Result<TResponse>> DeserializeResponseAsync<TResponse>(
+        HttpResponseMessage response, string context, CancellationToken cancellationToken = default)
     {
         try
         {
-            await using var stream = await response.Content.ReadAsStreamAsync();
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var result = await JsonSerializer.DeserializeAsync<TResponse>(stream, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
-            });
+            }, cancellationToken);
 
             if (result is null)
             {

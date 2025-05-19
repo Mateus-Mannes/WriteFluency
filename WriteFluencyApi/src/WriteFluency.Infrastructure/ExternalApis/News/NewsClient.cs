@@ -1,8 +1,7 @@
-using System.Text.Json;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WriteFluency.Domain.Extensions;
+using WriteFluency.Extensions;
 using WriteFluency.Infrastructure.Http.Services;
 using WriteFluency.Propositions;
 
@@ -12,13 +11,14 @@ public class NewsClient : BaseHttpClientService, INewsClient
 {
     private readonly NewsOptions _options;
 
-    public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptions<NewsOptions> options) 
+    public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)
         : base(httpClient, logger)
     {
-        _options = options.Value;
+        _options = options.CurrentValue;
     }
 
-    public async Task<Result<IEnumerable<NewsDto>>> GetNewsAsync(SubjectEnum subject, DateTime publishedOn)
+    public async Task<Result<IEnumerable<NewsDto>>> GetNewsAsync(
+        SubjectEnum subject, DateTime publishedOn, int quantity, CancellationToken cancellationToken = default)
     {
         var subjectParameter = subject.ToString().ToLowerInvariant();
         var dateParameter = publishedOn.ToString("yyyy-MM-dd");
@@ -27,11 +27,12 @@ public class NewsClient : BaseHttpClientService, INewsClient
                     $"&published_on={dateParameter}" +
                     $"&categories={subjectParameter}" +
                     $"&language=en" +
-                    $"&sort=relevance_score";
+                    $"&sort=relevance_score" +
+                    $"&limit={quantity}";
 
         var requestUri = $"{_options.Routes.TopStories}?{query}";
 
-        var requestResult = await GetAsync(requestUri, new NewsResponseValidator(), 1);
+        var requestResult = await GetAsync(requestUri, new NewsResponseValidator(), 1, cancellationToken);
 
         if (requestResult.IsFailed)
         {

@@ -1,6 +1,6 @@
 ﻿using FluentResults;
 
-namespace WriteFluency.Domain.Extensions;
+namespace WriteFluency.Extensions;
 
 public static class ErrosExtensions
 {

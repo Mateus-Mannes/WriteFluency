@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
-using WriteFluency.WebApi;
+using WriteFluency.Extensions;
 
 namespace WriteFluency.Authentication;
 
