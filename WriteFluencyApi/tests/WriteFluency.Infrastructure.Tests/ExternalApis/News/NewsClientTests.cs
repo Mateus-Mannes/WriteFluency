@@ -14,14 +14,14 @@ public class NewsClientTests : InfrastructureTestBase
 
     protected override void ConfigureServices(IServiceCollection services)
     {
-        var optionsMock = Substitute.For<IOptions<NewsOptions>>();
+        var optionsMock = Substitute.For<IOptionsMonitor<NewsOptions>>();
         var newsOptions = new NewsOptions
         {
             Key = "test-api-key",
             BaseAddress = "https://api.example.com",
             Routes = new NewsOptions.NewsRoutes { TopStories = "/top-stories" }
         };
-        optionsMock.Value.Returns(newsOptions);
+        optionsMock.CurrentValue.Returns(newsOptions);
         services.AddSingleton(optionsMock);
 
         var loggerMock = Substitute.For<ILogger<NewsClient>>();

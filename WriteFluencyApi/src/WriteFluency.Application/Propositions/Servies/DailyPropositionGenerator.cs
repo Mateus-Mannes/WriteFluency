@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using WriteFluency.Data;
 
 namespace WriteFluency.Propositions;
@@ -13,12 +14,12 @@ public class DailyPropositionGenerator
 
     public DailyPropositionGenerator(
         CreatePropositionService createPropositionService,
-        PropositionOptions options,
+        IOptionsMonitor<PropositionOptions> options,
         ILogger<DailyPropositionGenerator> logger,
         IAppDbContext context)
     {
         _createPropositionService = createPropositionService;
-        _options = options;
+        _options = options.CurrentValue;
         _logger = logger;
         _context = context;
     }
@@ -28,13 +29,18 @@ public class DailyPropositionGenerator
     /// </summary>
     public async Task GenerateDailyPropositionsAsync(CancellationToken cancellationToken = default)
     {
+        await DeleteTodayPropositionsAsync(cancellationToken);
+
         var summary = await CreateSummaryAsync(cancellationToken);
-        var latestProposition = await _context.Propositions.OrderByDescending(p => p.CreatedAt)
+
+        var latestProposition = await _context.Propositions.OrderByDescending(x => x.Id)
             .AsNoTracking().FirstOrDefaultAsync(cancellationToken);
-        var oldestProposition = await _context.Propositions.OrderBy(p => p.CreatedAt)
+
+        var oldestProposition = await _context.Propositions.OrderBy(p => p.PublishedOn)
             .AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
         var (subject, complexity) = GetNextParameters(latestProposition?.SubjectId, latestProposition?.ComplexityId);
+        var initialParamters = (subject, complexity);
         var date = DateTime.UtcNow.Date;
 
         var newPropositions = new List<Proposition>();
@@ -62,15 +68,25 @@ public class DailyPropositionGenerator
 
             // After a full parameter cycle, shift the date to one day before the earliest known article —
             // comparing both existing data and newly generated propositions to avoid overlaps.
-            if (loopCounter % Proposition.Parameters.Count == 0)
+            if ((subject, complexity) == initialParamters)
             {
                 var newOldestProposition = newPropositions.OrderBy(p => p.PublishedOn).FirstOrDefault();
-                var oldestOption = newOldestProposition?.PublishedOn < oldestProposition?.PublishedOn
-                    ? newOldestProposition : oldestProposition;
-                if (oldestOption != null) date = oldestOption.PublishedOn.AddDays(-1);
+                var oldestOption =
+                    (newOldestProposition?.PublishedOn ?? DateTime.MaxValue) < (oldestProposition?.PublishedOn ?? DateTime.MaxValue) ?
+                    newOldestProposition?.PublishedOn : oldestProposition?.PublishedOn;
+                if (oldestOption != null) date =
+                    date == DateTime.UtcNow.Date && !(initialParamters == Proposition.Parameters.First()) ?
+                        oldestOption.Value : oldestOption.Value.AddDays(-1);
+
+                // Reset the initial parameters mark to the first ones
+                initialParamters = Proposition.Parameters.First();
             }
 
-            if(newPropositions.Count % 1000 == 0) await SavePropositionsAsync(newPropositions, summary, cancellationToken);
+            if (newPropositions.Count % 1000 == 0)
+            {
+                await SavePropositionsAsync(newPropositions, summary, cancellationToken);
+                newPropositions.Clear();
+            }
         }
 
         await SavePropositionsAsync(newPropositions, summary, cancellationToken);
@@ -83,6 +99,14 @@ public class DailyPropositionGenerator
         var currentIndex = Proposition.Parameters.FindIndex(c => c.Item1 == subject && c.Item2 == complexity);
         var nextIndex = (currentIndex + 1) % Proposition.Parameters.Count;
         return (Proposition.Parameters[nextIndex].Item1, Proposition.Parameters[nextIndex].Item2);
+    }
+
+    private async Task DeleteTodayPropositionsAsync(CancellationToken cancellationToken = default)
+    {
+        var todayIds = await _context.Propositions.AsNoTracking()
+            .Where(p => p.PublishedOn == DateTime.UtcNow.Date)
+            .Select(x => x.Id).ToListAsync(cancellationToken);
+        await _context.Propositions.Where(x => todayIds.Contains(x.Id)).ExecuteDeleteAsync(cancellationToken);
     }
 
     private async Task<List<PropositionSummaryDto>> CreateSummaryAsync(CancellationToken cancellationToken = default)
@@ -115,6 +139,8 @@ public class DailyPropositionGenerator
 
     private async Task SavePropositionsAsync(IEnumerable<Proposition> propositions, List<PropositionSummaryDto> summary, CancellationToken cancellationToken = default)
     {
+        if (!propositions.Any()) return;
+
         // Remove duplicated propositions or propositions that have already been created
         propositions = propositions.Where(x => x.Id == default).GroupBy(p => p.NewsInfo.Id).Select(g => g.First());
 
@@ -124,11 +150,12 @@ public class DailyPropositionGenerator
             foreach (var subjectEnum in Enum.GetValues<SubjectEnum>())
             {
                 var itemSummary = summary.First(s => s.SubjectId == subjectEnum);
-                if (itemSummary.Count >= _options.PropositionsLimitPerTopic)
+
+                if (itemSummary.Count > _options.PropositionsLimitPerTopic)
                 {
                     var ids = await _context.Propositions.AsNoTracking()
                         .Where(p => p.SubjectId == subjectEnum)
-                        .OrderBy(x => x.CreatedAt).Take(itemSummary.Count - _options.PropositionsLimitPerTopic)
+                        .OrderBy(x => x.PublishedOn).Take(itemSummary.Count - _options.PropositionsLimitPerTopic)
                         .Select(x => x.Id)
                         .ToListAsync(cancellationToken);
                     await _context.Propositions.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync(cancellationToken);
@@ -136,7 +163,13 @@ public class DailyPropositionGenerator
             }
 
             _logger.LogInformation($"Saving {propositions.Count()} new propositions");
-            await _context.Propositions.AddRangeAsync(propositions, cancellationToken);
+            // Saves the last proposition separately to keep the order and be able to indentify it
+            if (propositions.Count() > 1)
+            {
+                await _context.Propositions.AddRangeAsync(propositions.Take(propositions.Count() - 1), cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            await _context.Propositions.AddAsync(propositions.Last(), cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)

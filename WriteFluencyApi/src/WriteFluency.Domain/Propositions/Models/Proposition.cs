@@ -29,9 +29,11 @@ public class Proposition
     public Complexity? Complexity { get; set; }
     public Subject? Subject { get; set; }
 
-    public readonly static List<(SubjectEnum, ComplexityEnum)> Parameters = 
+    public readonly static List<(SubjectEnum, ComplexityEnum)> Parameters =
         Enum.GetValues<SubjectEnum>().SelectMany(subject => Enum.GetValues<ComplexityEnum>().Select(complexity => (subject, complexity)))
             .OrderBy(c => (int)c.subject)
             .ThenBy(c => (int)c.complexity)
             .ToList();
+            
+            
 }

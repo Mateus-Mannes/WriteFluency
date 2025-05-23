@@ -20,7 +20,6 @@ builder.Services.AddAppSwagger();
 builder.AddAppAuthentication();
 
 // Options configuration
-builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
