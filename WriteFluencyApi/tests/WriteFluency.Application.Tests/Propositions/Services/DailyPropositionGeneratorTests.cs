@@ -25,7 +25,7 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
 
         var createdPropositionsCount = await _context.Propositions.CountAsync();
-        createdPropositionsCount.ShouldBe(_options.DailyRequestLimit * _options.NewsRequestLimit);
+        createdPropositionsCount.ShouldBe(_options.DailyRequestsLimit * _options.NewsRequestLimit);
 
         var propositions = await _context.Propositions.OrderBy(x => x.PublishedOn).ToListAsync();
 
@@ -39,27 +39,27 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         var totalPropositionsOnLimit = subjects.Length * _options.PropositionsLimitPerTopic;
 
         var requestCountToLimit = totalPropositionsOnLimit /
-            (_options.DailyRequestLimit * _options.NewsRequestLimit - Proposition.Parameters.Count);
+            (_options.DailyRequestsLimit * _options.NewsRequestLimit - Proposition.Parameters.Count);
 
         // Initial Generation
         await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
         var propositions = await _context.Propositions.AsNoTracking().OrderBy(x => x.PublishedOn).ToListAsync();
-        propositions.Count.ShouldBe(_options.DailyRequestLimit * _options.NewsRequestLimit);
+        propositions.Count.ShouldBe(_options.DailyRequestsLimit * _options.NewsRequestLimit);
         VerifyDistributions(propositions);
         var propositionsCount = propositions.Count;
 
-        while(propositionsCount < totalPropositionsOnLimit)
+        while (propositionsCount < totalPropositionsOnLimit)
         {
             await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
             propositions = await _context.Propositions.AsNoTracking().OrderBy(x => x.PublishedOn).ToListAsync();
             var newPropositionsCount = propositions.Count - propositionsCount;
             var pendingToLimit = totalPropositionsOnLimit - propositionsCount;
-            var expectedGeneration = _options.NewsRequestLimit * (_options.DailyRequestLimit - Proposition.Parameters.Count);
-            if(expectedGeneration < pendingToLimit) newPropositionsCount.ShouldBe(expectedGeneration);
+            var expectedGeneration = _options.NewsRequestLimit * (_options.DailyRequestsLimit - Proposition.Parameters.Count);
+            if (expectedGeneration < pendingToLimit) newPropositionsCount.ShouldBe(expectedGeneration);
             propositionsCount += newPropositionsCount;
             VerifyDistributions(propositions);
         }
-        
+
         propositionsCount.ShouldBe(totalPropositionsOnLimit);
 
         // Do more requests to check if it doesn't generate more
@@ -97,7 +97,7 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         }
 
         // Verify dates distribution
-        var date = DateTime.UtcNow.Date;
+        var date = DateTime.UtcNow.Date.AddDays(-1);
         int count = 0;
         foreach (var proposition in propositions.OrderByDescending(x => x.PublishedOn))
         {

@@ -11,6 +11,7 @@ public class PropositionEfConfiguration : IEntityTypeConfiguration<Proposition>
         builder.HasOne(x => x.Complexity).WithMany().OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.Subject).WithMany().OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => x.PublishedOn);
+        builder.HasIndex(x => new { x.SubjectId, x.ComplexityId, x.PublishedOn });
         builder.OwnsOne(x => x.NewsInfo, news =>
         {
             news.WithOwner();

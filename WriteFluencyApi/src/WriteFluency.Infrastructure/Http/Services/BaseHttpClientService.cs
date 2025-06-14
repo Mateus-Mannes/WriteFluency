@@ -69,7 +69,19 @@ public abstract class BaseHttpClientService
                 return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1, cancellationToken);
             }
 
-            var result = await DeserializeResponseAsync<TResponse>(response, context, cancellationToken);
+            Result<TResponse> result;
+            if (typeof(TResponse) == typeof(byte[]))
+            {
+                var fileResult = await DeserializeFileAsync(response, context, cancellationToken);
+                result = fileResult is { IsSuccess: true }
+                    ? Result.Ok((TResponse)(object)fileResult.Value!)
+                    : Result.Fail<TResponse>(fileResult.Errors);
+            }
+            else
+            {
+                result = await DeserializeResponseAsync<TResponse>(response, context, cancellationToken);
+            }
+
             if (result.IsFailed) return result;
 
             if (validator != null)
@@ -116,6 +128,28 @@ public abstract class BaseHttpClientService
             }
 
             return Result.Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to deserialize {Context} response", context);
+            return Fail($"Failed to deserialize response: {ex.Message}");
+        }
+    }
+
+    private async Task<Result<byte[]>> DeserializeFileAsync(
+        HttpResponseMessage response, string context, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+
+            if (bytes is null)
+            {
+                _logger.LogWarning("Deserialized {Context} response is null", context);
+                return Fail($"Deserialized {context} response is null");
+            }
+
+            return Result.Ok(bytes);
         }
         catch (Exception ex)
         {

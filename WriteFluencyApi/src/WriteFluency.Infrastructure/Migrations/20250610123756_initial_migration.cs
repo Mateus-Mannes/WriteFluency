@@ -264,9 +264,14 @@ namespace WriteFluency.Infrastructure.Migrations
                 column: "ComplexityId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Propositions_SubjectId",
+                name: "IX_Propositions_PublishedOn",
                 table: "Propositions",
-                column: "SubjectId");
+                column: "PublishedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Propositions_SubjectId_ComplexityId_PublishedOn",
+                table: "Propositions",
+                columns: new[] { "SubjectId", "ComplexityId", "PublishedOn" });
         }
 
         /// <inheritdoc />

@@ -5,28 +5,30 @@ namespace WriteFluency.Propositions;
 
 public class PropositionBuilder
 {
-        private string? ImageFileId;
-        public Result<string?> SetImageFileId(string? imageFileId)
-        {
-            ImageFileId = imageFileId;
-            return Result.Ok(imageFileId);
-        }
+    private string? ImageFileId;
+    public Result<string?> SetImageFileId(string? imageFileId)
+    {
+        ImageFileId = imageFileId;
+        return Result.Ok(imageFileId);
+    }
 
-        [Required]
-        private string? ArticleText;
-        public Result<string> SetArticleText(string articleText)
-        {
-            ArticleText = articleText;
-            return Result.Ok(articleText);
-        }
+    [Required]
+    private string? ArticleText;
+    public Result<string> SetArticleText(string articleText)
+    {
+        ArticleText = articleText;
+        return Result.Ok(articleText);
+    }
 
 
     [Required]
     private string? PropositionText;
-    public Result<string> SetPropositionText(string propositionText)
+    private string? PropositionTitle;
+    public Result<string> SetPropositionText(AIGeneratedTextDto text)
     {
-        PropositionText = propositionText;
-        return Result.Ok(propositionText);
+        PropositionText = text.Content;
+        PropositionTitle = text.Title;
+        return Result.Ok(text.Content);
     }
 
     [Required]
@@ -47,8 +49,8 @@ public class PropositionBuilder
 
     public Result<Proposition> Build(CreatePropositionDto dto, NewsDto newsArticle)
     {
-        if(newsArticle is null) return Result.Fail(new Error("News article cannot be null"));
-        
+        if (newsArticle is null) return Result.Fail(new Error("News article cannot be null"));
+
         // validate through data annotations
         var validationContext = new ValidationContext(this);
         var validationResults = new List<ValidationResult>();
@@ -69,6 +71,7 @@ public class PropositionBuilder
             Voice = AudioVoice!,
             Text = PropositionText!,
             TextLength = PropositionText!.Length,
+            Title = PropositionTitle!,
             ImageFileId = string.IsNullOrEmpty(ImageFileId) ? null : Guid.Parse(ImageFileId),
             CreatedAt = DateTime.UtcNow,
             NewsInfo = new NewsInfo
@@ -85,5 +88,5 @@ public class PropositionBuilder
 
         return Result.Ok(proposition);
     }
-    
+
 }

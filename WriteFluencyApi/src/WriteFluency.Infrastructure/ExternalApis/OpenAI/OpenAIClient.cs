@@ -8,17 +8,24 @@ using WriteFluency.Propositions;
 using WriteFluency.Shared;
 using WriteFluency.TextComparisons;
 using WriteFluency.Extensions;
+using Microsoft.Extensions.AI;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
 
 public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 {
     private readonly OpenAIOptions _options;
+    private readonly IChatClient _chatClient;
 
-    public OpenAIClient(HttpClient httpClient, ILogger<OpenAIClient> logger, IOptionsMonitor<OpenAIOptions> options)
+    public OpenAIClient(
+        HttpClient httpClient,
+        ILogger<OpenAIClient> logger,
+        IOptionsMonitor<OpenAIOptions> options,
+        IChatClient chatClient)
         : base(httpClient, logger)
     {
         _options = options.CurrentValue;
+        _chatClient = chatClient;
     }
 
     [Obsolete]
@@ -66,56 +73,59 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             {dto.Complexity.GetDescription()}
         ";
 
-    public async Task<Result<string>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
+    public async Task<Result<AIGeneratedTextDto>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
     {
-        var request = new CompletionRequest
-        {
-            Model = "gpt-4.1-nano",
-            Messages = new List<RequestMessage>()
-                { new RequestMessage() {
-                    Content = GenerateTextPrompt(complexity, articleContent)
-                    } },
-            MaxTokens = 1200,
-            Temperature = 1.0m
-        };
+        var prompt = GenerateTextPrompt(complexity, articleContent);
 
-        var requestResult = await PostAsync(_options.Routes.Completion, request,
-            new CompletionResponseValidator(), cancellationToken: cancellationToken);
+        var result = await _chatClient.GetResponseAsync<AIGeneratedTextDto>(
+            [new ChatMessage(ChatRole.User, prompt)],
+            new ChatOptions() { MaxOutputTokens = 1200, Temperature = 1.0f },
+            cancellationToken: cancellationToken);
 
-        if (requestResult.IsFailed)
+        if(result.TryGetResult(out var response))
         {
-            var errorMessage = requestResult.Errors.Message();
-            _logger.LogError("Error fetching data from OpenAI API (Completion endpoint): {ErrorMessage}", errorMessage);
-            return Result.Fail(new Error($"Error when calling OpenAI API (Completion endpoint). {errorMessage}"));
+            return Result.Ok(response);
         }
-
-        return Result.Ok(requestResult.Value.Choices[0].Message.Content);
+        else
+        {
+            _logger.LogError("Error fetching data from OpenAI API (Chat endpoint)");
+            return Result.Fail(new Error($"Error when calling OpenAI API (Chat endpoint)."));
+        }
     }
 
     private string GenerateTextPrompt(ComplexityEnum complexity, string articleContent)
         => @$"
-            You are writing for an English-learning app where users listen to a short audio and try to transcribe what they hear.
- 
-            Based on the following article, write a short and simple adapted version of the main idea, using natural English:
-            
-            """"""
+            You are writing for an English-learning app where users listen to an audio and try to transcribe what they hear, word for word.
+
+            Based on the following article, your task is to generate an adapted version of the content, using natural, global English. The output must contain two parts:
+
+            1. A catchy and relevant **title** (up to one sentence). The title can include proper names or specific terms if necessary.
+            2. A single **paragraph** (500 - 1000 characters) that retells the main story in a clear, engaging, and listener-friendly way.
+
+            Rules:
+            - Write as if you're telling someone an interesting, surprising, or emotional story.
+            - Avoid long or difficult names, places, or organizations unless they also appear in the title and are reasonably simple to understand when heard.
+            - Use general terms (e.g., 'a man,' 'a major city') when a name is not essential.
+            - Include names in the title if they are part of the article and easy to understand.
+            - Avoid self-references to the article, news, journalist, or writing process.
+            - Do not begin every paragraph the same way (e.g. avoid always starting with 'Imagine...').
+            - Avoid acronyms, abbreviations, dates, or complex numbers.
+            - Never include em dashes (—), single/double quotes, or symbols like %, $, “ ”, or bullets. Use plain punctuation (commas, periods, etc.).
+            - Use globally understandable, neutral vocabulary — avoid slang and local references.
+            - Do not use line breaks, paragraph spacing, or formatting.
+            - Only mention proper names (people, places, etc.) **when essential to the story**.
+            - If using a proper name in the paragraph, try to mention it in the title as well, so users will see the correct spelling before hearing it.
+
+            Complexity levels (only apply one, according to the specified level below):
+            - Beginner: {ComplexityEnum.Beginner.GetDescription()}
+            - Intermediate: {ComplexityEnum.Intermediate.GetDescription()}
+            - Advanced: {ComplexityEnum.Advanced.GetDescription()}
+
+            --- ARTICLE START ---
             {articleContent}
-            """"""
- 
-            Guidelines:
-            - Write a single paragraph with 250 to 600 characters.
-            - Avoid long or difficult names, dates, or detailed statistics.
-            - Use common vocabulary and clear sentence structure.
-            - Avoid titles, line breaks, quotes, or special formatting.
-            - Do not include a title, introduction, or closing phrase.
-            - Do not add anything unrelated to the article.
-            - Don't use $100, use '100 dollars'.
- 
-            Tone:
-            - {complexity.GetDescription()}
-            - Be engaging, informative, and easy to understand.
- 
-            Write only the adapted paragraph.
+            --- ARTICLE END ---
+
+            Use the following complexity level: **{complexity.GetDescription()}**
         ";
 
     public async Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default)

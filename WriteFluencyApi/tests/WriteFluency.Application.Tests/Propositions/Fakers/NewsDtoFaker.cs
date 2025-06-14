@@ -14,7 +14,9 @@ public static class NewsDtoFaker
                 faker.Lorem.Sentence(),
                 faker.Lorem.Paragraph(),
                 faker.Internet.Url(),
-                faker.Internet.Url()
+                faker.Internet.Url(),
+                faker.PickRandom<SubjectEnum>(),
+                faker.Date.Past(1, DateTime.UtcNow)
             );
         }
     }

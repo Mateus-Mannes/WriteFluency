@@ -12,8 +12,8 @@ using WriteFluency.Data;
 namespace WriteFluency.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250517174151_initial_migration")]
-    partial class initial_migration
+    [Migration("20250614204325_add_column_proposition_title")]
+    partial class add_column_proposition_title
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -270,6 +270,11 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<int>("TextLength")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("character varying(1500)");
+
                     b.Property<string>("Voice")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -279,7 +284,9 @@ namespace WriteFluency.Infrastructure.Migrations
 
                     b.HasIndex("ComplexityId");
 
-                    b.HasIndex("SubjectId");
+                    b.HasIndex("PublishedOn");
+
+                    b.HasIndex("SubjectId", "ComplexityId", "PublishedOn");
 
                     b.ToTable("Propositions");
                 });
@@ -370,7 +377,6 @@ namespace WriteFluency.Infrastructure.Migrations
                                 .HasColumnType("integer");
 
                             b1.Property<string>("Description")
-                                .IsRequired()
                                 .HasMaxLength(500)
                                 .HasColumnType("character varying(500)")
                                 .HasColumnName("NewsDescription");

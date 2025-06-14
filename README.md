@@ -17,4 +17,8 @@ Listen and write is a route of the site where the user can generate an audio, ba
 
 ```bash
 dotnet ef migrations add initial_migration -p ./src/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj -s ./src/WriteFluency.WebApi/WriteFluency.WebApi.csproj 
+
+dotnet ef database update -p ./src/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj -s ./src/WriteFluency.WebApi/WriteFluency.WebApi.csproj 
+
+docker-compose -f docker-compose.services.yml up
 ```

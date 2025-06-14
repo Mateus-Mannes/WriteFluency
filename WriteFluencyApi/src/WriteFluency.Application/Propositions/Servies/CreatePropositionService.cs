@@ -27,7 +27,16 @@ public class CreatePropositionService
 
     public async Task<IEnumerable<Proposition>> CreatePropositionsAsync(CreatePropositionDto dto, int quantity, CancellationToken cancellationToken = default)
     {
-        var newsResult = await _newsClient.GetNewsAsync(dto.Subject, dto.PublishedOn, quantity, cancellationToken);
+        // switch news search page number based on complexity to avoid duplicated news
+        var page = dto.Complexity switch
+        {
+            ComplexityEnum.Beginner => 1,
+            ComplexityEnum.Intermediate => 2,
+            ComplexityEnum.Advanced => 3,
+            _ => throw new ArgumentOutOfRangeException(nameof(dto.Complexity), "Invalid complexity level")
+        };
+
+        var newsResult = await _newsClient.GetNewsAsync(dto.Subject, dto.PublishedOn, quantity, page, cancellationToken);
         if (newsResult.IsFailed) return Enumerable.Empty<Proposition>();
 
         var propositions = new List<Proposition>();
@@ -46,8 +55,7 @@ public class CreatePropositionService
         await _articleExtractor.DownloadImageAsync(newsArticle.ImageUrl, cancellationToken)
             .Bind(file =>
             {
-                using var imageStream = new MemoryStream(file);
-                return _fileService.UploadFileAsync("images", imageStream, cancellationToken);
+                return _fileService.UploadFileAsync("images", file, cancellationToken);
             })
             .Bind(fileId => builder.SetImageFileId(fileId.ToString()));
 
@@ -60,8 +68,7 @@ public class CreatePropositionService
             .Bind(audio => builder.SetAudioVoice(audio))
             .Bind(audio =>
             {
-                using var stream = new MemoryStream(audio.Audio);
-                return _fileService.UploadFileAsync("propositions", stream, cancellationToken);
+                return _fileService.UploadFileAsync("propositions", audio.Audio, cancellationToken);
             })
             .Bind(fileId => builder.SetAudioFileId(fileId.ToString()))
             .Bind(_ => builder.Build(dto, newsArticle));

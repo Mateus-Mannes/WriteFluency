@@ -1,3 +1,8 @@
+using Cronos;
+using Microsoft.Extensions.Options;
+using WriteFluency.Infrastructure.ExternalApis;
+using WriteFluency.Propositions;
+
 namespace WriteFluency.NewsWorker;
 
 /// <summary>
@@ -5,22 +10,47 @@ namespace WriteFluency.NewsWorker;
 /// </summary>
 public class NewsWorker : BackgroundService
 {
-    private readonly ILogger<NewsWorker> _logger;
+    private readonly PropositionOptions _propositionOptions;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IHostEnvironment _environment;
 
-    public NewsWorker(ILogger<NewsWorker> logger)
+    public NewsWorker(
+        IOptionsMonitor<PropositionOptions> propositionOptions,
+        IServiceProvider serviceProvider,
+        IHostEnvironment environment,
+        IOptionsMonitor<OpenAIOptions> openAIOptions)
     {
-        _logger = logger;
+        _propositionOptions = propositionOptions.CurrentValue;
+        _serviceProvider = serviceProvider;
+        _environment = environment;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (_environment.IsDevelopment())
+        {
+            // In development, run the task immediately to test it
+            await GenerateDailyPropositionsAsync(stoppingToken);
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_logger.IsEnabled(LogLevel.Information))
+            var next = CronExpression.Parse(_propositionOptions.DailyRunCron)
+                .GetNextOccurrence(DateTimeOffset.Now, TimeZoneInfo.Utc);
+            if (next.HasValue)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                var delay = next.Value - DateTimeOffset.Now;
+                if (delay > TimeSpan.Zero) await Task.Delay(delay, stoppingToken);
+                await GenerateDailyPropositionsAsync(stoppingToken);
             }
-            await Task.Delay(1000, stoppingToken);
         }
+    }
+
+    private async Task GenerateDailyPropositionsAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var generator = scope.ServiceProvider.GetRequiredService<DailyPropositionGenerator>();
+        await generator.GenerateDailyPropositionsAsync(cancellationToken);
     }
 }

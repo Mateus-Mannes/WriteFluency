@@ -42,7 +42,7 @@ public class ApplicationTestBase : IDisposable
         _scope = _serviceProvider.CreateScope();
 
         var context = (AppDbContext)_scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        context.Database.EnsureCreatedAsync().Wait();
+        context.Database.EnsureCreated();
     }
 
     protected T GetService<T>() where T : class
@@ -55,7 +55,7 @@ public class ApplicationTestBase : IDisposable
         var faker = new Faker();
 
         var newsClientMock = Substitute.For<INewsClient>();
-        newsClientMock.GetNewsAsync(Arg.Any<SubjectEnum>(), Arg.Any<DateTime>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+        newsClientMock.GetNewsAsync(Arg.Any<SubjectEnum>(), Arg.Any<DateTime>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(NewsDtoFaker.Generate(3)));
         services.AddSingleton(newsClientMock);
 
@@ -74,23 +74,21 @@ public class ApplicationTestBase : IDisposable
         services.AddSingleton(generativeAIClientMock);
 
         var fileServiceMock = Substitute.For<IFileService>();
-        fileServiceMock.UploadFileAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+        fileServiceMock.UploadFileAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>())
             .Returns(x =>
             {
                 var fileId = Guid.NewGuid();
-                var fileStream = (Stream)x[1];
-                using var memoryStream = new MemoryStream();
-                fileStream.CopyTo(memoryStream);
-                UploadedFiles[fileId] = memoryStream.ToArray();
+                UploadedFiles[fileId] = (byte[])x[1];
                 return Result.Ok(fileId);
             });
         services.AddSingleton(fileServiceMock);
 
         var propositionOptions = new PropositionOptions
         {
-            DailyRequestLimit = 100,
+            DailyRequestsLimit = 100,
             PropositionsLimitPerTopic = 300,
-            NewsRequestLimit = 3
+            NewsRequestLimit = 3,
+            DailyRunCron = "0 0 * * *"
         };
         var optionsMonitor = Substitute.For<IOptionsMonitor<PropositionOptions>>();
         optionsMonitor.CurrentValue.Returns(propositionOptions);

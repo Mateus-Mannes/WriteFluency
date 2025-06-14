@@ -18,7 +18,7 @@ public class NewsClient : BaseHttpClientService, INewsClient
     }
 
     public async Task<Result<IEnumerable<NewsDto>>> GetNewsAsync(
-        SubjectEnum subject, DateTime publishedOn, int quantity, CancellationToken cancellationToken = default)
+        SubjectEnum subject, DateTime publishedOn, int quantity, int page, CancellationToken cancellationToken = default)
     {
         var subjectParameter = subject.ToString().ToLowerInvariant();
         var dateParameter = publishedOn.ToString("yyyy-MM-dd");
@@ -27,7 +27,9 @@ public class NewsClient : BaseHttpClientService, INewsClient
                     $"&published_on={dateParameter}" +
                     $"&categories={subjectParameter}" +
                     $"&language=en" +
+                    $"&locale=au,ca,gb,us,nz,ie" +
                     $"&sort=relevance_score" +
+                    $"&page={page}" +
                     $"&limit={quantity}";
 
         var requestUri = $"{_options.Routes.TopStories}?{query}";
@@ -46,7 +48,9 @@ public class NewsClient : BaseHttpClientService, INewsClient
             article.Title!,
             article.Description!,
             article.Url!,
-            article.ImageUrl!
+            article.ImageUrl!,
+            subject,
+            publishedOn
         )) ?? Enumerable.Empty<NewsDto>();
 
         return Result.Ok(newsArticles);

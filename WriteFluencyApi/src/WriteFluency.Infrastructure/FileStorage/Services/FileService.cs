@@ -17,7 +17,7 @@ public class FileService : IFileService
         _logger = logger;
     }
 
-    public async Task<Result<Guid>> UploadFileAsync(string bucketName, Stream fileStream, CancellationToken cancellationToken = default)
+    public async Task<Result<Guid>> UploadFileAsync(string bucketName, byte[] file, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -27,11 +27,12 @@ public class FileService : IFileService
                 await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName), cancellationToken);
             }
             var objectName = Guid.NewGuid().ToString();
+            using var stream = new MemoryStream(file);
             await _minioClient.PutObjectAsync(new PutObjectArgs()
                 .WithBucket(bucketName)
                 .WithObject(objectName)
-                .WithStreamData(fileStream)
-                .WithObjectSize(fileStream.Length)
+                .WithStreamData(stream)
+                .WithObjectSize(stream.Length)
                 .WithContentType("application/octet-stream"), cancellationToken);
             return Result.Ok(Guid.NewGuid());
         }

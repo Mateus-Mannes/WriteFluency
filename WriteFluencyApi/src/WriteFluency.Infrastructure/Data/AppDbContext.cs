@@ -15,7 +15,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-    
+
         builder.ApplyConfiguration(new PropositionEfConfiguration());
     }
 
@@ -23,23 +23,32 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     {
         base.OnConfiguring(optionsBuilder);
 
-        optionsBuilder.UseAsyncSeeding(async (context, _, cancellationToken) =>
+        optionsBuilder.UseSeeding((context, _) =>
         {
-            await SeedEnumClassAsync<Subject, SubjectEnum>(context.Set<Subject>(), x => new Subject { Id = x, Description = x.ToString() });
-            await SeedEnumClassAsync<Complexity, ComplexityEnum>(context.Set<Complexity>(), x => new Complexity { Id = x, Description = x.ToString() });
+            Task.Run(async () =>
+            {
+                await SeedEnumClassAsync<Subject, SubjectEnum>(
+                    context.Set<Subject>(), x => new Subject { Id = x, Description = x.ToString() });
+
+                await SeedEnumClassAsync<Complexity, ComplexityEnum>(
+                    context.Set<Complexity>(), x => new Complexity { Id = x, Description = x.ToString() });
+
+            }).GetAwaiter().GetResult();
         });
     }
 
     private async Task SeedEnumClassAsync<TModel, TEnum>(DbSet<TModel> dbSet, Func<TEnum, TModel> createFunc)
-        where TEnum : Enum 
+        where TEnum : Enum
         where TModel : class
     {
         foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
         {
             if (!await dbSet.AnyAsync(x => EF.Property<TEnum>(x, "Id").Equals(enumValue)))
-            {   
+            {
                 await dbSet.AddAsync(createFunc(enumValue));
             }
         }
+
+        await SaveChangesAsync();
     }
 }

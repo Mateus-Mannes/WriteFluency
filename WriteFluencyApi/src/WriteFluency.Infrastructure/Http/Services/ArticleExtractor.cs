@@ -26,7 +26,7 @@ public class ArticleExtractor : IArticleExtractor
         {
             var html = await _httpClient.GetStringAsync(url, cancellationToken);
 
-            var context = BrowsingContext.New(Configuration.Default);
+            var context = BrowsingContext.New(Configuration.Default.WithCss().WithDefaultLoader());
             var parser = context.GetService<IHtmlParser>();
             var document = await parser!.ParseDocumentAsync(html, cancellationToken);
 
@@ -40,10 +40,20 @@ public class ArticleExtractor : IArticleExtractor
             // Extract visible text only
             var visibleText = document.Body!.Descendants<IText>()
                 .Where(t => !string.IsNullOrWhiteSpace(t.Text))
-                .Where(t => t.ParentElement != null &&
-                            t.ParentElement.ComputeCurrentStyle().GetDisplay() != "none" &&
-                            t.ParentElement.ComputeCurrentStyle().GetVisibility() != "hidden")
-                .Select(t => t.Text.Trim());
+                .Where(t =>
+                {
+                    var parent = t.ParentElement;
+                    if (parent == null) return false;
+
+                    var style = parent.ComputeCurrentStyle();
+                    if (style == null) return false;
+
+                    return style.GetDisplay() != "none" &&
+                        style.GetVisibility() != "hidden";
+                })
+                .Select(t => t.Text.Trim())
+                .ToList();
+
 
             return string.Join(" ", visibleText);
         }
@@ -52,7 +62,7 @@ public class ArticleExtractor : IArticleExtractor
             _logger.LogError(ex, "Failed to extract visible text from {Url}", url);
             return Result.Fail(new Error("Failed to extract visible text").CausedBy(ex));
         }
-        
+
     }
 
     public async Task<Result<byte[]>> DownloadImageAsync(string imageUrl, CancellationToken cancellationToken = default)

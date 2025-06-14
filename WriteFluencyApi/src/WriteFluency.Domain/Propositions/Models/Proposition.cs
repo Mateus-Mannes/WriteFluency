@@ -19,6 +19,8 @@ public class Proposition
     [MaxLength(3000)]
     public required string Text { get; set; }
     public required int TextLength { get; set; }
+    [MaxLength(1500)]
+    public required string Title { get; set; }
 
     public Guid? ImageFileId { get; set; }
 
@@ -34,6 +36,6 @@ public class Proposition
             .OrderBy(c => (int)c.subject)
             .ThenBy(c => (int)c.complexity)
             .ToList();
-            
-            
+
+
 }

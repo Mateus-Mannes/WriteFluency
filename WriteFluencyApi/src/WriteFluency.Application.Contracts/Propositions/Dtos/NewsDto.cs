@@ -5,5 +5,7 @@ public record NewsDto(
     string Title,
     string Description,
     string Url,
-    string ImageUrl
+    string ImageUrl,
+    SubjectEnum Subject,
+    DateTime PublishedOn
 );

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WriteFluency.Data;
@@ -11,9 +12,11 @@ using WriteFluency.Data;
 namespace WriteFluency.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250610123756_initial_migration")]
+    partial class initial_migration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -267,11 +270,6 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<int>("TextLength")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(1500)
-                        .HasColumnType("character varying(1500)");
-
                     b.Property<string>("Voice")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -374,6 +372,7 @@ namespace WriteFluency.Infrastructure.Migrations
                                 .HasColumnType("integer");
 
                             b1.Property<string>("Description")
+                                .IsRequired()
                                 .HasMaxLength(500)
                                 .HasColumnType("character varying(500)")
                                 .HasColumnName("NewsDescription");
