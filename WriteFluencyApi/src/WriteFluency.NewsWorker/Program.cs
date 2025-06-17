@@ -44,6 +44,7 @@ builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
 builder.Services.AddChatClient(services =>
 {
     return new ChatClientBuilder(new OpenAI.OpenAIClient(openAIOptions.Key).GetChatClient("gpt-4.1-nano").AsIChatClient())
+        .UseFunctionInvocation()
         // TODO: Add logging and telemetry
         .Build();
 }, ServiceLifetime.Scoped);

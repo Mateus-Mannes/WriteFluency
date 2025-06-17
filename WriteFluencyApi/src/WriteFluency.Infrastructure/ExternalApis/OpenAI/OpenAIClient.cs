@@ -75,57 +75,74 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
     public async Task<Result<AIGeneratedTextDto>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
     {
-        var prompt = GenerateTextPrompt(complexity, articleContent);
+        var systemPrompt = GenerateTextSystemPrompt();
+        var userPrompt = GenerateTextUserPrompt(complexity, articleContent);
 
         var result = await _chatClient.GetResponseAsync<AIGeneratedTextDto>(
-            [new ChatMessage(ChatRole.User, prompt)],
+            [new(ChatRole.System, systemPrompt), new ChatMessage(ChatRole.User, userPrompt)],
             new ChatOptions() { MaxOutputTokens = 1200, Temperature = 1.0f },
             cancellationToken: cancellationToken);
 
-        if(result.TryGetResult(out var response))
+        if (result.TryGetResult(out var response))
         {
             return Result.Ok(response);
         }
         else
         {
-            _logger.LogError("Error fetching data from OpenAI API (Chat endpoint)");
-            return Result.Fail(new Error($"Error when calling OpenAI API (Chat endpoint)."));
+            var error = "The Generative AI could not generate the text in the specified format based on the article content.";
+            _logger.LogError(error);
+            return Result.Fail(new Error(error));
         }
     }
 
-    private string GenerateTextPrompt(ComplexityEnum complexity, string articleContent)
+    private string GenerateTextSystemPrompt()
         => @$"
             You are writing for an English-learning app where users listen to an audio and try to transcribe what they hear, word for word.
 
             Based on the following article, your task is to generate an adapted version of the content, using natural, global English. The output must contain two parts:
 
-            1. A catchy and relevant **title** (up to one sentence). The title can include proper names or specific terms if necessary.
-            2. A single **paragraph** (500 - 1000 characters) that retells the main story in a clear, engaging, and listener-friendly way.
+            1. A catchy and relevant title.
+            2. A single paragraph (600 - 1000 characters) that retells the main story in a clear, engaging, and listener-friendly way.
 
             Rules:
-            - Write as if you're telling someone an interesting, surprising, or emotional story.
-            - Avoid long or difficult names, places, or organizations unless they also appear in the title and are reasonably simple to understand when heard.
-            - Use general terms (e.g., 'a man,' 'a major city') when a name is not essential.
-            - Include names in the title if they are part of the article and easy to understand.
-            - Avoid self-references to the article, news, journalist, or writing process.
-            - Do not begin every paragraph the same way (e.g. avoid always starting with 'Imagine...').
-            - Avoid acronyms, abbreviations, dates, or complex numbers.
-            - Never include em dashes (—), single/double quotes, or symbols like %, $, “ ”, or bullets. Use plain punctuation (commas, periods, etc.).
-            - Use globally understandable, neutral vocabulary — avoid slang and local references.
-            - Do not use line breaks, paragraph spacing, or formatting.
-            - Only mention proper names (people, places, etc.) **when essential to the story**.
-            - If using a proper name in the paragraph, try to mention it in the title as well, so users will see the correct spelling before hearing it.
+
+                - Write the paragraph as if you are telling someone an interesting, surprising, or emotional story. Make it engaging.
+
+                - Ensure that the paragraph can be fully and accurately transcribed just by listening to it. The user must be able to write the exact text without seeing it.
+
+                - Every proper name (person, city, organization, companies, etc.) used in the paragraph must also appear in the title. This is mandatory. Never include a name in the paragraph unless it also appears in the title.
+
+                - Use general terms (e.g., 'a man,' 'a major city') when a name is not essential.
+
+                - If the event happens in a specific location (city, state, country, or region), include that location in both the title and the paragraph.
+
+                - Do not refer to the article, news source, journalist, or writing process.
+
+                - Do not start every paragraph the same way — avoid patterns like always beginning with “Imagine...”.
+
+                - Avoid acronyms, abbreviations, dates, and complex numbers. Use simple, spoken equivalents instead. 
+
+                - Do not use em dashes (—), single or double quotes, or symbols such as %, $, “ ”, or bullets. Use plain punctuation (commas, periods, etc.).
+
+                - Use globally understandable, neutral vocabulary. Avoid slang, idioms, and regional expressions.
+
+                - Do not use line breaks, paragraph spacing, or formatting.
 
             Complexity levels (only apply one, according to the specified level below):
             - Beginner: {ComplexityEnum.Beginner.GetDescription()}
             - Intermediate: {ComplexityEnum.Intermediate.GetDescription()}
             - Advanced: {ComplexityEnum.Advanced.GetDescription()}
 
+            If the article does not provide enough clear, interesting, or informative content to generate a meaningful paragraph and title, return null.
+        ";
+
+    private string GenerateTextUserPrompt(ComplexityEnum complexity, string articleContent)
+        => @$"
+            Apply complexity level: {complexity}.
+
             --- ARTICLE START ---
             {articleContent}
             --- ARTICLE END ---
-
-            Use the following complexity level: **{complexity.GetDescription()}**
         ";
 
     public async Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default)

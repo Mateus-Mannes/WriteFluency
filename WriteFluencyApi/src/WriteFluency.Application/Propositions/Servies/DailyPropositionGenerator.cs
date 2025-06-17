@@ -54,7 +54,7 @@ public class DailyPropositionGenerator
         await DeleteTodayPropositionsAsync(cancellationToken);
 
         var summary = await CreateSummaryAsync(cancellationToken);
-        var parameters = summary.OrderBy(x => x.Count).First(); // Always generates for the subjects/complexities with less propositions
+        var parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).First(); // Always generates for the subjects/complexities with less propositions
         var date = _yesterday; // Starts the generation for yesterday
         var newPropositions = new List<Proposition>();
 
@@ -76,7 +76,7 @@ public class DailyPropositionGenerator
             // Updating parameters for the next iteration:
 
             // Always generates for the subjects/complexities with less propositions, looking for options under the limit
-            parameters = summary.OrderBy(x => x.Count).FirstOrDefault(x =>
+            parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).FirstOrDefault(x =>
                 summary.Where(y => y.SubjectId == x.SubjectId).Sum(y => y.Count) < _options.PropositionsLimitPerTopic);
             if (parameters is null) break;
 
