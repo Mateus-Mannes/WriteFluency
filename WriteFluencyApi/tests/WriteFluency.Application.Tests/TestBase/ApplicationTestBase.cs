@@ -68,7 +68,7 @@ public class ApplicationTestBase : IDisposable
 
         var generativeAIClientMock = Substitute.For<IGenerativeAIClient>();
         generativeAIClientMock.GenerateTextAsync(Arg.Any<ComplexityEnum>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(faker.Lorem.Paragraph(3000)));
+            .Returns(Result.Ok(new AIGeneratedTextDto(faker.Lorem.Paragraph(10), faker.Lorem.Paragraph(3000))));
         generativeAIClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString())));
         services.AddSingleton(generativeAIClientMock);

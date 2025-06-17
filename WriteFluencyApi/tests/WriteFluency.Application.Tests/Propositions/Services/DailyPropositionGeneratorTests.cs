@@ -97,7 +97,7 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         }
 
         // Verify dates distribution
-        var date = DateTime.UtcNow.Date.AddDays(-1);
+        var date = DateTime.UtcNow.Date.AddDays(-2);
         int count = 0;
         foreach (var proposition in propositions.OrderByDescending(x => x.PublishedOn))
         {

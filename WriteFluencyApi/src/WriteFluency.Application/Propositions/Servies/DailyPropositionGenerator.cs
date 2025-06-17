@@ -12,7 +12,7 @@ public class DailyPropositionGenerator
     private readonly ILogger<DailyPropositionGenerator> _logger;
     private readonly IAppDbContext _context;
 
-    private DateTime _yesterday;
+    private DateTime _startDate;
 
     public DailyPropositionGenerator(
         CreatePropositionService createPropositionService,
@@ -49,13 +49,13 @@ public class DailyPropositionGenerator
 
     private async Task GenerateAsync(CancellationToken cancellationToken = default)
     {
-        _yesterday = DateTime.UtcNow.Date.AddDays(-1);
+        _startDate = DateTime.UtcNow.Date.AddDays(-2);
 
         await DeleteTodayPropositionsAsync(cancellationToken);
 
         var summary = await CreateSummaryAsync(cancellationToken);
         var parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).First(); // Always generates for the subjects/complexities with less propositions
-        var date = _yesterday; // Starts the generation for yesterday
+        var date = _startDate;
         var newPropositions = new List<Proposition>();
 
         for (int i = 0; i < _options.DailyRequestsLimit; i++)
@@ -65,7 +65,7 @@ public class DailyPropositionGenerator
 
             // Generates more propositions if is is still under the limit, or if it is a generation for the currente date
             var countPerSubject = summary.Where(x => x.SubjectId == parameters.SubjectId).Sum(x => x.Count);
-            if (countPerSubject < _options.PropositionsLimitPerTopic || date == _yesterday)
+            if (countPerSubject < _options.PropositionsLimitPerTopic || date == _startDate)
             {
                 var dto = new CreatePropositionDto(date, parameters.ComplexityId, parameters.SubjectId);
                 var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, cancellationToken);
@@ -83,17 +83,16 @@ public class DailyPropositionGenerator
             // If the next parameters with less propositions have already been generated for today, keep going to the previous day
             // or the previous day to the oldest one generated previously
             if (newPropositions.Any(x => x.SubjectId == parameters.SubjectId && x.ComplexityId == parameters.ComplexityId &&
-                x.PublishedOn == _yesterday))
+                x.PublishedOn == _startDate))
             {
-                date = _yesterday.AddDays(-1);
+                date = _startDate.AddDays(-1);
                 if (parameters.OldestPublishedOn.HasValue)
                     date = parameters.OldestPublishedOn.Value.Date.AddDays(-1);
                 parameters.OldestPublishedOn = date;
             }
-            // else keeps generating for yesterday
             else
             {
-                date = _yesterday;
+                date = _startDate;
             }
 
             if (newPropositions.Count % 1000 == 0)
@@ -110,7 +109,7 @@ public class DailyPropositionGenerator
     {
         _logger.LogInformation($"Deleting today's propositions");
         var todayIds = await _context.Propositions.AsNoTracking()
-            .Where(p => p.PublishedOn == _yesterday)
+            .Where(p => p.PublishedOn == _startDate)
             .Select(x => x.Id).ToListAsync(cancellationToken);
         await _context.Propositions.Where(x => todayIds.Contains(x.Id)).ExecuteDeleteAsync(cancellationToken);
     }
