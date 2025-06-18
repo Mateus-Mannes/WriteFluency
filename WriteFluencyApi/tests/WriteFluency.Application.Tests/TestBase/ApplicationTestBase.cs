@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using NSubstitute.Core;
 using WriteFluency.Application.Propositions.Interfaces;
 using WriteFluency.Common;
 using WriteFluency.Data;
@@ -74,13 +75,22 @@ public class ApplicationTestBase : IDisposable
         services.AddSingleton(generativeAIClientMock);
 
         var fileServiceMock = Substitute.For<IFileService>();
-        fileServiceMock.UploadFileAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<CancellationToken>())
-            .Returns(x =>
-            {
-                var fileId = Guid.NewGuid();
-                UploadedFiles[fileId] = (byte[])x[1];
-                return Result.Ok(fileId);
-            });
+        
+        Result<string> UploadBehavior(CallInfo x)
+        {
+            var fileId = Guid.NewGuid();
+            UploadedFiles[fileId] = (byte[])x[1];
+            return Result.Ok(fileId.ToString());
+        }
+
+        fileServiceMock
+            .UploadFileAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(UploadBehavior);
+
+        fileServiceMock
+            .UploadFileAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(UploadBehavior);
+
         services.AddSingleton(fileServiceMock);
 
         var propositionOptions = new PropositionOptions

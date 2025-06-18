@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WriteFluency.Propositions;
 
@@ -11,8 +9,8 @@ public class Proposition
     public required DateTime PublishedOn { get; set; }
     public required SubjectEnum SubjectId { get; set; }
     public required ComplexityEnum ComplexityId { get; set; }
-
-    public required Guid AudioFileId { get; set; }
+    [MaxLength(50)]
+    public required string AudioFileId { get; set; }
     [MaxLength(50)]
     public required string Voice { get; set; }
 
@@ -21,8 +19,8 @@ public class Proposition
     public required int TextLength { get; set; }
     [MaxLength(1500)]
     public required string Title { get; set; }
-
-    public Guid? ImageFileId { get; set; }
+    [MaxLength(50)]
+    public string? ImageFileId { get; set; }
 
     public required DateTime CreatedAt { get; set; }
 

@@ -67,12 +67,12 @@ public class PropositionBuilder
             PublishedOn = dto.PublishedOn,
             SubjectId = dto.Subject,
             ComplexityId = dto.Complexity,
-            AudioFileId = Guid.Parse(AudioFileId!),
+            AudioFileId = AudioFileId!,
             Voice = AudioVoice!,
             Text = PropositionText!,
             TextLength = PropositionText!.Length,
             Title = PropositionTitle!,
-            ImageFileId = string.IsNullOrEmpty(ImageFileId) ? null : Guid.Parse(ImageFileId),
+            ImageFileId = ImageFileId,
             CreatedAt = DateTime.UtcNow,
             NewsInfo = new NewsInfo
             {

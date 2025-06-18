@@ -59,7 +59,7 @@ builder.Services.AddOptions<FileStorageOptions>().Bind(builder.Configuration.Get
 var fileStorageOptions = builder.Configuration.GetSection(FileStorageOptions.Section).Get<FileStorageOptions>();
 ArgumentNullException.ThrowIfNull(fileStorageOptions);
 builder.Services.AddMinio(options =>
-    options.WithEndpoint(fileStorageOptions.Endpoint, 9000)
+    options.WithEndpoint(fileStorageOptions.Endpoint)
     .WithCredentials(fileStorageOptions.AccessKey, fileStorageOptions.SecretKey)
     .Build());
 
