@@ -23,32 +23,28 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     {
         base.OnConfiguring(optionsBuilder);
 
-        optionsBuilder.UseSeeding((context, _) =>
+        optionsBuilder.UseAsyncSeeding(async (context, _, cancellationToken) =>
         {
-            Task.Run(async () =>
-            {
-                await SeedEnumClassAsync<Subject, SubjectEnum>(
-                    context.Set<Subject>(), x => new Subject { Id = x, Description = x.ToString() });
+            await SeedEnumClassAsync<Subject, SubjectEnum>(
+                context.Set<Subject>(), x => new Subject { Id = x, Description = x.ToString() }, cancellationToken);
 
-                await SeedEnumClassAsync<Complexity, ComplexityEnum>(
-                    context.Set<Complexity>(), x => new Complexity { Id = x, Description = x.ToString() });
-
-            }).GetAwaiter().GetResult();
+            await SeedEnumClassAsync<Complexity, ComplexityEnum>(
+                context.Set<Complexity>(), x => new Complexity { Id = x, Description = x.ToString() }, cancellationToken);
         });
     }
 
-    private async Task SeedEnumClassAsync<TModel, TEnum>(DbSet<TModel> dbSet, Func<TEnum, TModel> createFunc)
+    private async Task SeedEnumClassAsync<TModel, TEnum>(DbSet<TModel> dbSet, Func<TEnum, TModel> createFunc, CancellationToken cancellationToken = default)
         where TEnum : Enum
         where TModel : class
     {
         foreach (TEnum enumValue in Enum.GetValues(typeof(TEnum)))
         {
-            if (!await dbSet.AnyAsync(x => EF.Property<TEnum>(x, "Id").Equals(enumValue)))
+            if (!await dbSet.AnyAsync(x => EF.Property<TEnum>(x, "Id").Equals(enumValue), cancellationToken))
             {
-                await dbSet.AddAsync(createFunc(enumValue));
+                await dbSet.AddAsync(createFunc(enumValue), cancellationToken);
             }
         }
 
-        await SaveChangesAsync();
+        await SaveChangesAsync(cancellationToken);
     }
 }

@@ -13,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="../WriteFluency.Application/WriteFluency.Application.csproj" />
     <ProjectReference Include="../WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
+    <ProjectReference Include="../WriteFluency.ServiceDefaults/WriteFluency.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

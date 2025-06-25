@@ -14,7 +14,9 @@ using Microsoft.Extensions.AI;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.AddServiceDefaults();
+
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("postgresdb")));
 
 builder.Services.AddOptions<NewsOptions>().Bind(builder.Configuration.GetSection(NewsOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();

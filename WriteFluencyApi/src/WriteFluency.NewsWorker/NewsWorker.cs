@@ -27,7 +27,7 @@ public class NewsWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (_environment.IsDevelopment())
+        if (_environment.IsDevelopment() && _propositionOptions.IsWorkerActive)
         {
             // In development, run the task immediately to test it
             await GenerateDailyPropositionsAsync(stoppingToken);
@@ -42,7 +42,7 @@ public class NewsWorker : BackgroundService
             {
                 var delay = next.Value - DateTimeOffset.Now;
                 if (delay > TimeSpan.Zero) await Task.Delay(delay, stoppingToken);
-                await GenerateDailyPropositionsAsync(stoppingToken);
+                if (_propositionOptions.IsWorkerActive) await GenerateDailyPropositionsAsync(stoppingToken);
             }
         }
     }

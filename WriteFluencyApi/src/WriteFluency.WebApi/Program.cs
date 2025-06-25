@@ -8,8 +8,9 @@ using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
 
-
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.Services.AddControllers();
 
@@ -25,7 +26,7 @@ builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.Ge
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
 
 // Adds the database context and identity configuration
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("postgresdb")));
 builder.Services.AddIdentityCore<IdentityUser>()
     .AddApiEndpoints()
     .AddEntityFrameworkStores<AppDbContext>();
