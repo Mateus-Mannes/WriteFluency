@@ -11,12 +11,21 @@ using WriteFluency.TextComparisons;
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Data;
 using Microsoft.Extensions.AI;
+using Microsoft.AspNetCore.Builder;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("postgresdb")));
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("postgresdb")));
+
+builder.EnrichNpgsqlDbContext<AppDbContext>(
+    configureSettings: settings =>
+    {
+        settings.DisableRetry = false;
+        settings.CommandTimeout = 30;
+    });
 
 builder.Services.AddOptions<NewsOptions>().Bind(builder.Configuration.GetSection(NewsOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
@@ -56,16 +65,17 @@ builder.Services.AddTransient<IFileService, FileService>();
 builder.Services.AddTransient<CreatePropositionService>();
 builder.Services.AddTransient<DailyPropositionGenerator>();
 
-builder.Services.AddOptions<FileStorageOptions>().Bind(builder.Configuration.GetSection(FileStorageOptions.Section)).ValidateOnStart();
-
-var fileStorageOptions = builder.Configuration.GetSection(FileStorageOptions.Section).Get<FileStorageOptions>();
-ArgumentNullException.ThrowIfNull(fileStorageOptions);
-builder.Services.AddMinio(options =>
-    options.WithEndpoint(fileStorageOptions.Endpoint)
-    .WithCredentials(fileStorageOptions.AccessKey, fileStorageOptions.SecretKey)
-    .Build());
+builder.AddMinioClient("minio", configureSettings: options =>
+{
+    options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
+    options.UseSsl = false;
+});
+builder.AddMinioHealthChecks();
 
 builder.Services.AddHostedService<NewsWorker>();
 
 var host = builder.Build();
+
+host.MapDefaultEndpoints();
+
 host.Run();

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -105,6 +105,18 @@ public static class Extensions
 
         return builder;
     }
+
+    public static TBuilder AddMinioHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        builder.Services.AddHealthChecks().AddUrlGroup(options =>
+            {
+                var uri = new Uri(builder.Configuration.GetConnectionString("minio")!.Split(";")[0].Replace("Endpoint=", ""));
+                options.AddUri(new Uri(uri, "/minio/health/live"), setup => setup.ExpectHttpCode(200));
+                options.AddUri(new Uri(uri, "/minio/health/cluster"), setup => setup.ExpectHttpCode(200));
+                options.AddUri(new Uri(uri, "/minio/health/cluster/read"), setup => setup.ExpectHttpCode(200));
+            }, "minio_health", tags: new[] { "ready", "live" });
+        return builder;
+    }    
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {

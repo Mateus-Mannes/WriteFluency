@@ -31,6 +31,13 @@ builder.Services.AddIdentityCore<IdentityUser>()
     .AddApiEndpoints()
     .AddEntityFrameworkStores<AppDbContext>();
 
+builder.EnrichNpgsqlDbContext<AppDbContext>(
+    configureSettings: settings =>
+    {
+        settings.DisableRetry = false;
+        settings.CommandTimeout = 30;
+    });
+
 builder.Services.AddTransient<LevenshteinDistanceService>();
 builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
@@ -64,6 +71,13 @@ builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>(client =
 
 builder.Services.AddCors();
 
+builder.AddMinioClient("minio", configureSettings: options =>
+{
+    options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
+    options.UseSsl = false;
+});
+builder.AddMinioHealthChecks();
+
 var app = builder.Build();
 
 var clients = app.Configuration.GetValue<string>("AllowedClients")?.Split(',');
@@ -94,6 +108,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapDefaultEndpoints();
 
 app.MapControllers();
 

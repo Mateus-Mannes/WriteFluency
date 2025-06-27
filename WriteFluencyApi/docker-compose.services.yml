@@ -29,7 +29,9 @@ services:
 
 volumes:
   postgres-data:
+    name: writefluency-postgres-data
   minio-data:
-
+    name: writefluency-minio-data
+    
 networks:
   writefluency-net:
