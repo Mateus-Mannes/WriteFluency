@@ -7,12 +7,5 @@ module.exports = {
     pathRewrite: {
       "^/api": "",
     },
-  },
-  "/v1": {
-    target: process.env["OTEL_EXPORTER_OTLP_ENDPOINT"] || "http://localhost:4318",
-    secure: false,
-    pathRewrite: {
-      "^/v1": "",
-    },
   }
 };

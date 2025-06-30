@@ -1,5 +1,5 @@
 export const environment = {
     production: false,
     apiUrl: "api",
-    traceUrl: "",
+    otlpEndpoint: "https://localhost:16175/v1/traces"
 };
