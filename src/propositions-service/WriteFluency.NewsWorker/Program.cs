@@ -74,8 +74,13 @@ builder.AddMinioHealthChecks();
 
 builder.Services.AddHostedService<NewsWorker>();
 
+builder.Services.AddRequestTimeouts();
+builder.Services.AddOutputCache();
+
 var host = builder.Build();
 
+host.UseRequestTimeouts();
+host.UseOutputCache();
 host.MapDefaultEndpoints();
 
 host.Run();

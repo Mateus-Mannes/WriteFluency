@@ -89,6 +89,9 @@ builder.AddMinioClient("minio", configureSettings: options =>
 });
 builder.AddMinioHealthChecks();
 
+builder.Services.AddRequestTimeouts();
+builder.Services.AddOutputCache();
+
 var app = builder.Build();
 
 var clients = app.Configuration.GetValue<string>("AllowedClients")?.Split(',');
@@ -120,6 +123,8 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseRequestTimeouts();
+app.UseOutputCache();
 app.MapDefaultEndpoints();
 
 app.MapControllers();
