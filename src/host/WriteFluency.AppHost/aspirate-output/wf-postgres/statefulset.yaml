@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-postgres
+  labels:
+    app: wf-postgres
+spec:
+  serviceName: "wf-postgres"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-postgres
+  template:
+    metadata:
+      labels:
+        app: wf-postgres
+    spec:
+      containers:
+        - name: wf-postgres
+          image: docker.io/postgres:14.3
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: wf-postgres-env
+          volumeMounts:
+            - name: writefluency-postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

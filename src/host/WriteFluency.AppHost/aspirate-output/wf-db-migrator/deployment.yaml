@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-db-migrator
+  labels:
+    app: wf-db-migrator
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-db-migrator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-db-migrator
+    spec:
+      containers:
+      - name: wf-db-migrator
+        image: docker.io/mateusmannes/wf-db-migrator:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: wf-db-migrator-env
+      terminationGracePeriodSeconds: 180

@@ -119,7 +119,7 @@ public static class Extensions
     {
         builder.Services.AddHealthChecks().AddUrlGroup(options =>
             {
-                var uri = new Uri(builder.Configuration.GetConnectionString("minio")!.Split(";")[0].Replace("Endpoint=", ""));
+                var uri = new Uri(builder.Configuration.GetConnectionString("wf-minio")!.Split(";")[0].Replace("Endpoint=", ""));
                 options.AddUri(new Uri(uri, "/minio/health/live"), setup => setup.ExpectHttpCode(200));
                 options.AddUri(new Uri(uri, "/minio/health/cluster"), setup => setup.ExpectHttpCode(200));
                 options.AddUri(new Uri(uri, "/minio/health/cluster/read"), setup => setup.ExpectHttpCode(200));

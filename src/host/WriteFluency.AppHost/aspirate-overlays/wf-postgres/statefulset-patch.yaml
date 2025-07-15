@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-postgres
+  labels:
+    app: wf-postgres
+spec:
+  template:
+    metadata:
+      labels:
+        app: wf-postgres
+    spec:
+      containers:
+        - name: wf-postgres
+          envFrom:
+            - configMapRef:
+                name: wf-postgres-env
+            - secretRef:
+                name: wf-app-secrets
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 15Gi

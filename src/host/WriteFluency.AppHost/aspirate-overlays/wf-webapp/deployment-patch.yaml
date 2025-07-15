@@ -1,0 +1,20 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-webapp
+  labels:
+    app: wf-webapp
+spec:
+  template:
+    metadata:
+      labels:
+        app: wf-webapp
+    spec:
+      containers:
+      - name: wf-webapp
+        envFrom:
+        - configMapRef:
+            name: wf-webapp-env
+        - secretRef:
+            name: wf-app-secrets

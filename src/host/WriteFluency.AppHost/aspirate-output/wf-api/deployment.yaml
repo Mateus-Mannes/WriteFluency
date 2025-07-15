@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-api
+  labels:
+    app: wf-api
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-api
+    spec:
+      containers:
+      - name: wf-api
+        image: docker.io/mateusmannes/wf-api:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        envFrom:
+        - configMapRef:
+            name: wf-api-env
+      terminationGracePeriodSeconds: 180

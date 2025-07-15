@@ -18,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("postgresdb")));
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-postgresdb")));
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>
@@ -65,7 +65,7 @@ builder.Services.AddTransient<IFileService, FileService>();
 builder.Services.AddTransient<CreatePropositionService>();
 builder.Services.AddTransient<DailyPropositionGenerator>();
 
-builder.AddMinioClient("minio", configureSettings: options =>
+builder.AddMinioClient("wf-minio", configureSettings: options =>
 {
     options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
     options.UseSsl = false;

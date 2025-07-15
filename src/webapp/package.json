@@ -7,6 +7,7 @@
     "start:win32": "ng serve --port %PORT%",
     "start:default": "ng serve --port $PORT",
     "build": "ng build",
+    "build:prod": "ng build --configuration=production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
