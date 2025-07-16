@@ -1,5 +1,6 @@
 export const environment = {
-    production: false,
+    production: true,
     apiUrl: "http://writefluency.com:8080",
-    otlpEndpoint: "https://localhost:16175/v1/traces"
+    otlpEndpoint: "",
+    instrumentationKey: "768f1e67-fda1-4093-8e79-227c26b50895"
 };

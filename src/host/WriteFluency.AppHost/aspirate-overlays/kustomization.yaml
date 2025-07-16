@@ -2,13 +2,13 @@ resources:
   - ../aspirate-output
 
 images:
-  - name: docker.io/mateusmannes/wf-api
+  - name: ghcr.io/mateus-mannes/wf-api
     newTag: replace_with_tag
-  - name: docker.io/mateusmannes/wf-news-worker
+  - name: ghcr.io/mateus-mannes/wf-news-worker
     newTag: replace_with_tag
-  - name: docker.io/mateusmannes/wf-db-migrator
+  - name: ghcr.io/mateus-mannes/wf-db-migrator
     newTag: replace_with_tag
-  - name: docker.io/mateusmannes/wf-webapp
+  - name: ghcr.io/mateus-mannes/wf-webapp
     newTag: replace_with_tag
 
 patches:

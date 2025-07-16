@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: wf-news-worker
-        image: docker.io/mateusmannes/wf-news-worker:latest
+        image: ghcr.io/mateus-mannes/wf-news-worker:latest
         imagePullPolicy: Always
         ports:
         - name: https

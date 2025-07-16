@@ -7,6 +7,10 @@ import { SharedModule } from './shared/shared.module';
 import { HomeComponent } from './home/home.component';
 import { ListenAndWriteModule } from './listen-and-write/listen-and-write.module';
 import { HttpClientModule } from '@angular/common/http';
+import { environment } from 'src/enviroments/enviroment.prod';
+import { InsightsModule } from 'src/insights.module';
+
+const conditionalImports = environment.production ? [InsightsModule] : [];
 
 @NgModule({
   declarations: [
@@ -18,7 +22,8 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     SharedModule,
     ListenAndWriteModule,
-    HttpClientModule
+    HttpClientModule,
+    ...conditionalImports
   ],
   providers: [AlertService],
   bootstrap: [AppComponent]

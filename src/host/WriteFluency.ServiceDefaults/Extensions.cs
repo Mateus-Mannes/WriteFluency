@@ -1,5 +1,5 @@
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -50,6 +50,9 @@ public static class Extensions
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
+#if !DEBUG
+            logging.AddAzureMonitorLogExporter();
+#endif
         });
 
         builder.Services.AddOpenTelemetry()
@@ -58,6 +61,9 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
+#if !DEBUG
+                metrics.AddAzureMonitorMetricExporter();
+#endif
             })
             .WithTracing(tracing =>
             {
@@ -71,6 +77,9 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
+#if !DEBUG
+                tracing.AddAzureMonitorTraceExporter();
+#endif
             });
 
         builder.AddOpenTelemetryExporters();

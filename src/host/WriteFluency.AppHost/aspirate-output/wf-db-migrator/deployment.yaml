@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: wf-db-migrator
-        image: docker.io/mateusmannes/wf-db-migrator:latest
+        image: ghcr.io/mateus-mannes/wf-db-migrator:latest
         imagePullPolicy: Always
         envFrom:
         - configMapRef:

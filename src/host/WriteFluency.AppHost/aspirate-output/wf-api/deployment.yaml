@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: wf-api
-        image: docker.io/mateusmannes/wf-api:latest
+        image: ghcr.io/mateus-mannes/wf-api:latest
         imagePullPolicy: Always
         ports:
         - name: http

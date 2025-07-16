@@ -13,6 +13,7 @@ google_client_secret=$(jq -r '.["Authentication:Google:ClientSecret"]' "$USER_SE
 openai_key=$(jq -r '.["ExternalApis:OpenAI:Key"]' "$USER_SECRETS")
 tts_key=$(jq -r '.["ExternalApis:TextToSpeech:Key"]' "$USER_SECRETS")
 news_key=$(jq -r '.["ExternalApis:News:Key"]' "$USER_SECRETS")
+app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
 postgres_password="postgres"
 minio_password="admin123"
 
@@ -36,4 +37,5 @@ stringData:
   NODE_ENV: production
   ConnectionStrings__wf-postgresdb: Host=wf-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-postgresdb
   ConnectionStrings__wf-minio: Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
+  APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
 EOF

@@ -1,8 +1,8 @@
 {
   "TemplatePath": null,
   "ContainerSettings": {
-    "Registry": "docker.io",
-    "RepositoryPrefix": "mateusmannes",
+    "Registry": "ghcr.io",
+    "RepositoryPrefix": "Mateus-Mannes",
     "Tags": [
       "latest"
     ],
