@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using WriteFluency.Domain.App;
 using WriteFluency.Propositions;
 
 namespace WriteFluency.Data;
@@ -10,8 +11,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<Complexity> Complexities { get; set; }
     public DbSet<Proposition> Propositions { get; set; }
+    public DbSet<AppSettings> AppSettings { get; set; }
     public AppDbContext(DbContextOptions opts) : base(opts) { }
-
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -30,6 +32,8 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
 
             await SeedEnumClassAsync<Complexity, ComplexityEnum>(
                 context.Set<Complexity>(), x => new Complexity { Id = x, Description = x.ToString() }, cancellationToken);
+
+            await SeedAppSettingsAsync(context.Set<AppSettings>(), cancellationToken);
         });
     }
 
@@ -47,4 +51,30 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
 
         await SaveChangesAsync(cancellationToken);
     }
+
+    private async Task SeedAppSettingsAsync(DbSet<AppSettings> dbSet, CancellationToken cancellationToken = default)
+    {
+        foreach (var (key, value) in GetDefaultAppSettings())
+        {
+            if (!await dbSet.AnyAsync(x => x.Key == key, cancellationToken))
+            {
+                await dbSet.AddAsync(new AppSettings
+                {
+                    Key = key,
+                    Value = value
+                }, cancellationToken);
+            }
+        }
+
+        await SaveChangesAsync(cancellationToken);
+    }
+
+    public static IEnumerable<(string Key, string Value)> GetDefaultAppSettings()
+    {
+        return typeof(AppSettings)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.FieldType == typeof((string, string)))
+            .Select(f => ((string, string))f.GetValue(null)!);
+    }
+
 }

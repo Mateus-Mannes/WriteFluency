@@ -94,7 +94,8 @@
         "OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES": "true",
         "OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES": "true",
         "OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY": "in_memory",
-        "ConnectionStrings__wf-postgresdb": "{wf-postgresdb.connectionString}"
+        "ConnectionStrings__wf-postgresdb": "{wf-postgresdb.connectionString}",
+        "RESOURCE_NAME": "wf-db-migrator"
       }
     },
     "wf-api": {
@@ -107,7 +108,8 @@
         "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true",
         "HTTP_PORTS": "{wf-api.bindings.http.targetPort}",
         "ConnectionStrings__wf-postgresdb": "{wf-postgresdb.connectionString}",
-        "ConnectionStrings__wf-minio": "{wf-minio.connectionString}"
+        "ConnectionStrings__wf-minio": "{wf-minio.connectionString}",
+        "RESOURCE_NAME": "wf-api"
       },
       "bindings": {
         "http": {
@@ -132,7 +134,8 @@
         "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true",
         "HTTPS_PORTS": "{wf-news-worker.bindings.https.targetPort}",
         "ConnectionStrings__wf-postgresdb": "{wf-postgresdb.connectionString}",
-        "ConnectionStrings__wf-minio": "{wf-minio.connectionString}"
+        "ConnectionStrings__wf-minio": "{wf-minio.connectionString}",
+        "RESOURCE_NAME": "wf-news-worker"
       },
       "bindings": {
         "https": {

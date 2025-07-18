@@ -1,6 +1,7 @@
 using Cronos;
-using Microsoft.Extensions.Options;
-using WriteFluency.Infrastructure.ExternalApis;
+using Microsoft.EntityFrameworkCore;
+using WriteFluency.Data;
+using WriteFluency.Domain.App;
 using WriteFluency.Propositions;
 
 namespace WriteFluency.NewsWorker;
@@ -10,40 +11,84 @@ namespace WriteFluency.NewsWorker;
 /// </summary>
 public class NewsWorker : BackgroundService
 {
-    private readonly PropositionOptions _propositionOptions;
     private readonly IServiceProvider _serviceProvider;
     private readonly IHostEnvironment _environment;
+    private readonly ILogger<NewsWorker> _logger;
 
     public NewsWorker(
-        IOptionsMonitor<PropositionOptions> propositionOptions,
         IServiceProvider serviceProvider,
         IHostEnvironment environment,
-        IOptionsMonitor<OpenAIOptions> openAIOptions)
+        ILogger<NewsWorker> logger)
     {
-        _propositionOptions = propositionOptions.CurrentValue;
         _serviceProvider = serviceProvider;
         _environment = environment;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (_environment.IsDevelopment() && _propositionOptions.IsWorkerActive)
-        {
-            // In development, run the task immediately to test it
-            await GenerateDailyPropositionsAsync(stoppingToken);
-            return;
-        }
+        _logger.LogInformation("NewsWorker started.");
+
+        DateTimeOffset? lastExecution = null;
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var next = CronExpression.Parse(_propositionOptions.DailyRunCron)
-                .GetNextOccurrence(DateTimeOffset.Now, TimeZoneInfo.Utc);
-            if (next.HasValue)
+            try
             {
-                var delay = next.Value - DateTimeOffset.Now;
-                if (delay > TimeSpan.Zero) await Task.Delay(delay, stoppingToken);
-                if (_propositionOptions.IsWorkerActive) await GenerateDailyPropositionsAsync(stoppingToken);
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var cron = await db.AppSettings
+                    .Where(x => x.Key == AppSettings.NewsWorkerCron.Key)
+                    .Select(x => x.Value)
+                    .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.NewsWorkerCron.Value;
+
+                var isActiveStr = await db.AppSettings
+                    .Where(x => x.Key == AppSettings.IsNewsWorkerActive.Key)
+                    .Select(x => x.Value)
+                    .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.IsNewsWorkerActive.Value;
+
+                var isActive = bool.TryParse(isActiveStr, out var parsed) && parsed;
+
+                if (_environment.IsDevelopment() && isActive)
+                {
+                    _logger.LogInformation("Running immediately in Development mode.");
+                    await GenerateDailyPropositionsAsync(stoppingToken);
+                    return;
+                }
+
+                if (!isActive)
+                {
+                    _logger.LogInformation("Worker is disabled.");
+                }
+                else
+                {
+                    var now = DateTimeOffset.UtcNow;
+                    var cronExpr = CronExpression.Parse(cron);
+                    var next = cronExpr.GetNextOccurrence(lastExecution ?? now.AddMinutes(-1), TimeZoneInfo.Utc);
+
+                    if (next.HasValue && next.Value <= now)
+                    {
+                        _logger.LogInformation("Triggering scheduled execution (cron matched at {CronTime})", next.Value);
+                        await GenerateDailyPropositionsAsync(stoppingToken);
+                        lastExecution = now;
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Not time yet. Next execution expected at {Next}", next);
+                    }
+                }
             }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in NewsWorker.");
+            }
+
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 

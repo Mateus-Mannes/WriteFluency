@@ -6,6 +6,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace Microsoft.Extensions.Hosting;
@@ -46,11 +47,23 @@ public static class Extensions
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
+        var resourceAttributes = new Dictionary<string, object>();
+        if (!string.IsNullOrWhiteSpace(resourceName))
+        {
+            // Create a dictionary of resource attributes.
+            resourceAttributes = new Dictionary<string, object> {
+                { "service.name", resourceName! }};
+        }
+        // Create a resource builder.
+        var resourceBuilder = ResourceBuilder.CreateDefault().AddAttributes(resourceAttributes);
+
         builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
-#if !DEBUG
+#if !DEBUG 
+            logging.SetResourceBuilder(resourceBuilder);
             logging.AddAzureMonitorLogExporter();
 #endif
         });
@@ -62,6 +75,7 @@ public static class Extensions
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
 #if !DEBUG
+                metrics.SetResourceBuilder(resourceBuilder);
                 metrics.AddAzureMonitorMetricExporter();
 #endif
             })
@@ -78,6 +92,7 @@ public static class Extensions
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
 #if !DEBUG
+                tracing.SetResourceBuilder(resourceBuilder);
                 tracing.AddAzureMonitorTraceExporter();
 #endif
             });

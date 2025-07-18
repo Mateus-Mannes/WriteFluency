@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WriteFluency.Data;
 using WriteFluency.TextComparisons;
 
 namespace WriteFluency.Propositions;
@@ -10,12 +12,18 @@ public class PropositionController : ControllerBase
     private readonly IGenerativeAIClient _textGenerator;
     private readonly ITextToSpeechClient _speechGenerator;
     private readonly ILogger<PropositionController> _logger;
+    private readonly IAppDbContext _dbContext;
 
-    public PropositionController(IGenerativeAIClient textGenerator, ITextToSpeechClient speechGenerator, ILogger<PropositionController> logger)
+    public PropositionController(
+        IGenerativeAIClient textGenerator,
+        ITextToSpeechClient speechGenerator,
+        ILogger<PropositionController> logger,
+        IAppDbContext dbContext)
     {
         _logger = logger;
         _textGenerator = textGenerator;
         _speechGenerator = speechGenerator;
+        _dbContext = dbContext;
     }
 
     [HttpPost("generate-proposition")]
@@ -29,6 +37,10 @@ public class PropositionController : ControllerBase
         {
             var text = await _textGenerator.GenerateTextAsync(generatePropositionDto);
             var audio = await _speechGenerator.GenerateSpeechAsync(text);
+
+            await _dbContext.Subjects.ToListAsync(); // dummy request to test tracing
+            
+            _logger.LogInformation("Generated proposition for: {dto}", generatePropositionDto); 
             return Ok(new PropositionDto(text, audio));
         }
         catch (Exception e)

@@ -43,7 +43,7 @@ public class ApplicationTestBase : IDisposable
         _scope = _serviceProvider.CreateScope();
 
         var context = (AppDbContext)_scope.ServiceProvider.GetRequiredService<IAppDbContext>();
-        context.Database.EnsureCreated();
+        context.Database.EnsureCreatedAsync().GetAwaiter().GetResult();
     }
 
     protected T GetService<T>() where T : class
@@ -97,8 +97,7 @@ public class ApplicationTestBase : IDisposable
         {
             DailyRequestsLimit = 100,
             PropositionsLimitPerTopic = 300,
-            NewsRequestLimit = 3,
-            DailyRunCron = "0 0 * * *"
+            NewsRequestLimit = 3
         };
         var optionsMonitor = Substitute.For<IOptionsMonitor<PropositionOptions>>();
         optionsMonitor.CurrentValue.Returns(propositionOptions);

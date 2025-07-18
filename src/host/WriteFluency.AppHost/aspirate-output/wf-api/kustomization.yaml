@@ -15,5 +15,6 @@ configMapGenerator:
     - HTTP_PORTS=8080
     - ConnectionStrings__wf-postgresdb=Host=wf-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-postgresdb
     - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey={user.value};SecretKey=admin123
+    - RESOURCE_NAME=wf-api
     - ASPNETCORE_URLS=http://+:8080;
 

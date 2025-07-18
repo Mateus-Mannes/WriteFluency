@@ -84,7 +84,8 @@ builder.Services.AddCors();
 
 builder.AddMinioClient("wf-minio", configureSettings: options =>
 {
-    options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
+    if(options.Endpoint is not null)
+        options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
     options.UseSsl = false;
 });
 builder.AddMinioHealthChecks();

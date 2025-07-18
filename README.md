@@ -16,9 +16,9 @@ Listen and write is a route of the site where the user can generate an audio, ba
 ## Command to create migrations (relative path to WriteFluencyApi directory):
 
 ```bash
-dotnet ef migrations add initial_migration -p ./src/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj -s ./src/WriteFluency.WebApi/WriteFluency.WebApi.csproj 
-
-dotnet ef database update -p ./src/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj -s ./src/WriteFluency.WebApi/WriteFluency.WebApi.csproj 
+dotnet ef migrations add add_app_settings -p ./src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj -s ./src/propositions-service/WriteFluency.WebApi/WriteFluency.WebApi.csproj 
 
 docker-compose -f docker-compose.services.yml up
 ```
+
+run db migrator to update the database
