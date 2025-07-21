@@ -1,5 +1,8 @@
 resources:
   - ../aspirate-output
+  - ingress-webapp.yaml
+  - ingress-api.yaml
+  - ingress-minio.yaml
 
 images:
   - name: ghcr.io/mateus-mannes/wf-api
