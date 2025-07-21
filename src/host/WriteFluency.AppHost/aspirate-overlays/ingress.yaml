@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: writefluency-ingress
+  namespace: writefluency
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - writefluency.com
+        - api.writefluency.com
+        - minio.writefluency.com
+      secretName: writefluency-tls
+  rules:
+    - host: writefluency.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wf-webapp
+                port:
+                  number: 80
+    - host: api.writefluency.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wf-api
+                port:
+                  number: 8080
+    - host: minio.writefluency.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wf-minio
+                port:
+                  number: 9001
