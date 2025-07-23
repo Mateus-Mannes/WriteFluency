@@ -62,8 +62,8 @@ jobs:
 
     - name: Build Images
       working-directory: ./src/host/WriteFluency.AppHost
-      run: ./src/host/WriteFluency.AppHost/build-k8s-images.sh $K8S_IMAGE_TAG
+      run: ./build-k8s-images.sh $K8S_IMAGE_TAG
 
     - name: Deploy to Cluster
       working-directory: ./src/host/WriteFluency.AppHost
-      run: ./src/host/WriteFluency.AppHost/deploy-k8s.sh $KUBE_CONTEXT
+      run: ./deploy-k8s.sh $KUBE_CONTEXT
