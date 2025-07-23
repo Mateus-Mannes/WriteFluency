@@ -22,6 +22,6 @@ else
 fi
 
 echo "🏗️  Running aspirate build with tag: $TAG"
-aspirate build -ct "$TAG" --non-interactive
+aspirate build -ct "$TAG" --non-interactive -m ./manifest.json
 
 echo "✅ Build completed successfully with tag: $TAG"
