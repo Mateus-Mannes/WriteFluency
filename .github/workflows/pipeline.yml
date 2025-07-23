@@ -60,6 +60,9 @@ jobs:
         chmod +x ./src/host/WriteFluency.AppHost/deploy-k8s.sh
         chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
 
+    - name: Login no GitHub Container Registry (GHCR)
+      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
     - name: Build Images
       working-directory: ./src/host/WriteFluency.AppHost
       run: ./build-k8s-images.sh $K8S_IMAGE_TAG
