@@ -61,7 +61,9 @@ jobs:
         chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
 
     - name: Build Images
+      working-directory: ./src/host/WriteFluency.AppHost
       run: ./src/host/WriteFluency.AppHost/build-k8s-images.sh $K8S_IMAGE_TAG
 
     - name: Deploy to Cluster
+      working-directory: ./src/host/WriteFluency.AppHost
       run: ./src/host/WriteFluency.AppHost/deploy-k8s.sh $KUBE_CONTEXT
