@@ -5,6 +5,18 @@ on:
     tags:
       - '*.*.*'
 
+env:
+  GITHUB_ACTIONS: true
+  Jwt__Key: ${{ secrets.Jwt__Key }}
+  Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
+  Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
+  ExternalApis__OpenAI__Key: ${{ secrets.ExternalApis__OpenAI__Key }}
+  ExternalApis__TextToSpeech__Key: ${{ secrets.ExternalApis__TextToSpeech__Key }}
+  ExternalApis__News__Key: ${{ secrets.ExternalApis__News__Key }}
+  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

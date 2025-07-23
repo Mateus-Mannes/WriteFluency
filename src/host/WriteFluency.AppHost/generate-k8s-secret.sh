@@ -1,21 +1,38 @@
 #!/bin/bash
 
 # Script for applying the Kubernetes cluster secrets based on .NET user secrets
-# Used for testing the deployment on the local cluster only
+# or GitHub Actions secrets (with real variable names like Authentication__Google__ClientId)
 
 kubectl apply -f aspirate-output/namespace.yaml
 
-USER_SECRETS=~/.microsoft/usersecrets/58584eae-ca83-4318-9cb9-76ac1239e00a/secrets.json
+if [ "$GITHUB_ACTIONS" = "true" ]; then
+  echo "🔐 Running in GitHub Actions — using environment variables from secrets"
 
-jwt_key=$(jq -r '.["Jwt:Key"]' "$USER_SECRETS")
-google_client_id=$(jq -r '.["Authentication:Google:ClientId"]' "$USER_SECRETS")
-google_client_secret=$(jq -r '.["Authentication:Google:ClientSecret"]' "$USER_SECRETS")
-openai_key=$(jq -r '.["ExternalApis:OpenAI:Key"]' "$USER_SECRETS")
-tts_key=$(jq -r '.["ExternalApis:TextToSpeech:Key"]' "$USER_SECRETS")
-news_key=$(jq -r '.["ExternalApis:News:Key"]' "$USER_SECRETS")
-app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
-postgres_password="postgres"
-minio_password="admin123"
+  jwt_key="${Jwt__Key}"
+  google_client_id="${Authentication__Google__ClientId}"
+  google_client_secret="${Authentication__Google__ClientSecret}"
+  openai_key="${ExternalApis__OpenAI__Key}"
+  tts_key="${ExternalApis__TextToSpeech__Key}"
+  news_key="${ExternalApis__News__Key}"
+  app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
+  postgres_password="${POSTGRES_PASSWORD}"
+  minio_password="${MINIO_ROOT_PASSWORD}"
+
+else
+  echo "🔐 Running locally — using .NET user secrets"
+
+  USER_SECRETS=~/.microsoft/usersecrets/58584eae-ca83-4318-9cb9-76ac1239e00a/secrets.json
+
+  jwt_key=$(jq -r '.["Jwt:Key"]' "$USER_SECRETS")
+  google_client_id=$(jq -r '.["Authentication:Google:ClientId"]' "$USER_SECRETS")
+  google_client_secret=$(jq -r '.["Authentication:Google:ClientSecret"]' "$USER_SECRETS")
+  openai_key=$(jq -r '.["ExternalApis:OpenAI:Key"]' "$USER_SECRETS")
+  tts_key=$(jq -r '.["ExternalApis:TextToSpeech:Key"]' "$USER_SECRETS")
+  news_key=$(jq -r '.["ExternalApis:News:Key"]' "$USER_SECRETS")
+  app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
+  postgres_password="postgres"
+  minio_password="admin123"
+fi
 
 kubectl apply -f - <<EOF
 apiVersion: v1
