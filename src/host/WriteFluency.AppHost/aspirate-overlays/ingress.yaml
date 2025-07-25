@@ -23,7 +23,7 @@ spec:
               service:
                 name: wf-webapp
                 port:
-                  number: 80
+                  number: 4200
     - host: api.writefluency.com
       http:
         paths:
