@@ -17,6 +17,7 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
   app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
   postgres_password="${POSTGRES_PASSWORD}"
   minio_password="${MINIO_ROOT_PASSWORD}"
+  cloud_flare_token="${CLOUDFLARE_API_TOKEN}"
 
 else
   echo "🔐 Running locally — using .NET user secrets"
@@ -32,6 +33,7 @@ else
   app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
   postgres_password="postgres"
   minio_password="admin123"
+  cloud_flare_token=$(jq -r '.["CLOUDFLARE_API_TOKEN"]' "$USER_SECRETS")
 fi
 
 kubectl apply -f - <<EOF
@@ -58,3 +60,15 @@ stringData:
   ConnectionStrings__wf-minio: Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
 EOF
+
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token-secret
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: "$cloud_flare_token"
+EOF
+
