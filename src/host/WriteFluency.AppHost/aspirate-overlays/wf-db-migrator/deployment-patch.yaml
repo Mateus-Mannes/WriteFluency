@@ -15,7 +15,7 @@ spec:
       containers:
       - name: wf-db-migrator
         envFrom:
-        - secretRef:
-            name: wf-app-secrets
         - configMapRef:
             name: wf-db-migrator-env
+        - secretRef:
+            name: wf-app-secrets
