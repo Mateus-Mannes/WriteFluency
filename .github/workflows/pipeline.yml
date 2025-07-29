@@ -1,0 +1,85 @@
+name: CI/CD WriteFluency
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+env:
+  GITHUB_ACTIONS: true
+  Jwt__Key: ${{ secrets.Jwt__Key }}
+  Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
+  Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
+  ExternalApis__OpenAI__Key: ${{ secrets.ExternalApis__OpenAI__Key }}
+  ExternalApis__TextToSpeech__Key: ${{ secrets.ExternalApis__TextToSpeech__Key }}
+  ExternalApis__News__Key: ${{ secrets.ExternalApis__News__Key }}
+  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      K8S_IMAGE_TAG: ${{ github.ref_name }}
+      KUBE_CONTEXT: github-context
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Run .NET Tests
+      run: dotnet test
+
+    - name: Install Aspirate
+      run: dotnet tool install --global aspirate --version 9.1.0
+
+    - name: Add .dotnet tools to PATH
+      run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Configure kubeconfig using Service Account
+      run: |
+        mkdir -p ~/.kube
+        cat <<EOF > ~/.kube/config
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - cluster:
+            server: ${{ secrets.KUBE_SERVER }}
+            certificate-authority-data: ${{ secrets.KUBE_CA }}
+          name: cluster
+        contexts:
+        - context:
+            cluster: cluster
+            user: github
+          name: github-context
+        current-context: github-context
+        users:
+        - name: github
+          user:
+            token: ${{ secrets.KUBE_TOKEN }}
+        EOF
+
+    - name: Turn scripts executable
+      run: |
+        chmod +x ./src/host/WriteFluency.AppHost/build-k8s-images.sh
+        chmod +x ./src/host/WriteFluency.AppHost/deploy-k8s.sh
+        chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
+
+    - name: Login no GitHub Container Registry (GHCR)
+      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+    - name: Build Images
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: ./build-k8s-images.sh $K8S_IMAGE_TAG
+
+    - name: Deploy to Cluster
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: ./deploy-k8s.sh $KUBE_CONTEXT

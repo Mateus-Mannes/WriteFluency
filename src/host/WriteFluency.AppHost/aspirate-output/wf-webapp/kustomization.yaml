@@ -1,0 +1,14 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: wf-webapp-env
+  literals:
+    - NODE_ENV=development
+    - services__wf-api__http__0=http://wf-api:8080
+    - PORT=4200
+

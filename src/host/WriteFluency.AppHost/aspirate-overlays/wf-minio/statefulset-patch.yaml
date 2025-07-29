@@ -1,0 +1,26 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-minio
+  labels:
+    app: wf-minio
+spec:
+  template:
+    spec:
+      containers:
+        - name: wf-minio
+          image: docker.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+          envFrom:
+            - configMapRef:
+                name: wf-minio-env
+            - secretRef:
+                name: wf-app-secrets
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-minio-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 15Gi

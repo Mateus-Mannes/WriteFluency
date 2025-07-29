@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-news-worker
+  labels:
+    app: wf-news-worker
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-news-worker
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-news-worker
+    spec:
+      containers:
+      - name: wf-news-worker
+        image: ghcr.io/mateus-mannes/wf-news-worker:latest
+        imagePullPolicy: Always
+        ports:
+        - name: https
+          containerPort: 8443
+        envFrom:
+        - configMapRef:
+            name: wf-news-worker-env
+      terminationGracePeriodSeconds: 180

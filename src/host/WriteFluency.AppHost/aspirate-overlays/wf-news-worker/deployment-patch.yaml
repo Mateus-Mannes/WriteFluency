@@ -1,0 +1,15 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-news-worker
+spec:
+  template:
+    spec:
+      containers:
+      - name: wf-news-worker
+        envFrom:
+        - configMapRef:
+            name: wf-news-worker-env
+        - secretRef:
+            name: wf-app-secrets

@@ -1,0 +1,17 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: wf-db-migrator-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ConnectionStrings__wf-postgresdb=Host=wf-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-postgresdb
+    - RESOURCE_NAME=wf-db-migrator
+    - ASPNETCORE_URLS=http://+:8080;
+

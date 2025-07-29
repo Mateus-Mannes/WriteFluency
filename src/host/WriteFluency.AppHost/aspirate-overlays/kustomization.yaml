@@ -1,0 +1,48 @@
+resources:
+  - ../aspirate-output
+  - letsencrypt.yaml
+  - ingress.yaml
+
+images:
+  - name: ghcr.io/mateus-mannes/wf-api
+    newTag: replace_with_tag
+  - name: ghcr.io/mateus-mannes/wf-news-worker
+    newTag: replace_with_tag
+  - name: ghcr.io/mateus-mannes/wf-db-migrator
+    newTag: replace_with_tag
+  - name: ghcr.io/mateus-mannes/wf-webapp
+    newTag: replace_with_tag
+
+patches:
+  - path: wf-api/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-api
+  - path: wf-news-worker/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-news-worker
+  - path: wf-db-migrator/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-db-migrator
+  - path: wf-postgres/statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: wf-postgres
+  - path: wf-minio/statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: wf-minio
+  - path: wf-webapp/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-webapp
+  - path: wf-webapp/deployment-port-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-webapp
+  - path: wf-webapp/service-patch.yaml
+    target:
+      kind: Service
+      name: wf-webapp

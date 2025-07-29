@@ -1,0 +1,21 @@
+{
+  "projectPath": ".",
+  "inputPath": "./aspirate-overlays",
+  "outputPath": "aspirate-output",
+  "namespace": "writefluency",
+  "containerRegistry": "ghcr.io",
+  "containerImageTags": [
+    "latest"
+  ],
+  "imagePullPolicy": "Always",
+  "containerBuilder": "docker",
+  "containerRepositoryPrefix": "Mateus-Mannes",
+  "kubeContext": "minikube",
+  "outputFormat": "kustomize",
+  "disableSecrets": true,
+  "skipFinalKustomizeGeneration": false,
+  "privateRegistryEmail": "aspir8@aka.ms",
+  "includeDashboard": false,
+  "useCustomNamespace": true,
+  "processAllComponents": true
+}

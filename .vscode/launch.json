@@ -1,29 +1,11 @@
 {
     "configurations": [
-    {
-        "name": "Launch Chrome",
-        "request": "launch",
-        "type": "chrome",
-        "url": "http://localhost:4200",
-        "webRoot": "${workspaceFolder}/WriteFluencyApp"
-    },
-    {
-        "name": ".NET Core Launch (web)",
-        "type": "coreclr",
-        "request": "launch",
-        "preLaunchTask": "build",
-        "program": "${workspaceFolder}/WriteFluencyApi/bin/Debug/net7.0/WriteFluencyApi.dll",
-        "args": [],
-        "cwd": "${workspaceFolder}/WriteFluencyApi",
-        "stopAtEntry": false,
-        "serverReadyAction": {
-            "action": "openExternally",
-            "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-        },
-        "env": {
-            "ASPNETCORE_ENVIRONMENT": "Development"
+        {
+            "name": "Launch Chrome",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:4200",
+            "webRoot": "${workspaceFolder}/WriteFluencyApp"
         }
-    }
     ]
-
 }

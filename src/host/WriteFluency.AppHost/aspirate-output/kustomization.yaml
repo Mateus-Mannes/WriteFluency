@@ -1,0 +1,15 @@
+namespace: writefluency
+
+resources:
+- wf-minio
+- wf-postgres
+- wf-db-migrator
+- wf-api
+- wf-news-worker
+- wf-webapp
+- namespace.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+

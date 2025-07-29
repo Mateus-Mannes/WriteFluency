@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-minio
+  labels:
+    app: wf-minio
+spec:
+  serviceName: "wf-minio"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-minio
+  template:
+    metadata:
+      labels:
+        app: wf-minio
+    spec:
+      containers:
+        - name: wf-minio
+          image: docker.io/minio/minio:release.2025-06-13t11-33-47z
+          imagePullPolicy: Always
+          args:
+            - 'server'
+            - '/data'
+            - '--console-address'
+            - ':9001'
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+          envFrom:
+            - configMapRef:
+                name: wf-minio-env
+          volumeMounts:
+            - name: writefluency-minio-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-minio-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
