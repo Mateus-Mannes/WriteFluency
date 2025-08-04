@@ -53,6 +53,11 @@ public class NewsClient : BaseHttpClientService, INewsClient
             publishedOn
         )) ?? Enumerable.Empty<NewsDto>();
 
+        if (!newsArticles.Any())
+        {
+            _logger.LogInformation($"No news articles found for subject {subjectParameter}, page {page}, date {dateParameter}");
+        }
+
         return Result.Ok(newsArticles);
     }
 }

@@ -51,13 +51,17 @@ public class ApplicationTestBase : IDisposable
         return _scope.ServiceProvider.GetRequiredService<T>();
     }
 
-    private void ConfigureMocks(IServiceCollection services)
+    protected virtual void ConfigureMocks(IServiceCollection services, SubjectEnum? subjectWithoutNews = null)
     {
         var faker = new Faker();
 
         var newsClientMock = Substitute.For<INewsClient>();
         newsClientMock.GetNewsAsync(Arg.Any<SubjectEnum>(), Arg.Any<DateTime>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(NewsDtoFaker.Generate(3)));
+            .Returns(x =>
+            {
+                if (x.Arg<SubjectEnum>() == subjectWithoutNews) return Result.Ok(Enumerable.Empty<NewsDto>());
+                return Result.Ok(NewsDtoFaker.Generate(3));
+            });
         services.AddSingleton(newsClientMock);
 
         var articleExtractorMock = Substitute.For<IArticleExtractor>();

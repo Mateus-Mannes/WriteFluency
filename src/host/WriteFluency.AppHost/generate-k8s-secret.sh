@@ -51,7 +51,7 @@ stringData:
   ExternalApis__TextToSpeech__Key: "$tts_key"
   ExternalApis__News__Key: "$news_key"
   MINIO_ROOT_USER: minioadmin
-  Propositions__DailyRequestsLimit: "5"
+  Propositions__DailyRequestsLimit: "50"
   Propositions__LimitPerTopic: "3000"
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
