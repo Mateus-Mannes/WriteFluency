@@ -16,18 +16,14 @@ public class PropositionEndpointGroup : IEndpointMapper
     }
 
     public async Task<Results<Ok<PropositionDto>, InternalServerError<string>>> GeneratePropositionAsync(
-        GeneratePropositionDto generatePropositionDto,
-        IGenerativeAIClient textGenerator,
-        ITextToSpeechClient speechGenerator,
+        GetPropositionDto generatePropositionDto,
+        PropositionService propositionService,
         ILogger<PropositionEndpointGroup> logger)
     {
         try
         {
-            var text = await textGenerator.GenerateTextAsync(generatePropositionDto);
-            var audio = await speechGenerator.GenerateSpeechAsync(text);
-
-            logger.LogInformation("Generated proposition for: {dto}", generatePropositionDto);
-            return TypedResults.Ok(new PropositionDto(text, audio));
+            var proposition = await propositionService.GetAsync(generatePropositionDto);
+            return TypedResults.Ok(proposition);
         }
         catch (Exception e)
         {

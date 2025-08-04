@@ -1,4 +1,6 @@
-export class Proposition {
-    text!: string;
-    audio!: string;
+import { PropositionInfo } from "./proposition-info";
+
+export interface Proposition {
+    audio: string;
+    propositionInfo: PropositionInfo;
 }

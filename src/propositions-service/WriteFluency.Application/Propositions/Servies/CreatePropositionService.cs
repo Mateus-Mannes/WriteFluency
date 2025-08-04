@@ -55,7 +55,7 @@ public class CreatePropositionService
         await _articleExtractor.DownloadImageAsync(newsArticle.ImageUrl, cancellationToken)
             .Bind(file =>
             {
-                return _fileService.UploadFileAsync("images", file, newsArticle.ImageUrl, cancellationToken: cancellationToken);
+                return _fileService.UploadFileAsync(Proposition.ImageBucketName, file, newsArticle.ImageUrl, cancellationToken: cancellationToken);
             })
             .Bind(fileId => builder.SetImageFileId(fileId));
 
@@ -68,7 +68,7 @@ public class CreatePropositionService
             .Bind(audio => builder.SetAudioVoice(audio))
             .Bind(audio =>
             {
-                return _fileService.UploadFileAsync("propositions", audio.Audio, "mp3", "audio/mpeg", cancellationToken);
+                return _fileService.UploadFileAsync(Proposition.AudioBucketName, audio.Audio, "mp3", "audio/mpeg", cancellationToken);
             })
             .Bind(fileId => builder.SetAudioFileId(fileId))
             .Bind(_ => builder.Build(dto, newsArticle));

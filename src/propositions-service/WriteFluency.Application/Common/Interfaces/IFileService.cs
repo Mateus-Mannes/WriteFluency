@@ -16,4 +16,9 @@ public interface IFileService
         byte[] file,
         string url,
         CancellationToken cancellationToken = default);
+
+    Task<byte[]> GetFileAsync(
+        string bucketName,
+        string objectName,
+        CancellationToken cancellationToken = default);
 }

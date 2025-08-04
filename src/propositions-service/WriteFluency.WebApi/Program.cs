@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using WriteFluency.Authentication;
+using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
+using WriteFluency.Infrastructure.FileStorage;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
@@ -37,6 +39,7 @@ builder.EnrichNpgsqlDbContext<AppDbContext>(
         settings.CommandTimeout = 30;
     });
 
+builder.Services.AddTransient<IFileService, FileService>();
 builder.Services.AddTransient<LevenshteinDistanceService>();
 builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
@@ -45,6 +48,7 @@ builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
 builder.Services.AddTransient<JwtTokenService>();
+builder.Services.AddTransient<PropositionService>();
 
 // Adding http clients
 var openAIOptions = builder.Configuration.GetSection(OpenAIOptions.Section).Get<OpenAIOptions>();
