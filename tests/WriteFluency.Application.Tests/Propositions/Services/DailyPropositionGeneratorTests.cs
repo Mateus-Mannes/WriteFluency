@@ -31,7 +31,7 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
 
         VerifyDistributions(propositions);
     }
-
+    
     [Fact]
     public async Task ShouldGeneratePropositionsUntilLimit()
     {
@@ -51,7 +51,7 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         while (propositionsCount < totalPropositionsOnLimit)
         {
             await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
-            propositions = await _context.Propositions.AsNoTracking().OrderBy(x => x.PublishedOn).ToListAsync();
+            propositions = await _context.Propositions.AsNoTracking().OrderByDescending(x => x.PublishedOn).ToListAsync();
             var newPropositionsCount = propositions.Count - propositionsCount;
             var pendingToLimit = totalPropositionsOnLimit - propositionsCount;
             var expectedGeneration = _options.NewsRequestLimit * (_options.DailyRequestsLimit - Proposition.Parameters.Count);

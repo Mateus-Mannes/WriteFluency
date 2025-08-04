@@ -13,6 +13,7 @@ public class DailyPropositionGenerator
     private readonly IAppDbContext _context;
 
     private DateTime _startDate;
+    private HashSet<CreatePropositionDto> _generatedParameters = new();
 
     public DailyPropositionGenerator(
         CreatePropositionService createPropositionService,
@@ -35,6 +36,7 @@ public class DailyPropositionGenerator
         try
         {
             await GenerateAsync(cancellationToken);
+            _generatedParameters.Clear();
             _logger.LogInformation($"Daily proposition generation completed successfully");
         }
         catch (OperationCanceledException)
@@ -71,19 +73,25 @@ public class DailyPropositionGenerator
                 var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, cancellationToken);
                 parameters.Count += result.Count();
                 newPropositions.AddRange(result);
+                _generatedParameters.Add(dto);
             }
 
             // Updating parameters for the next iteration:
 
             // Always generates for the subjects/complexities with less propositions, looking for options under the limit
-            parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).FirstOrDefault(x =>
+            var parametersList = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).Where(x =>
                 summary.Where(y => y.SubjectId == x.SubjectId).Sum(y => y.Count) < _options.PropositionsLimitPerTopic);
-            if (parameters is null) break;
-
+            if (!parametersList.Any()) break;
+            
+            parameters = parametersList.First();
+            // Prioritizing parameters that have not been generated yet
+            var newParameters = parametersList.FirstOrDefault(x => !_generatedParameters.Contains(new CreatePropositionDto(date, x.ComplexityId, x.SubjectId)));
+            if(newParameters is not null) parameters = newParameters;
+            
             // If the next parameters with less propositions have already been generated for today, keep going to the previous day
             // or the previous day to the oldest one generated previously
-            if (newPropositions.Any(x => x.SubjectId == parameters.SubjectId && x.ComplexityId == parameters.ComplexityId &&
-                x.PublishedOn == _startDate))
+            if ((_generatedParameters.Any(x => x.Subject == parameters.SubjectId && x.Complexity == parameters.ComplexityId &&
+                x.PublishedOn == _startDate)))
             {
                 date = _startDate.AddDays(-1);
                 if (parameters.OldestPublishedOn.HasValue)
