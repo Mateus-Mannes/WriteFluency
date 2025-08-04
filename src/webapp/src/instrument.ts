@@ -10,7 +10,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
-if (!environment.production && environment.instrumentationKey && environment.instrumentationKey.trim() === '') {
+if (!environment.production) {
   let provider: WebTracerProvider;
 
   provider = new WebTracerProvider({

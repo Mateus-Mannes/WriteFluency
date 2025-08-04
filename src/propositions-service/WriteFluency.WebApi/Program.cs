@@ -13,8 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddAppSwagger();
@@ -46,7 +44,6 @@ builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
-
 builder.Services.AddTransient<JwtTokenService>();
 
 // Adding http clients
@@ -128,6 +125,6 @@ app.UseRequestTimeouts();
 app.UseOutputCache();
 app.MapDefaultEndpoints();
 
-app.MapControllers();
+app.UseEndpoints();
 
 app.Run();
