@@ -29,7 +29,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     }
 
     [Obsolete]
-    public async Task<string> GenerateTextAsync(GeneratePropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default)
+    public async Task<string> GenerateTextAsync(GetPropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default)
     {
         var request = new CompletionRequest
         {
@@ -58,7 +58,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
     }
 
-    private string GenerateTextPrompt(GeneratePropositionDto dto)
+    private string GenerateTextPrompt(GetPropositionDto dto)
         => @$"
             Write about some subject related to {dto.Subject.GetDescription()}.
             Maximum of one paragraph, from 250 to 600 characteres.

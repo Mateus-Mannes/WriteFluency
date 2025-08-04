@@ -1,6 +1,7 @@
 namespace WriteFluency.Propositions;
 
-public record GeneratePropositionDto(
+public record GetPropositionDto(
     ComplexityEnum Complexity,
-    SubjectEnum Subject
+    SubjectEnum Subject,
+    List<int> AlreadyGeneratedIds
 );

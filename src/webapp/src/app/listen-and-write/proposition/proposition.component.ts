@@ -58,7 +58,7 @@ export class PropositionComponent {
       next: ([_, result]) => {
         this._renderer.setStyle(this.progress.nativeElement, 'width', `100%`);
         this.audioPlayer.nativeElement.src = 'data:audio/mpeg;base64,' + result.audio;
-        this.propositionText = result.text;
+        this.propositionText = result.propositionInfo.text;
       },
       error: (error) => {
         this._alertService.alert('Was not possible to generate the text. Please try again later', 'danger');

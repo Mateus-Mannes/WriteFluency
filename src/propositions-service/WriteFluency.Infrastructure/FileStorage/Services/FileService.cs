@@ -96,4 +96,13 @@ public class FileService : IFileService
         }
     }
 
+    public async Task<byte[]> GetFileAsync(string bucketName, string objectName, CancellationToken cancellationToken = default)
+    {
+        using var memoryStream = new MemoryStream();
+        await _minioClient.GetObjectAsync(new GetObjectArgs()
+            .WithBucket(bucketName)
+            .WithObject(objectName)
+            .WithCallbackStream(stream => stream.CopyTo(memoryStream)), cancellationToken);
+        return memoryStream.ToArray();
+    }
 }

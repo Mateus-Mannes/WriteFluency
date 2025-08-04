@@ -35,5 +35,6 @@ public class Proposition
             .ThenBy(c => (int)c.complexity)
             .ToList();
 
-
+    public const string AudioBucketName = "propositions";
+    public const string ImageBucketName = "images";
 }
