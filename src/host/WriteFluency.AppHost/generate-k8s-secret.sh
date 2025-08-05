@@ -53,6 +53,7 @@ stringData:
   MINIO_ROOT_USER: minioadmin
   Propositions__DailyRequestsLimit: "50"
   Propositions__LimitPerTopic: "3000"
+  Propositions__NewsRequestLimit: "1"
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
   NODE_ENV: production
