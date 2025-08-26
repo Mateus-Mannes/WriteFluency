@@ -71,13 +71,38 @@ public static class Extensions
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics =>
             {
+#if !DEBUG
+                metrics.AddMeter(
+                    "Microsoft.AspNetCore.Hosting",
+                    "System.Net.Http",
+                    "System.Runtime",
+                    "System.Data.SqlClient",
+                    "Npgsql"
+                );
+
+                metrics.SetResourceBuilder(resourceBuilder);
+                metrics.AddAzureMonitorMetricExporter();
+
+                metrics.AddView("http.server.request.duration", new MetricStreamConfiguration
+                {
+                    TagKeys = new[] { "http.request.method", "http.route", "http.response.status_code" }
+                });
+                metrics.AddView("http.client.request.duration", new MetricStreamConfiguration
+                {
+                    TagKeys = new[] { "http.request.method", "http.response.status_code", "server.address" }
+                });
+                metrics.AddView("db.client.commands.duration", new MetricStreamConfiguration
+                {
+                    TagKeys = new[] { "db.system" }
+                });
+
+                var buckets = new double[] { 5,10,25,50,100,250,500,1000,2500,5000 };
+                metrics.AddView("http.server.request.duration", new ExplicitBucketHistogramConfiguration { Boundaries = buckets });
+                metrics.AddView("http.client.request.duration", new ExplicitBucketHistogramConfiguration { Boundaries = buckets });
+#endif
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
-#if !DEBUG
-                metrics.SetResourceBuilder(resourceBuilder);
-                metrics.AddAzureMonitorMetricExporter();
-#endif
             })
             .WithTracing(tracing =>
             {
