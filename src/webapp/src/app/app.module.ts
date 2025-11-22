@@ -6,25 +6,18 @@ import { AppComponent } from './app.component';
 import { SharedModule } from './shared/shared.module';
 import { HomeComponent } from './home/home.component';
 import { ListenAndWriteModule } from './listen-and-write/listen-and-write.module';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { environment } from 'src/enviroments/enviroment';
 import { InsightsModule } from 'src/insights.module';
 
 const conditionalImports = environment.production ? [InsightsModule] : [];
-@NgModule({
-  declarations: [
-    AppComponent,
-    HomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    SharedModule,
-    ListenAndWriteModule,
-    HttpClientModule,
-    ...conditionalImports
-  ],
-  providers: [AlertService],
-  bootstrap: [AppComponent]
-})
+@NgModule({ declarations: [
+        AppComponent,
+        HomeComponent
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        AppRoutingModule,
+        SharedModule,
+        ListenAndWriteModule,
+        ...conditionalImports], providers: [AlertService, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule { }

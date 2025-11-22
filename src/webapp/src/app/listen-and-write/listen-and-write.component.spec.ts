@@ -4,8 +4,9 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AlertService } from '../shared/services/alert-service';
 import { ListenAndWriteService } from './listen-and-write.service';
 import { VerificationData } from './verification/verification.component';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ListenAndWriteModule } from './listen-and-write.module';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('ListenAndWriteComponent', () => {
   let component: ListenAndWriteComponent;
@@ -24,18 +25,17 @@ describe('ListenAndWriteComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ 
-        HttpClientTestingModule,
-        ListenAndWriteModule,
-       ],
-      declarations: [ ListenAndWriteComponent ],
-      providers: [ 
-        AlertService, 
+    declarations: [ListenAndWriteComponent],
+    imports: [ListenAndWriteModule],
+    providers: [
+        AlertService,
         ListenAndWriteService,
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
-        { provide: MatDialogRef, useValue: matDialogRefMock }
-      ]
-    })
+        { provide: MatDialogRef, useValue: matDialogRefMock },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting()
+    ]
+})
     .compileComponents();
 
     fixture = TestBed.createComponent(ListenAndWriteComponent);
