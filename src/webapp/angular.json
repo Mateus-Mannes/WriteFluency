@@ -62,10 +62,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "WriteFluencyApp:build:production"
+              "buildTarget": "WriteFluencyApp:build:production"
             },
             "development": {
-              "browserTarget": "WriteFluencyApp:build:development"
+              "buildTarget": "WriteFluencyApp:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -73,7 +73,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "WriteFluencyApp:build"
+            "buildTarget": "WriteFluencyApp:build"
           }
         },
         "test": {
