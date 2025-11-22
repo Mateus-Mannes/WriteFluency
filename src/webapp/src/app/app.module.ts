@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, provideZoneChangeDetection } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AlertService } from './shared/services/alert-service';
 import { AppRoutingModule } from './app-routing.module';
@@ -11,13 +11,22 @@ import { environment } from 'src/enviroments/enviroment';
 import { InsightsModule } from 'src/insights.module';
 
 const conditionalImports = environment.production ? [InsightsModule] : [];
-@NgModule({ declarations: [
+@NgModule({ 
+    declarations: [
         AppComponent,
         HomeComponent
     ],
-    bootstrap: [AppComponent], imports: [BrowserModule,
+    bootstrap: [AppComponent], 
+    imports: [
+        BrowserModule,
         AppRoutingModule,
         SharedModule,
         ListenAndWriteModule,
-        ...conditionalImports], providers: [AlertService, provideHttpClient(withInterceptorsFromDi())] })
+        ...conditionalImports
+    ], 
+    providers: [
+        AlertService, 
+        provideHttpClient(withInterceptorsFromDi()),
+        provideZoneChangeDetection()
+    ] })
 export class AppModule { }
