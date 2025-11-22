@@ -2,9 +2,10 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-button',
-  templateUrl: './button.component.html',
-  styleUrls: ['./button.component.css']
+    selector: 'app-button',
+    templateUrl: './button.component.html',
+    styleUrls: ['./button.component.css'],
+    standalone: false
 })
 export class ButtonComponent {
   @Input() disabled: boolean = false;

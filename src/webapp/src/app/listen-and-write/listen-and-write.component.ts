@@ -6,9 +6,10 @@ import { AlertService } from '../shared/services/alert-service';
 import { ListenAndWriteService } from './listen-and-write.service';
 
 @Component({
-  selector: 'app-listen-and-write',
-  templateUrl: './listen-and-write.component.html',
-  styleUrls: ['./listen-and-write.component.css']
+    selector: 'app-listen-and-write',
+    templateUrl: './listen-and-write.component.html',
+    styleUrls: ['./listen-and-write.component.css'],
+    standalone: false
 })
 export class ListenAndWriteComponent {
 

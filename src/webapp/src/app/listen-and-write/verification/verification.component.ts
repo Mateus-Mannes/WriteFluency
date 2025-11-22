@@ -10,10 +10,11 @@ export interface VerificationData {
 }
 
 @Component({
-  selector: 'app-verification',
-  templateUrl: './verification.component.html',
-  styleUrls: ['./verification.component.css'],
-  encapsulation: ViewEncapsulation.None
+    selector: 'app-verification',
+    templateUrl: './verification.component.html',
+    styleUrls: ['./verification.component.css'],
+    encapsulation: ViewEncapsulation.None,
+    standalone: false
 })
 export class VerificationComponent {
 

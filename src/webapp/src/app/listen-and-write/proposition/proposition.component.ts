@@ -5,9 +5,10 @@ import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component'
 import { Subject, forkJoin, take, takeUntil, timer } from 'rxjs';
 
 @Component({
-  selector: 'app-proposition',
-  templateUrl: './proposition.component.html',
-  styleUrls: ['./proposition.component.css']
+    selector: 'app-proposition',
+    templateUrl: './proposition.component.html',
+    styleUrls: ['./proposition.component.css'],
+    standalone: false
 })
 export class PropositionComponent {
 
