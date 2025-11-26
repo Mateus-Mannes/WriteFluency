@@ -1,8 +1,23 @@
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-
-import { AppModule } from './app/app.module';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
+import { AlertService } from './app/shared/services/alert-service';
+import { environment } from './enviroments/enviroment.prod';
+import { InsightsModule } from './insights.module';
+import { appRoutes } from './app/app.routes';
 
 import './instrument';
 
-platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(appRoutes),
+    provideHttpClient(withInterceptorsFromDi()),
+    provideZoneChangeDetection(),
+    AlertService,
+    ...(environment.production
+      ? [importProvidersFrom(InsightsModule)]
+      : []),
+  ],
+}).catch(err => console.error(err));

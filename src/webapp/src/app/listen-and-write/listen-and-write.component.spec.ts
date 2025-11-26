@@ -5,7 +5,6 @@ import { AlertService } from '../shared/services/alert-service';
 import { ListenAndWriteService } from './listen-and-write.service';
 import { VerificationData } from './verification/verification.component';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ListenAndWriteModule } from './listen-and-write.module';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('ListenAndWriteComponent', () => {
@@ -26,7 +25,6 @@ describe('ListenAndWriteComponent', () => {
 
     await TestBed.configureTestingModule({
     declarations: [ListenAndWriteComponent],
-    imports: [ListenAndWriteModule],
     providers: [
         AlertService,
         ListenAndWriteService,

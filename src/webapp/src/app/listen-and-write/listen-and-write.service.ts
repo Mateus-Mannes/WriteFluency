@@ -6,7 +6,9 @@ import { TextComparision } from "./entities/text-comparision";
 import { Proposition } from "./entities/proposition";
 import { tap } from "rxjs";
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ListenAndWriteService {
   constructor(private readonly _httpClient: HttpClient) {}
 

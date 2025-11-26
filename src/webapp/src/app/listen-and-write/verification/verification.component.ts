@@ -1,7 +1,9 @@
 import { Component, Inject, ViewEncapsulation } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { TextPart } from '../entities/text-part';
 import { TextComparision } from '../entities/text-comparision';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { CommonModule } from '@angular/common';
 
 export interface VerificationData {
   originalText: string;
@@ -14,7 +16,7 @@ export interface VerificationData {
     templateUrl: './verification.component.html',
     styleUrls: ['./verification.component.css'],
     encapsulation: ViewEncapsulation.None,
-    standalone: false
+    imports: [MatTooltipModule, MatDialogModule, CommonModule],
 })
 export class VerificationComponent {
 
