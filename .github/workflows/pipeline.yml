@@ -43,7 +43,7 @@ jobs:
 
     - name: Run Angular tests
       working-directory: ./src/webapp
-      run: npm test -- --watch=false
+      run: npm test -- --no-watch --no-progress --browsers=ChromeHeadless
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4
