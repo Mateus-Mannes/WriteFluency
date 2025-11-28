@@ -30,6 +30,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.12.x'
+        cache: 'npm'
+        cache-dependency-path: 'src/webapp/package-lock.json'
+
+    - name: Install webapp dependencies
+      working-directory: ./src/webapp
+      run: npm ci
+
+    - name: Run Angular tests
+      working-directory: ./src/webapp
+      run: npm test -- --watch=false
+
     - name: Install .NET
       uses: actions/setup-dotnet@v4
       with:
