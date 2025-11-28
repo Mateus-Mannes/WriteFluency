@@ -11,7 +11,7 @@ RUN npm run build:prod
 FROM nginx:alpine
 
 RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app/dist/write-fluency-app/ /usr/share/nginx/html
+COPY --from=builder /app/dist/write-fluency-app/browser/ /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
