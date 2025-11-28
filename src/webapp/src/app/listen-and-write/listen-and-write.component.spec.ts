@@ -24,7 +24,7 @@ describe('ListenAndWriteComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-    declarations: [ListenAndWriteComponent],
+    imports: [ ListenAndWriteComponent],
     providers: [
         AlertService,
         ListenAndWriteService,
@@ -32,9 +32,7 @@ describe('ListenAndWriteComponent', () => {
         { provide: MatDialogRef, useValue: matDialogRefMock },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting()
-    ]
-})
-    .compileComponents();
+    ]}).compileComponents();
 
     fixture = TestBed.createComponent(ListenAndWriteComponent);
     component = fixture.componentInstance;

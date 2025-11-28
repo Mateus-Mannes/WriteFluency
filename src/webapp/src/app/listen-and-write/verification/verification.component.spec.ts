@@ -20,8 +20,8 @@ describe('VerificationComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ VerificationComponent ],
       imports: [
+        VerificationComponent,
         MatTooltipModule,
       ],
       providers: [ 

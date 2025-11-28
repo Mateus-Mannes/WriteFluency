@@ -12,9 +12,9 @@ describe('PropositionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-    declarations: [PropositionComponent],
-    providers: [ListenAndWriteService, AlertService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
-})
+      imports: [PropositionComponent],
+      providers: [ListenAndWriteService, AlertService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+    })
     .compileComponents();
 
     fixture = TestBed.createComponent(PropositionComponent);
