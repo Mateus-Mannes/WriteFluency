@@ -7,11 +7,6 @@ describe('DropDownComponent', () => {
   let fixture: ComponentFixture<DropDownComponent>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [ DropDownComponent ]
-    })
-    .compileComponents();
-
     fixture = TestBed.createComponent(DropDownComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

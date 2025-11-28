@@ -3,11 +3,13 @@ import { ListenAndWriteService } from '../listen-and-write.service';
 import { AlertService } from 'src/app/shared/services/alert-service';
 import { DropDownComponent } from 'src/app/shared/drop-down/drop-down.component';
 import { Subject, forkJoin, take, takeUntil, timer } from 'rxjs';
+import { ButtonComponent } from 'src/app/shared/button/button.component';
 
 @Component({
-  selector: 'app-proposition',
-  templateUrl: './proposition.component.html',
-  styleUrls: ['./proposition.component.css']
+    selector: 'app-proposition',
+    templateUrl: './proposition.component.html',
+    styleUrls: ['./proposition.component.css'],
+    imports: [DropDownComponent, ButtonComponent],
 })
 export class PropositionComponent {
 

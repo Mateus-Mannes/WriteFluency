@@ -1,26 +1,30 @@
 <div class="listen-and-write fadeIn d-flex flex-column align-items-center justify-content-center">
 
-    <app-proposition #proposition class="listen-and-write__proposition" 
+  <app-proposition #proposition class="listen-and-write__proposition"
     (onAudioPlayOrPause)="audioPlayOrPause()"
-    (onNewAudio)="textarea.value = ''"></app-proposition>
+  (onNewAudio)="textarea.value = ''"></app-proposition>
 
-    <div class="container listen-and-write__textarea">
-        <div class="form-floating shadow-sm listen-and-write__textarea__form">
-            <textarea spellcheck="false" 
-                class="form-control listen-and-write__textarea__form__input" 
-                placeholder="Write the heard text here" 
-                id="textarea" #textarea
-                [(ngModel)]="textAreaContent"></textarea>
-            <label for="textarea">Write it down here</label>
-        </div>
+  <div class="container listen-and-write__textarea">
+    <div class="form-floating shadow-sm listen-and-write__textarea__form">
+      <textarea spellcheck="false"
+        class="form-control listen-and-write__textarea__form__input"
+        placeholder="Write the heard text here"
+        id="textarea" #textarea
+      [(ngModel)]="textAreaContent"></textarea>
+      <label for="textarea">Write it down here</label>
     </div>
+  </div>
 
-    <app-button 
-    class="listen-and-write__verify container" 
+  <app-button
+    class="listen-and-write__verify container"
     (onClick)="verify()"
     [disabled]="proposition.propositionText == '' || textAreaContent == ''"
-    ><div *ngIf="!loading">Verify text</div> 
-    <div *ngIf="loading"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading... </div>
-    </app-button>
+    >@if (!loading) {
+    <div>Verify text</div>
+  }
+  @if (loading) {
+    <div><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading... </div>
+  }
+</app-button>
 </div>
 

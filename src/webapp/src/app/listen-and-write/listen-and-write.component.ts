@@ -4,11 +4,15 @@ import { VerificationComponent } from './verification/verification.component';
 import { PropositionComponent } from './proposition/proposition.component';
 import { AlertService } from '../shared/services/alert-service';
 import { ListenAndWriteService } from './listen-and-write.service';
+import { ButtonComponent } from '../shared/button/button.component';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
-  selector: 'app-listen-and-write',
-  templateUrl: './listen-and-write.component.html',
-  styleUrls: ['./listen-and-write.component.css']
+    selector: 'app-listen-and-write',
+    templateUrl: './listen-and-write.component.html',
+    styleUrls: ['./listen-and-write.component.css'],
+    imports: [PropositionComponent, ButtonComponent, CommonModule, FormsModule],
 })
 export class ListenAndWriteComponent {
 

@@ -1,9 +1,9 @@
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --force
+RUN npm install
 
 COPY . .
 RUN npm run build:prod

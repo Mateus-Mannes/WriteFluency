@@ -1,6 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { PropositionComponent } from './proposition.component';
+import { ListenAndWriteService } from '../listen-and-write.service';
+import { AlertService } from 'src/app/shared/services/alert-service';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('PropositionComponent', () => {
   let component: PropositionComponent;
@@ -8,7 +12,8 @@ describe('PropositionComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PropositionComponent ]
+      imports: [PropositionComponent],
+      providers: [ListenAndWriteService, AlertService, provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
     })
     .compileComponents();
 
