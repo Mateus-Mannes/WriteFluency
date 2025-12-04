@@ -5,10 +5,10 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { AlertService } from './app/shared/services/alert-service';
 import { environment } from './enviroments/enviroment.prod';
-import { InsightsModule } from './insights.module';
+import { InsightsModule } from './telemetry/insights.module';
 import { appRoutes } from './app/app.routes';
 
-import './instrument';
+import './telemetry/instrument';
 
 bootstrapApplication(AppComponent, {
   providers: [

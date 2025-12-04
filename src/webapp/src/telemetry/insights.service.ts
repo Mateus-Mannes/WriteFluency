@@ -2,7 +2,7 @@ import { ErrorHandler, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AngularPlugin } from '@microsoft/applicationinsights-angularplugin-js';
 import { ApplicationInsights, DistributedTracingModes } from '@microsoft/applicationinsights-web';
-import { environment } from './enviroments/enviroment';
+import { environment } from '../enviroments/enviroment';
  
 @Injectable()
 export class Insights {

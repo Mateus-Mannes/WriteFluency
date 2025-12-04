@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
     selector: 'app-listen-and-write',
     templateUrl: './listen-and-write.component.html',
-    styleUrls: ['./listen-and-write.component.css'],
+    styleUrls: ['./listen-and-write.component.scss'],
     imports: [PropositionComponent, ButtonComponent, CommonModule, FormsModule],
 })
 export class ListenAndWriteComponent {

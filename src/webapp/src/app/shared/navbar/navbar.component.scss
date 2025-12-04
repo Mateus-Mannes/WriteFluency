@@ -1,0 +1,54 @@
+@use '../../../styles/variables' as vars;
+
+.text-primary-dark {
+  color: vars.$color-primary-dark;
+}
+
+.text-primary {
+  color: vars.$color-primary;
+}
+
+a {
+  text-decoration: none;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid;
+  border-color: vars.$color-text;
+  opacity: 0.2;
+  width: 100%;
+  margin: 0;
+}
+
+/* Component-level toolbar styles and layout for the brand area */
+
+.app-toolbar {
+  /* Keep structural styles here; color/height controlled by global toolbar-overrides */
+  padding: 0 12px;
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo {
+  height: 30px;
+  width: auto;
+}
+
+.brand-text {
+  font-weight: 600;
+  line-height: 1;
+  margin-top: 6px;
+}

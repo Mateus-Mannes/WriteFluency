@@ -1,0 +1,18 @@
+@use '@angular/material' as mat;
+
+html {
+  @include mat.theme((
+    typography: 'Source Sans 3',
+  ));
+}
+
+body {
+    margin: 0; 
+    font-family: 'Source Sans 3', sans-serif !important;
+}
+
+:root {
+  @include mat.toolbar-overrides((
+    standard-height: 50px,
+  ));
+}

@@ -8,7 +8,7 @@ import { ButtonComponent } from 'src/app/shared/button/button.component';
 @Component({
     selector: 'app-proposition',
     templateUrl: './proposition.component.html',
-    styleUrls: ['./proposition.component.css'],
+    styleUrls: ['./proposition.component.scss'],
     imports: [DropDownComponent, ButtonComponent],
 })
 export class PropositionComponent {
