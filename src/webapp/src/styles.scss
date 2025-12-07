@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+@use 'styles/variables' as vars;
 
 html {
   @include mat.theme((
@@ -13,6 +14,18 @@ body {
 
 :root {
   @include mat.toolbar-overrides((
-    standard-height: 50px,
+    standard-height: 3.125rem,
   ));
 }
+
+p, h1, h2, h3, h4, h5, h6, span, label {
+    color: vars.$color-text;
+    margin: 0;
+}
+
+.text-display   { font-size: 2rem;     font-weight: 600; }   
+.text-title     { font-size: 1.5rem;   font-weight: 600; }   
+.text-heading   { font-size: 1.25rem;  font-weight: 600; }   
+.text-body      { font-size: 1rem; }                         
+.text-label     { font-size: 0.875rem; font-weight: 500; opacity: 60%; } 
+.text-caption   { font-size: 0.75rem; }                   

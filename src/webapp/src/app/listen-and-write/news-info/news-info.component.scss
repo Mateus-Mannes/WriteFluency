@@ -1,0 +1,31 @@
+@use '../../../styles/variables' as vars;
+
+.subject-icon {
+    color: vars.$color-primary-dark;
+}
+
+.beginner-icon {
+    color: vars.$color-accent-success;
+}
+
+.intermediate-icon {
+    color: vars.$color-accent-highlight;
+}
+
+.advanced-icon {
+    color: vars.$color-accent-warning;
+}
+
+.subject {
+    margin-bottom: 0.2rem;
+}
+
+.complexity, .subject {
+    display: flex;
+    gap: 0.3125rem;
+    align-items: center;
+}
+
+.text-title {
+    margin-bottom: 0.5rem;
+}

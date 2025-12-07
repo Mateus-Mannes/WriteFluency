@@ -25,30 +25,30 @@ a {
 
 .app-toolbar {
   /* Keep structural styles here; color/height controlled by global toolbar-overrides */
-  padding: 0 12px;
+  padding: 0 1rem;
 }
 
 .toolbar-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   text-decoration: none;
   color: inherit;
 }
 
 .logo {
-  height: 30px;
+  height: 1.875rem;
   width: auto;
 }
 
 .brand-text {
   font-weight: 600;
   line-height: 1;
-  margin-top: 6px;
+  margin-top: 0.5rem;
 }
