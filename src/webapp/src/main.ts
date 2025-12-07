@@ -3,7 +3,6 @@ import { AppComponent } from './app/app.component';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
-import { AlertService } from './app/shared/services/alert-service';
 import { environment } from './enviroments/enviroment.prod';
 import { InsightsModule } from './telemetry/insights.module';
 import { appRoutes } from './app/app.routes';
@@ -15,7 +14,6 @@ bootstrapApplication(AppComponent, {
     provideRouter(appRoutes),
     provideHttpClient(withInterceptorsFromDi()),
     provideZoneChangeDetection(),
-    AlertService,
     ...(environment.production
       ? [importProvidersFrom(InsightsModule)]
       : []),
