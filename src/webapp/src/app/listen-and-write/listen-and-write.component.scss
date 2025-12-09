@@ -1,0 +1,17 @@
+.exercise-container {
+  display: grid;
+  gap: 2rem;
+  padding: 5rem;
+}
+
+.exercise-container {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "news-info  news-image"
+    "news-audio news-image";
+}
+
+.news-info { grid-area: news-info; }
+.news-audio { grid-area: news-audio; }
+.news-image { grid-area: news-image; }
