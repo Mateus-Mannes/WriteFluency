@@ -3,7 +3,12 @@
 
 html {
   @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
     typography: 'Source Sans 3',
+    density: 0,
   ));
 }
 

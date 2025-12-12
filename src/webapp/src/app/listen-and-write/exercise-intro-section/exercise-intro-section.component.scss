@@ -1,0 +1,17 @@
+@use '../../../styles/variables' as vars;
+
+.cta-button {
+    width: 100%; 
+    max-width: 600px;
+    background-color: vars.$color-primary;
+    max-height: 50px;
+}
+
+.cta-button__text {
+    color: white;
+
+}
+
+mat-icon {
+    color: white;
+}
