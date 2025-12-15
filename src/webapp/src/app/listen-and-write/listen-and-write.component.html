@@ -1,11 +1,29 @@
 <div class="nav-divider"></div>
 
-<div class="exercise-intro-container">
+<div [class]="{
+    'exercise-intro-container': exerciseState() == 'intro',
+    'exercise-container': exerciseState() == 'exercise',
+    'exercise-results-container': exerciseState() == 'results'
+}">
     <app-news-info class="news-info"></app-news-info>
 
     <app-news-audio class="news-audio"></app-news-audio>
 
     <app-news-image class="news-image"></app-news-image>
 
-    <app-exercise-intro-section class="exercise-intro-section"></app-exercise-intro-section>
+    @if(exerciseState() === 'intro') {
+        <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="exerciseState.set('exercise')">
+        </app-exercise-intro-section>
+    }
+
+    @if(exerciseState() === 'exercise') {
+        <app-exercise-section class="exercise-section">
+        </app-exercise-section>
+    }
+
+    @if(exerciseState() === 'results') {
+        <app-exercise-results-section class="exercise-results-section">
+        </app-exercise-results-section>
+    }
+
 </div>

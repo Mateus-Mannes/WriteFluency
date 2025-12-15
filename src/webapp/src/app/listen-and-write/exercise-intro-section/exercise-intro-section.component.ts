@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, output } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -9,5 +9,11 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './exercise-intro-section.component.scss',
 })
 export class ExerciseIntroSectionComponent {
+
+  beginExerciseClick = output<void>();
+
+  beginExercise() {
+    this.beginExerciseClick.emit();
+  }
 
 }
