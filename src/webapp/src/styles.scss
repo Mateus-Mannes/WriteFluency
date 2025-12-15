@@ -19,7 +19,7 @@ body {
 
 :root {
   @include mat.toolbar-overrides((
-    standard-height: 3.125rem,
+    standard-height: vars.$nav-bar-height,
   ));
 }
 
@@ -33,4 +33,13 @@ p, h1, h2, h3, h4, h5, h6, span, label {
 .text-heading   { font-size: 1.25rem;  font-weight: 600; }   
 .text-body      { font-size: 1rem; }                         
 .text-label     { font-size: 0.875rem; font-weight: 500; opacity: 60%; } 
-.text-caption   { font-size: 0.75rem; }                   
+.text-caption   { font-size: 0.75rem; }    
+
+.centered-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+}
