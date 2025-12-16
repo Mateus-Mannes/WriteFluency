@@ -26,7 +26,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/shepherd.js/dist/css/shepherd.css"
             ],
             "scripts": [],
             "browser": "src/main.ts"
@@ -88,7 +89,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/shepherd.js/dist/css/shepherd.css"
             ],
             "scripts": []
           }

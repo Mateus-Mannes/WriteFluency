@@ -7,12 +7,14 @@
 }">
     <app-news-info class="news-info"></app-news-info>
 
-    <app-news-audio class="news-audio"></app-news-audio>
+    <div class="news-audio">
+    <app-news-audio id="newsAudio" (playClicked)="cancelTour()"></app-news-audio>
+    </div>
 
     <app-news-image class="news-image"></app-news-image>
 
     @if(exerciseState() === 'intro') {
-        <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="exerciseState.set('exercise')">
+        <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
 

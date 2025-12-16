@@ -43,3 +43,68 @@ p, h1, h2, h3, h4, h5, h6, span, label {
     height: 100%;
     flex-direction: column;
 }
+
+/* WriteFluency Shepherd theme */
+.shepherd-element.wf-tour {
+  border-radius: 16px;
+  border: 0;
+  max-width: 520px;
+  font-family: inherit;
+}
+
+.shepherd-element.wf-tour .shepherd-header {
+  border-radius: 16px 16px 0 0;
+  background-color: vars.$color-primary !important;
+}
+
+.shepherd-element.wf-tour .shepherd-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: white !important;
+}
+
+.shepherd-element.wf-tour .shepherd-cancel-icon {
+  font-size: 22px;
+  opacity: .65;
+}
+.shepherd-element.wf-tour .shepherd-cancel-icon span {
+  color: white !important;
+}
+
+.shepherd-element.wf-tour .shepherd-text {
+  padding: 16px 18px 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: vars.$color-text;
+}
+
+.shepherd-element.wf-tour .shepherd-footer {
+  padding: 14px 18px 18px;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Buttons */
+.shepherd-element.wf-tour .shepherd-button {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  border: 1px solid rgba(0,0,0,.10);
+}
+
+/* Primary / secondary */
+.shepherd-element.wf-tour .shepherd-button.wf-primary {
+  background: vars.$color-primary;
+  color: white;
+  border-color: transparent;
+}
+.shepherd-element.wf-tour .shepherd-button.wf-secondary {
+  background: white;
+  color: vars.$color-text;
+}
+
+/* Overlay */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  background: rgba(0, 0, 0, 0.074);
+  backdrop-filter: blur(1px);
+}
