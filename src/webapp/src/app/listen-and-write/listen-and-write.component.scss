@@ -1,7 +1,11 @@
 @use '../../styles/variables' as vars;
 
-.nav-divider {
+.nav-divider-intro {
     padding-top: vars.$nav-bar-height;
+}
+
+.nav-divider {
+    padding-top: calc(vars.$nav-bar-height / 2);
 }
 
 @media (min-height: 700px) {
@@ -10,6 +14,10 @@
     }
 }
 
+.exercise-intro-container>* {
+    max-width: 500px;
+    width: 100%;
+}
 .exercise-intro-container {
     display: grid;
     gap: 2rem;
@@ -41,7 +49,38 @@
     }
 }
 
-.exercise-intro-container>* {
+.exercise-container>* {
     max-width: 500px;
     width: 100%;
+}
+.exercise-container {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "news-info  news-audio"
+        "news-info  exercise-section"
+        "news-image  exercise-section"
+        "news-image exercise-section";
+
+    .news-info {
+        grid-area: news-info;
+        justify-self: end;
+    }
+
+    .news-audio {
+        grid-area: news-audio;
+        justify-self: start;
+    }
+
+    .news-image {
+        grid-area: news-image;
+        justify-self: end;
+    }
+
+    .exercise-section {
+        grid-area: exercise-section;
+        justify-self: start;
+    }
 }

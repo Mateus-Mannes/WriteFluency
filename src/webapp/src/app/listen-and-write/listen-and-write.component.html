@@ -1,14 +1,17 @@
-<div class="nav-divider"></div>
+<div [class]="{
+    'nav-divider-intro': exerciseState() == 'intro',
+    'nav-divider': exerciseState() != 'intro'
+}"></div>
 
 <div [class]="{
     'exercise-intro-container': exerciseState() == 'intro',
     'exercise-container': exerciseState() == 'exercise',
     'exercise-results-container': exerciseState() == 'results'
 }">
-    <app-news-info class="news-info"></app-news-info>
+    <app-news-info class="news-info" [class.classification-in-line]="exerciseState() != 'intro'"></app-news-info>
 
     <div class="news-audio">
-    <app-news-audio id="newsAudio" (playClicked)="cancelTour()"></app-news-audio>
+    <app-news-audio id="newsAudio" (playClicked)="cancelTour()" [listenSuggestion]="exerciseState() == 'intro'"></app-news-audio>
     </div>
 
     <app-news-image class="news-image"></app-news-image>

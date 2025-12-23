@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, ViewChild, ElementRef, output, input } from '@angular/core';
 
 @Component({
   selector: 'app-news-audio',
@@ -12,7 +12,9 @@ export class NewsAudioComponent {
 
   @ViewChild('audioRef') audioRef!: ElementRef<HTMLAudioElement>;
 
-  @Output() playClicked = new EventEmitter<void>();
+  playClicked = output();
+
+  listenSuggestion = input<boolean>(true);
 
   onPlay() {
     this.audioPlayed = true;

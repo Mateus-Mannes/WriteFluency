@@ -8,5 +8,4 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './news-info.component.scss',
 })
 export class NewsInfoComponent {
-
 }

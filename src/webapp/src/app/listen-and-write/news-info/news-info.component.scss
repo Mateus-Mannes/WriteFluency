@@ -29,3 +29,9 @@
 .text-title {
     margin-bottom: 0.5rem;
 }
+
+:host(.classification-in-line) .news-classification {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
