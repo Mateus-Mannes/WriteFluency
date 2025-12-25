@@ -1,0 +1,123 @@
+@use '../../../styles/variables' as vars;
+
+.exercise-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0rem;
+}
+
+.exercise-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0rem;
+  color: vars.$color-text;
+}
+.exercise-instructions.compact div {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+.exercise-instructions .icon {
+  font-size: 1.15em;
+  margin-right: 0.15em;
+}
+.exercise-instructions .shortcut {
+  color: vars.$color-primary;
+  margin-left: 0.2em;
+}
+
+.submit-btn {
+  background: vars.$color-primary;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6em 3em;
+  box-shadow: 0 2px 8px rgba(58, 125, 255, 0.08);
+  transition: background 0.2s;
+}
+.submit-btn:hover {
+  background: vars.$color-primary-dark;
+}
+
+.word-count-highlight {
+  color: vars.$color-accent-highlight;
+}
+
+.word-count-primary {
+  color: vars.$color-primary;
+}
+
+.word-count-success {
+  color: vars.$color-accent-success;
+}
+
+.auto-pause-selector {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.auto-pause-btn {
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  color: vars.$color-text;
+  border-radius: 8px;
+  padding: 0rem 0.7rem;
+  font-family: 'Source Sans 3', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  outline: none;
+}
+
+.auto-pause-btn.selected,
+.auto-pause-btn:hover {
+  border-color: rgba(vars.$color-primary, 0.8);
+  color: #fff;
+}
+
+.exercise-text-area {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 20px 22px;
+    max-height: 320px;
+
+    font-family: 'Source Sans 3', sans-serif !important;
+    font-size: 1rem;
+    line-height: 1.65;
+
+    color: vars.$color-text;
+    background-color: white;
+
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+
+    resize: vertical;
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.exercise-text-area:focus {
+  border-color: vars.$color-primary;
+  box-shadow: 0 0 0 1px rgba(58, 125, 255, 0.15);
+}
+
+.text-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.text-label mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 20px;
+}

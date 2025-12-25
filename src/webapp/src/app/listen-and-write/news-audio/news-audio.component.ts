@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, output, input } from '@angular/core';
+import { Component, ViewChild, ElementRef, output, input, signal } from '@angular/core';
 
 @Component({
   selector: 'app-news-audio',
@@ -9,6 +9,7 @@ import { Component, ViewChild, ElementRef, output, input } from '@angular/core';
 export class NewsAudioComponent {
   audioPlayed = false;
   audioEnded = false;
+  isAudioPlaying = signal(false);
 
   @ViewChild('audioRef') audioRef!: ElementRef<HTMLAudioElement>;
 
@@ -18,11 +19,17 @@ export class NewsAudioComponent {
 
   onPlay() {
     this.audioPlayed = true;
+    this.isAudioPlaying.set(true);
     this.playClicked.emit();
+  }
+
+  onPause() {
+    this.isAudioPlaying.set(false);
   }
 
   onEnded() {
     this.audioEnded = true;
+    this.isAudioPlaying.set(false);
   }
 
   playAudio() {

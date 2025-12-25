@@ -1,1 +1,26 @@
-<textarea style="width: 100%; height: 100%;"></textarea>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem;">
+    <div class="auto-pause-selector">
+        <span class="text-body">Auto Pause:</span>
+        @for (option of autoPauseOptions; track option.value) {
+        <button class="auto-pause-btn" [class.selected]="selectedAutoPause() === option.value"
+            (click)="selectAutoPause(option.value)">
+            <span class="text-label">{{ option.label }}</span>
+        </button>
+        }
+    </div>
+
+    <div>
+        <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
+    </div>
+</div>
+<textarea class="exercise-text-area" [value]="text()" (input)="onTextChange($event)"></textarea>
+
+<div class="exercise-footer-row">
+    <div class="exercise-instructions compact">
+        <div class="text-label"><mat-icon class="icon">play_arrow</mat-icon> <span class="label">Play/Pause</span> <span class="shortcut">Ctrl+Space</span></div>
+        <div class="text-label"><mat-icon class="icon">fast_rewind</mat-icon> <span class="label">Rewind 3s</span> <span class="shortcut">Ctrl+←</span></div>
+        <div class="text-label"><mat-icon class="icon">fast_forward</mat-icon> <span class="label">Forward 3s</span> <span class="shortcut">Ctrl+→</span></div>
+    </div>
+
+    <button class="submit-btn text-body" type="button">Submit</button>
+</div>

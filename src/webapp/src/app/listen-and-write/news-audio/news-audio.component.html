@@ -1,7 +1,12 @@
 @if(listenSuggestion()) {
     <p class="text-body"><b>Suggestion:</b> Listen for the full audio before getting started:</p>
 }
-<audio #audioRef class="audio" controls
+<audio #audioRef
+    class="audio"
+    [class.audio-playing]="isAudioPlaying()"
+    controls
     (play)="onPlay()"
+    (pause)="onPause()"
+    (ended)="onEnded()"
     src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">
 </audio>
