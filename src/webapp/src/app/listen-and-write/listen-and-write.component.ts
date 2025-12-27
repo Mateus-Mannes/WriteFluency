@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect } from '@angular/core';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
 import { NewsAudioComponent } from './news-audio/news-audio.component';
@@ -6,6 +6,7 @@ import { ExerciseIntroSectionComponent } from './exercise-intro-section/exercise
 import { ExerciseSectionComponent } from './exercise-section/exercise-section.component';
 import { ExerciseResultsSectionComponent } from './exercise-results-section/exercise-results-section.component';
 import { ListenFirstTourService } from './services/listen-first-tour.service';
+import { ExerciseTourService } from './services/exercise-tour.service';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -37,6 +38,8 @@ export class ListenAndWriteComponent {
         this.pauseAudioWithTimerClear();
       } else {
         this.playAudioWithAutoPause();
+        // Finish the tutorial if active
+        this.exerciseTourService.finishTour();
       }
     }
     // Rewind 3s: Ctrl+ArrowLeft
@@ -90,7 +93,17 @@ export class ListenAndWriteComponent {
 
   exerciseState = signal<ExerciseState>('intro');
 
-  constructor(private listenFirstTourService: ListenFirstTourService) {
+  constructor(
+    private listenFirstTourService: ListenFirstTourService,
+    private exerciseTourService: ExerciseTourService
+  ) {
+
+    effect(() => {
+      const state = this.exerciseState();
+      if (state === 'exercise') {
+        this.startExerciseTour();
+      }
+    });
   }
 
   beginExercise() {
@@ -111,5 +124,9 @@ export class ListenAndWriteComponent {
 
   cancelTour() {
     this.listenFirstTourService.cancelTour();
+  }
+
+  startExerciseTour() {
+    this.exerciseTourService.startTour();
   }
 }
