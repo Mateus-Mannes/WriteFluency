@@ -13,13 +13,13 @@
         <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
     </div>
 </div>
-<textarea class="exercise-text-area" [value]="text()" (input)="onTextChange($event)"></textarea>
+<textarea #exerciseTextArea class="exercise-text-area" [value]="text()" (input)="onTextChange($event)"></textarea>
 
 <div class="exercise-footer-row">
     <div class="exercise-instructions compact">
-        <div class="text-label"><mat-icon class="icon">play_arrow</mat-icon> <span class="label">Play/Pause</span> <span class="shortcut">Ctrl+Space</span></div>
-        <div class="text-label"><mat-icon class="icon">fast_rewind</mat-icon> <span class="label">Rewind 3s</span> <span class="shortcut">Ctrl+←</span></div>
-        <div class="text-label"><mat-icon class="icon">fast_forward</mat-icon> <span class="label">Forward 3s</span> <span class="shortcut">Ctrl+→</span></div>
+        <div class="text-label"><mat-icon class="icon">play_arrow</mat-icon> <span class="label">Play/Pause</span> <span class="shortcut">Ctrl+Enter</span></div>
+        <div class="text-label"><mat-icon class="icon">fast_rewind</mat-icon> <span class="label">Rewind 3s</span> <span class="shortcut">← Arrow Left</span></div>
+        <div class="text-label"><mat-icon class="icon">fast_forward</mat-icon> <span class="label">Forward 3s</span> <span class="shortcut">→ Arrow Right</span></div>
     </div>
 
     <button class="submit-btn text-body" type="button">Submit</button>

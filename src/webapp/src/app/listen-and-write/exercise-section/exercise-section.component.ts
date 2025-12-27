@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, signal } from '@angular/core';
+import { Component, input, signal, ViewChild, ElementRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -10,6 +10,15 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './exercise-section.component.scss',
 })
 export class ExerciseSectionComponent {
+  @ViewChild('exerciseTextArea') textAreaRef!: ElementRef<HTMLTextAreaElement>;
+
+  focusTextArea() {
+    this.textAreaRef?.nativeElement.focus();
+  }
+
+  blurTextArea() {
+    this.textAreaRef?.nativeElement.blur();
+  }
   autoPauseOptions = [
     { label: '3s', value: 3 },
     { label: '5s', value: 5 },
