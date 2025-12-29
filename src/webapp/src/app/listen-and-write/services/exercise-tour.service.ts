@@ -149,7 +149,7 @@ export class ExerciseTourService {
         {
           id: 'final',
           title: 'Ready to Start!',
-          text: 'You’re ready. Press <b>Ctrl + Space</b> to start your first listening.',
+          text: 'You’re ready. Press <b>Ctrl + Enter</b> to start your first listening.',
           attachTo: undefined, // Center of screen
           buttons: [
             {

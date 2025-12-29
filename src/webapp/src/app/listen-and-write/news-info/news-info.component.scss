@@ -35,3 +35,33 @@
     flex-direction: row;
     gap: 1rem;
 }
+
+:host(.compact) {
+    .text-label {
+        display: none;
+    }
+
+    .text-title {
+        font-size: 1rem
+    }
+
+    .text-body {
+        font-size: 0.75rem;
+    }
+
+    .subject {
+        margin-bottom: 0;
+    }
+
+    .intermediate-icon {
+        font-size: 1.4rem;
+    }
+
+    .advanced-icon {
+        font-size: 1.4rem;
+    }
+
+    .complexity, .subject {
+        gap: 0.1rem;
+    }
+}

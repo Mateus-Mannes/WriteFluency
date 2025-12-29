@@ -1,0 +1,11 @@
+<div>
+
+    @for (part of textParts; track part) {
+        @if(part.highlight) {
+            <span class="highlighted-text">{{ part.text }}</span>
+        } @else {
+            <span>{{ part.text }}</span>
+        }
+    }
+
+</div>

@@ -8,27 +8,34 @@
     'exercise-container': exerciseState() == 'exercise',
     'exercise-results-container': exerciseState() == 'results'
 }">
-    <app-news-info class="news-info" [class.classification-in-line]="exerciseState() != 'intro'"></app-news-info>
+    <app-news-info class="news-info" 
+        [class.classification-in-line]="exerciseState() != 'intro'"
+        [class.compact]="exerciseState() == 'results'"
+        ></app-news-info>
 
     <div class="news-audio">
     <app-news-audio id="newsAudio" (playClicked)="cancelTour()" [listenSuggestion]="exerciseState() == 'intro'"></app-news-audio>
     </div>
 
-    <app-news-image class="news-image"></app-news-image>
-
     @if(exerciseState() === 'intro') {
+        <app-news-image class="news-image"></app-news-image>
         <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
 
     @if(exerciseState() === 'exercise') {
-        <app-exercise-section class="exercise-section">
+        <app-news-image class="news-image"></app-news-image>
+        <app-exercise-section class="exercise-section" (submitConfirmed)="onExerciseSubmit()">
         </app-exercise-section>
     }
 
     @if(exerciseState() === 'results') {
         <app-exercise-results-section class="exercise-results-section">
         </app-exercise-results-section>
+
+        <app-news-highlighted-text class="exercise-original-text" [originalText]="originalText" [userText]="userText" [textComparisons]="differences"></app-news-highlighted-text>
+        
+        <app-news-highlighted-text class="exercise-user-text" [originalText]="originalText" [userText]="userText" [textComparisons]="differences"></app-news-highlighted-text>
     }
 
 </div>
