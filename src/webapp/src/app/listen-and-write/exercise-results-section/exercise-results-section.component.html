@@ -1,3 +1,3 @@
 <p class="text-title">Results:</p>
-<p class="text-heading">Accuracy: <b [ngClass]="accuracyClass">{{ (accuracy() * 100) | number:'1.0-0' }}%</b></p>
+<p class="text-heading">Accuracy: <b [ngClass]="accuracyClass">{{ (displayAccuracy() * 100) | number:'1.0-0' }}%</b></p>
 <p class="text-heading">Word Counter: <b [ngClass]="wordCountClass">{{ wordCount() }}/{{ totalWords() }}</b></p>
