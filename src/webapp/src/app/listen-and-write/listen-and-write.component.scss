@@ -151,3 +151,12 @@
         background: vars.$color-primary-dark;
     }
 }
+
+.state-anim {
+  animation: stateFade 1800ms ease;
+}
+
+@keyframes stateFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

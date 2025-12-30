@@ -36,6 +36,8 @@ export class ListenAndWriteComponent {
 
   exerciseState = signal<ExerciseState>('intro');
 
+  stateAnimOn = signal(false);
+
   constructor(
     private listenFirstTourService: ListenFirstTourService,
     private exerciseTourService: ExerciseTourService
@@ -43,6 +45,10 @@ export class ListenAndWriteComponent {
 
     effect(() => {
       const state = this.exerciseState();
+
+      this.stateAnimOn.set(false);
+      queueMicrotask(() => this.stateAnimOn.set(true));
+
       if (state === 'exercise') {
         this.startExerciseTour();
       }

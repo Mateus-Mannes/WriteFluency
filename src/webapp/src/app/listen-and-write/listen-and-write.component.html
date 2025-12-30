@@ -6,7 +6,8 @@
 <div [class]="{
     'exercise-intro-container': exerciseState() == 'intro',
     'exercise-container': exerciseState() == 'exercise',
-    'exercise-results-container': exerciseState() == 'results'
+    'exercise-results-container': exerciseState() == 'results',
+    'state-anim': stateAnimOn()
 }">
     <app-news-info class="news-info" 
         [class.classification-in-line]="exerciseState() != 'intro'"
