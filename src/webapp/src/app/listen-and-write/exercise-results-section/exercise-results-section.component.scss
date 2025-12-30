@@ -1,0 +1,14 @@
+
+@use '../../../styles/variables' as vars;
+
+.result-bad {
+	color: vars.$color-accent-highlight;
+}
+
+.result-ok {
+	color: vars.$color-primary;
+}
+
+.result-good {
+	color: vars.$color-accent-success;
+}

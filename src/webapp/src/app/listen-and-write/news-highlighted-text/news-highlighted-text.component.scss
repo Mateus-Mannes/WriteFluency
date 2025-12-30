@@ -1,4 +1,26 @@
-.highlighted-text {
+@use '../../../styles/variables' as vars;
+
+.user-highlighted-text {
     font-weight: bold;
-    background-color: yellow;
+    background-color: vars.$color-accent-highlight;
+}
+
+.original-highlighted-text {
+    font-weight: bold;
+    background-color: vars.$color-accent-success;
+}
+
+.text-area {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 20px 22px;
+    height: 320px;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: vars.$color-text;
+    background-color: white;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    line-height: 1.2;
 }

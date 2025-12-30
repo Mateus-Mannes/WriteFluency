@@ -91,18 +91,19 @@
 }
 .exercise-results-container {
     display: grid;
-    gap: 1rem;
+    column-gap: 1rem;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     grid-template-areas:
         "exercise-results-section  news-info"
         "exercise-results-section  news-audio"
-        "exercise-user-text  exercise-original-text";
+        "exercise-user-text  exercise-original-text"
+        "exercise-results-actions  exercise-original-text";
 
     .news-info {
         grid-area: news-info;
         justify-self: start;
-        margin-bottom: -0.7rem;
+        margin-bottom: 0.1rem;
     }
 
     .news-audio {
@@ -123,5 +124,30 @@
     .exercise-user-text {
         grid-area: exercise-user-text;
         justify-self: end;
+    }
+
+    .exercise-results-actions {
+        grid-area: exercise-results-actions;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        justify-self: end;
+        /* Ensure it aligns horizontally with exercise-user-text */
+        margin-left: auto;
+    }
+
+    .final-action-btn {
+        background: vars.$color-primary;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6em 3em;
+        box-shadow: 0 2px 8px rgba(58, 125, 255, 0.08);
+        transition: background 0.2s;
+    }
+
+    .final-action-btn:hover {
+        background: vars.$color-primary-dark;
     }
 }

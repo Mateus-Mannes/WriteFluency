@@ -138,6 +138,15 @@ export class ListenAndWriteComponent {
     this.exerciseState.set('results');
   }
 
+  onTryAgain() {
+    this.exerciseState.set('exercise');
+  }
+
+  onFindAnotherExercise() {
+    // Redirect to home page
+    window.location.href = '/';
+  }
+
   originalText: string = 'A large number of people, about ninety thousand, gathered in Sydney to support Palestine. They crossed the Sydney Harbour Bridge with flags and protest signs. Many had umbrellas because it was rainy and windy. The police stopped the march for safety reasons because the crowd was very big. The organizer said the event was more than they expected and it was a very peaceful and hopeful day. At the same time, a smaller group of three thousand people gathered in Melbourne to raise awareness about the situation in Gaza. Later on, the police asked the Sydney crowd to go back to the city because they were worried about too many people and possible injuries. Despite the challenges, the protests showed that many people care about peace and helping others in need.'
   userText: string = 'A large number of people, about ninety thousand, gathered in Sydney to support Palestine. They crossed the Sydney Harbour Bridge with flags and protest signs. Many had umbrellas because it was rainy and windy. The police stoppd the march for safety reasons because the crowd was very. The organizer said the event was more than they expected and it was a very peaceful and hopeful day. At the same time, a smaller group of threethousand people gathered in Melbourne to raise awareness about the situation in Gaza. Later on, the police asked the Sydney crowd to go back to he citybecause they were worried about too many people and possibl. Despite th, the protests showed that many people care about peac helping others in need.\n'
   differences : TextComparision[] = [
