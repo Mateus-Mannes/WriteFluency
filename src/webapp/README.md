@@ -2,6 +2,16 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.6.
 
+## Screen Size Support
+
+WriteFluency is optimized for **desktop computers only** (minimum width: 1300px). The application relies on keyboard shortcuts and requires a full desktop experience. An unsupported screen message displays automatically on mobile devices and tablets to inform users they need a desktop computer.
+
+### How it works:
+- The app detects screen width on load and resize events
+- If width < 1300px, an unsupported screen overlay is shown
+- When resized to a larger screen (≥1300px), the app content is displayed automatically
+- The component is located at: `src/app/shared/unsupported-screen/`
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
