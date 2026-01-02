@@ -13,6 +13,7 @@ import { TextComparision } from './entities/text-comparision';
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
+export const LISTEN_WRITE_STATE_KEY = 'listen-write-state';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -56,8 +57,15 @@ export class ListenAndWriteComponent {
       localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
     }
 
+    const storedState = localStorage.getItem(LISTEN_WRITE_STATE_KEY);
+    if (storedState) {
+      this.exerciseState.set(storedState as ExerciseState);
+    }
+
     effect(() => {
       const state = this.exerciseState();
+
+      localStorage.setItem(LISTEN_WRITE_STATE_KEY, state);
 
       this.stateAnimOn.set(false);
       queueMicrotask(() => this.stateAnimOn.set(true));
