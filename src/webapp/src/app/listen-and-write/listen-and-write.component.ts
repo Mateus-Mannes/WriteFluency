@@ -12,6 +12,8 @@ import { TextComparision } from './entities/text-comparision';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
+export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
+
 @Component({
   selector: 'app-listen-and-write',
   imports: [
@@ -38,10 +40,21 @@ export class ListenAndWriteComponent {
 
   stateAnimOn = signal(false);
 
+  isFirstTime = signal(true);
+
   constructor(
     private listenFirstTourService: ListenFirstTourService,
     private exerciseTourService: ExerciseTourService
   ) {
+
+    // Check localStorage for first time flag
+    const stored = localStorage.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    if (stored === 'false') {
+      this.isFirstTime.set(false);
+    } else {
+      this.isFirstTime.set(true);
+      localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    }
 
     effect(() => {
       const state = this.exerciseState();
@@ -49,7 +62,7 @@ export class ListenAndWriteComponent {
       this.stateAnimOn.set(false);
       queueMicrotask(() => this.stateAnimOn.set(true));
 
-      if (state === 'exercise') {
+      if (state === 'exercise' && this.isFirstTime()) {
         this.startExerciseTour();
       }
     });
@@ -125,11 +138,15 @@ export class ListenAndWriteComponent {
       return;
     }
 
-    this.listenFirstTourService.prompt(
-      '#newsAudio',
-      () => this.newsAudioComponent.playAudio(),
-      () => this.exerciseState.set('exercise')
-    );
+    if (this.isFirstTime()) {
+      this.listenFirstTourService.prompt(
+        '#newsAudio',
+        () => this.newsAudioComponent.playAudio(),
+        () => this.exerciseState.set('exercise')
+      );
+    } else {
+      this.exerciseState.set('exercise');
+    }
   }
 
   cancelTour() {
@@ -145,6 +162,7 @@ export class ListenAndWriteComponent {
   }
 
   onTryAgain() {
+    this.isFirstTime.set(false);
     this.exerciseState.set('exercise');
   }
 

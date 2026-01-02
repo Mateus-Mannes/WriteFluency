@@ -14,6 +14,7 @@ export class ExerciseResultsSectionComponent {
   displayAccuracy = signal(0);
 
   constructor() {
+    
     effect(() => {
       const target = this.accuracy();
       this.animateAccuracy(target);
