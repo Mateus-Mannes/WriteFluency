@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, signal, ViewChild, ElementRef, Output, EventEmitter, output } from '@angular/core';
+import { Component, input, signal, ViewChild, ElementRef, output } from '@angular/core';
 import { SubmitTourService } from '../services/submit-tour.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +15,8 @@ export class ExerciseSectionComponent {
   @ViewChild('exerciseTextArea') textAreaRef!: ElementRef<HTMLTextAreaElement>;
 
   submitConfirmed = output<void>();
+
+  saveExerciseState = output<void>();
 
   autoPauseOptions = [
     { label: '3s', value: 3 },
@@ -40,7 +42,8 @@ export class ExerciseSectionComponent {
     return 'word-count-highlight';
   }
 
-  constructor(private submitTour: SubmitTourService) {}
+  constructor(private submitTour: SubmitTourService) { }
+
 
   focusTextArea() {
     this.textAreaRef?.nativeElement.focus();
@@ -58,11 +61,16 @@ export class ExerciseSectionComponent {
 
   selectAutoPause(value: number) {
     this.selectedAutoPause.set(value);
+    this.saveState();
   }
 
   onTextChange(event: Event) {
     const value = (event.target as HTMLTextAreaElement).value;
     this.text.set(value);
+    this.saveState();
   }
 
+  saveState() {
+    this.saveExerciseState.emit();
+  }
 }

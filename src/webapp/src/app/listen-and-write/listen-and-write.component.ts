@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, AfterViewInit } from '@angular/core';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
 import { NewsAudioComponent } from './news-audio/news-audio.component';
@@ -14,6 +14,7 @@ export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
 export const LISTEN_WRITE_STATE_KEY = 'listen-write-state';
+export const LISTEN_WRITE_EXERCISE_STATE_KEY = 'exercise-section-state';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -29,7 +30,7 @@ export const LISTEN_WRITE_STATE_KEY = 'listen-write-state';
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
 })
-export class ListenAndWriteComponent {
+export class ListenAndWriteComponent implements AfterViewInit {
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -67,6 +68,10 @@ export class ListenAndWriteComponent {
 
       localStorage.setItem(LISTEN_WRITE_STATE_KEY, state);
 
+      if(state === 'exercise') {
+        this.updateExerciseState();
+      }
+
       this.stateAnimOn.set(false);
       queueMicrotask(() => this.stateAnimOn.set(true));
 
@@ -74,6 +79,27 @@ export class ListenAndWriteComponent {
         this.startExerciseTour();
       }
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.updateExerciseState();
+  }
+
+  updateExerciseState() 
+  {
+    const state = localStorage.getItem(LISTEN_WRITE_EXERCISE_STATE_KEY);
+    if (state) {
+      const parsed = JSON.parse(state);
+
+      if (this.exerciseSectionComponent) {
+        this.exerciseSectionComponent.text.set(parsed.userText || '');
+        this.exerciseSectionComponent.selectedAutoPause.set(parsed.autoPause || 5);
+      }
+
+      if (this.newsAudioComponent && parsed.pausedTime) {
+        this.newsAudioComponent.forwardAudio(parsed.pausedTime);
+      }
+    }
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -167,16 +193,33 @@ export class ListenAndWriteComponent {
 
   onExerciseSubmit() {
     this.exerciseState.set('results');
+    this.newsAudioComponent.pauseAudio();
   }
 
   onTryAgain() {
+    localStorage.removeItem(LISTEN_WRITE_EXERCISE_STATE_KEY);
+    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.isFirstTime.set(false);
-    this.exerciseState.set('exercise');
+    this.exerciseState.set('intro');
   }
 
   onFindAnotherExercise() {
     // Redirect to home page
     window.location.href = '/';
+  }
+
+  onAudioPaused() {
+    this.onSaveExerciseState();
+  }
+
+  onSaveExerciseState() {
+    const state = {
+      userText: this.exerciseSectionComponent.text(),
+      autoPause: this.exerciseSectionComponent.selectedAutoPause(),
+      pausedTime: this.newsAudioComponent.audioRef?.nativeElement.currentTime || 0
+    };
+
+    localStorage.setItem(LISTEN_WRITE_EXERCISE_STATE_KEY, JSON.stringify(state));
   }
 
   originalText: string = 'A large number of people, about ninety thousand, gathered in Sydney to support Palestine. They crossed the Sydney Harbour Bridge with flags and protest signs. Many had umbrellas because it was rainy and windy. The police stopped the march for safety reasons because the crowd was very big. The organizer said the event was more than they expected and it was a very peaceful and hopeful day. At the same time, a smaller group of three thousand people gathered in Melbourne to raise awareness about the situation in Gaza. Later on, the police asked the Sydney crowd to go back to the city because they were worried about too many people and possible injuries. Despite the challenges, the protests showed that many people care about peace and helping others in need.'
