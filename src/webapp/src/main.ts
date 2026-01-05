@@ -8,11 +8,13 @@ import { InsightsModule } from './telemetry/insights.module';
 import { appRoutes } from './app/app.routes';
 
 import './telemetry/instrument';
+import { provideApi } from './api/listen-and-write';
 
 bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(appRoutes),
     provideHttpClient(withInterceptorsFromDi()),
+    provideApi(environment.apiUrl),
     provideZoneChangeDetection(),
     ...(environment.production
       ? [importProvidersFrom(InsightsModule)]

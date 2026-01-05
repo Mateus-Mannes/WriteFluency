@@ -9,6 +9,7 @@ var postgresPassword = builder.AddParameter("wf-postgres-password", "postgres", 
 var postgres = builder.AddPostgres("wf-postgres")
     .WithPassword(postgresPassword)
     .WithImage("postgres:14.3")
+    .WithHostPort(5432)
     .WithDataVolume("writefluency-postgres-data");
 var postgresdb = postgres.AddDatabase("wf-postgresdb");
 
