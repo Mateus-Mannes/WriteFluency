@@ -2,12 +2,10 @@ using System.Net.Http.Json;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using WriteFluency.Infrastructure.ExternalApis.OpenAI.Enums;
 using WriteFluency.Infrastructure.Http.Services;
 using WriteFluency.Propositions;
 using WriteFluency.Shared;
 using WriteFluency.TextComparisons;
-using WriteFluency.Extensions;
 using Microsoft.Extensions.AI;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
@@ -144,27 +142,4 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             {articleContent}
             --- ARTICLE END ---
         ";
-
-    public async Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default)
-    {
-        var voices = Enum.GetValues<VoicesEnum>();
-        var voice = voices[new Random().Next(0, voices.Length)].ToString().ToLower();
-        var request = new SpeechRequest(
-            "gpt-4o-mini-tts",
-            text,
-            voice
-        );
-
-        var requestResult = await PostAsync<SpeechRequest, byte[]>(
-            _options.Routes.Speech, request, cancellationToken: cancellationToken);
-
-        if (requestResult.IsFailed)
-        {
-            var errorMessage = requestResult.Errors.Message();
-            _logger.LogError("Error fetching data from OpenAI API (Speech endpoint): {ErrorMessage}", errorMessage);
-            return Result.Fail(new Error($"Error when calling OpenAI API (Speech endpoint). {errorMessage}"));
-        }
-
-        return Result.Ok(new AudioDto(requestResult.Value, voice));
-    }
 }

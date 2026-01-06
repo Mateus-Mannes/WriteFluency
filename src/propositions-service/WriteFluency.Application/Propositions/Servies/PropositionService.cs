@@ -16,6 +16,20 @@ public class PropositionService
         _fileService = fileService;
     }
 
+    public async Task<PropositionDto?> GetAsync(int id)
+    {
+        var proposition = await _context.Propositions.FindAsync(id);
+        
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        var audio = await _fileService.GetFileAsync(Proposition.AudioBucketName, proposition.AudioFileId);
+
+        return new PropositionDto(audio, proposition);
+    }
+
     public async Task<PropositionDto> GetAsync(GetPropositionDto dto)
     {
         var propositionQuery = _context.Propositions

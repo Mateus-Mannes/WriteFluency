@@ -72,11 +72,13 @@ public class ApplicationTestBase : IDisposable
         services.AddSingleton(articleExtractorMock);
 
         var generativeAIClientMock = Substitute.For<IGenerativeAIClient>();
+        var textToSpeechClientMock = Substitute.For<ITextToSpeechClient>();
         generativeAIClientMock.GenerateTextAsync(Arg.Any<ComplexityEnum>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(new AIGeneratedTextDto(faker.Lorem.Paragraph(10), faker.Lorem.Paragraph(3000))));
-        generativeAIClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        textToSpeechClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString())));
         services.AddSingleton(generativeAIClientMock);
+        services.AddSingleton(textToSpeechClientMock);
 
         var fileServiceMock = Substitute.For<IFileService>();
         

@@ -23,7 +23,6 @@ builder.AddAppAuthentication();
 
 // Options configuration
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
-builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
 
 // Adds the database context and identity configuration
@@ -65,21 +64,11 @@ builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
 // Using new microsoft AI abstraction
 builder.Services.AddChatClient(services =>
 {
-    return new ChatClientBuilder(new OpenAI.OpenAIClient(openAIOptions.Key).GetChatClient("gpt-4.1-nano").AsIChatClient())
+    return new ChatClientBuilder(new OpenAI.OpenAIClient(openAIOptions.Key).GetChatClient("gpt-5.1").AsIChatClient())
         .UseFunctionInvocation()
         // TODO: Add logging and telemetry
         .Build();
 }, ServiceLifetime.Scoped);
-
-builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>(client =>
-{
-    var options = builder.Configuration.GetSection(TextToSpeechOptions.Section).Get<TextToSpeechOptions>();
-    ArgumentNullException.ThrowIfNull(options);
-    client.BaseAddress = new Uri(options.BaseAddress);
-    client.DefaultRequestHeaders.Accept.Clear();
-    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-    client.DefaultRequestHeaders.Add(options.KeyName, options.Key);
-});
 
 builder.Services.AddCors();
 

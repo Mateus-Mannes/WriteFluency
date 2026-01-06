@@ -31,6 +31,9 @@ builder.Services.AddOptions<NewsOptions>().Bind(builder.Configuration.GetSection
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
 
+builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
+builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
+
 builder.Services.AddHttpClient<INewsClient, NewsClient>(client =>
 {
     var options = builder.Configuration.GetSection(NewsOptions.Section).Get<NewsOptions>();

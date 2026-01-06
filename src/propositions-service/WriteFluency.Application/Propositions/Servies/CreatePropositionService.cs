@@ -11,17 +11,20 @@ public class CreatePropositionService
     private readonly INewsClient _newsClient;
     private readonly IArticleExtractor _articleExtractor;
     private readonly IGenerativeAIClient _generativeAIClient;
+    private readonly ITextToSpeechClient _textToSpeechClient;
     private readonly IFileService _fileService;
 
     public CreatePropositionService(
         INewsClient newsClient,
         IArticleExtractor articleExtractor,
         IGenerativeAIClient generativeAIClient,
+        ITextToSpeechClient textToSpeechClient,
         IFileService fileService)
     {
         _articleExtractor = articleExtractor;
         _newsClient = newsClient;
         _generativeAIClient = generativeAIClient;
+        _textToSpeechClient = textToSpeechClient;
         _fileService = fileService;
     }
 
@@ -64,7 +67,7 @@ public class CreatePropositionService
             .Bind(articleText => builder.SetArticleText(articleText))
             .Bind(articleText => _generativeAIClient.GenerateTextAsync(dto.Complexity, articleText, cancellationToken))
             .Bind(propositionText => builder.SetPropositionText(propositionText))
-            .Bind(propositionText => _generativeAIClient.GenerateAudioAsync(propositionText, cancellationToken))
+            .Bind(propositionText => _textToSpeechClient.GenerateAudioAsync(propositionText, cancellationToken))
             .Bind(audio => builder.SetAudioVoice(audio))
             .Bind(audio =>
             {
