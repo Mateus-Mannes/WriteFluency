@@ -10,22 +10,23 @@
     'state-anim': stateAnimOn()
 }">
     <app-news-info class="news-info" 
+        [proposition]="proposition()"
         [class.classification-in-line]="exerciseState() != 'intro'"
         [class.compact]="exerciseState() == 'results'"
         ></app-news-info>
 
     <div class="news-audio">
-    <app-news-audio id="newsAudio" (playClicked)="cancelTour()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
+        <app-news-audio id="newsAudio" [proposition]="proposition()" (playClicked)="cancelTour()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
     </div>
 
     @if(exerciseState() === 'intro') {
-        <app-news-image class="news-image"></app-news-image>
+        <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
         <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
 
     @if(exerciseState() === 'exercise') {
-        <app-news-image class="news-image"></app-news-image>
+        <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
         <app-exercise-section class="exercise-section" (submitConfirmed)="onExerciseSubmit()" (saveExerciseState)="onSaveExerciseState()">
         </app-exercise-section>
     }

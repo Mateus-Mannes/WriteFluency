@@ -12,9 +12,10 @@ configMapGenerator:
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
     - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-    - HTTP_PORTS=8080
+    - HTTP_PORTS=8080;5000
+    - HTTPS_PORTS=5001
     - ConnectionStrings__wf-postgresdb=Host=wf-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-postgresdb
-    - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey={user.value};SecretKey=admin123
+    - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=admin123
     - RESOURCE_NAME=wf-api
     - ASPNETCORE_URLS=http://+:8080;
 

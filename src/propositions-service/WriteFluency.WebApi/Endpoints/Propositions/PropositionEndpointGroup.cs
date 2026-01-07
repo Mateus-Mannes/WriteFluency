@@ -9,12 +9,12 @@ public class PropositionEndpointGroup : IEndpointMapper
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("proposition").WithTags("Propositions");
-        group.MapPost("/", GetPropositionAsync);
+        group.MapGet("/{id}", GetPropositionAsync);
         group.MapPost("/generate-proposition", GeneratePropositionAsync);
         group.MapGet("/topics", GetTopics).Produces<Result<TopicsDto>>();
     }
 
-    public async Task<Results<Ok<PropositionDto>, InternalServerError<string>, NotFound<string>>> GetPropositionAsync(
+    public async Task<Results<Ok<Proposition>, InternalServerError<string>, NotFound<string>>> GetPropositionAsync(
         int id,
         PropositionService propositionService,
         ILogger<PropositionEndpointGroup> logger)

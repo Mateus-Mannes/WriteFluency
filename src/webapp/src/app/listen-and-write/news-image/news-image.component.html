@@ -1,9 +1,10 @@
 <img class="news-image" 
-    ngSrc="https://e3.365dm.com/25/07/1600x900/skynews-age-verification-tools_6974078.jpg?20250726013240" 
+    [ngSrc]="imageUrl()" 
     width="1600" 
-    height="900">
+    height="900"
+    priority="true">
 
 <div class="news-font">
-    <p class="text-label">Font: https://spitalfieldslife.com/2025/08/05/parkash-kaur-shopkeeper-iii/</p>
-    <p class="text-label">December 01, 2025</p>
+    <p class="text-caption">Font: {{ proposition()?.newsInfo?.url }}</p>
+    <p class="text-caption">{{ proposition()?.publishedOn | date: 'MMMM dd, yyyy' }}</p>
 </div>

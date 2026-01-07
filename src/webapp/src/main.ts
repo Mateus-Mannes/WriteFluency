@@ -3,7 +3,7 @@ import { AppComponent } from './app/app.component';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
-import { environment } from './enviroments/enviroment.prod';
+import { environment } from './enviroments/enviroment';
 import { InsightsModule } from './telemetry/insights.module';
 import { appRoutes } from './app/app.routes';
 

@@ -4,5 +4,5 @@ import { HomeComponent } from './home/home.component';
 
 export const appRoutes: Routes = [
     { path: '', component: HomeComponent },
-    { path: 'listen-and-write', component: ListenAndWriteComponent },
+    { path: 'listen-and-write/:id', component: ListenAndWriteComponent },
 ];

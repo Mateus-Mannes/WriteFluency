@@ -27,6 +27,10 @@ spec:
           containerPort: 8080
         - name: https
           containerPort: 8443
+        - name: apihttp
+          containerPort: 5000
+        - name: apihttps
+          containerPort: 5001
         envFrom:
         - configMapRef:
             name: wf-api-env

@@ -1,4 +1,6 @@
-import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy } from '@angular/core';
+import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed } from '@angular/core';
+import { Proposition } from 'src/api/listen-and-write';
+import { environment } from 'src/enviroments/enviroment';
 
 @Component({
   selector: 'app-news-audio',
@@ -7,6 +9,13 @@ import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy } fr
   styleUrl: './news-audio.component.scss',
 })
 export class NewsAudioComponent implements OnDestroy {
+
+  proposition = input<Proposition | null>();
+
+  audioUrl = computed(() => {
+    return environment.minioUrl + '/propositions/' + this.proposition()?.audioFileId;
+  });
+
   constructor() {
     // Auto-pause when tab is hidden
     document.addEventListener('visibilitychange', this.handleVisibilityChange);

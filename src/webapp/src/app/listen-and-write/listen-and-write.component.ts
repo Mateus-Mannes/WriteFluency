@@ -1,4 +1,5 @@
 import { Component, signal, ViewChild, HostListener, effect, AfterViewInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
 import { NewsAudioComponent } from './news-audio/news-audio.component';
@@ -9,6 +10,8 @@ import { ListenFirstTourService } from './services/listen-first-tour.service';
 import { ExerciseTourService } from './services/exercise-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
 import { TextComparision } from './entities/text-comparision';
+import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
+import { Proposition } from '../../api/listen-and-write/model/proposition';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -44,10 +47,24 @@ export class ListenAndWriteComponent implements AfterViewInit {
 
   isFirstTime = signal(true);
 
+  proposition = signal<Proposition | null>(null);
+
+  exerciseId: number | null = null;
+
   constructor(
     private listenFirstTourService: ListenFirstTourService,
-    private exerciseTourService: ExerciseTourService
+    private exerciseTourService: ExerciseTourService,
+    private route: ActivatedRoute,
+    private propositionsService: PropositionsService
   ) {
+    // Get the exercise ID from route parameters
+    this.route.params.subscribe(params => {
+      const id = params['id'];
+      if (id) {
+        this.exerciseId = +id; // Convert to number
+        this.loadProposition(this.exerciseId);
+      }
+    });
 
     // Check localStorage for first time flag
     const stored = localStorage.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
@@ -83,6 +100,20 @@ export class ListenAndWriteComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.updateExerciseState();
+  }
+
+  loadProposition(id: number): void {
+    this.propositionsService.apiPropositionIdGet(id).subscribe({
+      next: (data) => {
+        this.proposition.set(data);
+      },
+      error: (error) => {
+        console.error('Error loading proposition:', error);
+        // notify the user and back to the home page
+        alert('Error loading exercise. Returning to home page.');
+        window.location.href = '/';
+      }
+    });
   }
 
   updateExerciseState() 

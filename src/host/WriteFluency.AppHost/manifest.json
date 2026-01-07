@@ -1,6 +1,15 @@
 {
   "$schema": "https://json.schemastore.org/aspire-8.0.json",
   "resources": {
+    "wf-minio-user": {
+      "type": "parameter.v0",
+      "value": "{wf-minio-user.inputs.value}",
+      "inputs": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "wf-minio-password": {
       "type": "parameter.v0",
       "value": "{wf-minio-password.inputs.value}",
@@ -13,7 +22,7 @@
     },
     "wf-minio": {
       "type": "container.v0",
-      "connectionString": "Endpoint=http://{wf-minio.bindings.http.host}:{wf-minio.bindings.http.port};AccessKey={user.value};SecretKey={wf-minio-password.value}",
+      "connectionString": "Endpoint=http://{wf-minio.bindings.http.host}:{wf-minio.bindings.http.port};AccessKey={wf-minio-user.value};SecretKey={wf-minio-password.value}",
       "image": "docker.io/minio/minio:RELEASE.2025-06-13T11-33-47Z",
       "args": [
         "server",
@@ -45,6 +54,17 @@
           "transport": "http",
           "targetPort": 9001
         }
+      }
+    },
+    "wf-minio-init": {
+      "type": "container.v1",
+      "build": {
+        "context": "docker/minio-init",
+        "dockerfile": "docker/minio-init/Dockerfile"
+      },
+      "env": {
+        "MINIO_ROOT_USER": "{wf-minio-user.value}",
+        "MINIO_ROOT_PASSWORD": "{wf-minio-password.value}"
       }
     },
     "wf-postgres-password": {
@@ -106,7 +126,8 @@
         "OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES": "true",
         "OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY": "in_memory",
         "ASPNETCORE_FORWARDEDHEADERS_ENABLED": "true",
-        "HTTP_PORTS": "{wf-api.bindings.http.targetPort}",
+        "HTTP_PORTS": "{wf-api.bindings.http.targetPort};{wf-api.bindings.apihttp.targetPort}",
+        "HTTPS_PORTS": "{wf-api.bindings.apihttps.targetPort}",
         "ConnectionStrings__wf-postgresdb": "{wf-postgresdb.connectionString}",
         "ConnectionStrings__wf-minio": "{wf-minio.connectionString}",
         "RESOURCE_NAME": "wf-api"
@@ -121,6 +142,18 @@
           "scheme": "https",
           "protocol": "tcp",
           "transport": "http"
+        },
+        "apihttp": {
+          "scheme": "http",
+          "protocol": "tcp",
+          "transport": "http",
+          "targetPort": 5000
+        },
+        "apihttps": {
+          "scheme": "https",
+          "protocol": "tcp",
+          "transport": "http",
+          "targetPort": 5001
         }
       }
     },
@@ -155,6 +188,8 @@
         "NODE_ENV": "development",
         "services__wf-api__http__0": "{wf-api.bindings.http.url}",
         "services__wf-api__https__0": "{wf-api.bindings.https.url}",
+        "services__wf-api__apihttp__0": "{wf-api.bindings.apihttp.url}",
+        "services__wf-api__apihttps__0": "{wf-api.bindings.apihttps.url}",
         "PORT": "{wf-webapp.bindings.http.targetPort}"
       },
       "bindings": {
