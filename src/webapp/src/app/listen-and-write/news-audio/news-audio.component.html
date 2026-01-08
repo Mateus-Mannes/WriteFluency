@@ -2,11 +2,12 @@
     <p class="text-body"><b>Suggestion:</b> Listen for the full audio before getting started:</p>
 }
 <audio #audioRef
-    class="audio"
-    [class.audio-playing]="isAudioPlaying()"
-    controls
-    (play)="onPlay()"
-    (pause)="onPause()"
-    (ended)="onEnded()"
-    [src]="audioUrl()">
+  class="audio"
+  [class.audio-playing]="isAudioPlaying()"
+  controls
+  preload="auto"
+  (play)="onPlay()"
+  (pause)="onPause()"
+  (ended)="onEnded()"
+  [src]="audioUrl()">
 </audio>

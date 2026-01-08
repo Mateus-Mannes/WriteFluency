@@ -25,6 +25,9 @@ model/propositionDto.ts
 model/registerUserRequest.ts
 model/subject.ts
 model/subjectEnum.ts
+model/textComparison.ts
+model/textComparisonResult.ts
+model/textRange.ts
 model/topicsDto.ts
 model/topicsDtoResult.ts
 model/validationProblemDetails.ts

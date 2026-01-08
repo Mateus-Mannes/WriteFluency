@@ -1,5 +1,6 @@
-import { Component, effect, input, signal } from '@angular/core';
+import { Component, computed, effect, input, signal } from '@angular/core';
 import { NgClass, DecimalPipe } from '@angular/common';
+import { TextComparisonResult } from 'src/api/listen-and-write';
 
 @Component({
   selector: 'app-exercise-results-section',
@@ -8,15 +9,21 @@ import { NgClass, DecimalPipe } from '@angular/common';
   styleUrl: './exercise-results-section.component.scss',
 })
 export class ExerciseResultsSectionComponent {
-  accuracy = input<number>(0.85);
-  wordCount = input<number>(0);
-  totalWords = input<number>(0);
+  result = input<TextComparisonResult | null>(null);
+  wordCount = computed(() => {
+    return this.result()?.userText?.trim().split(/\s+/).filter(Boolean).length || 0;
+  });
+
+  totalWords = computed(() => {
+    return this.result()?.originalText?.trim().split(/\s+/).filter(Boolean).length || 0;
+  });
+
   displayAccuracy = signal(0);
 
   constructor() {
     
     effect(() => {
-      const target = this.accuracy();
+      const target = this.result()?.accuracyPercentage || 0;
       this.animateAccuracy(target);
     });
   }
@@ -42,7 +49,7 @@ export class ExerciseResultsSectionComponent {
   }
 
   get accuracyClass(): string {
-    const percent = this.accuracy();
+    const percent = this.result()?.accuracyPercentage || 0;
     if (percent >= 0.9) return 'result-good';
     if (percent > 0.5) return 'result-ok';
     return 'result-bad';

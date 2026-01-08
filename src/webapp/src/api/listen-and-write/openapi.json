@@ -212,7 +212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Void"
+                  "$ref": "#/components/schemas/TextComparisonResult"
                 }
               }
             }
@@ -528,6 +528,65 @@
           "Travel"
         ],
         "type": "string"
+      },
+      "TextComparison": {
+        "type": "object",
+        "properties": {
+          "originalTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "originalText": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "userText": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TextComparisonResult": {
+        "type": "object",
+        "properties": {
+          "originalText": {
+            "type": "string",
+            "nullable": true
+          },
+          "userText": {
+            "type": "string",
+            "nullable": true
+          },
+          "comparisons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TextComparison"
+            },
+            "nullable": true
+          },
+          "accuracyPercentage": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TextRange": {
+        "type": "object",
+        "properties": {
+          "initialIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "finalIndex": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
       },
       "TopicsDto": {
         "type": "object",

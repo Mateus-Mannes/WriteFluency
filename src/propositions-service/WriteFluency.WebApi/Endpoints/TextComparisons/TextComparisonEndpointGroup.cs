@@ -12,12 +12,12 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         group.MapPost("compare-texts", CompareTexts).Produces<Ok<List<TextComparison>>>();
     }
 
-    private IResult CompareTexts(
+    private Ok<TextComparisonResult> CompareTexts(
         [FromBody] CompareTextsDto compareTextsDto,
         TextComparisonService textComparisonService)
     {
         var result = textComparisonService
             .CompareTexts(compareTextsDto.OriginalText, compareTextsDto.UserText);
-        return Results.Ok(result);
+        return TypedResults.Ok(result);
     }
 }

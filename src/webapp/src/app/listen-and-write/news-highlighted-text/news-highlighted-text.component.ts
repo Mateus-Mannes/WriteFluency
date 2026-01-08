@@ -1,8 +1,8 @@
-import { Component, input, OnInit, ViewEncapsulation } from '@angular/core';
-import { TextComparision } from '../entities/text-comparision';
+import { Component, computed, input, OnInit, ViewEncapsulation } from '@angular/core';
 import { TextPart } from '../entities/text-part';
 import { NgClass } from '@angular/common';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import { TextComparison, TextComparisonResult } from 'src/api/listen-and-write/model/models';
 
 export type TextType = 'original' | 'user';
 
@@ -15,38 +15,41 @@ export type TextType = 'original' | 'user';
 })
 export class NewsHighlightedTextComponent implements OnInit {
 
-  textComparisons = input<TextComparision[]>(null!);
-  userText = input<string>('');
-  originalText = input<string>('');
+  result = input<TextComparisonResult | null>(null);
   textType = input<TextType>('user');
 
   get tooltipClass(): string {
     return this.textType() === 'user' ? 'tooltip-user-text' : 'tooltip-original-text';
   }
 
-  textParts: TextPart[] = [];
+  textParts = computed<TextPart[]>(() => {
+    if (!this.result()) {
+      return [];
+    }
+    return this.generateTextParts(this.result()!.comparisons || []);
+  });
 
   get highlightClass(): string {
     return this.textType() === 'user' ? 'user-highlighted-text' : 'original-highlighted-text';
   }
 
-  ngOnInit(): void {
-    this.highlightUserText(this.textComparisons());
-  }
+  ngOnInit(): void { }
 
-  highlightUserText(comparisions: TextComparision[]) {
-    let text = this.textType() === 'user' ? this.userText() : this.originalText();
+  generateTextParts(comparisons: TextComparison[]) {
+    let text = this.textType() === 'user' ? this.result()?.userText || '' : this.result()?.originalText || '';
     let lastEnd = 0;
-    for (let comparision of comparisions) {
-      let start = this.textType() === 'user' ? comparision.userTextRange.initialIndex : comparision.originalTextRange.initialIndex;
-      let end = this.textType() === 'user' ? comparision.userTextRange.finalIndex + 1 : comparision.originalTextRange.finalIndex + 1;
-      let correction = this.textType() === 'user' ? comparision.originalText : comparision.userText;
-      this.textParts.push({ 
+    let parts = []
+    for (let comparison of comparisons) {
+      let start = this.textType() === 'user' ? comparison.userTextRange!.initialIndex : comparison.originalTextRange!.initialIndex;
+      let end = this.textType() === 'user' ? comparison.userTextRange!.finalIndex! + 1 : comparison.originalTextRange!.finalIndex! + 1;
+      let correction = this.textType() === 'user' ? comparison.originalText : comparison.userText;
+      parts.push({ 
         text: text.slice(lastEnd, start), highlight: false });
-      this.textParts.push({ text: text.slice(start, end), highlight: true, correction });
+      parts.push({ text: text.slice(start, end), highlight: true, correction: correction || '' });
       lastEnd = end;
     }
-    this.textParts.push({ text: text.slice(lastEnd), highlight: false });
+    parts.push({ text: text.slice(lastEnd), highlight: false });
+    return parts;
   }
 
 }

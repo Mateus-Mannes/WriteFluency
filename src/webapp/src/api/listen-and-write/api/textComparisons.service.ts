@@ -18,6 +18,8 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 
 // @ts-ignore
 import { CompareTextsDto } from '../model/compareTextsDto';
+// @ts-ignore
+import { TextComparisonResult } from '../model/textComparisonResult';
 
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
@@ -42,9 +44,9 @@ export class TextComparisonsService extends BaseService {
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<object>;
-    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<object>>;
-    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<object>>;
+    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<TextComparisonResult>;
+    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<TextComparisonResult>>;
+    public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<TextComparisonResult>>;
     public apiTextComparisonCompareTextsPost(compareTextsDto: CompareTextsDto, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
         if (compareTextsDto === null || compareTextsDto === undefined) {
             throw new Error('Required parameter compareTextsDto was null or undefined when calling apiTextComparisonCompareTextsPost.');
@@ -92,7 +94,7 @@ export class TextComparisonsService extends BaseService {
 
         let localVarPath = `/api/text-comparison/compare-texts`;
         const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request<object>('post', `${basePath}${localVarPath}`,
+        return this.httpClient.request<TextComparisonResult>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: compareTextsDto,

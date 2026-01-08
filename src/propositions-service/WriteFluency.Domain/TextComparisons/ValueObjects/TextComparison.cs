@@ -40,3 +40,19 @@ public class TextComparison
     }
 
 }
+
+public class TextComparisonResult
+{
+    public string OriginalText { get; set; }
+    public string UserText { get; set; }
+    public List<TextComparison> Comparisons { get; set; }
+    public double AccuracyPercentage { get; set; }
+
+    public TextComparisonResult(string originalText, string userText, double accuracyPercentage, List<TextComparison> comparisons)
+    {
+        OriginalText = originalText;
+        UserText = userText;
+        AccuracyPercentage = accuracyPercentage;
+        Comparisons = comparisons;
+    }
+}

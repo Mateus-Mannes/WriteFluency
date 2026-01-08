@@ -16,7 +16,7 @@
         ></app-news-info>
 
     <div class="news-audio">
-        <app-news-audio id="newsAudio" [proposition]="proposition()" (playClicked)="cancelTour()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
+        <app-news-audio id="newsAudio" [proposition]="proposition()" (playClicked)="onAudioPlayClicked()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
     </div>
 
     @if(exerciseState() === 'intro') {
@@ -27,17 +27,17 @@
 
     @if(exerciseState() === 'exercise') {
         <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
-        <app-exercise-section class="exercise-section" (submitConfirmed)="onExerciseSubmit()" (saveExerciseState)="onSaveExerciseState()">
+        <app-exercise-section class="exercise-section" [proposition]="proposition()" (submitConfirmed)="onExerciseSubmit()" (saveExerciseState)="onSaveExerciseState()">
         </app-exercise-section>
     }
 
     @if(exerciseState() === 'results') {
-        <app-exercise-results-section class="exercise-results-section">
+        <app-exercise-results-section [result]="result()" class="exercise-results-section">
         </app-exercise-results-section>
 
-        <app-news-highlighted-text class="exercise-original-text" [textType]="'original'" [originalText]="originalText" [userText]="userText" [textComparisons]="differences"></app-news-highlighted-text>
+        <app-news-highlighted-text class="exercise-original-text" [textType]="'original'" [result]="result()"></app-news-highlighted-text>
         
-        <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [originalText]="originalText" [userText]="userText" [textComparisons]="differences"></app-news-highlighted-text>
+        <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
 
         <div class="exercise-results-actions">
             <button class="final-action-btn text-body" type="button" id="exercise-submit" (click)="onTryAgain()">Try Again</button>

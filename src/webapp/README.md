@@ -39,9 +39,6 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 ## Generate Api Client
 
 ```
-npx openapi-generator-cli generate \                                  
-  -i src/api/listen-and-write/openapi.json \
-  -g typescript-angular \
-  -o src/api/listen-and-write
+npx openapi-generator-cli generate -i src/api/listen-and-write/openapi.json -g typescript-angular -o src/api/listen-and-write
 
 ```

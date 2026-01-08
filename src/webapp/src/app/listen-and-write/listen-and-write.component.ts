@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect, AfterViewInit } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, AfterViewInit, computed } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
@@ -9,15 +9,13 @@ import { ExerciseResultsSectionComponent } from './exercise-results-section/exer
 import { ListenFirstTourService } from './services/listen-first-tour.service';
 import { ExerciseTourService } from './services/exercise-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
-import { TextComparision } from './entities/text-comparision';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
+import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
-export const LISTEN_WRITE_STATE_KEY = 'listen-write-state';
-export const LISTEN_WRITE_EXERCISE_STATE_KEY = 'exercise-section-state';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -49,19 +47,26 @@ export class ListenAndWriteComponent implements AfterViewInit {
 
   proposition = signal<Proposition | null>(null);
 
+  result = signal<TextComparisonResult | null>(null);
+
+  userText = signal<string>('');
+
   exerciseId: number | null = null;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
     private exerciseTourService: ExerciseTourService,
     private route: ActivatedRoute,
-    private propositionsService: PropositionsService
+    private propositionsService: PropositionsService,
+    private textComparisonsService: TextComparisonsService
   ) {
     // Get the exercise ID from route parameters
     this.route.params.subscribe(params => {
       const id = params['id'];
       if (id) {
         this.exerciseId = +id; // Convert to number
+        // Restore state immediately before effect runs
+        this.restoreState();
         this.loadProposition(this.exerciseId);
       }
     });
@@ -75,15 +80,13 @@ export class ListenAndWriteComponent implements AfterViewInit {
       localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
     }
 
-    const storedState = localStorage.getItem(LISTEN_WRITE_STATE_KEY);
-    if (storedState) {
-      this.exerciseState.set(storedState as ExerciseState);
-    }
-
     effect(() => {
       const state = this.exerciseState();
 
-      localStorage.setItem(LISTEN_WRITE_STATE_KEY, state);
+      const stateKey = this.getStateKey();
+      if (stateKey) {
+        localStorage.setItem(stateKey, state);
+      }
 
       if(state === 'exercise') {
         this.updateExerciseState();
@@ -102,6 +105,16 @@ export class ListenAndWriteComponent implements AfterViewInit {
     this.updateExerciseState();
   }
 
+  private getExerciseStateKey(): string | null {
+    if (!this.exerciseId) return null;
+    return `exercise-section-state-${this.exerciseId}`;
+  }
+
+  private getStateKey(): string | null {
+    if (!this.exerciseId) return null;
+    return `listen-write-state-${this.exerciseId}`;
+  }
+
   loadProposition(id: number): void {
     this.propositionsService.apiPropositionIdGet(id).subscribe({
       next: (data) => {
@@ -116,9 +129,22 @@ export class ListenAndWriteComponent implements AfterViewInit {
     });
   }
 
+  private restoreState(): void {
+    const stateKey = this.getStateKey();
+    if (stateKey) {
+      const storedState = localStorage.getItem(stateKey);
+      if (storedState) {
+        this.exerciseState.set(storedState as ExerciseState);
+      }
+    }
+  }
+
   updateExerciseState() 
   {
-    const state = localStorage.getItem(LISTEN_WRITE_EXERCISE_STATE_KEY);
+    const stateKey = this.getExerciseStateKey();
+    if (!stateKey) return;
+    
+    const state = localStorage.getItem(stateKey);
     if (state) {
       const parsed = JSON.parse(state);
 
@@ -130,6 +156,8 @@ export class ListenAndWriteComponent implements AfterViewInit {
       if (this.newsAudioComponent && parsed.pausedTime) {
         this.newsAudioComponent.forwardAudio(parsed.pausedTime);
       }
+
+      this.result.set(parsed.result || null);
     }
   }
 
@@ -161,23 +189,7 @@ export class ListenAndWriteComponent implements AfterViewInit {
 
   playAudioWithAutoPause() {
     this.newsAudioComponent.playAudio();
-    this.clearAutoPauseTimer();
-    // Remove focus from textarea when audio starts
-    this.exerciseSectionComponent?.blurTextArea();
-    // Get auto-pause duration from exercise section
-    const duration = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
-    if (duration > 0) {
-      this.autoPauseTimer = setTimeout(() => {
-        if (this.newsAudioComponent.isAudioPlaying()) {
-          this.newsAudioComponent.pauseAudio();
-          // Switch UI to TYPING mode (exercise mode already active)
-          // Optionally, you can trigger a method or signal here if needed
-        }
-        this.clearAutoPauseTimer();
-        // Refocus textarea when audio is auto-paused
-        this.exerciseSectionComponent?.focusTextArea();
-      }, duration * 1000);
-    }
+    this.applyAutoPause();
   }
 
   pauseAudioWithTimerClear() {
@@ -214,6 +226,15 @@ export class ListenAndWriteComponent implements AfterViewInit {
     }
   }
 
+  onAudioPlayClicked() {
+    this.cancelTour();
+    
+    // Apply auto-pause logic if in exercise state
+    if (this.exerciseState() === 'exercise') {
+      this.applyAutoPause();
+    }
+  }
+
   cancelTour() {
     this.listenFirstTourService.cancelTour();
   }
@@ -222,13 +243,48 @@ export class ListenAndWriteComponent implements AfterViewInit {
     this.exerciseTourService.startTour();
   }
 
+  applyAutoPause() {
+    this.clearAutoPauseTimer();
+    // Remove focus from textarea when audio starts
+    this.exerciseSectionComponent?.blurTextArea();
+    // Get auto-pause duration from exercise section
+    const duration = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
+    if (duration > 0) {
+      this.autoPauseTimer = setTimeout(() => {
+        if (this.newsAudioComponent.isAudioPlaying()) {
+          this.newsAudioComponent.pauseAudio();
+        }
+        this.clearAutoPauseTimer();
+        // Refocus textarea when audio is auto-paused
+        this.exerciseSectionComponent?.focusTextArea();
+      }, duration * 1000);
+    }
+  }
+
   onExerciseSubmit() {
-    this.exerciseState.set('results');
     this.newsAudioComponent.pauseAudio();
+
+    this.textComparisonsService.apiTextComparisonCompareTextsPost({
+      originalText: this.proposition()!.text,
+      userText: this.exerciseSectionComponent.text()
+    }).subscribe({
+      next: (result: TextComparisonResult) => {
+        this.userText.set(this.exerciseSectionComponent.text());
+        this.result.set(result);
+        this.onSaveExerciseState();
+        this.exerciseState.set('results');
+      },
+      error: (error) => {
+        alert('Error processing your exercise. Please try again.');
+      }
+    });
   }
 
   onTryAgain() {
-    localStorage.removeItem(LISTEN_WRITE_EXERCISE_STATE_KEY);
+    const stateKey = this.getExerciseStateKey();
+    if (stateKey) {
+      localStorage.removeItem(stateKey);
+    }
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.isFirstTime.set(false);
     this.exerciseState.set('intro');
@@ -244,101 +300,16 @@ export class ListenAndWriteComponent implements AfterViewInit {
   }
 
   onSaveExerciseState() {
+    const stateKey = this.getExerciseStateKey();
+    if (!stateKey) return;
+    
     const state = {
       userText: this.exerciseSectionComponent.text(),
       autoPause: this.exerciseSectionComponent.selectedAutoPause(),
-      pausedTime: this.newsAudioComponent.audioRef?.nativeElement.currentTime || 0
+      pausedTime: this.newsAudioComponent.audioRef?.nativeElement.currentTime || 0,
+      result: this.result()
     };
 
-    localStorage.setItem(LISTEN_WRITE_EXERCISE_STATE_KEY, JSON.stringify(state));
+    localStorage.setItem(stateKey, JSON.stringify(state));
   }
-
-  originalText: string = 'A large number of people, about ninety thousand, gathered in Sydney to support Palestine. They crossed the Sydney Harbour Bridge with flags and protest signs. Many had umbrellas because it was rainy and windy. The police stopped the march for safety reasons because the crowd was very big. The organizer said the event was more than they expected and it was a very peaceful and hopeful day. At the same time, a smaller group of three thousand people gathered in Melbourne to raise awareness about the situation in Gaza. Later on, the police asked the Sydney crowd to go back to the city because they were worried about too many people and possible injuries. Despite the challenges, the protests showed that many people care about peace and helping others in need.'
-  userText: string = 'A large number of people, about ninety thousand, gathered in Sydney to support Palestine. They crossed the Sydney Harbour Bridge with flags and protest signs. Many had umbrellas because it was rainy and windy. The police stoppd the march for safety reasons because the crowd was very. The organizer said the event was more than they expected and it was a very peaceful and hopeful day. At the same time, a smaller group of threethousand people gathered in Melbourne to raise awareness about the situation in Gaza. Later on, the police asked the Sydney crowd to go back to he citybecause they were worried about too many people and possibl. Despite th, the protests showed that many people care about peac helping others in need.\n'
-  differences : TextComparision[] = [
-    {
-      originalTextRange: {
-        initialIndex: 221,
-        finalIndex: 227,
-      },
-      originalText: 'stopped',
-      userTextRange: {
-        initialIndex: 221,
-        finalIndex: 226,
-      },
-      userText: 'stoppd',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 280,
-        finalIndex: 292,
-      },
-      originalText: 'very big. The',
-      userTextRange: {
-        initialIndex: 279,
-        finalIndex: 287,
-      },
-      userText: 'very. The',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 425,
-        finalIndex: 448,
-      },
-      originalText: 'of three thousand people',
-      userTextRange: {
-        initialIndex: 420,
-        finalIndex: 442,
-      },
-      userText: 'of threethousand people',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 578,
-        finalIndex: 593,
-      },
-      originalText: 'the city because',
-      userTextRange: {
-        initialIndex: 572,
-        finalIndex: 585,
-      },
-      userText: 'he citybecause',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 639,
-        finalIndex: 684,
-      },
-      originalText: 'possible injuries. Despite the challenges, the',
-      userTextRange: {
-        initialIndex: 631,
-        finalIndex: 654,
-      },
-      userText: 'possibl. Despite th, the',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 730,
-        finalIndex: 746,
-      },
-      originalText: 'peace and helping',
-      userTextRange: {
-        initialIndex: 700,
-        finalIndex: 711,
-      },
-      userText: 'peac helping',
-    },
-    {
-      originalTextRange: {
-        initialIndex: 758,
-        finalIndex: 761,
-      },
-      originalText: 'need',
-      userTextRange: {
-        initialIndex: 723,
-        finalIndex: 728,
-      },
-      userText: 'need.\n',
-    },
-  ];
 }
