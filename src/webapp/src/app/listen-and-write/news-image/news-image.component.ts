@@ -14,6 +14,9 @@ export class NewsImageComponent {
   proposition = input<Proposition | null>();
 
   imageUrl = computed(() => {
+    if (!this.proposition()) {
+      return '';
+    }
     return environment.minioUrl + '/images/' + this.proposition()?.imageFileId;
   });
 

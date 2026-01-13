@@ -77,7 +77,7 @@ export class ExerciseTourService {
         {
           id: 'auto-pause',
           title: 'Audio Auto-Pause',
-          text: 'Audio will auto-pause every 3 seconds so you can type. You can change this here.',
+          text: 'Audio will auto-pause every X seconds so you can type. You can change this here.',
           attachTo: { element: '#exercise-auto-pause', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [

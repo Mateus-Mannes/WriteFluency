@@ -22,12 +22,13 @@ export class ExerciseSectionComponent {
   proposition = input<Proposition | null>();
 
   autoPauseOptions = [
+    { label: 'Off', value: 0 },
+    { label: '2s', value: 2 },
     { label: '3s', value: 3 },
-    { label: '5s', value: 5 },
-    { label: '7s', value: 7 },
-    { label: 'Off', value: 0 }
+    { label: '4s', value: 4 },
+    { label: '5s', value: 5 }
   ];
-  selectedAutoPause = signal(3);
+  selectedAutoPause = signal(2);
 
   maxWords = computed(() => {
     return this.proposition()?.text?.trim().split(/\s+/).filter(Boolean).length || 0;

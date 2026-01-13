@@ -26,6 +26,7 @@ body {
 .mat-mdc-tooltip.tooltip-original-text {
   @include mat.tooltip-overrides((
     container-color: vars.$color-accent-highlight,
+    supporting-text-color: black,
   ));
 }
 

@@ -20,10 +20,8 @@ public class TextComparisonService
 
     public TextComparisonResult CompareTexts(string originalText, string userText)
     {
-        double accuracy = CalculateAccuracy(originalText, userText);
-
         if (!IsMinimalSimilar(originalText, userText))
-            return new TextComparisonResult(originalText, userText, accuracy, [ new TextComparison(originalText, userText) ]);
+            return new TextComparisonResult(originalText, userText, 0, [ new TextComparison(originalText, userText) ]);
 
         var alignedTokens = _textAlignmentService.AlignTexts(originalText, userText);
 
@@ -40,6 +38,8 @@ public class TextComparisonService
         }
 
         AddSubStrings(textComparisons, originalText, userText);
+
+        var accuracy = CalculateAccuracy(originalText, textComparisons);
 
         return new TextComparisonResult(originalText, userText, accuracy, textComparisons);
     }
@@ -62,12 +62,12 @@ public class TextComparisonService
         }
     }
 
-    private double CalculateAccuracy(string userText, List<TextComparison> comparisons)
+    private double CalculateAccuracy(string originalText, List<TextComparison> comparisons)
     {
-        if (userText == null || userText.Length == 0)
+        if (originalText == null || originalText.Length == 0)
             return 0;   
 
-        var comparisonsLength = comparisons.Sum(c => c.UserTextRange.FinalIndex - c.UserTextRange.InitialIndex + 1);
-        return (double)comparisonsLength / userText.Length * 100;
+        var comparisonsLength = comparisons.Sum(c => c.OriginalText?.Length ?? 0);
+        return 1 - ((double)comparisonsLength / originalText.Length);
     }
 }

@@ -13,6 +13,9 @@ export class NewsAudioComponent implements OnDestroy {
   proposition = input<Proposition | null>();
 
   audioUrl = computed(() => {
+    if (!this.proposition()) {
+      return '';
+    }
     return environment.minioUrl + '/propositions/' + this.proposition()?.audioFileId;
   });
 

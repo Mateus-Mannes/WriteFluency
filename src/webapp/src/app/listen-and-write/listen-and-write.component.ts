@@ -164,8 +164,11 @@ export class ListenAndWriteComponent implements AfterViewInit {
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     if (this.exerciseState() !== 'exercise') return;
-    // Play/Pause: Ctrl+Enter
-    if (event.ctrlKey && event.key === 'Enter') {
+    
+    const modifierKey = event.ctrlKey || event.metaKey;
+    
+    // Play/Pause: Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac)
+    if (modifierKey && event.key === 'Enter') {
       event.preventDefault();
       if (this.newsAudioComponent.isAudioPlaying()) {
         this.pauseAudioWithTimerClear();
@@ -175,13 +178,13 @@ export class ListenAndWriteComponent implements AfterViewInit {
         this.exerciseTourService.finishTour();
       }
     }
-    // Rewind 3s: Ctrl+ArrowLeft
-    if (event.code === 'ArrowLeft') {
+    // Rewind 3s: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
+    if (modifierKey && event.code === 'ArrowLeft') {
       event.preventDefault();
       this.newsAudioComponent.rewindAudio(3);
     }
-    // Forward 3s: Ctrl+ArrowRight
-    if (event.code === 'ArrowRight') {
+    // Forward 3s: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
+    if (modifierKey && event.code === 'ArrowRight') {
       event.preventDefault();
       this.newsAudioComponent.forwardAudio(3);
     }
