@@ -3,6 +3,9 @@ using WriteFluency.Application.Propositions.Interfaces;
 using WriteFluency.TextComparisons;
 using FluentResults.Extensions;
 using FluentResults;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace WriteFluency.Propositions;
 
@@ -55,12 +58,46 @@ public class CreatePropositionService
     {
         var builder = new PropositionBuilder();
 
-        await _articleExtractor.DownloadImageAsync(newsArticle.ImageUrl, cancellationToken)
-            .Bind(file =>
+        // Download and validate image before uploading
+        var imageResult = await _articleExtractor.DownloadImageAsync(newsArticle.ImageUrl, cancellationToken);
+        if (imageResult.IsSuccess)
+        {
+            var imageBytes = imageResult.Value;
+            
+            // Check and compress image if it exceeds 150 KB
+            if (imageBytes.Length > 153600)
             {
-                return _fileService.UploadFileAsync(Proposition.ImageBucketName, file, newsArticle.ImageUrl, cancellationToken: cancellationToken);
-            })
-            .Bind(fileId => builder.SetImageFileId(fileId));
+                imageBytes = await CompressImageAsync(imageBytes, cancellationToken);
+                
+                // If still too large after compression, reject it
+                if (imageBytes.Length > 153600)
+                {
+                    return Result.Fail(new Error($"Image exceeds maximum size of 150 KB even after compression ({imageBytes.Length / 1024} KB): {newsArticle.Title}"));
+                }
+            }
+
+            var imageValidation = await _generativeAIClient.ValidateImageAsync(imageBytes, newsArticle.Title, cancellationToken);
+            if (imageValidation.IsFailed)
+            {
+                return Result.Fail(new Error("Failed to validate image").CausedBy(imageValidation.Errors));
+            }
+            if (!imageValidation.Value)
+            {
+                return Result.Fail(new Error($"Image is invalid or not coherent with article: {newsArticle.Title}"));
+            }
+
+            // If valid, upload the image
+            var uploadResult = await _fileService.UploadFileAsync(Proposition.ImageBucketName, imageBytes, newsArticle.ImageUrl, cancellationToken: cancellationToken);
+            if (uploadResult.IsFailed)
+            {
+                return Result.Fail(new Error("Failed to upload image").CausedBy(uploadResult.Errors));
+            }
+            builder.SetImageFileId(uploadResult.Value);
+        }
+        else
+        {
+            return Result.Fail(new Error("Failed to download image").CausedBy(imageResult.Errors));
+        }
 
         return await _articleExtractor.GetVisibleTextAsync(newsArticle.Url, cancellationToken)
             .Map(articleText => articleText.Length > 3000 ? articleText[..3000] : articleText)
@@ -75,5 +112,56 @@ public class CreatePropositionService
             })
             .Bind(fileId => builder.SetAudioFileId(fileId))
             .Bind(_ => builder.Build(dto, newsArticle));
+    }
+
+    private async Task<byte[]> CompressImageAsync(byte[] imageBytes, CancellationToken cancellationToken = default)
+    {
+        using var inputStream = new MemoryStream(imageBytes);
+        using var image = await Image.LoadAsync(inputStream, cancellationToken);
+        using var outputStream = new MemoryStream();
+        
+        // Start with quality 75 and reduce dimensions if needed
+        var quality = 75;
+        var scaleFactor = 1.0;
+        
+        // Try different compression levels until we get under 150 KB
+        while (quality >= 50)
+        {
+            outputStream.SetLength(0);
+            outputStream.Position = 0;
+            
+            // Resize if needed
+            if (scaleFactor < 1.0)
+            {
+                var newWidth = (int)(image.Width * scaleFactor);
+                var newHeight = (int)(image.Height * scaleFactor);
+                image.Mutate(x => x.Resize(newWidth, newHeight));
+            }
+            
+            await image.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = quality }, cancellationToken);
+            
+            if (outputStream.Length <= 153600)
+            {
+                return outputStream.ToArray();
+            }
+            
+            // Try lower quality
+            quality -= 10;
+            
+            // If quality is too low, try reducing dimensions
+            if (quality < 50 && scaleFactor == 1.0)
+            {
+                scaleFactor = 0.8;
+                quality = 75;
+            }
+            else if (quality < 50 && scaleFactor > 0.5)
+            {
+                scaleFactor -= 0.1;
+                quality = 75;
+            }
+        }
+        
+        // Return best effort
+        return outputStream.ToArray();
     }
 }

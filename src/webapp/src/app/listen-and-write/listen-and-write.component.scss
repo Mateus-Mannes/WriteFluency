@@ -1,16 +1,20 @@
 @use '../../styles/variables' as vars;
 
 .nav-divider-intro {
-    padding-top: vars.$nav-bar-height;
+    padding-top: calc(vars.$nav-bar-height * 1.2);
 }
 
 .nav-divider {
     padding-top: calc(vars.$nav-bar-height / 2);
 }
 
-@media (min-height: 700px) {
+@media (min-height: 820px) {
     .nav-divider {
         padding-top: calc(vars.$nav-bar-height * 1.5);
+    }
+
+    .nav-divider-intro {
+        padding-top: calc(vars.$nav-bar-height * 2);
     }
 }
 

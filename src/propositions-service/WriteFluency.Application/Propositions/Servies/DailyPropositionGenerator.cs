@@ -53,53 +53,74 @@ public class DailyPropositionGenerator
     {
         _startDate = DateTime.UtcNow.Date.AddDays(-2);
 
-        await DeleteTodayPropositionsAsync(cancellationToken);
-
+        var todayGeneratedParameters = await GetTodayGeneratedParametersAsync(cancellationToken);
         var summary = await CreateSummaryAsync(cancellationToken);
-        var parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).First(); // Always generates for the subjects/complexities with less propositions
-        var date = _startDate;
         var newPropositions = new List<Proposition>();
+        
+        // Start with parameters with least propositions
+        var parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).First();
+        var date = _startDate;
 
         for (int i = 0; i < _options.DailyRequestsLimit; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             _logger.LogInformation($"Generating proposition for {parameters.SubjectId} - {parameters.ComplexityId} - {date}");
 
-            // Generates more propositions if is is still under the limit, or if it is a generation for the currente date
             var countPerSubject = summary.Where(x => x.SubjectId == parameters.SubjectId).Sum(x => x.Count);
-            if (countPerSubject < _options.PropositionsLimitPerTopic || date == _startDate)
+            var isUnderLimit = countPerSubject < _options.PropositionsLimitPerTopic;
+            var isForToday = date == _startDate;
+            
+            // Generate if under limit OR if generating for today (today always gets priority)
+            if (isUnderLimit || isForToday)
             {
-                var dto = new CreatePropositionDto(date, parameters.ComplexityId, parameters.SubjectId);
-                var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, cancellationToken);
-                parameters.Count += result.Count();
-                newPropositions.AddRange(result);
-                _generatedParameters.Add(dto);
+                // Skip if already generated for today
+                var alreadyDoneForToday = isForToday && todayGeneratedParameters.Any(g => 
+                    g.SubjectId == parameters.SubjectId && g.ComplexityId == parameters.ComplexityId);
+                
+                if (!alreadyDoneForToday)
+                {
+                    var dto = new CreatePropositionDto(date, parameters.ComplexityId, parameters.SubjectId);
+                    var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, cancellationToken);
+                    
+                    parameters.Count += result.Count();
+                    newPropositions.AddRange(result);
+                    _generatedParameters.Add(dto);
+                    
+                    if (isForToday)
+                    {
+                        todayGeneratedParameters.Add((parameters.SubjectId, parameters.ComplexityId));
+                    }
+                }
             }
 
-            // Updating parameters for the next iteration:
-
-            // Always generates for the subjects/complexities with less propositions, looking for options under the limit
-            var parametersList = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).Where(x =>
-                summary.Where(y => y.SubjectId == x.SubjectId).Sum(y => y.Count) < _options.PropositionsLimitPerTopic);
+            // Select next parameters (lowest count that's still under limit)
+            var parametersList = summary
+                .OrderBy(x => x.Count)
+                .ThenBy(x => x.SubjectId)
+                .Where(x => summary.Where(y => y.SubjectId == x.SubjectId).Sum(y => y.Count) < _options.PropositionsLimitPerTopic);
+            
             if (!parametersList.Any()) break;
             
             parameters = parametersList.First();
-            // Prioritizing parameters that have not been generated yet
-            var newParameters = parametersList.FirstOrDefault(x => !_generatedParameters.Contains(new CreatePropositionDto(date, x.ComplexityId, x.SubjectId)));
-            if(newParameters is not null) parameters = newParameters;
             
-            // If the next parameters with less propositions have already been generated for today, keep going to the previous day
-            // or the previous day to the oldest one generated previously
-            if ((_generatedParameters.Any(x => x.Subject == parameters.SubjectId && x.Complexity == parameters.ComplexityId &&
-                x.PublishedOn == _startDate)))
+            // Prefer parameters not yet generated in this run
+            var notYetGenerated = parametersList.FirstOrDefault(x => 
+                !_generatedParameters.Contains(new CreatePropositionDto(date, x.ComplexityId, x.SubjectId)));
+            if (notYetGenerated != null) parameters = notYetGenerated;
+            
+            // Determine date for next iteration
+            var isDoneForToday = todayGeneratedParameters.Any(g => 
+                g.SubjectId == parameters.SubjectId && g.ComplexityId == parameters.ComplexityId);
+            
+            if (isDoneForToday)
             {
-                date = _startDate.AddDays(-1);
-                if (parameters.OldestPublishedOn.HasValue)
-                    date = parameters.OldestPublishedOn.Value.Date.AddDays(-1);
+                // This combination is done for today, use previous days
+                date = parameters.OldestPublishedOn?.Date.AddDays(-1) ?? _startDate.AddDays(-1);
                 parameters.OldestPublishedOn = date;
             }
             else
             {
+                // Still need to generate for today
                 date = _startDate;
             }
 
@@ -113,13 +134,16 @@ public class DailyPropositionGenerator
         await SavePropositionsAsync(newPropositions, summary, cancellationToken);
     }
 
-    private async Task DeleteTodayPropositionsAsync(CancellationToken cancellationToken = default)
+    private async Task<List<(SubjectEnum SubjectId, ComplexityEnum ComplexityId)>> GetTodayGeneratedParametersAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation($"Deleting today's propositions");
-        var todayIds = await _context.Propositions.AsNoTracking()
+        _logger.LogInformation($"Checking what has been generated for today's date");
+        var todayParameters = await _context.Propositions.AsNoTracking()
             .Where(p => p.PublishedOn == _startDate)
-            .Select(x => x.Id).ToListAsync(cancellationToken);
-        await _context.Propositions.Where(x => todayIds.Contains(x.Id)).ExecuteDeleteAsync(cancellationToken);
+            .GroupBy(p => new { p.SubjectId, p.ComplexityId })
+            .Select(g => new { g.Key.SubjectId, g.Key.ComplexityId })
+            .ToListAsync(cancellationToken);
+        
+        return todayParameters.Select(p => (p.SubjectId, p.ComplexityId)).ToList();
     }
 
     private async Task<List<PropositionSummaryDto>> CreateSummaryAsync(CancellationToken cancellationToken = default)

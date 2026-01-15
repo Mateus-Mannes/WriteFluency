@@ -75,6 +75,20 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     {
         try
         {
+            // Validate article content first
+            var validationResult = await ValidateArticleContentAsync(articleContent, cancellationToken);
+            if (validationResult.IsFailed)
+            {
+                _logger.LogError("Failed to validate article content");
+                return Result.Fail(new Error("Failed to validate article content").CausedBy(validationResult.Errors));
+            }
+
+            if (!validationResult.Value)
+            {
+                _logger.LogError("Article content is invalid (navigation/boilerplate detected)");
+                return Result.Fail(new Error("Article content is invalid (navigation/boilerplate detected)"));
+            }
+
             // Generate initial paragraph from article
             var paragraphText = await GenerateParagraphAsync(articleContent, cancellationToken);
             if (string.IsNullOrWhiteSpace(paragraphText))
@@ -89,7 +103,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             {
                 _logger.LogWarning("No proper names extracted from paragraph");
             }
-            if(properNames?.Count > 3)
+            if(properNames?.Count > 7)
             {
                 string errorMsg = "Could not complet proposition generation because the news content has too many proper names";
                 _logger.LogError(errorMsg);
@@ -224,7 +238,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
                 - Ensure that the paragraph can be fully and accurately transcribed just by listening to it. The user must be able to write the exact text without seeing it.
 
-                - Use 1 to 3 proper names (people, places, organizations) in the entire paragraph.
+                - Use a minimum of 2, and a MAXIMUM of 5 proper names in the entire paragraph. You need some of them to make the story specific and real, but not too many to confuse the listener.
 
                 - Use general terms (e.g., 'a man,' 'a major city') when a name is not essential.
 
@@ -339,6 +353,166 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             --- TEXT START ---
             {paragraph}
             --- TEXT END ---
+        ";
+
+    private async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _chatClient.GetResponseAsync<string>(
+                [
+                    new ChatMessage(ChatRole.System, ValidateArticleSystemPrompt()),
+                    new ChatMessage(ChatRole.User, ValidateArticleUserPrompt(articleContent))
+                ],
+                CreateChatOptions(maxTokens: 100, temperature: 0.3f),
+                cancellationToken: cancellationToken);
+
+            // Parse the response - expecting "valid" or "invalid"
+            var result = response.Result.Trim().ToLowerInvariant();
+            
+            if (result.Contains("invalid"))
+            {
+                _logger.LogWarning("Article content validation: Invalid article detected (navigation/boilerplate content)");
+                return Result.Ok(false);
+            }
+            else if (result.Contains("valid"))
+            {
+                _logger.LogInformation("Article content validation: Valid article detected");
+                return Result.Ok(true);
+            }
+            else
+            {
+                _logger.LogWarning("Article content validation: Unexpected response format: {Response}", result);
+                // Default to invalid if response is unclear
+                return Result.Ok(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate article content");
+            return Result.Fail(new Error($"Failed to validate article content: {ex.Message}"));
+        }
+    }
+
+    private string ValidateArticleSystemPrompt()
+    => """
+        You are a content validator that determines if a given text is a readable news article or just website navigation/boilerplate content.
+
+        Your task is to analyze the provided text and classify it as either "valid" or "invalid".
+
+        A text is considered VALID if it contains:
+        - Coherent sentences forming a narrative or informative content
+        - News story elements (who, what, when, where, why)
+        - Actual article paragraphs with substantive information
+        - A clear topic or subject being discussed
+
+        A text is considered INVALID if it primarily contains:
+        - Website navigation menus (Home, About, Contact, etc.)
+        - Repeated menu items or link labels
+        - Footer content (Terms of Use, Privacy Policy, Copyright notices)
+        - Social media links (Facebook, Twitter, Instagram, etc.)
+        - Generic website boilerplate text
+        - Excessive category listings or tags
+        - Little to no coherent narrative or informative content
+        - Predominantly consists of short, disconnected phrases typical of UI elements
+
+        Output format:
+        - Respond with only one word: "valid" or "invalid"
+        - Do not include any additional explanation or commentary
+    """;
+
+    private string ValidateArticleUserPrompt(string articleContent)
+        => @$"
+            --- TEXT START ---
+            {articleContent}
+            --- TEXT END ---
+
+            Is this a valid news article? Respond with only 'valid' or 'invalid'.
+        ";
+
+    public async Task<Result<bool>> ValidateImageAsync(byte[] imageBytes, string articleTitle, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Convert image bytes to base64
+            var base64Image = Convert.ToBase64String(imageBytes);
+            var dataUri = $"data:image/jpeg;base64,{base64Image}";
+
+            var messages = new List<ChatMessage>
+            {
+                new ChatMessage(ChatRole.System, ValidateImageSystemPrompt()),
+                new ChatMessage(ChatRole.User, [
+                    new TextContent(ValidateImageUserPrompt(articleTitle)),
+                    new DataContent(dataUri, "image/jpeg")
+                ])
+            };
+
+            var response = await _chatClient.GetResponseAsync<string>(
+                messages,
+                CreateChatOptions(maxTokens: 150, temperature: 0.3f),
+                cancellationToken: cancellationToken);
+
+            // Parse the response - expecting "valid" or "invalid"
+            var result = response.Result.Trim().ToLowerInvariant();
+            
+            if (result.Contains("valid"))
+            {
+                _logger.LogInformation("Image validation: Valid image detected for article '{Title}'", articleTitle);
+                return Result.Ok(true);
+            }
+            else if (result.Contains("invalid"))
+            {
+                _logger.LogWarning("Image validation: Invalid image detected for article '{Title}'", articleTitle);
+                return Result.Ok(false);
+            }
+            else
+            {
+                _logger.LogWarning("Image validation: Unexpected response format: {Response}", result);
+                // Default to invalid if response is unclear
+                return Result.Ok(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate image");
+            return Result.Fail(new Error($"Failed to validate image: {ex.Message}"));
+        }
+    }
+
+    private string ValidateImageSystemPrompt()
+    => """
+        You are an image validator that determines if a given image is appropriate for a news article.
+
+        Your task is to analyze the provided image and classify it as either "valid" or "invalid".
+
+        An image is considered VALID if:
+        - It's a properly loaded, clear image (not broken, corrupted, or placeholder)
+        - It appears to be related to news content (people, events, places, objects)
+        - It looks professional and appropriate for a news article
+        - It has reasonable quality and isn't heavily distorted
+        - It seems coherent with the article title provided
+
+        An image is considered INVALID if:
+        - It's a broken image, error placeholder, or loading icon
+        - It's a generic website logo, icon, or graphic element
+        - It's completely unrelated to any news content (random patterns, test images)
+        - It's extremely low quality, corrupted, or heavily pixelated
+        - It's a screenshot of text, menus, or website UI elements
+        - It appears to be an advertisement or banner
+        - It has nothing to do with the article title
+
+        Note: The image might be cropped to 16:9 aspect ratio from the top, so focus on the main subject visible in the image.
+
+        Output format:
+        - Respond with only one word: "valid" or "invalid"
+        - Do not include any additional explanation or commentary
+    """;
+
+    private string ValidateImageUserPrompt(string articleTitle)
+        => @$"
+            Article title: {articleTitle}
+
+            Is this image valid and appropriate for this news article? Respond with only 'valid' or 'invalid'.
         ";
 
 }

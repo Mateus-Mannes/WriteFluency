@@ -19,8 +19,33 @@
     font-size: 1rem;
     line-height: 1.65;
     color: vars.$color-text;
-    background-color: white;
+    background-color: transparent;
     border: 2px solid #E5E7EB;
     border-radius: 12px;
     line-height: 1.2;
+    overflow-y: auto;
+    overflow: auto;
+
+    // Thin scrollbar styling
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 12px;
+        margin: 8px 0;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #D1D5DB;
+        border-radius: 12px;
+        border-right: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: #9CA3AF;
+        background-clip: padding-box;
+    }
 }
