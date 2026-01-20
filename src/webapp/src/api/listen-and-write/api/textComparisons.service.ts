@@ -25,13 +25,16 @@ import { TextComparisonResult } from '../model/textComparisonResult';
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
 import { Configuration }                                     from '../configuration';
 import { BaseService } from '../api.base.service';
+import {
+    TextComparisonsServiceInterface
+} from './textComparisons.serviceInterface';
 
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class TextComparisonsService extends BaseService {
+export class TextComparisonsService extends BaseService implements TextComparisonsServiceInterface {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);

@@ -13,6 +13,7 @@ public class Proposition
     public required string AudioFileId { get; set; }
     [MaxLength(50)]
     public required string Voice { get; set; }
+    public required int AudioDurationSeconds { get; set; }
 
     [MaxLength(3000)]
     public required string Text { get; set; }

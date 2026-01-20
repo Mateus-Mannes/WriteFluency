@@ -21,6 +21,7 @@ export interface Proposition {
     complexityId?: ComplexityEnum;
     audioFileId?: string | null;
     voice?: string | null;
+    audioDurationSeconds?: number;
     text?: string | null;
     textLength?: number;
     title?: string | null;

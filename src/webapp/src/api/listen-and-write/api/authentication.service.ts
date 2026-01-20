@@ -27,13 +27,16 @@ import { ValidationProblemDetails } from '../model/validationProblemDetails';
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
 import { Configuration }                                     from '../configuration';
 import { BaseService } from '../api.base.service';
+import {
+    AuthenticationServiceInterface
+} from './authentication.serviceInterface';
 
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthenticationService extends BaseService {
+export class AuthenticationService extends BaseService implements AuthenticationServiceInterface {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);

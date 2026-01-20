@@ -43,7 +43,11 @@ public class TextToSpeechClient : ITextToSpeechClient
             speechConfig.SpeechSynthesisVoiceName = randomVoice;
             using var speechSynthesizer = new SpeechSynthesizer(speechConfig, null);
             var result = await speechSynthesizer.SpeakTextAsync(text);
-            return Result.Ok(new AudioDto(result.AudioData, randomVoice));
+            
+            // Get actual duration from Azure Speech SDK result
+            int durationSeconds = (int)result.AudioDuration.TotalSeconds;
+            
+            return Result.Ok(new AudioDto(result.AudioData, randomVoice, durationSeconds));
         }
         catch (Exception ex)
         {

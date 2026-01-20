@@ -4,8 +4,11 @@ api.base.service.ts
 api.module.ts
 api/api.ts
 api/authentication.service.ts
+api/authentication.serviceInterface.ts
 api/propositions.service.ts
+api/propositions.serviceInterface.ts
 api/textComparisons.service.ts
+api/textComparisons.serviceInterface.ts
 configuration.ts
 encoder.ts
 git_push.sh
@@ -13,6 +16,8 @@ index.ts
 model/compareTextsDto.ts
 model/complexity.ts
 model/complexityEnum.ts
+model/exerciseListItemDto.ts
+model/exerciseListItemDtoPagedResultDto.ts
 model/getPropositionDto.ts
 model/iError.ts
 model/iReason.ts

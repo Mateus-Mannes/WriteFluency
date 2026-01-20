@@ -1,7 +1,10 @@
 export * from './authentication.service';
 import { AuthenticationService } from './authentication.service';
+export * from './authentication.serviceInterface';
 export * from './propositions.service';
 import { PropositionsService } from './propositions.service';
+export * from './propositions.serviceInterface';
 export * from './textComparisons.service';
 import { TextComparisonsService } from './textComparisons.service';
+export * from './textComparisons.serviceInterface';
 export const APIS = [AuthenticationService, PropositionsService, TextComparisonsService];

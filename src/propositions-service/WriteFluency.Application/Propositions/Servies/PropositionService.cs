@@ -136,6 +136,7 @@ public class PropositionService
 
             proposition.AudioFileId = uploadResult.Value;
             proposition.Voice = audioResult.Value.Voice;
+            proposition.AudioDurationSeconds = audioResult.Value.DurationSeconds;
 
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -147,5 +148,80 @@ public class PropositionService
             _logger.LogError(ex, "Error regenerating proposition {PropositionId}", propositionId);
             return Result.Fail(new Error($"Error regenerating proposition: {ex.Message}"));
         }
+    }
+
+    public async Task<PagedResultDto<ExerciseListItemDto>> GetExercisesAsync(
+        ExerciseFilterDto filter, 
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Propositions.AsQueryable();
+        
+        // Apply filters
+        bool hasSubjectFilter = filter.Topic.HasValue;
+        bool hasLevelFilter = filter.Level.HasValue;
+        
+        if (hasSubjectFilter)
+        {
+            query = query.Where(p => p.SubjectId == filter.Topic!.Value);
+        }
+        
+        if (hasLevelFilter)
+        {
+            query = query.Where(p => p.ComplexityId == filter.Level!.Value);
+        }
+        
+        // Apply sorting
+        // When no filters are applied, mix subjects and complexities for variety
+        if (!hasSubjectFilter && !hasLevelFilter)
+        {
+            // Primary sort by date (newest or oldest)
+            // Secondary sort by a mix of subject and complexity to ensure variety
+            if (filter.SortBy.ToLower() == "oldest")
+            {
+                query = query
+                    .OrderBy(p => p.PublishedOn)
+                    .ThenBy(p => (int)p.SubjectId + (int)p.ComplexityId * 7) // Mix formula
+                    .ThenBy(p => p.Id);
+            }
+            else // newest (default)
+            {
+                query = query
+                    .OrderByDescending(p => p.PublishedOn)
+                    .ThenBy(p => (int)p.SubjectId + (int)p.ComplexityId * 7) // Mix formula
+                    .ThenBy(p => p.Id);
+            }
+        }
+        else
+        {
+            // When filters are applied, just sort by date and ID
+            query = filter.SortBy.ToLower() == "oldest" 
+                ? query.OrderBy(p => p.PublishedOn).ThenBy(p => p.Id)
+                : query.OrderByDescending(p => p.PublishedOn).ThenBy(p => p.Id);
+        }
+        
+        // Get total count before pagination
+        var totalCount = await query.CountAsync(cancellationToken);
+        
+        // Apply pagination
+        var items = await query
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .Select(p => new ExerciseListItemDto(
+                p.Id,
+                p.Title,
+                p.SubjectId,
+                p.ComplexityId,
+                p.PublishedOn,
+                p.ImageFileId,
+                p.AudioDurationSeconds
+            ))
+            .ToListAsync(cancellationToken);
+        
+        return new PagedResultDto<ExerciseListItemDto>(
+            items,
+            totalCount,
+            filter.PageNumber,
+            filter.PageSize
+        );
     }
 }

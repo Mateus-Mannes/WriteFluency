@@ -11,6 +11,8 @@ public class PropositionEndpointGroup : IEndpointMapper
         var group = endpoints.MapGroup("proposition").WithTags("Propositions");
         group.MapGet("/{id}", GetPropositionAsync);
         group.MapPost("/generate-proposition", GeneratePropositionAsync);
+        group.MapGet("/exercises", GetExercisesAsync)
+            .Produces<PagedResultDto<ExerciseListItemDto>>();
         
         // Regenerate endpoint only available in Development
         var env = endpoints.ServiceProvider.GetRequiredService<IHostEnvironment>();
@@ -97,6 +99,25 @@ public class PropositionEndpointGroup : IEndpointMapper
         {
             logger.LogError(e, "Error regenerating proposition");
             return TypedResults.InternalServerError("Unable to regenerate proposition");
+        }
+    }
+
+    public async Task<Results<Ok<PagedResultDto<ExerciseListItemDto>>, InternalServerError<string>>> 
+        GetExercisesAsync(
+            [AsParameters] ExerciseFilterDto filter,
+            PropositionService propositionService,
+            ILogger<PropositionEndpointGroup> logger,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await propositionService.GetExercisesAsync(filter, cancellationToken);
+            return TypedResults.Ok(result);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error retrieving exercises list");
+            return TypedResults.InternalServerError("Unable to retrieve exercises");
         }
     }
 }

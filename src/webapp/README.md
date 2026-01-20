@@ -41,4 +41,14 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 ```
 npx openapi-generator-cli generate -i src/api/listen-and-write/openapi.json -g typescript-angular -o src/api/listen-and-write
 
+# In webapp directory
+curl -k https://localhost:44317/swagger/v1/swagger.json -o src/api/listen-and-write/openapi.json
+
+# Generate from local file
+npx @openapitools/openapi-generator-cli generate \
+  -i swagger.json \
+  -g typescript-angular \
+  -o src/api/listen-and-write \
+  --additional-properties=ngVersion=21,providedInRoot=true,withInterfaces=true
+
 ```
