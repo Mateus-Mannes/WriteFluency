@@ -100,20 +100,56 @@ p, h1, h2, h3, h4, h5, h6, span, label {
 /* Buttons */
 .shepherd-element.wf-tour .shepherd-button {
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 11px 18px;
   font-weight: 600;
-  border: 1px solid rgba(0,0,0,.10);
+  font-size: 14px;
+  border: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  letter-spacing: 0.2px;
 }
 
-/* Primary / secondary */
+/* Primary button */
 .shepherd-element.wf-tour .shepherd-button.wf-primary {
-  background: vars.$color-primary;
+  background: linear-gradient(135deg, vars.$color-primary 0%, #4a8fff 100%) !important;
   color: white;
-  border-color: transparent;
+  box-shadow: 
+    0 4px 12px rgba(58, 125, 255, 0.25),
+    0 2px 6px rgba(58, 125, 255, 0.15);
 }
+
+.shepherd-element.wf-tour .shepherd-button.wf-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 16px rgba(58, 125, 255, 0.35),
+    0 3px 8px rgba(58, 125, 255, 0.2);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-primary:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(58, 125, 255, 0.2),
+    0 1px 4px rgba(58, 125, 255, 0.15);
+}
+
+/* Secondary button */
 .shepherd-element.wf-tour .shepherd-button.wf-secondary {
-  background: white;
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.04) 0%, rgba(58, 125, 255, 0.08) 100%) !important;
   color: vars.$color-text;
+  border: 1px solid rgba(58, 125, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-secondary:hover {
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.08) 0%, rgba(58, 125, 255, 0.12) 100%) !important;
+  border-color: rgba(58, 125, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(58, 125, 255, 0.12);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* Overlay */

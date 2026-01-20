@@ -1,20 +1,22 @@
 @use '../../styles/variables' as vars;
 
-.nav-divider-intro {
-    padding-top: calc(vars.$nav-bar-height * 1.2);
+// Background gradient for the entire page
+:host {
+    min-height: calc(100vh - vars.$nav-bar-height);
+    background: linear-gradient(135deg, vars.$color-background 0%, #f0f7ff 50%, #fef5f0 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.nav-divider {
+.container {
     padding-top: calc(vars.$nav-bar-height / 2);
+    padding-bottom: calc(vars.$nav-bar-height / 2);
 }
 
 @media (min-height: 820px) {
-    .nav-divider {
-        padding-top: calc(vars.$nav-bar-height * 1.5);
-    }
-
-    .nav-divider-intro {
-        padding-top: calc(vars.$nav-bar-height * 2);
+    .container {
+        margin-top: calc(vars.$nav-bar-height * -1);
     }
 }
 
@@ -142,17 +144,46 @@
     }
 
     .final-action-btn {
-        background: vars.$color-primary;
+        background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
         color: #fff;
         border: none;
-        border-radius: 8px;
-        padding: 0.6em 3em;
-        box-shadow: 0 2px 8px rgba(58, 125, 255, 0.08);
-        transition: background 0.2s;
+        border-radius: 12px;
+        padding: 0.75em 2.5em;
+        box-shadow: 
+            0 4px 12px rgba(58, 125, 255, 0.25),
+            0 2px 4px rgba(58, 125, 255, 0.15);
+        transition: all 0.3s ease;
+        font-weight: 600;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .final-action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
     }
 
     .final-action-btn:hover {
-        background: vars.$color-primary-dark;
+        transform: translateY(-2px);
+        box-shadow: 
+            0 6px 20px rgba(58, 125, 255, 0.35),
+            0 3px 6px rgba(58, 125, 255, 0.2);
+    }
+
+    .final-action-btn:hover::before {
+        left: 100%;
+    }
+
+    .final-action-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(58, 125, 255, 0.2);
     }
 }
 

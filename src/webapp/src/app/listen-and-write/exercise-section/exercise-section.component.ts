@@ -43,6 +43,8 @@ export class ExerciseSectionComponent {
 
   get wordCountClass(): string {
     const percent = this.wordCount / this.maxWords();
+    if (percent > 1.5) return 'word-count-highlight';
+    if (percent > 1.1) return 'word-count-primary';
     if (percent >= 0.9) return 'word-count-success';
     if (percent > 0.5) return 'word-count-primary';
     return 'word-count-highlight';

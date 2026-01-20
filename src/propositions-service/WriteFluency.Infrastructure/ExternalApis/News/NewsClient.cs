@@ -15,7 +15,13 @@ public class NewsClient : BaseHttpClientService, INewsClient
         "yahoo.com",
         "nbcnews.com",
         "michaelwest.com",
-        "www.foxnews.com"
+        "foxnews.com",
+        "benzinga.com",
+        "michaelwest.com.au",
+        "www.cnbc.com",
+        "www.cnet.com",
+        "www.espn.co.uk",
+        "kiwiblog.co.nz"
     ];
 
     public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)

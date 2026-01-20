@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { offset } from '@floating-ui/dom';
 import { ShepherdService } from 'angular-shepherd';
 
+const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
+
 @Injectable({ providedIn: 'root' })
 
 export class ExerciseTourService {
@@ -35,6 +37,14 @@ export class ExerciseTourService {
         modalOverlayOpeningRadius: 10,
       };
       this.shepherd.modal = true;
+
+      // Ensure localStorage is updated when tour ends
+      this.shepherd.tourObject?.on('complete', () => {
+        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
+      this.shepherd.tourObject?.on('cancel', () => {
+        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
 
       this.shepherd.addSteps([
         {
@@ -149,7 +159,7 @@ export class ExerciseTourService {
         {
           id: 'final',
           title: 'Ready to Start!',
-          text: 'You’re ready. Press <b>Ctrl + Enter</b> to start your first listening.',
+          text: 'You’re ready. Press <b>Ctrl/⌘ + Enter</b> to start your first listening.',
           attachTo: undefined, // Center of screen
           buttons: [
             {

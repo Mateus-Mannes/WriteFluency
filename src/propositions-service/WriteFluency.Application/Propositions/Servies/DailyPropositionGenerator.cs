@@ -80,7 +80,7 @@ public class DailyPropositionGenerator
                 if (!alreadyDoneForToday)
                 {
                     var dto = new CreatePropositionDto(date, parameters.ComplexityId, parameters.SubjectId);
-                    var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, cancellationToken);
+                    var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, newPropositions, cancellationToken);
                     
                     parameters.Count += result.Count();
                     newPropositions.AddRange(result);

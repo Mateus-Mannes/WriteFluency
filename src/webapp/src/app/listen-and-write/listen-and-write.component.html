@@ -1,9 +1,5 @@
 <div [class]="{
-    'nav-divider-intro': exerciseState() == 'intro',
-    'nav-divider': exerciseState() != 'intro'
-}"></div>
-
-<div [class]="{
+    'container': true,
     'exercise-intro-container': exerciseState() == 'intro',
     'exercise-container': exerciseState() == 'exercise',
     'exercise-results-container': exerciseState() == 'results',

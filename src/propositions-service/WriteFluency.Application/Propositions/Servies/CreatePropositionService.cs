@@ -6,6 +6,9 @@ using FluentResults;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using WriteFluency.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace WriteFluency.Propositions;
 
@@ -16,22 +19,32 @@ public class CreatePropositionService
     private readonly IGenerativeAIClient _generativeAIClient;
     private readonly ITextToSpeechClient _textToSpeechClient;
     private readonly IFileService _fileService;
+    private readonly IAppDbContext _context;
+    private readonly ILogger<CreatePropositionService> _logger; 
 
     public CreatePropositionService(
         INewsClient newsClient,
         IArticleExtractor articleExtractor,
         IGenerativeAIClient generativeAIClient,
         ITextToSpeechClient textToSpeechClient,
-        IFileService fileService)
+        IFileService fileService,
+        IAppDbContext context,
+        ILogger<CreatePropositionService> logger)
     {
         _articleExtractor = articleExtractor;
         _newsClient = newsClient;
         _generativeAIClient = generativeAIClient;
         _textToSpeechClient = textToSpeechClient;
         _fileService = fileService;
+        _context = context;
+        _logger = logger;
     }
 
-    public async Task<IEnumerable<Proposition>> CreatePropositionsAsync(CreatePropositionDto dto, int quantity, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Proposition>> CreatePropositionsAsync(
+        CreatePropositionDto dto, 
+        int quantity, 
+        IEnumerable<Proposition> generatedPropositions,
+        CancellationToken cancellationToken = default)
     {
         // switch news search page number based on complexity to avoid duplicated news
         var page = dto.Complexity switch
@@ -45,11 +58,27 @@ public class CreatePropositionService
         var newsResult = await _newsClient.GetNewsAsync(dto.Subject, dto.PublishedOn, quantity, page, cancellationToken);
         if (newsResult.IsFailed) return Enumerable.Empty<Proposition>();
 
+        var existingPropositions = (await _context.Propositions
+            .Where(p => newsResult.Value.Select(n => n.ExternalId).Contains(p.NewsInfo.Id))
+            .ToListAsync(cancellationToken)).Concat(generatedPropositions);
+
+        var news = newsResult.Value.Where(n => !existingPropositions.Any(p => p.NewsInfo.Id == n.ExternalId));
+
+        if(!news.Any())
+        {
+            _logger.LogWarning($"No new articles found for subject '{dto.Subject}' on {dto.PublishedOn:yyyy-MM-dd} after filtering existing propositions.");
+            return Enumerable.Empty<Proposition>();
+        }
+
         var propositions = new List<Proposition>();
-        foreach (var newsArticle in newsResult.Value)
+        foreach (var newsArticle in news)
         {
             var propositionResult = await BuildPropositionAsync(dto, newsArticle, cancellationToken);
             if (propositionResult.IsSuccess) propositions.Add(propositionResult.Value);
+            else
+            {
+                _logger.LogError($"Failed to build proposition for article '{newsArticle.Url}': {string.Join(", ", propositionResult.Errors.Select(e => e.Message))}");
+            }
         }
         return propositions;
     }

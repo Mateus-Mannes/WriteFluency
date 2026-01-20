@@ -1,3 +1,148 @@
-<div>
-    TODO: WRITE NEW HOME PAGE
+<div class="home-page">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <!-- Left side: Content -->
+      <div class="hero-content">
+        <h1 class="hero-headline text-display">
+          Practice writing with real news — and instant feedback.
+        </h1>
+        
+        <p class="hero-description text-body">
+          Listen to audio from real news articles, type what you hear, and get instant feedback with highlighted corrections. Improve your English writing skills one exercise at a time.
+        </p>
+        
+        <a [routerLink]="['/exercises']" class="hero-cta" mat-raised-button color="primary" (click)="scrollToTop()">
+          <mat-icon>play_circle_outline</mat-icon>
+          <span>Browse exercises</span>
+        </a>
+        
+        <!-- Value chips -->
+        <div class="value-chips">
+          <mat-chip-listbox aria-label="Key features">
+            <mat-chip-option disabled>
+              <mat-icon>newspaper</mat-icon>
+              Daily news
+            </mat-chip-option>
+            <mat-chip-option disabled>
+              <mat-icon>flash_on</mat-icon>
+              Instant feedback
+            </mat-chip-option>
+            <mat-chip-option disabled>
+              <mat-icon>trending_up</mat-icon>
+              Beginner → Advanced
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+        
+        <!-- Mini stats row -->
+        <div class="mini-stats">
+          <div class="stat-card">
+            <mat-icon class="stat-icon">timer</mat-icon>
+            <div class="stat-content">
+              <span class="stat-value">1 min</span>
+              <span class="stat-label text-label">Audio</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <mat-icon class="stat-icon">today</mat-icon>
+            <div class="stat-content">
+              <span class="stat-value">Daily</span>
+              <span class="stat-label text-label">New content</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <mat-icon class="stat-icon">check_circle</mat-icon>
+            <div class="stat-content">
+              <span class="stat-value">Instant</span>
+              <span class="stat-label text-label">Corrections</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right side: GIF mockup -->
+      <div class="hero-mockup">
+        <div class="mockup-frame">
+          <div class="mockup-header">
+            <div class="mockup-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+          </div>
+          <div class="mockup-content">
+            <img 
+              src="assets/hero.gif" 
+              alt="WriteFluency exercise demo showing listen and write interface"
+              class="mockup-gif"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- How It Works Section -->
+  <section class="how-it-works-section">
+    <div class="section-container">
+      <h2 class="section-title text-title">How it works</h2>
+      
+      <div class="steps-grid">
+        <!-- Step 1: Listen -->
+        <mat-card class="step-card">
+          <mat-card-content>
+            <div class="step-icon-container">
+              <mat-icon class="step-icon">headphones</mat-icon>
+            </div>
+            <h3 class="step-title text-heading">Listen</h3>
+            <p class="step-description text-body">
+              Play the audio from a real news article and listen carefully to understand the content.
+            </p>
+          </mat-card-content>
+        </mat-card>
+        
+        <!-- Step 2: Write -->
+        <mat-card class="step-card">
+          <mat-card-content>
+            <div class="step-icon-container">
+              <mat-icon class="step-icon">edit</mat-icon>
+            </div>
+            <h3 class="step-title text-heading">Write</h3>
+            <p class="step-description text-body">
+              Type what you heard in the text area, paying attention to grammar and spelling.
+            </p>
+          </mat-card-content>
+        </mat-card>
+        
+        <!-- Step 3: Improve -->
+        <mat-card class="step-card">
+          <mat-card-content>
+            <div class="step-icon-container">
+              <mat-icon class="step-icon">trending_up</mat-icon>
+            </div>
+            <h3 class="step-title text-heading">Improve</h3>
+            <p class="step-description text-body">
+              Get instant feedback with highlighted corrections to learn from your mistakes.
+            </p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Latest Exercises Section -->
+  <section class="exercises-section">
+    <div class="section-container">
+      <div class="exercises-header">
+        <div>
+          <h2 class="section-title text-title">Browse exercises</h2>
+          <p class="section-subtitle text-body">Filter and explore our collection of listening and writing exercises</p>
+        </div>
+      </div>
+      
+      <!-- Exercise Grid Component -->
+      <app-exercise-grid [exercises]="exercises" [initialPageSize]="6" />
+    </div>
+  </section>
 </div>

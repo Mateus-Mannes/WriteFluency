@@ -1,11 +1,26 @@
 <mat-toolbar role="navigation" aria-label="Main navigation" class="app-toolbar">
   <div class="toolbar-content">
-    <a class="brand" href="/">
+    <!-- Brand Logo -->
+    <a class="brand" href="/" aria-label="WriteFluency Home" (click)="scrollToTop()">
       <img class="logo" src="../../../assets/app-icon.svg" alt="WriteFluency logo" />
       <span class="brand-text">
         <span class="text-primary-dark">Write</span><span class="text-primary">Fluency</span>
       </span>
     </a>
+
+    <!-- Spacer -->
+    <span class="spacer"></span>
+
+    <!-- Navigation Links -->
+    <nav class="nav-links">
+      <a href="/" class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()">
+        <mat-icon>home</mat-icon>
+        <span>Home</span>
+      </a>
+      <a href="/exercises" class="nav-link" routerLink="/exercises" routerLinkActive="active" (click)="scrollToTop()">
+        <mat-icon>library_books</mat-icon>
+        <span>Exercises</span>
+      </a>
+    </nav>
   </div>
 </mat-toolbar>
-<hr class="divider" />

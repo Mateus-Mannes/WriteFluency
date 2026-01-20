@@ -77,7 +77,7 @@ export class ListenAndWriteComponent implements AfterViewInit {
       this.isFirstTime.set(false);
     } else {
       this.isFirstTime.set(true);
-      localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'true');
     }
 
     effect(() => {
@@ -222,7 +222,9 @@ export class ListenAndWriteComponent implements AfterViewInit {
       this.listenFirstTourService.prompt(
         '#newsAudio',
         () => this.newsAudioComponent.playAudio(),
-        () => this.exerciseState.set('exercise')
+        () => {
+          this.exerciseState.set('exercise');
+        }
       );
     } else {
       this.exerciseState.set('exercise');
@@ -295,7 +297,7 @@ export class ListenAndWriteComponent implements AfterViewInit {
 
   onFindAnotherExercise() {
     // Redirect to home page
-    window.location.href = '/';
+    window.location.href = '/exercises';
   }
 
   onAudioPaused() {

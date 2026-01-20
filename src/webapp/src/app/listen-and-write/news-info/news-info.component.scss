@@ -9,7 +9,7 @@
 }
 
 .intermediate-icon {
-    color: vars.$color-accent-highlight;
+    color: #d4a000;
 }
 
 .advanced-icon {
@@ -17,12 +17,37 @@
 }
 
 .subject {
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    background: linear-gradient(135deg, rgba(58, 125, 255, 0.08) 0%, rgba(58, 125, 255, 0.12) 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(58, 125, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+.subject:hover {
+    background: linear-gradient(135deg, rgba(58, 125, 255, 0.12) 0%, rgba(58, 125, 255, 0.16) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(58, 125, 255, 0.15);
+}
+
+.complexity {
+    margin-bottom: 0.3rem;
+    padding: 0.4rem 0.75rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+    border: 1px solid rgba(58, 125, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+.complexity:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(58, 125, 255, 0.15);
 }
 
 .complexity, .subject {
     display: flex;
-    gap: 0.3125rem;
+    gap: 0.4rem;
     align-items: center;
 }
 
