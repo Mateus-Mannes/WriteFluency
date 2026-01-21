@@ -24,6 +24,11 @@ public class Proposition
     public string? ImageFileId { get; set; }
 
     public required DateTime CreatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
+    public int? PropositionGenerationLogId { get; set; }
+    public PropositionGenerationLog? PropositionGenerationLog { get; set; }
 
     public required NewsInfo NewsInfo { get; set; }
 

@@ -12,9 +12,6 @@ public class DailyPropositionGenerator
     private readonly ILogger<DailyPropositionGenerator> _logger;
     private readonly IAppDbContext _context;
 
-    private DateTime _startDate;
-    private HashSet<CreatePropositionDto> _generatedParameters = new();
-
     public DailyPropositionGenerator(
         CreatePropositionService createPropositionService,
         IOptionsMonitor<PropositionOptions> options,
@@ -36,7 +33,6 @@ public class DailyPropositionGenerator
         try
         {
             await GenerateAsync(cancellationToken);
-            _generatedParameters.Clear();
             _logger.LogInformation($"Daily proposition generation completed successfully");
         }
         catch (OperationCanceledException)
@@ -51,166 +47,215 @@ public class DailyPropositionGenerator
 
     private async Task GenerateAsync(CancellationToken cancellationToken = default)
     {
-        _startDate = DateTime.UtcNow.Date.AddDays(-2);
+        var targetDate = DateTime.UtcNow.Date.AddDays(-2);
 
-        var todayGeneratedParameters = await GetTodayGeneratedParametersAsync(cancellationToken);
-        var summary = await CreateSummaryAsync(cancellationToken);
-        var newPropositions = new List<Proposition>();
-        
-        // Start with parameters with least propositions
-        var parameters = summary.OrderBy(x => x.Count).ThenBy(x => x.SubjectId).First();
-        var date = _startDate;
+        // Get generation statistics for each subject/complexity combination
+        var generationStats = await GetGenerationStatsAsync(cancellationToken);
 
         for (int i = 0; i < _options.DailyRequestsLimit; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _logger.LogInformation($"Generating proposition for {parameters.SubjectId} - {parameters.ComplexityId} - {date}");
 
-            var countPerSubject = summary.Where(x => x.SubjectId == parameters.SubjectId).Sum(x => x.Count);
-            var isUnderLimit = countPerSubject < _options.PropositionsLimitPerTopic;
-            var isForToday = date == _startDate;
+            // Find the subject/complexity combination with the least generation attempts
+            var targetParameters = generationStats
+                .OrderBy(x => x.LogCount)
+                .ThenBy(x => x.SubjectId)
+                .ThenBy(x => x.ComplexityId)
+                .First();
+
+            // Check if we're over the proposition limit for this subject (count actual propositions)
+            var subjectPropositionCount = await _context.Propositions
+                .Where(x => x.SubjectId == targetParameters.SubjectId)
+                .CountAsync(cancellationToken);
             
-            // Generate if under limit OR if generating for today (today always gets priority)
-            if (isUnderLimit || isForToday)
+            var isOverLimit = subjectPropositionCount >= _options.PropositionsLimitPerTopic;
+
+            // Find the most recent date that hasn't been generated yet for this combination
+            var dateToGenerate = await GetNextDateToGenerateAsync(
+                targetParameters.SubjectId, 
+                targetParameters.ComplexityId, 
+                targetDate,
+                isOverLimit,
+                cancellationToken);
+
+            if (dateToGenerate == null)
             {
-                // Skip if already generated for today
-                var alreadyDoneForToday = isForToday && todayGeneratedParameters.Any(g => 
-                    g.SubjectId == parameters.SubjectId && g.ComplexityId == parameters.ComplexityId);
+                _logger.LogWarning($"No available date found for {targetParameters.SubjectId} - {targetParameters.ComplexityId}");
+                // Remove this combination from consideration
+                generationStats.Remove(targetParameters);
                 
-                if (!alreadyDoneForToday)
+                if (!generationStats.Any())
                 {
-                    var dto = new CreatePropositionDto(date, parameters.ComplexityId, parameters.SubjectId);
-                    var result = await _createPropositionService.CreatePropositionsAsync(dto, _options.NewsRequestLimit, newPropositions, cancellationToken);
-                    
-                    parameters.Count += result.Count();
-                    newPropositions.AddRange(result);
-                    _generatedParameters.Add(dto);
-                    
-                    if (isForToday)
+                    _logger.LogWarning("No more combinations available for generation");
+                    break;
+                }
+                continue;
+            }
+
+            _logger.LogInformation($"Generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} - {dateToGenerate}");
+
+            var dto = new CreatePropositionDto(dateToGenerate.Value, targetParameters.ComplexityId, targetParameters.SubjectId);
+            
+            PropositionGenerationLog? generationLog = null;
+            try
+            {
+                // Create log entry first to get the ID
+                generationLog = new PropositionGenerationLog
+                {
+                    GenerationDate = dto.PublishedOn.Date,
+                    SubjectId = dto.Subject,
+                    ComplexityId = dto.Complexity,
+                    SuccessCount = 0,
+                    Success = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.PropositionGenerationLogs.AddAsync(generationLog, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                var result = await _createPropositionService.CreatePropositionsAsync(
+                    dto, 
+                    _options.NewsRequestLimit, 
+                    cancellationToken);
+
+                var successCount = result.Count();
+                var success = successCount > 0;
+
+                // Update the log with results
+                generationLog.SuccessCount = successCount;
+                generationLog.Success = success;
+                await _context.SaveChangesAsync(cancellationToken);
+
+                // Always increment log count (tracks attempts, not success)
+                targetParameters.LogCount++;
+                
+                if (success)
+                {
+                    // Link propositions to the generation log and save immediately
+                    foreach (var proposition in result)
                     {
-                        todayGeneratedParameters.Add((parameters.SubjectId, parameters.ComplexityId));
+                        proposition.PropositionGenerationLogId = generationLog.Id;
                     }
+                    
+                    await _context.Propositions.AddRangeAsync(result, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    
+                    // Check and soft delete if over limit
+                    await CleanupOldPropositionsAsync(dto.Subject, cancellationToken);
                 }
             }
-
-            // Select next parameters (lowest count that's still under limit)
-            var parametersList = summary
-                .OrderBy(x => x.Count)
-                .ThenBy(x => x.SubjectId)
-                .Where(x => summary.Where(y => y.SubjectId == x.SubjectId).Sum(y => y.Count) < _options.PropositionsLimitPerTopic);
-            
-            if (!parametersList.Any()) break;
-            
-            parameters = parametersList.First();
-            
-            // Prefer parameters not yet generated in this run
-            var notYetGenerated = parametersList.FirstOrDefault(x => 
-                !_generatedParameters.Contains(new CreatePropositionDto(date, x.ComplexityId, x.SubjectId)));
-            if (notYetGenerated != null) parameters = notYetGenerated;
-            
-            // Determine date for next iteration
-            var isDoneForToday = todayGeneratedParameters.Any(g => 
-                g.SubjectId == parameters.SubjectId && g.ComplexityId == parameters.ComplexityId);
-            
-            if (isDoneForToday)
+            catch (Exception ex)
             {
-                // This combination is done for today, use previous days
-                date = parameters.OldestPublishedOn?.Date.AddDays(-1) ?? _startDate.AddDays(-1);
-                parameters.OldestPublishedOn = date;
-            }
-            else
-            {
-                // Still need to generate for today
-                date = _startDate;
-            }
-
-            if (newPropositions.Count % 1000 == 0)
-            {
-                await SavePropositionsAsync(newPropositions, summary, cancellationToken);
-                newPropositions.Clear();
+                _logger.LogError(ex, $"Error generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} - {dateToGenerate}");
+                
+                // Update log as failed if it was created
+                if (generationLog != null)
+                {
+                    generationLog.Success = false;
+                    generationLog.SuccessCount = 0;
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
             }
         }
-
-        await SavePropositionsAsync(newPropositions, summary, cancellationToken);
     }
 
-    private async Task<List<(SubjectEnum SubjectId, ComplexityEnum ComplexityId)>> GetTodayGeneratedParametersAsync(CancellationToken cancellationToken = default)
+    private async Task<List<GenerationStatsDto>> GetGenerationStatsAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation($"Checking what has been generated for today's date");
-        var todayParameters = await _context.Propositions.AsNoTracking()
-            .Where(p => p.PublishedOn == _startDate)
-            .GroupBy(p => new { p.SubjectId, p.ComplexityId })
-            .Select(g => new { g.Key.SubjectId, g.Key.ComplexityId })
-            .ToListAsync(cancellationToken);
+        _logger.LogInformation("Querying generation statistics");
         
-        return todayParameters.Select(p => (p.SubjectId, p.ComplexityId)).ToList();
-    }
-
-    private async Task<List<PropositionSummaryDto>> CreateSummaryAsync(CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation($"Querying propositions summary");
-        // Need to now how many propositions I have for each subject
-        var counter = await _context.Propositions.AsNoTracking()
-            .GroupBy(p => new { p.SubjectId, p.ComplexityId })
-            .OrderBy(g => g.Key.SubjectId).ThenBy(g => g.Key.ComplexityId)
-            .Select(g => new PropositionSummaryDto
+        // Count generation attempts (logs) for each combination
+        var stats = await _context.PropositionGenerationLogs
+            .GroupBy(x => new { x.SubjectId, x.ComplexityId })
+            .Select(g => new GenerationStatsDto
             {
                 SubjectId = g.Key.SubjectId,
                 ComplexityId = g.Key.ComplexityId,
-                OldestPublishedOn = g.Min(p => p.PublishedOn),
-                Count = g.Count()
-            }).ToListAsync(cancellationToken);
+                LogCount = g.Count()
+            })
+            .ToListAsync(cancellationToken);
 
-        // Adding subjets/complexities that have not been created yet
+        // Add combinations that have never been attempted
         foreach (var (subject, complexity) in Proposition.Parameters)
         {
-            if (!counter.Any(x => x.SubjectId == subject && x.ComplexityId == complexity))
+            if (!stats.Any(x => x.SubjectId == subject && x.ComplexityId == complexity))
             {
-                counter.Add(new PropositionSummaryDto
+                stats.Add(new GenerationStatsDto
                 {
                     SubjectId = subject,
                     ComplexityId = complexity,
-                    Count = 0
+                    LogCount = 0
                 });
             }
         }
 
-        return counter;
+        return stats;
     }
 
-    private async Task SavePropositionsAsync(
-        IEnumerable<Proposition> propositions,
-        List<PropositionSummaryDto> summary,
+    private async Task<DateTime?> GetNextDateToGenerateAsync(
+        SubjectEnum subjectId, 
+        ComplexityEnum complexityId, 
+        DateTime targetDate,
+        bool isOverLimit,
         CancellationToken cancellationToken = default)
     {
-        if (!propositions.Any()) return;
+        // Check if target date has already been attempted
+        var targetDateHasLog = await _context.PropositionGenerationLogs
+            .AnyAsync(x => x.SubjectId == subjectId 
+                && x.ComplexityId == complexityId 
+                && x.GenerationDate.Date == targetDate,
+                cancellationToken);
 
-        try
+        if (!targetDateHasLog)
         {
-            // Delete oldest propositions to add new ones without exceeding the limit
-            _logger.LogInformation($"Deleting oldest propositions to keep the limit of {_options.PropositionsLimitPerTopic} per subject");
-            foreach (var subjectEnum in Enum.GetValues<SubjectEnum>())
-            {
-                var countPerSubject = summary.Where(x => x.SubjectId == subjectEnum).Sum(x => x.Count);
-                if (countPerSubject > _options.PropositionsLimitPerTopic)
-                {
-                    var ids = await _context.Propositions.AsNoTracking()
-                        .Where(p => p.SubjectId == subjectEnum)
-                        .OrderBy(x => x.PublishedOn).Take(countPerSubject - _options.PropositionsLimitPerTopic)
-                        .Select(x => x.Id)
-                        .ToListAsync(cancellationToken);
-                    await _context.Propositions.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync(cancellationToken);
-                }
-            }
-
-            _logger.LogInformation($"Saving {propositions.Count()} new propositions");
-            await _context.Propositions.AddRangeAsync(propositions, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            return targetDate;
         }
-        catch (Exception ex)
+
+        // If over limit and target date already done, stop
+        if (isOverLimit)
         {
-            _logger.LogError(ex, "Error while saving propositions");
+            return null;
+        }
+
+        // Target date already done, go back from oldest log date
+        var oldestLogDate = await _context.PropositionGenerationLogs
+            .Where(x => x.SubjectId == subjectId && x.ComplexityId == complexityId)
+            .MinAsync(x => (DateTime?)x.GenerationDate, cancellationToken);
+
+        return oldestLogDate?.Date.AddDays(-1) ?? targetDate;
+    }
+
+    private async Task CleanupOldPropositionsAsync(
+        SubjectEnum subjectId,
+        CancellationToken cancellationToken = default)
+    {
+        var count = await _context.Propositions
+            .Where(p => p.SubjectId == subjectId)
+            .CountAsync(cancellationToken);
+
+        if (count > _options.PropositionsLimitPerTopic)
+        {
+            var toDelete = count - _options.PropositionsLimitPerTopic;
+            
+            var propositionsToDelete = await _context.Propositions
+                .Where(p => p.SubjectId == subjectId)
+                .OrderBy(x => x.PublishedOn)
+                .Take(toDelete)
+                .ToListAsync(cancellationToken);
+            
+            foreach (var proposition in propositionsToDelete)
+            {
+                proposition.IsDeleted = true;
+                proposition.DeletedAt = DateTime.UtcNow;
+            }
+            
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation($"Soft deleted {toDelete} oldest propositions for subject {subjectId}");
         }
     }
 
+    private class GenerationStatsDto
+    {
+        public SubjectEnum SubjectId { get; set; }
+        public ComplexityEnum ComplexityId { get; set; }
+        public int LogCount { get; set; }
+    }
 }

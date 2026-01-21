@@ -18,10 +18,11 @@ public class NewsClient : BaseHttpClientService, INewsClient
         "foxnews.com",
         "benzinga.com",
         "michaelwest.com.au",
-        "www.cnbc.com",
-        "www.cnet.com",
-        "www.espn.co.uk",
-        "kiwiblog.co.nz"
+        "cnbc.com",
+        "cnet.com",
+        "espn.co.uk",
+        "kiwiblog.co.nz",
+        "bbc.com"
     ];
 
     public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)

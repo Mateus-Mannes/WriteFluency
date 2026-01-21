@@ -78,7 +78,7 @@ public class ApplicationTestBase : IDisposable
         generativeAIClientMock.ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(true)); // By default, always return valid image
         textToSpeechClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString())));
+            .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString(), 60)));
         services.AddSingleton(generativeAIClientMock);
         services.AddSingleton(textToSpeechClientMock);
 

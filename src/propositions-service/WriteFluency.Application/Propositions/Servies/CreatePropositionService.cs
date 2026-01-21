@@ -43,7 +43,6 @@ public class CreatePropositionService
     public async Task<IEnumerable<Proposition>> CreatePropositionsAsync(
         CreatePropositionDto dto, 
         int quantity, 
-        IEnumerable<Proposition> generatedPropositions,
         CancellationToken cancellationToken = default)
     {
         // switch news search page number based on complexity to avoid duplicated news
@@ -58,11 +57,18 @@ public class CreatePropositionService
         var newsResult = await _newsClient.GetNewsAsync(dto.Subject, dto.PublishedOn, quantity, page, cancellationToken);
         if (newsResult.IsFailed) return Enumerable.Empty<Proposition>();
 
-        var existingPropositions = (await _context.Propositions
-            .Where(p => newsResult.Value.Select(n => n.ExternalId).Contains(p.NewsInfo.Id))
-            .ToListAsync(cancellationToken)).Concat(generatedPropositions);
+        var newsIds = newsResult.Value.Select(n => n.ExternalId).ToList();
+        
+        // Check for existing propositions in database (includes soft delete filter automatically)
+        var existingNewsIds = await _context.Propositions
+            .Where(p => newsIds.Contains(p.NewsInfo.Id))
+            .Select(p => p.NewsInfo.Id)
+            .ToListAsync(cancellationToken);
 
-        var news = newsResult.Value.Where(n => !existingPropositions.Any(p => p.NewsInfo.Id == n.ExternalId));
+        // Filter out news that already have propositions
+        var news = newsResult.Value
+            .Where(n => !existingNewsIds.Contains(n.ExternalId))
+            .ToList();
 
         if(!news.Any())
         {

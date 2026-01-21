@@ -76,10 +76,6 @@ public class NewsWorker : BackgroundService
                         await GenerateDailyPropositionsAsync(stoppingToken);
                         lastExecution = now;
                     }
-                    else
-                    {
-                        _logger.LogDebug("Not time yet. Next execution expected at {Next}", next);
-                    }
                 }
             }
             catch (OperationCanceledException)
