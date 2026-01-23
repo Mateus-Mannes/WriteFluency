@@ -12,24 +12,8 @@
   <!-- Exercises Section -->
   <section class="exercises-section">
     <div class="section-container">
-      @if (isLoading()) {
-        <div class="loading-state">
-          <mat-icon>hourglass_empty</mat-icon>
-          <p>Loading exercises...</p>
-        </div>
-      } @else if (error()) {
-        <div class="error-state">
-          <mat-icon>error_outline</mat-icon>
-          <p>{{ error() }}</p>
-          <button mat-raised-button color="primary" (click)="loadExercises()">
-            <mat-icon>refresh</mat-icon>
-            Try Again
-          </button>
-        </div>
-      } @else {
-        <!-- Exercise Grid Component -->
-        <app-exercise-grid [exercises]="exercises()" [initialPageSize]="9" />
-      }
+      <!-- Exercise Grid Component - now handles its own data loading -->
+      <app-exercise-grid />
     </div>
   </section>
 </div>

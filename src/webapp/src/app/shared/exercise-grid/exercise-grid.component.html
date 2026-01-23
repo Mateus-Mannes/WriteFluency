@@ -1,97 +1,112 @@
 <!-- Filters and Sort -->
-<div class="filters-row">
-  <div class="results-info">
-    <span class="text-body">
-      Showing <strong>{{ totalExercises }}</strong> {{ totalExercises === 1 ? 'exercise' : 'exercises' }}
-    </span>
-  </div>
-  
-  <div class="filters">
-    <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Topic</mat-label>
-      <mat-select [value]="selectedTopic()" (selectionChange)="onTopicChange($event.value)">
-        @for (topic of topics; track topic) {
-          <mat-option [value]="topic">{{ formatTopicName(topic) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+@if (!hideFilters) {
+  <div class="filters-row">
+    <div class="results-info">
+      <span class="text-body">
+        Showing <strong>{{ totalExercises() }}</strong> {{ totalExercises() === 1 ? 'exercise' : 'exercises' }}
+      </span>
+    </div>
     
-    <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Level</mat-label>
-      <mat-select [value]="selectedLevel()" (selectionChange)="onLevelChange($event.value)">
-        @for (level of levels; track level) {
-          <mat-option [value]="level">{{ formatLevelName(level) }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    
-    <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Sort by</mat-label>
-      <mat-select [value]="sortOrder()" (selectionChange)="onSortChange($event.value)">
-        @for (option of sortOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+    <div class="filters">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Topic</mat-label>
+        <mat-select [value]="selectedTopic()" (selectionChange)="onTopicChange($event.value)">
+          @for (topic of topics; track topic) {
+            <mat-option [value]="topic">{{ formatTopicName(topic) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Level</mat-label>
+        <mat-select [value]="selectedLevel()" (selectionChange)="onLevelChange($event.value)">
+          @for (level of levels; track level) {
+            <mat-option [value]="level">{{ formatLevelName(level) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Sort by</mat-label>
+        <mat-select [value]="sortOrder()" (selectionChange)="onSortChange($event.value)">
+          @for (option of sortOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      
+      <button mat-stroked-button (click)="clearFilters()" class="clear-filters-btn">
+        <mat-icon>clear_all</mat-icon>
+        Clear Filters
+      </button>
+    </div>
   </div>
-</div>
+}
 
 <!-- Exercise cards grid -->
 <div class="exercises-grid">
-  @for (exercise of paginatedExercises(); track exercise.id) {
-    <mat-card class="exercise-card" [routerLink]="['/listen-and-write', exercise.id]">
-      <!-- Thumbnail -->
-      <div class="exercise-thumbnail">
-        @if (exercise.imageUrl) {
-          <img [src]="exercise.imageUrl" [alt]="exercise.title" />
-        } @else {
-          <div class="exercise-placeholder">
-            <mat-icon>article</mat-icon>
-            <span class="placeholder-text">{{ getTopicInitial(exercise.topic) }}</span>
-          </div>
-        }
-      </div>
-      
-      <mat-card-content>
-        <!-- Title -->
-        <h3 class="exercise-title text-heading">{{ exercise.title }}</h3>
-        
-        <!-- Meta info -->
-        <div class="exercise-meta">
-          <span class="meta-topic">{{ exercise.topic }}</span>
-          <span class="meta-level" [class]="'level-' + exercise.level.toLowerCase()">
-            {{ exercise.level }}
-          </span>
-          <span class="meta-duration">
-            <mat-icon>timer</mat-icon>
-            {{ exercise.duration }}
-          </span>
-        </div>
-      </mat-card-content>
-      
-      <mat-card-actions>
-        <button mat-button color="primary">
-          <mat-icon>play_arrow</mat-icon>
-          Start
-        </button>
-      </mat-card-actions>
-    </mat-card>
-  } @empty {
-    <div class="empty-state">
-      <mat-icon>search_off</mat-icon>
-      <h3>No exercises found</h3>
-      <p>Try adjusting your filters to see more results</p>
+  @if (isLoading()) {
+    <div class="loading-state">
+      <mat-spinner></mat-spinner>
+      <p>Loading exercises...</p>
     </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <h3>Error</h3>
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    @for (exercise of exercises(); track exercise.id) {
+      <mat-card class="exercise-card">
+        <a [routerLink]="['/listen-and-write', exercise.id]" class="exercise-card-link">
+          <!-- Thumbnail -->
+          <div class="exercise-thumbnail">
+            @if (exercise.imageUrl) {
+              <img [src]="exercise.imageUrl" [alt]="exercise.title" />
+            } @else {
+              <div class="exercise-placeholder">
+                <mat-icon>article</mat-icon>
+                <span class="placeholder-text">{{ getTopicInitial(exercise.topic) }}</span>
+              </div>
+            }
+          </div>
+          
+          <mat-card-content>
+            <!-- Title -->
+            <h3 class="exercise-title text-heading">{{ exercise.title }}</h3>
+            
+            <!-- Meta info -->
+            <div class="exercise-meta">
+              <span class="meta-topic">{{ exercise.topic }}</span>
+              <span class="meta-level" [class]="'level-' + exercise.level.toLowerCase()">
+                {{ exercise.level }}
+              </span>
+              <span class="meta-duration">
+                <mat-icon>timer</mat-icon>
+                {{ exercise.duration }}
+              </span>
+            </div>
+          </mat-card-content>
+        </a>
+      </mat-card>
+    } @empty {
+      <div class="empty-state">
+        <mat-icon>search_off</mat-icon>
+        <h3>No exercises found</h3>
+        <p>Try adjusting your filters to see more results</p>
+      </div>
+    }
   }
 </div>
 
 <!-- Pagination -->
-@if (totalExercises > 0) {
+@if (!hidePagination && totalExercises() > 0 && !isLoading()) {
   <mat-paginator 
-    [length]="totalExercises"
+    [length]="totalExercises()"
     [pageSize]="pageSize()"
     [pageIndex]="pageIndex()"
-    [pageSizeOptions]="[6, 9, 12, 18, 24, 36]"
+    [pageSizeOptions]="[9, 18, 24, 36, 48, 72, 100]"
     (page)="onPageChange($event)"
     aria-label="Select page">
   </mat-paginator>

@@ -170,39 +170,15 @@ public class PropositionService
             query = query.Where(p => p.ComplexityId == filter.Level!.Value);
         }
         
-        // Apply sorting
-        // When no filters are applied, mix subjects and complexities for variety
-        if (!hasSubjectFilter && !hasLevelFilter)
-        {
-            // Primary sort by date (newest or oldest)
-            // Secondary sort by a mix of subject and complexity to ensure variety
-            if (filter.SortBy.ToLower() == "oldest")
-            {
-                query = query
-                    .OrderBy(p => p.PublishedOn)
-                    .ThenBy(p => (int)p.SubjectId + (int)p.ComplexityId * 7) // Mix formula
-                    .ThenBy(p => p.Id);
-            }
-            else // newest (default)
-            {
-                query = query
-                    .OrderByDescending(p => p.PublishedOn)
-                    .ThenBy(p => (int)p.SubjectId + (int)p.ComplexityId * 7) // Mix formula
-                    .ThenBy(p => p.Id);
-            }
-        }
-        else
-        {
-            // When filters are applied, just sort by date and ID
-            query = filter.SortBy.ToLower() == "oldest" 
-                ? query.OrderBy(p => p.PublishedOn).ThenBy(p => p.Id)
-                : query.OrderByDescending(p => p.PublishedOn).ThenBy(p => p.Id);
-        }
+        // Order by date
+        query = filter.SortBy.ToLower() == "oldest" 
+            ? query.OrderBy(p => p.PublishedOn).ThenBy(p => p.Id)
+            : query.OrderByDescending(p => p.PublishedOn).ThenBy(p => p.Id);
         
         // Get total count before pagination
         var totalCount = await query.CountAsync(cancellationToken);
         
-        // Apply pagination
+        // Apply pagination and map to DTOs
         var items = await query
             .Skip((filter.PageNumber - 1) * filter.PageSize)
             .Take(filter.PageSize)
@@ -216,6 +192,38 @@ public class PropositionService
                 p.AudioDurationSeconds
             ))
             .ToListAsync(cancellationToken);
+        
+        // When no filters are applied, reorder to alternate subjects and complexities
+        if (!hasSubjectFilter && !hasLevelFilter)
+        {
+            var reordered = new List<ExerciseListItemDto>();
+            var remaining = new List<ExerciseListItemDto>(items);
+            
+            while (remaining.Any())
+            {
+                ExerciseListItemDto? next = null;
+                
+                if (reordered.Any())
+                {
+                    var last = reordered.Last();
+                    // Try to find an item with different subject AND complexity
+                    next = remaining.FirstOrDefault(p => 
+                        p.Topic != last.Topic && p.Level != last.Level);
+                    
+                    // If not possible, try to find different subject OR different complexity
+                    next ??= remaining.FirstOrDefault(p => 
+                        p.Topic != last.Topic || p.Level != last.Level);
+                }
+                
+                // If still no match (first item or no different options), take the first available
+                next ??= remaining.First();
+                
+                reordered.Add(next);
+                remaining.Remove(next);
+            }
+            
+            items = reordered;
+        }
         
         return new PagedResultDto<ExerciseListItemDto>(
             items,

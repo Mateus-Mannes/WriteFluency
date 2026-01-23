@@ -136,29 +136,19 @@
     <div class="section-container">
       <div class="exercises-header">
         <div>
-          <h2 class="section-title text-title">Browse exercises</h2>
-          <p class="section-subtitle text-body">Filter and explore our collection of listening and writing exercises</p>
+          <h2 class="section-title text-title">Latest Exercises</h2>
+          <p class="section-subtitle text-body">
+            Start practicing with our most recent listening and writing exercises
+          </p>
         </div>
+        <a [routerLink]="['/exercises']" mat-raised-button color="primary" class="browse-all-btn" (click)="scrollToTop()">
+          <mat-icon>grid_view</mat-icon>
+          <span>Browse All Exercises</span>
+        </a>
       </div>
       
-      @if (isLoading()) {
-        <div class="loading-state">
-          <mat-icon>hourglass_empty</mat-icon>
-          <p>Loading exercises...</p>
-        </div>
-      } @else if (error()) {
-        <div class="error-state">
-          <mat-icon>error_outline</mat-icon>
-          <p>{{ error() }}</p>
-          <button mat-raised-button color="primary" (click)="loadExercises()">
-            <mat-icon>refresh</mat-icon>
-            Try Again
-          </button>
-        </div>
-      } @else {
-        <!-- Exercise Grid Component -->
-        <app-exercise-grid [exercises]="exercises()" [initialPageSize]="6" />
-      }
+      <!-- Exercise Grid Component - limited to 9 items, no filters or pagination -->
+      <app-exercise-grid [maxItems]="9" [hideFilters]="true" [hidePagination]="true" />
     </div>
   </section>
 </div>
