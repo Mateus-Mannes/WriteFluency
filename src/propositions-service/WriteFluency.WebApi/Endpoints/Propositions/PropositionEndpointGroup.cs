@@ -10,7 +10,6 @@ public class PropositionEndpointGroup : IEndpointMapper
     {
         var group = endpoints.MapGroup("proposition").WithTags("Propositions");
         group.MapGet("/{id}", GetPropositionAsync);
-        group.MapPost("/generate-proposition", GeneratePropositionAsync);
         group.MapGet("/exercises", GetExercisesAsync)
             .Produces<PagedResultDto<ExerciseListItemDto>>();
         
@@ -45,23 +44,6 @@ public class PropositionEndpointGroup : IEndpointMapper
         {
             logger.LogError(e, "Error retrieving proposition");
             return TypedResults.InternalServerError("Unable to retrieve proposition");
-        }
-    }
-
-    public async Task<Results<Ok<PropositionDto>, InternalServerError<string>>> GeneratePropositionAsync(
-        GetPropositionDto generatePropositionDto,
-        PropositionService propositionService,
-        ILogger<PropositionEndpointGroup> logger)
-    {
-        try
-        {
-            var proposition = await propositionService.GetAsync(generatePropositionDto);
-            return TypedResults.Ok(proposition);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Error generating proposition");
-            return TypedResults.InternalServerError("Unable to generate proposition");
         }
     }
 

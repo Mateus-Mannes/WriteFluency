@@ -1,10 +1,15 @@
 import { Component, computed, input, OnInit, ViewEncapsulation } from '@angular/core';
-import { TextPart } from '../entities/text-part';
 import { NgClass } from '@angular/common';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import { TextComparison, TextComparisonResult } from 'src/api/listen-and-write/model/models';
 
 export type TextType = 'original' | 'user';
+
+export interface TextPart {
+  text: string;
+  highlight: boolean;
+  correction?: string;
+}
 
 @Component({
   selector: 'app-news-highlighted-text',
