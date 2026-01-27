@@ -38,14 +38,6 @@ export class ExerciseTourService {
       };
       this.shepherd.modal = true;
 
-      // Ensure localStorage is updated when tour ends
-      this.shepherd.tourObject?.on('complete', () => {
-        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
-      });
-      this.shepherd.tourObject?.on('cancel', () => {
-        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
-      });
-
       this.shepherd.addSteps([
         {
           id: 'intro-tutorial',
@@ -175,6 +167,14 @@ export class ExerciseTourService {
           ],
         },
       ]);
+
+      // Ensure localStorage is updated when tour ends (must be after addSteps)
+      this.shepherd.tourObject?.on('complete', () => {
+        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
+      this.shepherd.tourObject?.on('cancel', () => {
+        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
 
       this.shepherd.start();
     }, 50);
