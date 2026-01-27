@@ -63,7 +63,10 @@
           <!-- Thumbnail -->
           <div class="exercise-thumbnail">
             @if (exercise.imageUrl) {
-              <img [src]="exercise.imageUrl" [alt]="exercise.title" />
+              <img [ngSrc]="exercise.imageUrl" 
+                   [alt]="exercise.title" 
+                   fill 
+                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
             } @else {
               <div class="exercise-placeholder">
                 <mat-icon>article</mat-icon>

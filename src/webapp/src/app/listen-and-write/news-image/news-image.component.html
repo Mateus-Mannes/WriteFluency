@@ -1,8 +1,12 @@
-<img class="news-image" 
-    [ngSrc]="imageUrl()" 
-    width="1600" 
-    height="900"
-    priority="true">
+<div class="news-image-container">
+    @if (imageUrl()) {
+        <img class="news-image" 
+            [ngSrc]="imageUrl()" 
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 90vw">
+    }
+</div>
 
 <div class="news-font">
     <p class="text-caption">Font: {{ proposition()?.newsInfo?.url }}</p>

@@ -1,4 +1,5 @@
-import { Component, signal, ViewChild, HostListener, effect, AfterViewInit, computed } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, AfterViewInit, computed, OnDestroy } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
@@ -31,7 +32,7 @@ export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
 })
-export class ListenAndWriteComponent implements AfterViewInit {
+export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -61,7 +62,9 @@ export class ListenAndWriteComponent implements AfterViewInit {
     private textComparisonsService: TextComparisonsService
   ) {
     // Get the exercise ID from route parameters
-    this.route.params.subscribe(params => {
+    this.route.params.pipe(
+      takeUntilDestroyed()
+    ).subscribe(params => {
       const id = params['id'];
       if (id) {
         this.exerciseId = +id; // Convert to number
@@ -283,6 +286,11 @@ export class ListenAndWriteComponent implements AfterViewInit {
         alert('Error processing your exercise. Please try again.');
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    // Clean up timer to prevent memory leaks
+    this.clearAutoPauseTimer();
   }
 
   onTryAgain() {
