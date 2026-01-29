@@ -23,7 +23,12 @@
 
     @if(exerciseState() === 'exercise') {
         <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
-        <app-exercise-section class="exercise-section" [proposition]="proposition()" (submitConfirmed)="onExerciseSubmit()" (saveExerciseState)="onSaveExerciseState()">
+        <app-exercise-section class="exercise-section" 
+            [proposition]="proposition()" 
+            [initialText]="initialText()" 
+            [initialAutoPause]="initialAutoPause()" 
+            (submitConfirmed)="onExerciseSubmit()" 
+            (saveExerciseState)="onSaveExerciseState()">
         </app-exercise-section>
     }
 

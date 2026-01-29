@@ -1,14 +1,17 @@
 import { Injectable } from '@angular/core';
 import { offset } from '@floating-ui/dom';
 import { ShepherdService } from 'angular-shepherd';
-
-const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
+import { BrowserService } from '../../core/services/browser.service';
+import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
 
 @Injectable({ providedIn: 'root' })
 
 export class ExerciseTourService {
 
-  constructor(private shepherd: ShepherdService) { }
+  constructor(
+    private shepherd: ShepherdService,
+    private browserService: BrowserService
+  ) { }
 
   finishTour() {
     if (this.shepherd) {
@@ -170,10 +173,10 @@ export class ExerciseTourService {
 
       // Ensure localStorage is updated when tour ends (must be after addSteps)
       this.shepherd.tourObject?.on('complete', () => {
-        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
       this.shepherd.tourObject?.on('cancel', () => {
-        localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
 
       this.shepherd.start();

@@ -112,8 +112,12 @@ if (app.Environment.IsDevelopment())
         c.OAuthScopes("openid", "profile", "email");
     });
 }
-
-app.UseHttpsRedirection();
+else
+{
+    // Enforce HTTPS in production
+    app.UseHsts();
+    app.UseHttpsRedirection();   
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

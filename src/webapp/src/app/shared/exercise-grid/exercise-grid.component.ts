@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,7 +29,6 @@ export interface Exercise {
   standalone: true,
   imports: [
     CommonModule,
-    NgOptimizedImage,
     RouterLink,
     MatButtonModule,
     MatIconModule,

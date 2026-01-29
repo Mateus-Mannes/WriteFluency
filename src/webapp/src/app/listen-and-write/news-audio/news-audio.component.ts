@@ -1,4 +1,5 @@
-import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed } from '@angular/core';
+import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Proposition } from 'src/api/listen-and-write';
 import { environment } from 'src/enviroments/enviroment';
 
@@ -9,6 +10,8 @@ import { environment } from 'src/enviroments/enviroment';
   styleUrl: './news-audio.component.scss',
 })
 export class NewsAudioComponent implements OnDestroy {
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser = isPlatformBrowser(this.platformId);
 
   proposition = input<Proposition | null>();
 
@@ -19,19 +22,7 @@ export class NewsAudioComponent implements OnDestroy {
     return environment.minioUrl + '/propositions/' + this.proposition()?.audioFileId;
   });
 
-  constructor() {
-    // Auto-pause when tab is hidden
-    document.addEventListener('visibilitychange', this.handleVisibilityChange);
-  }
-
-  handleVisibilityChange = () => {
-    if (document.hidden) {
-      this.pauseAudio();
-    }
-  };
   ngOnDestroy() {
-    // Clean up event listener
-    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     // Auto-pause when component is destroyed
     this.pauseAudio();
   }
@@ -64,14 +55,17 @@ export class NewsAudioComponent implements OnDestroy {
   }
 
   playAudio() {
-    this.audioRef?.nativeElement.play();
+    if (!this.isBrowser) return;
+    this.audioRef?.nativeElement?.play();
   }
 
   pauseAudio() {
-    this.audioRef?.nativeElement.pause();
+    if (!this.isBrowser) return;
+    this.audioRef?.nativeElement?.pause();
   }
 
   rewindAudio(seconds: number) {
+    if (!this.isBrowser) return;
     const audio = this.audioRef?.nativeElement;
     if (audio) {
       audio.currentTime = Math.max(0, audio.currentTime - seconds);
@@ -79,6 +73,7 @@ export class NewsAudioComponent implements OnDestroy {
   }
 
   forwardAudio(seconds: number) {
+    if (!this.isBrowser) return;
     const audio = this.audioRef?.nativeElement;
     if (audio) {
       audio.currentTime = Math.min(audio.duration || audio.currentTime + seconds, audio.currentTime + seconds);

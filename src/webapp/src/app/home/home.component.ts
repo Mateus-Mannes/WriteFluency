@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { ExerciseGridComponent } from '../shared/exercise-grid/exercise-grid.component';
+import { BrowserService } from '../core/services/browser.service';
 
 @Component({
   selector: 'app-home',
@@ -24,7 +25,9 @@ import { ExerciseGridComponent } from '../shared/exercise-grid/exercise-grid.com
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
+  constructor(private browserService: BrowserService) {}
+
   scrollToTop(): void {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.browserService.scrollToTop();
   }
 }

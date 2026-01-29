@@ -30,7 +30,12 @@
               "node_modules/shepherd.js/dist/css/shepherd.css"
             ],
             "scripts": [],
-            "browser": "src/main.ts"
+            "browser": "src/main.ts",
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "ssr": {
+              "entry": "src/server.ts"
+            }
           },
           "configurations": {
             "production": {
@@ -56,7 +61,7 @@
               "namedChunks": true
             }
           },
-          "defaultConfiguration": "production"
+          "defaultConfiguration": "development"
         },
         "serve": {
           "builder": "@angular/build:dev-server",

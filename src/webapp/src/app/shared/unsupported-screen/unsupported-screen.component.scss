@@ -176,7 +176,7 @@
 }
 
 // Hide on larger screens (will be controlled by parent component)
-@media (min-width: 1300px) {
+@media (min-width: 1100px) {
   .unsupported-container {
     display: none;
   }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, signal, ViewChild, ElementRef, output, computed } from '@angular/core';
+import { Component, input, signal, ViewChild, ElementRef, output, computed, OnInit } from '@angular/core';
 import { SubmitTourService } from '../services/submit-tour.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +11,7 @@ import { Proposition } from 'src/api/listen-and-write';
   templateUrl: './exercise-section.component.html',
   styleUrl: './exercise-section.component.scss',
 })
-export class ExerciseSectionComponent {
+export class ExerciseSectionComponent implements OnInit {
 
   @ViewChild('exerciseTextArea') textAreaRef!: ElementRef<HTMLTextAreaElement>;
 
@@ -20,6 +20,9 @@ export class ExerciseSectionComponent {
   saveExerciseState = output<void>();
 
   proposition = input<Proposition | null>();
+
+  initialText = input<string | null>();
+  initialAutoPause = input<number | null>();
 
   autoPauseOptions = [
     { label: 'Off', value: 0 },
@@ -52,6 +55,15 @@ export class ExerciseSectionComponent {
 
   constructor(private submitTour: SubmitTourService) { }
 
+  ngOnInit(): void {
+    // Initialize text and auto-pause from inputs
+    if (this.initialText()) {
+      this.text.set(this.initialText()?.toString() || '');
+    }
+    if (this.initialAutoPause()) {
+      this.selectedAutoPause.set(Number(this.initialAutoPause()));
+    }
+  }
 
   focusTextArea() {
     this.textAreaRef?.nativeElement.focus();

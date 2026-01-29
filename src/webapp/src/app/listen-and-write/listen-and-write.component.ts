@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect, AfterViewInit, computed, OnDestroy } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, OnDestroy, afterNextRender } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
@@ -13,6 +13,7 @@ import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highl
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
+import { BrowserService } from '../core/services/browser.service';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -32,7 +33,7 @@ export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
 })
-export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
+export class ListenAndWriteComponent implements OnDestroy {
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -44,11 +45,13 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
 
   stateAnimOn = signal(false);
 
-  isFirstTime = signal(true);
-
   proposition = signal<Proposition | null>(null);
 
   result = signal<TextComparisonResult | null>(null);
+
+  initialText = signal<string | null>(null);
+  
+  initialAutoPause = signal<number | null>(null);
 
   userText = signal<string>('');
 
@@ -59,7 +62,8 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
     private exerciseTourService: ExerciseTourService,
     private route: ActivatedRoute,
     private propositionsService: PropositionsService,
-    private textComparisonsService: TextComparisonsService
+    private textComparisonsService: TextComparisonsService,
+    private browserService: BrowserService
   ) {
     // Get the exercise ID from route parameters
     this.route.params.pipe(
@@ -68,44 +72,23 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
       const id = params['id'];
       if (id) {
         this.exerciseId = +id; // Convert to number
-        // Restore state immediately before effect runs
-        this.restoreState();
+        this.initialText.set(null);
+        this.initialAutoPause.set(null);
+        this.result.set(null);
         this.loadProposition(this.exerciseId);
       }
     });
 
-    // Check localStorage for first time flag
-    const stored = localStorage.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
-    if (stored === 'false') {
-      this.isFirstTime.set(false);
-    } else {
-      this.isFirstTime.set(true);
-      localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'true');
-    }
-
+    // Animate state changes
     effect(() => {
       const state = this.exerciseState();
-
-      const stateKey = this.getStateKey();
-      if (stateKey) {
-        localStorage.setItem(stateKey, state);
-      }
-
-      if(state === 'exercise') {
-        this.updateExerciseState();
-      }
-
       this.stateAnimOn.set(false);
       queueMicrotask(() => this.stateAnimOn.set(true));
-
-      if (state === 'exercise' && this.isFirstTime()) {
-        this.startExerciseTour();
-      }
     });
-  }
 
-  ngAfterViewInit(): void {
-    this.updateExerciseState();
+    afterNextRender(() => {
+      this.restoreExerciseState();
+    });
   }
 
   private getExerciseStateKey(): string | null {
@@ -127,34 +110,30 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
         console.error('Error loading proposition:', error);
         // notify the user and back to the home page
         alert('Error loading exercise. Returning to home page.');
-        window.location.href = '/';
+        this.browserService.navigateTo('/');
       }
     });
   }
 
-  private restoreState(): void {
+  restoreExerciseState() 
+  {
     const stateKey = this.getStateKey();
     if (stateKey) {
-      const storedState = localStorage.getItem(stateKey);
+      const storedState = this.browserService.getItem(stateKey);
       if (storedState) {
         this.exerciseState.set(storedState as ExerciseState);
       }
     }
-  }
 
-  updateExerciseState() 
-  {
-    const stateKey = this.getExerciseStateKey();
-    if (!stateKey) return;
+    const exerciseStateKey = this.getExerciseStateKey();
+    if (!exerciseStateKey) return;
     
-    const state = localStorage.getItem(stateKey);
+    const state = this.browserService.getItem(exerciseStateKey);
     if (state) {
       const parsed = JSON.parse(state);
 
-      if (this.exerciseSectionComponent) {
-        this.exerciseSectionComponent.text.set(parsed.userText || '');
-        this.exerciseSectionComponent.selectedAutoPause.set(parsed.autoPause || 5);
-      }
+      this.initialText.set(parsed.userText || null);
+      this.initialAutoPause.set(parsed.autoPause || 5);
 
       if (this.newsAudioComponent && parsed.pausedTime) {
         this.newsAudioComponent.forwardAudio(parsed.pausedTime);
@@ -217,7 +196,7 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
     this.clearAutoPauseTimer();
 
     if (this.newsAudioComponent.audioEnded) {
-      this.exerciseState.set('exercise');
+      this.setNewState('exercise');
       return;
     }
 
@@ -226,11 +205,11 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
         '#newsAudio',
         () => this.newsAudioComponent.playAudio(),
         () => {
-          this.exerciseState.set('exercise');
+          this.setNewState('exercise');
         }
       );
     } else {
-      this.exerciseState.set('exercise');
+      this.setNewState('exercise');
     }
   }
 
@@ -280,7 +259,7 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
         this.userText.set(this.exerciseSectionComponent.text());
         this.result.set(result);
         this.onSaveExerciseState();
-        this.exerciseState.set('results');
+        this.setNewState('results');
       },
       error: (error) => {
         alert('Error processing your exercise. Please try again.');
@@ -296,16 +275,15 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
   onTryAgain() {
     const stateKey = this.getExerciseStateKey();
     if (stateKey) {
-      localStorage.removeItem(stateKey);
+      this.browserService.removeItem(stateKey);
     }
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
-    this.isFirstTime.set(false);
-    this.exerciseState.set('intro');
+    this.setNewState('intro');
   }
 
   onFindAnotherExercise() {
     // Redirect to home page
-    window.location.href = '/exercises';
+    this.browserService.navigateTo('/exercises');
   }
 
   onAudioPaused() {
@@ -317,12 +295,33 @@ export class ListenAndWriteComponent implements AfterViewInit, OnDestroy {
     if (!stateKey) return;
     
     const state = {
-      userText: this.exerciseSectionComponent.text(),
-      autoPause: this.exerciseSectionComponent.selectedAutoPause(),
-      pausedTime: this.newsAudioComponent.audioRef?.nativeElement.currentTime || 0,
+      userText: this.exerciseSectionComponent?.text(),
+      autoPause: this.exerciseSectionComponent?.selectedAutoPause(),
+      pausedTime: this.newsAudioComponent?.audioRef?.nativeElement?.currentTime || 0,
       result: this.result()
     };
 
-    localStorage.setItem(stateKey, JSON.stringify(state));
+    this.browserService.setItem(stateKey, JSON.stringify(state));
+  }
+
+  setNewState(state: ExerciseState) {
+    this.exerciseState.set(state);
+    // set local storage state
+    const stateKey = this.getStateKey();
+    if (stateKey) {
+      this.browserService.setItem(stateKey, state);
+    }
+
+    if(this.isFirstTime() && state === 'exercise') {
+      this.exerciseTourService.startTour();
+    }
+  }
+
+  isFirstTime() : boolean {
+    const firstTime = this.browserService.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    if (firstTime === null) {
+      return true;
+    }
+    return false;
   }
 }
