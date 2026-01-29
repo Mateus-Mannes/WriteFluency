@@ -5,9 +5,11 @@ import { serverRoutes } from './app.routes.server';
 import { provideApi } from 'src/api/listen-and-write/provide-api';
 import { environment } from '../enviroments/enviroment';
 
-// Server-side API URL - uses environment variables if available (for Kubernetes internal service)
+// Server-side API URL - uses Aspire service discovery in Kubernetes
+// Aspire sets: services__wf-api__apihttp__0=wf-api:5000
 // Falls back to build-time environment for local development
-const serverApiUrl = process.env['API_URL'] || environment.apiUrl;
+const aspireApiUrl = process.env['services__wf-api__apihttp__0'];
+const serverApiUrl = aspireApiUrl ? `http://${aspireApiUrl}` : environment.apiUrl;
 
 console.log(`[SSR] Using API URL: ${serverApiUrl}`);
 

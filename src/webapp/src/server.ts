@@ -10,15 +10,14 @@ import { environment } from './enviroments/enviroment';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
-// Use environment variables for SSR, fallback to build-time environment
-// This allows the container to override API URLs without rebuilding
-// In Kubernetes: API_URL=http://wf-api:5000 (internal service)
-// In local dev: Uses environment.apiUrl (http://localhost:5000)
-const apiUrl = process.env['API_URL'] || environment.apiUrl;
-const minioUrl = process.env['MINIO_URL'] || environment.minioUrl;
+// Use Aspire service discovery environment variables for SSR
+// Aspire sets: services__wf-api__apihttp__0=wf-api:5000
+// In Kubernetes: Uses Aspire service discovery
+// In local dev: Falls back to environment.apiUrl
+const aspireApiUrl = process.env['services__wf-api__apihttp__0'];
+const apiUrl = aspireApiUrl ? `http://${aspireApiUrl}` : environment.apiUrl;
 
 console.log(`[Server] Using API URL: ${apiUrl}`);
-console.log(`[Server] Using MinIO URL: ${minioUrl}`);
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
