@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 import { ListenAndWriteComponent } from './listen-and-write.component';
 
@@ -8,7 +10,16 @@ describe('ListenAndWriteComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ListenAndWriteComponent]
+      imports: [ListenAndWriteComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({}),
+            queryParams: of({})
+          }
+        }
+      ]
     })
     .compileComponents();
 
