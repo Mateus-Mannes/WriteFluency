@@ -2,6 +2,7 @@ resources:
   - ../aspirate-output
   - letsencrypt.yaml
   - ingress.yaml
+  - wf-webapp/configmap.yaml
 
 images:
   - name: ghcr.io/mateus-mannes/wf-api

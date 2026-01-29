@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wf-webapp-env
+  namespace: writefluency
+data:
+  # Use internal Kubernetes service for API calls from SSR server
+  API_URL: "http://wf-api:5000"
+  MINIO_URL: "http://wf-minio:9000"
