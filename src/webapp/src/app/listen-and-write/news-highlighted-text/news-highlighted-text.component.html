@@ -1,0 +1,12 @@
+<div class="text-area">
+
+    @for (part of textParts(); track part) {
+        @if(part.highlight) {
+            <span matTooltip="{{ part.correction }}" matTooltipPositionAtOrigin="true" [matTooltipClass]="tooltipClass"
+                [ngClass]="highlightClass">{{ part.text }}</span>
+        } @else {
+            <span>{{ part.text }}</span>
+        }
+    }
+
+</div>

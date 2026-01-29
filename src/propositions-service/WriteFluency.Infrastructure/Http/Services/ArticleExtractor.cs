@@ -55,7 +55,15 @@ public class ArticleExtractor : IArticleExtractor
                 .ToList();
 
 
-            return string.Join(" ", visibleText);
+            var result = string.Join(" ", visibleText);
+
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                _logger.LogError("No visible text found at {Url}", url);
+                return Result.Fail(new Error("No visible text found"));
+            }
+
+            return result;
         }
         catch (Exception ex)
         {

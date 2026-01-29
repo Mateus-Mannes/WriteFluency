@@ -18,6 +18,9 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
   postgres_password="${POSTGRES_PASSWORD}"
   minio_password="${MINIO_ROOT_PASSWORD}"
   cloud_flare_token="${CLOUDFLARE_API_TOKEN}"
+  propositions_daily_requests_limit="${Propositions__DailyRequestsLimit}"
+  propositions_limit_per_topic="${Propositions__LimitPerTopic}"
+  propositions_news_request_limit="${Propositions__NewsRequestLimit}"
 
 else
   echo "🔐 Running locally — using .NET user secrets"
@@ -33,7 +36,9 @@ else
   app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
   postgres_password="postgres"
   minio_password="admin123"
-  cloud_flare_token=$(jq -r '.["CLOUDFLARE_API_TOKEN"]' "$USER_SECRETS")
+  propositions_daily_requests_limit=$(jq -r '.["Propositions:DailyRequestsLimit"]' "$USER_SECRETS")
+  propositions_limit_per_topic=$(jq -r '.["Propositions:LimitPerTopic"]' "$USER_SECRETS")
+  propositions_news_request_limit=$(jq -r '.["Propositions:NewsRequestLimit"]' "$USER_SECRETS")
 fi
 
 kubectl apply -f - <<EOF
@@ -51,15 +56,15 @@ stringData:
   ExternalApis__TextToSpeech__Key: "$tts_key"
   ExternalApis__News__Key: "$news_key"
   MINIO_ROOT_USER: minioadmin
-  Propositions__DailyRequestsLimit: "50"
-  Propositions__LimitPerTopic: "3000"
-  Propositions__NewsRequestLimit: "1"
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
   NODE_ENV: production
   ConnectionStrings__wf-postgresdb: Host=wf-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-postgresdb
   ConnectionStrings__wf-minio: Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
+  Propositions__DailyRequestsLimit: "$propositions_daily_requests_limit"
+  Propositions__LimitPerTopic: "$propositions_limit_per_topic"
+  Propositions__NewsRequestLimit: "$propositions_news_request_limit"
 EOF
 
 kubectl apply -f - <<EOF

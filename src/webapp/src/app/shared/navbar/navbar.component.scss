@@ -1,0 +1,201 @@
+@use '../../../styles/variables' as vars;
+
+// ========================
+// 🎨 Navbar Styling
+// ========================
+
+.app-toolbar {
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%) !important;
+  border-bottom: 1px solid rgba(58, 125, 255, 0.08);
+  box-shadow: 
+    0 2px 12px rgba(58, 125, 255, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 0 2rem !important;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// ========================
+// 🏷️ Brand Logo
+// ========================
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.brand:hover {
+  background: rgba(58, 125, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.brand::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, vars.$color-primary-dark, vars.$color-primary);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.brand:hover::after {
+  transform: scaleX(1);
+}
+
+.logo {
+  height: 1.875rem;
+  width: auto;
+  transition: transform 0.3s ease;
+}
+
+.brand:hover .logo {
+  transform: scale(1.05);
+}
+
+.brand-text {
+  margin-top: 3px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.text-primary-dark {
+  color: vars.$color-primary-dark;
+}
+
+.text-primary {
+  color: vars.$color-primary;
+}
+
+// ========================
+// 🔗 Navigation Links
+// ========================
+
+.spacer {
+  flex: 1;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: vars.$color-text;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: vars.$color-text;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  background: rgba(58, 125, 255, 0.06);
+  color: vars.$color-primary;
+  transform: translateY(-1px);
+}
+
+.nav-link:hover mat-icon {
+  color: vars.$color-primary;
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.nav-link.active {
+  background: rgba(58, 125, 255, 0.08);
+  color: vars.$color-primary;
+  font-weight: 600;
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+  border-radius: 3px 3px 0 0;
+}
+
+.nav-link.active mat-icon {
+  color: vars.$color-primary;
+  opacity: 1;
+}
+
+// ========================
+// 📱 Responsive Design
+// ========================
+
+@media (max-width: 768px) {
+  .app-toolbar {
+    padding: 0 1rem !important;
+  }
+
+  .brand-text {
+    font-size: 1.1rem;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 0.6rem;
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .nav-links {
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-text {
+    display: none;
+  }
+
+  .logo {
+    height: 1.75rem;
+  }
+}

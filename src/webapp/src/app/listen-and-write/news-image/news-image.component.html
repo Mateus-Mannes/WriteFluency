@@ -1,0 +1,14 @@
+<div class="news-image-container">
+    @if (imageUrl()) {
+        <img class="news-image" 
+            [ngSrc]="imageUrl()" 
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 90vw">
+    }
+</div>
+
+<div class="news-font">
+    <p class="text-caption">Font: {{ proposition()?.newsInfo?.url }}</p>
+    <p class="text-caption">{{ proposition()?.publishedOn | date: 'MMMM dd, yyyy' }}</p>
+</div>

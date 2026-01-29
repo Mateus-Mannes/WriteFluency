@@ -12,6 +12,8 @@ images:
     newTag: replace_with_tag
   - name: ghcr.io/mateus-mannes/wf-webapp
     newTag: replace_with_tag
+  - name: ghcr.io/mateus-mannes/wf-minio-init
+    newTag: replace_with_tag
 
 patches:
   - path: wf-api/deployment-patch.yaml
@@ -34,6 +36,10 @@ patches:
     target:
       kind: StatefulSet
       name: wf-minio
+  - path: wf-minio-init/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-minio-init
   - path: wf-webapp/deployment-patch.yaml
     target:
       kind: Deployment

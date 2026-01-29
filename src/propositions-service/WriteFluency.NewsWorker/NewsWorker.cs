@@ -14,15 +14,18 @@ public class NewsWorker : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly IHostEnvironment _environment;
     private readonly ILogger<NewsWorker> _logger;
+    private readonly IConfiguration _configuration;
 
     public NewsWorker(
         IServiceProvider serviceProvider,
         IHostEnvironment environment,
-        ILogger<NewsWorker> logger)
+        ILogger<NewsWorker> logger,
+        IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
         _environment = environment;
         _logger = logger;
+        _configuration = configuration;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -48,9 +51,9 @@ public class NewsWorker : BackgroundService
                     .Select(x => x.Value)
                     .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.IsNewsWorkerActive.Value;
 
-                var isActive = bool.TryParse(isActiveStr, out var parsed) && parsed;
+                var isActive = bool.TryParse(isActiveStr, out var parsed) && parsed && !_environment.IsDevelopment();
 
-                if (_environment.IsDevelopment() && isActive)
+                if (_environment.IsDevelopment() && _configuration.GetValue<bool>("RunNewsWorkerOnStartup"))
                 {
                     _logger.LogInformation("Running immediately in Development mode.");
                     await GenerateDailyPropositionsAsync(stoppingToken);
@@ -72,10 +75,6 @@ public class NewsWorker : BackgroundService
                         _logger.LogInformation("Triggering scheduled execution (cron matched at {CronTime})", next.Value);
                         await GenerateDailyPropositionsAsync(stoppingToken);
                         lastExecution = now;
-                    }
-                    else
-                    {
-                        _logger.LogDebug("Not time yet. Next execution expected at {Next}", next);
                     }
                 }
             }

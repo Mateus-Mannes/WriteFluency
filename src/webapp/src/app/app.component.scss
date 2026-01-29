@@ -1,0 +1,11 @@
+// Ensure proper overflow handling
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+// Prevent scrolling when unsupported screen is shown
+:host-context(.unsupported-active) {
+  overflow: hidden;
+}

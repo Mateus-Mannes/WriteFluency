@@ -7,5 +7,5 @@ public interface IGenerativeAIClient
 {
     Task<string> GenerateTextAsync(GetPropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default);
     Task<Result<AIGeneratedTextDto>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default);
-    Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default);
+    Task<Result<bool>> ValidateImageAsync(byte[] imageBytes, string articleTitle, CancellationToken cancellationToken = default);
 }

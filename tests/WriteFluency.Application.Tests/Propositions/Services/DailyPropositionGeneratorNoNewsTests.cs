@@ -16,7 +16,7 @@ public class DailyPropositionGeneratorNoNewsTests : ApplicationTestBase
     private readonly DailyPropositionGenerator _dailyPropositionGenerator;
     private readonly PropositionOptions _options;
     private readonly IAppDbContext _context;
-    private const SubjectEnum _ignoredSubject = SubjectEnum.Health;
+    private const SubjectEnum _ignoredSubject = SubjectEnum.Politics;
 
     public DailyPropositionGeneratorNoNewsTests()
     {
@@ -35,7 +35,7 @@ public class DailyPropositionGeneratorNoNewsTests : ApplicationTestBase
     {
         await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
         var createdPropositionsCount = await _context.Propositions.CountAsync();
-        createdPropositionsCount.ShouldBe(264);
+        createdPropositionsCount.ShouldBe(273);
         var propositions = await _context.Propositions.OrderBy(x => x.PublishedOn).ToListAsync();
         VerifyDistributions(propositions);
     }

@@ -3,7 +3,7 @@ namespace WriteFluency.TextComparisons;
 public class TextComparisonService
 {
 
-    private const double SimilartyThresholdPercentage = 0.60;
+    private const double SimilartyThresholdPercentage = 0.05;
     private readonly LevenshteinDistanceService _levenshteinDistanceService;
     private readonly TextAlignmentService _textAlignmentService;
     private readonly TokenComparisonService _tokeComparisonService;
@@ -18,11 +18,10 @@ public class TextComparisonService
         _tokeComparisonService = tokeComparisonService;
     }
 
-    public List<TextComparison> CompareTexts(string originalText, string userText)
+    public TextComparisonResult CompareTexts(string originalText, string userText)
     {
-
         if (!IsMinimalSimilar(originalText, userText))
-            return new() { new TextComparison(originalText, userText) };
+            return new TextComparisonResult(originalText, userText, 0, [ new TextComparison(originalText, userText) ]);
 
         var alignedTokens = _textAlignmentService.AlignTexts(originalText, userText);
 
@@ -40,7 +39,9 @@ public class TextComparisonService
 
         AddSubStrings(textComparisons, originalText, userText);
 
-        return textComparisons;
+        var accuracy = CalculateAccuracy(originalText, textComparisons);
+
+        return new TextComparisonResult(originalText, userText, accuracy, textComparisons);
     }
 
     private bool IsMinimalSimilar(string originalText, string userText)
@@ -59,5 +60,14 @@ public class TextComparisonService
             Comparison.UserText = userText.Substring(Comparison.UserTextRange.InitialIndex,
                 Comparison.UserTextRange.FinalIndex - Comparison.UserTextRange.InitialIndex + 1);
         }
+    }
+
+    private double CalculateAccuracy(string originalText, List<TextComparison> comparisons)
+    {
+        if (originalText == null || originalText.Length == 0)
+            return 0;   
+
+        var comparisonsLength = comparisons.Sum(c => c.OriginalText?.Length ?? 0);
+        return 1 - ((double)comparisonsLength / originalText.Length);
     }
 }

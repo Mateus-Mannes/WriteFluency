@@ -1,0 +1,158 @@
+@use '@angular/material' as mat;
+@use 'styles/variables' as vars;
+
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: 'Source Sans 3',
+    density: 0,
+  ));
+}
+
+body {
+    margin: 0; 
+    font-family: 'Source Sans 3', sans-serif !important;
+}
+
+:root {
+  @include mat.toolbar-overrides((
+    standard-height: vars.$nav-bar-height,
+  ));
+}
+
+.mat-mdc-tooltip.tooltip-original-text {
+  @include mat.tooltip-overrides((
+    container-color: vars.$color-accent-highlight,
+    supporting-text-color: black,
+  ));
+}
+
+.mat-mdc-tooltip.tooltip-user-text {
+  @include mat.tooltip-overrides((
+    container-color: vars.$color-accent-success,
+  ));
+}
+
+p, h1, h2, h3, h4, h5, h6, span, label {
+    color: vars.$color-text;
+    margin: 0;
+}
+
+.text-display   { font-size: 2rem;     font-weight: 600; }   
+.text-title     { font-size: 1.5rem;   font-weight: 600; }   
+.text-heading   { font-size: 1.25rem;  font-weight: 600; }   
+.text-body      { font-size: 1rem; }                         
+.text-label     { font-size: 0.875rem; font-weight: 500; opacity: 60%; } 
+.text-caption   { font-size: 0.75rem; }    
+
+.centered-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+}
+
+/* WriteFluency Shepherd theme */
+.shepherd-element.wf-tour {
+  border-radius: 16px;
+  border: 0;
+  max-width: 520px;
+  font-family: inherit;
+}
+
+.shepherd-element.wf-tour .shepherd-header {
+  border-radius: 16px 16px 0 0;
+  background-color: vars.$color-primary !important;
+}
+
+.shepherd-element.wf-tour .shepherd-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: white !important;
+}
+
+.shepherd-element.wf-tour .shepherd-cancel-icon {
+  font-size: 22px;
+  opacity: .65;
+}
+.shepherd-element.wf-tour .shepherd-cancel-icon span {
+  color: white !important;
+}
+
+.shepherd-element.wf-tour .shepherd-text {
+  padding: 16px 18px 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: vars.$color-text;
+}
+
+.shepherd-element.wf-tour .shepherd-footer {
+  padding: 14px 18px 18px;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Buttons */
+.shepherd-element.wf-tour .shepherd-button {
+  border-radius: 12px;
+  padding: 11px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+}
+
+/* Primary button */
+.shepherd-element.wf-tour .shepherd-button.wf-primary {
+  background: linear-gradient(135deg, vars.$color-primary 0%, #4a8fff 100%) !important;
+  color: white;
+  box-shadow: 
+    0 4px 12px rgba(58, 125, 255, 0.25),
+    0 2px 6px rgba(58, 125, 255, 0.15);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 16px rgba(58, 125, 255, 0.35),
+    0 3px 8px rgba(58, 125, 255, 0.2);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-primary:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(58, 125, 255, 0.2),
+    0 1px 4px rgba(58, 125, 255, 0.15);
+}
+
+/* Secondary button */
+.shepherd-element.wf-tour .shepherd-button.wf-secondary {
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.04) 0%, rgba(58, 125, 255, 0.08) 100%) !important;
+  color: vars.$color-text;
+  border: 1px solid rgba(58, 125, 255, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-secondary:hover {
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.08) 0%, rgba(58, 125, 255, 0.12) 100%) !important;
+  border-color: rgba(58, 125, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(58, 125, 255, 0.12);
+}
+
+.shepherd-element.wf-tour .shepherd-button.wf-secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Overlay */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  background: rgba(0, 0, 0, 0.074);
+}

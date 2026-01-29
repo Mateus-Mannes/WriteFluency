@@ -1,0 +1,41 @@
+@use '../../../styles/variables' as vars;
+
+.news-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 3px solid #fff;
+    transition: all 0.4s ease;
+
+    &:hover {
+        transform: scale(1.02) translateY(-4px);
+        box-shadow: 
+            0 16px 40px rgba(0, 0, 0, 0.16),
+            0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+}
+
+.news-image {
+    object-fit: cover;
+    object-position: top;
+}
+
+.news-font {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0rem;
+}
+
+.news-font p {
+    background: rgba(255, 255, 255, 0.6);
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}

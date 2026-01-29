@@ -1,4 +1,6 @@
-using System.Net.Http.Json;
+using FluentResults;
+using Microsoft.CognitiveServices.Speech;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteFluency.Propositions;
 
@@ -6,36 +8,51 @@ namespace WriteFluency.Infrastructure.ExternalApis;
 
 public class TextToSpeechClient : ITextToSpeechClient
 {
-    private readonly HttpClient _httpClient;
     private readonly TextToSpeechOptions _options;
+    private readonly ILogger<TextToSpeechClient> _logger;
 
-    public TextToSpeechClient(HttpClient httpClient, IOptionsMonitor<TextToSpeechOptions> textToSpeechConfig)
+    private readonly string[] _voices = [
+        "en-US-AdamMultilingualNeural",
+        "en-US-JasonNeural",
+        "en-US-SamuelMultilingualNeural",
+        "en-US-AvaMultilingualNeural",
+        "en-US-AndrewMultilingualNeural",
+        "en-US-PhoebeMultilingualNeural",
+        "en-US-SteffanMultilingualNeural",
+        "en-US-BrianMultilingualNeural",
+        "en-US-AvaNeural",
+        "en-US-KaiNeural",
+        "en-US-LunaNeural",
+        "en-US-JennyNeural",
+        "en-US-DustinMultilingualNeural",
+    ];
+
+    public TextToSpeechClient(HttpClient httpClient, IOptionsMonitor<TextToSpeechOptions> textToSpeechConfig, ILogger<TextToSpeechClient> logger)
     {
-        _httpClient = httpClient;
         _options = textToSpeechConfig.CurrentValue;
+        _logger = logger;
     }
 
-    public async Task<byte[]> GenerateSpeechAsync(string text, int attempt = 1)
+    public async Task<Result<AudioDto>> GenerateAudioAsync(string text, CancellationToken cancellationToken = default)
     {
-        var request = new TextToSpeechRequest(
-            new Input(text),
-            new AudioConfig("MP3"),
-            new Voice("en-US")
-        );
-
-        var response = await _httpClient.PostAsJsonAsync(_options.Routes.TextSynthesize, request);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var result = await response.Content.ReadFromJsonAsync<TextToSpeechResponse>()
-                ?? throw new HttpRequestException("Error fetching data from TextToSpeech API");
-            return Convert.FromBase64String(result.AudioContent);
+            var speechConfig = SpeechConfig.FromSubscription(_options.Key, "eastus");
+            speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3);
+            string randomVoice = _voices[new Random().Next(0, _voices.Length)];
+            speechConfig.SpeechSynthesisVoiceName = randomVoice;
+            using var speechSynthesizer = new SpeechSynthesizer(speechConfig, null);
+            var result = await speechSynthesizer.SpeakTextAsync(text);
+            
+            // Get actual duration from Azure Speech SDK result
+            int durationSeconds = (int)result.AudioDuration.TotalSeconds;
+            
+            return Result.Ok(new AudioDto(result.AudioData, randomVoice, durationSeconds));
         }
-        else
+        catch (Exception ex)
         {
-            await Task.Delay(1000);
-            if (attempt == 1) return await GenerateSpeechAsync(text, 2);
-            else throw new HttpRequestException($"Error fetching data from TextToSpeech API: {response.StatusCode}");
+            _logger.LogError(ex, "Error fetching data from Azure TTS API (Speech endpoint)");
+            return Result.Fail(new Error($"Error when calling Azure TTS API (Speech endpoint). {ex.Message}"));
         }
     }
 }

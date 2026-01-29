@@ -13,6 +13,7 @@ public class Proposition
     public required string AudioFileId { get; set; }
     [MaxLength(50)]
     public required string Voice { get; set; }
+    public required int AudioDurationSeconds { get; set; }
 
     [MaxLength(3000)]
     public required string Text { get; set; }
@@ -23,6 +24,11 @@ public class Proposition
     public string? ImageFileId { get; set; }
 
     public required DateTime CreatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+
+    public int? PropositionGenerationLogId { get; set; }
+    public PropositionGenerationLog? PropositionGenerationLog { get; set; }
 
     public required NewsInfo NewsInfo { get; set; }
 

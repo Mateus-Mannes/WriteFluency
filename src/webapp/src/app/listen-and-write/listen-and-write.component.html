@@ -1,30 +1,49 @@
-<div class="listen-and-write fadeIn d-flex flex-column align-items-center justify-content-center">
+<div [class]="{
+    'container': true,
+    'exercise-intro-container': exerciseState() == 'intro',
+    'exercise-container': exerciseState() == 'exercise',
+    'exercise-results-container': exerciseState() == 'results',
+    'state-anim': stateAnimOn()
+}">
+    <app-news-info class="news-info" 
+        [proposition]="proposition()"
+        [class.classification-in-line]="exerciseState() != 'intro'"
+        [class.compact]="exerciseState() == 'results'"
+        ></app-news-info>
 
-  <app-proposition #proposition class="listen-and-write__proposition"
-    (onAudioPlayOrPause)="audioPlayOrPause()"
-  (onNewAudio)="textarea.value = ''"></app-proposition>
-
-  <div class="container listen-and-write__textarea">
-    <div class="form-floating shadow-sm listen-and-write__textarea__form">
-      <textarea spellcheck="false"
-        class="form-control listen-and-write__textarea__form__input"
-        placeholder="Write the heard text here"
-        id="textarea" #textarea
-      [(ngModel)]="textAreaContent"></textarea>
-      <label for="textarea">Write it down here</label>
+    <div class="news-audio">
+        <app-news-audio id="newsAudio" [proposition]="proposition()" (playClicked)="onAudioPlayClicked()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
     </div>
-  </div>
 
-  <app-button
-    class="listen-and-write__verify container"
-    (onClick)="verify()"
-    [disabled]="proposition.propositionText == '' || textAreaContent == ''"
-    >@if (!loading) {
-    <div>Verify text</div>
-  }
-  @if (loading) {
-    <div><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading... </div>
-  }
-</app-button>
+    @if(exerciseState() === 'intro') {
+        <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
+        <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="beginExercise()">
+        </app-exercise-intro-section>
+    }
+
+    @if(exerciseState() === 'exercise') {
+        <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
+        <app-exercise-section class="exercise-section" 
+            [proposition]="proposition()" 
+            [initialText]="initialText()" 
+            [initialAutoPause]="initialAutoPause()" 
+            (submitConfirmed)="onExerciseSubmit()" 
+            (saveExerciseState)="onSaveExerciseState()">
+        </app-exercise-section>
+    }
+
+    @if(exerciseState() === 'results') {
+        <app-exercise-results-section [result]="result()" class="exercise-results-section">
+        </app-exercise-results-section>
+
+        <app-news-highlighted-text class="exercise-original-text" [textType]="'original'" [result]="result()"></app-news-highlighted-text>
+        
+        <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
+
+        <div class="exercise-results-actions">
+            <button class="final-action-btn text-body" type="button" id="exercise-submit" (click)="onTryAgain()">Try Again</button>
+            <button class="final-action-btn text-body" type="button" id="exercise-submit" (click)="onFindAnotherExercise()">Find Another Exercise</button>
+        </div>
+    }
+
 </div>
-

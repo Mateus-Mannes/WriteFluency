@@ -1,0 +1,37 @@
+@use '../../../styles/variables' as vars;
+
+.audio {
+    width: 100%;
+    height: 37px;
+    border: 2px solid #E5E7EB;
+    border-radius: 32px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+    padding: 0.25rem;
+}
+
+.audio:hover {
+    border-color: rgba(58, 125, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 
+        0 4px 12px rgba(58, 125, 255, 0.08),
+        0 2px 4px rgba(58, 125, 255, 0.06);
+}
+
+.audio.audio-playing {
+    border: 2px solid vars.$color-primary;
+    box-shadow: 
+        0 0 0 3px rgba(58, 125, 255, 0.15),
+        0 8px 16px rgba(58, 125, 255, 0.12);
+    border-radius: 32px;
+    background: linear-gradient(135deg, rgba(58, 125, 255, 0.04) 0%, rgba(58, 125, 255, 0.08) 100%);
+    transform: scale(1.01);
+}
+
+.text-body {
+    opacity: 60%;
+    margin-bottom: 0.5rem;
+}

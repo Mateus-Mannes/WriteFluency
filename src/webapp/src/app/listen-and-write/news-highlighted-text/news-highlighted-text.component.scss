@@ -1,0 +1,75 @@
+@use '../../../styles/variables' as vars;
+
+.user-highlighted-text {
+    background: linear-gradient(135deg, rgba(255, 214, 107, 0.4) 0%, rgba(255, 214, 107, 0.6) 100%);
+    border-radius: 4px;
+    border-bottom: 2px solid rgba(255, 214, 107, 0.8);
+    transition: all 0.3s ease;
+}
+
+.user-highlighted-text:hover {
+    background: linear-gradient(135deg, rgba(255, 214, 107, 0.5) 0%, rgba(255, 214, 107, 0.7) 100%);
+    transform: translateY(-1px);
+}
+
+.original-highlighted-text {
+    background: linear-gradient(135deg, rgba(0, 194, 168, 0.15) 0%, rgba(0, 194, 168, 0.25) 100%);
+    border-radius: 4px;
+    border-bottom: 2px solid rgba(0, 194, 168, 0.6);
+    transition: all 0.3s ease;
+}
+
+.original-highlighted-text:hover {
+    background: linear-gradient(135deg, rgba(0, 194, 168, 0.2) 0%, rgba(0, 194, 168, 0.3) 100%);
+    transform: translateY(-1px);
+}
+
+.text-area {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    height: 340px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: vars.$color-text;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+    border: 2px solid #E5E7EB;
+    border-radius: 16px;
+    overflow-y: auto;
+    overflow: auto;
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+
+    // Thin scrollbar styling
+    &::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 12px;
+        margin: 12px 0;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%);
+        border-radius: 12px;
+        border-right: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%);
+        background-clip: padding-box;
+    }
+}
+
+.text-area:hover {
+    border-color: rgba(58, 125, 255, 0.3);
+    box-shadow: 
+        0 4px 12px rgba(58, 125, 255, 0.08),
+        0 2px 4px rgba(58, 125, 255, 0.06);
+}

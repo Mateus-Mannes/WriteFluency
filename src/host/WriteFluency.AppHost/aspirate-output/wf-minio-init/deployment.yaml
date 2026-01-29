@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-minio-init
+  labels:
+    app: wf-minio-init
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-minio-init
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-minio-init
+    spec:
+      containers:
+      - name: wf-minio-init
+        image: ghcr.io/mateus-mannes/wf-minio-init:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: wf-minio-init-env
+      terminationGracePeriodSeconds: 180

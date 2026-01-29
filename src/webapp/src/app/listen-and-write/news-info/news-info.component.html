@@ -1,0 +1,17 @@
+<p class="text-label">News Title</p>
+
+<h1 class="text-title">{{ proposition()?.title }}</h1>
+
+<div class="news-classification">
+
+    <div class="subject">
+        <mat-icon fontSet="material-symbols-outlined" class="subject-icon">{{ getSubjectIcon(proposition()?.subjectId) }}</mat-icon>
+        <p class="text-body">{{ proposition()?.subjectId }}</p>
+    </div>
+
+    <div class="complexity">
+        <mat-icon fontSet="material-symbols-outlined" [class]="getComplexityClass(proposition()?.complexityId)">{{ getComplexityIcon(proposition()?.complexityId) }}</mat-icon>
+        <p class="text-body">{{ proposition()?.complexityId }}</p>
+    </div>
+
+</div>

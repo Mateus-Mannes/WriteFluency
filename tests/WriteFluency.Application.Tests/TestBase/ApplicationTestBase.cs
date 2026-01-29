@@ -72,11 +72,15 @@ public class ApplicationTestBase : IDisposable
         services.AddSingleton(articleExtractorMock);
 
         var generativeAIClientMock = Substitute.For<IGenerativeAIClient>();
+        var textToSpeechClientMock = Substitute.For<ITextToSpeechClient>();
         generativeAIClientMock.GenerateTextAsync(Arg.Any<ComplexityEnum>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(new AIGeneratedTextDto(faker.Lorem.Paragraph(10), faker.Lorem.Paragraph(3000))));
-        generativeAIClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString())));
+        generativeAIClientMock.ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Ok(true)); // By default, always return valid image
+        textToSpeechClientMock.GenerateAudioAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString(), 60)));
         services.AddSingleton(generativeAIClientMock);
+        services.AddSingleton(textToSpeechClientMock);
 
         var fileServiceMock = Substitute.For<IFileService>();
         

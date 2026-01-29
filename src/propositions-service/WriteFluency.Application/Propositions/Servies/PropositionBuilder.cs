@@ -33,9 +33,11 @@ public class PropositionBuilder
 
     [Required]
     private string? AudioVoice;
+    private int AudioDurationSeconds;
     public Result<AudioDto> SetAudioVoice(AudioDto audio)
     {
         AudioVoice = audio.Voice;
+        AudioDurationSeconds = audio.DurationSeconds;
         return Result.Ok(audio);
     }
 
@@ -69,6 +71,7 @@ public class PropositionBuilder
             ComplexityId = dto.Complexity,
             AudioFileId = AudioFileId!,
             Voice = AudioVoice!,
+            AudioDurationSeconds = AudioDurationSeconds,
             Text = PropositionText!,
             TextLength = PropositionText!.Length,
             Title = PropositionTitle!,

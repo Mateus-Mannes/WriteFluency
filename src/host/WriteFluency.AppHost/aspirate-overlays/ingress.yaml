@@ -12,6 +12,7 @@ spec:
         - writefluency.com
         - api.writefluency.com
         - minio.writefluency.com
+        - minioapi.writefluency.com
       secretName: writefluency-tls
   rules:
     - host: writefluency.com
@@ -44,3 +45,13 @@ spec:
                 name: wf-minio
                 port:
                   number: 9001
+    - host: minioapi.writefluency.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wf-minio
+                port:
+                  number: 9000

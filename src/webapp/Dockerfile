@@ -8,13 +8,21 @@ RUN npm install
 COPY . .
 RUN npm run build:prod
 
-FROM nginx:alpine
+FROM node:22-alpine
 
-RUN rm -rf /usr/share/nginx/html/*
-COPY --from=builder /app/dist/write-fluency-app/ /usr/share/nginx/html
+WORKDIR /app
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy package files and install production dependencies only
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy the built application (both browser and server bundles)
+COPY --from=builder /app/dist/write-fluency-app ./dist/write-fluency-app
+
+# Set the port for the SSR server
+ENV PORT=4200
 
 EXPOSE 4200
 
-CMD ["nginx", "-g", "daemon off;"]
+# Run the SSR server
+CMD ["node", "dist/write-fluency-app/server/server.mjs"]

@@ -10,6 +10,20 @@ namespace WriteFluency.Infrastructure.ExternalApis;
 public class NewsClient : BaseHttpClientService, INewsClient
 {
     private readonly NewsOptions _options;
+    private readonly string[] _excludedDomains = 
+    [
+        "yahoo.com",
+        "nbcnews.com",
+        "michaelwest.com",
+        "foxnews.com",
+        "benzinga.com",
+        "michaelwest.com.au",
+        "cnbc.com",
+        "cnet.com",
+        "espn.co.uk",
+        "kiwiblog.co.nz",
+        "bbc.com"
+    ];
 
     public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)
         : base(httpClient, logger)
@@ -30,7 +44,8 @@ public class NewsClient : BaseHttpClientService, INewsClient
                     $"&locale=au,ca,gb,us,nz,ie" +
                     $"&sort=relevance_score" +
                     $"&page={page}" +
-                    $"&limit={quantity}";
+                    $"&limit={quantity}" +
+                    $"&exclude_domains={string.Join(",", _excludedDomains)}";
 
         var requestUri = $"{_options.Routes.TopStories}?{query}";
 

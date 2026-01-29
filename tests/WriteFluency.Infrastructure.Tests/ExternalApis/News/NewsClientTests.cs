@@ -85,7 +85,7 @@ public class NewsClientTests : InfrastructureTestBase
 
         var client = GetService<INewsClient>();
 
-        var result = await client.GetNewsAsync(SubjectEnum.Health, DateTime.UtcNow);
+        var result = await client.GetNewsAsync(SubjectEnum.Politics, DateTime.UtcNow);
 
         result.IsFailed.ShouldBe(true);
         result.Errors.First().Message.ShouldContain("Failed to deserialize response");

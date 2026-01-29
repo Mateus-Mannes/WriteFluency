@@ -1,0 +1,213 @@
+@use '../../../styles/variables' as vars;
+
+.exercise-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0rem;
+}
+
+.exercise-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.23rem;
+  color: vars.$color-text;
+  padding: 0.5rem 0.4rem;
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.04) 0%, rgba(58, 125, 255, 0.08) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(58, 125, 255, 0.15);
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.exercise-instructions:hover {
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.06) 0%, rgba(58, 125, 255, 0.1) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(58, 125, 255, 0.15);
+}
+
+.exercise-instructions.compact div {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+}
+
+.exercise-instructions .icon {
+  font-size: 1.05em;
+  margin-right: 0.1em;
+  color: vars.$color-primary;
+}
+
+.exercise-instructions .label {
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+.exercise-instructions .shortcut {
+  color: vars.$color-primary;
+  margin-left: 0.25em;
+  font-weight: 600;
+  background: rgba(58, 125, 255, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  border: 1px solid rgba(58, 125, 255, 0.2);
+}
+
+.shortcuts-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75em 2.5em;
+  box-shadow: 
+    0 4px 12px rgba(58, 125, 255, 0.25),
+    0 2px 4px rgba(58, 125, 255, 0.15);
+  transition: all 0.3s ease;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(58, 125, 255, 0.35),
+    0 3px 6px rgba(58, 125, 255, 0.2);
+}
+
+.submit-btn:hover::before {
+  left: 100%;
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(58, 125, 255, 0.2);
+}
+
+.word-count-highlight {
+  color: vars.$color-accent-highlight;
+}
+
+.word-count-primary {
+  color: vars.$color-primary;
+}
+
+.word-count-success {
+  color: vars.$color-accent-success;
+}
+
+.auto-pause-selector {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.auto-pause-btn {
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  color: vars.$color-text;
+  border-radius: 10px;
+  padding: 0.15rem 0.85rem;
+  font-family: 'Source Sans 3', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+}
+
+.auto-pause-btn:hover {
+  border-color: vars.$color-primary;
+  background: rgba(58, 125, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(58, 125, 255, 0.15);
+}
+
+.auto-pause-btn.selected {
+  background: rgba(58, 125, 255, 0.12);
+  border-color: vars.$color-primary;
+  color: vars.$color-primary;
+  box-shadow: 
+    0 2px 8px rgba(58, 125, 255, 0.15),
+    0 1px 3px rgba(58, 125, 255, 0.1);
+  font-weight: 600;
+}
+
+.exercise-text-area {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    height: 340px;
+
+    font-family: 'Source Sans 3', sans-serif !important;
+    font-size: 0.9rem;
+    line-height: 1.5;
+
+    color: vars.$color-text;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+
+    border: 2px solid #E5E7EB;
+    border-radius: 16px;
+
+    resize: vertical;
+    outline: none;
+
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
+
+    transition:
+        border-color 0.3s ease,
+        box-shadow 0.3s ease,
+        background 0.3s ease,
+        transform 0.3s ease;
+}
+
+.exercise-text-area:hover {
+    border-color: rgba(58, 125, 255, 0.3);
+}
+
+.exercise-text-area:focus {
+  border-color: vars.$color-primary;
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 
+    0 0 0 3px rgba(58, 125, 255, 0.1),
+    0 8px 16px rgba(58, 125, 255, 0.12),
+    0 2px 4px rgba(58, 125, 255, 0.08);
+}
+
+.text-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.text-label mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 20px;
+}

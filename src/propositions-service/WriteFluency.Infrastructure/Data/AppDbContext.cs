@@ -11,6 +11,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<Complexity> Complexities { get; set; }
     public DbSet<Proposition> Propositions { get; set; }
+    public DbSet<PropositionGenerationLog> PropositionGenerationLogs { get; set; }
     public DbSet<AppSettings> AppSettings { get; set; }
     public AppDbContext(DbContextOptions opts) : base(opts) { }
     
@@ -19,6 +20,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
         base.OnModelCreating(builder);
 
         builder.ApplyConfiguration(new PropositionEfConfiguration());
+        builder.ApplyConfiguration(new PropositionGenerationLogEfConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

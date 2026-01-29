@@ -262,6 +262,9 @@ namespace WriteFluency.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AudioDurationSeconds")
+                        .HasColumnType("integer");
+
                     b.Property<string>("AudioFileId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -273,9 +276,18 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ImageFileId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("PropositionGenerationLogId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("PublishedOn")
                         .HasColumnType("timestamp with time zone");
@@ -305,11 +317,56 @@ namespace WriteFluency.Infrastructure.Migrations
 
                     b.HasIndex("ComplexityId");
 
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("PropositionGenerationLogId");
+
                     b.HasIndex("PublishedOn");
+
+                    b.HasIndex("SubjectId", "IsDeleted");
 
                     b.HasIndex("SubjectId", "ComplexityId", "PublishedOn");
 
                     b.ToTable("Propositions");
+                });
+
+            modelBuilder.Entity("WriteFluency.Propositions.PropositionGenerationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ComplexityId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("GenerationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SuccessCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComplexityId");
+
+                    b.HasIndex("SubjectId", "ComplexityId", "CreatedAt");
+
+                    b.HasIndex("SubjectId", "ComplexityId", "GenerationDate");
+
+                    b.HasIndex("SubjectId", "ComplexityId", "Success");
+
+                    b.ToTable("PropositionGenerationLogs");
                 });
 
             modelBuilder.Entity("WriteFluency.Propositions.Subject", b =>
@@ -386,6 +443,11 @@ namespace WriteFluency.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("WriteFluency.Propositions.PropositionGenerationLog", "PropositionGenerationLog")
+                        .WithMany("Propositions")
+                        .HasForeignKey("PropositionGenerationLogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("WriteFluency.Propositions.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
@@ -437,6 +499,8 @@ namespace WriteFluency.Infrastructure.Migrations
 
                             b1.HasKey("PropositionId");
 
+                            b1.HasIndex("Id");
+
                             b1.ToTable("Propositions");
 
                             b1.WithOwner()
@@ -448,7 +512,33 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Navigation("NewsInfo")
                         .IsRequired();
 
+                    b.Navigation("PropositionGenerationLog");
+
                     b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("WriteFluency.Propositions.PropositionGenerationLog", b =>
+                {
+                    b.HasOne("WriteFluency.Propositions.Complexity", "Complexity")
+                        .WithMany()
+                        .HasForeignKey("ComplexityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WriteFluency.Propositions.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Complexity");
+
+                    b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("WriteFluency.Propositions.PropositionGenerationLog", b =>
+                {
+                    b.Navigation("Propositions");
                 });
 #pragma warning restore 612, 618
         }

@@ -2,6 +2,7 @@ namespace: writefluency
 
 resources:
 - wf-minio
+- wf-minio-init
 - wf-postgres
 - wf-db-migrator
 - wf-api

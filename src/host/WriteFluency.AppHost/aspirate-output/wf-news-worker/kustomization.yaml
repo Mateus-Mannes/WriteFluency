@@ -14,7 +14,7 @@ configMapGenerator:
     - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
     - HTTPS_PORTS=8443
     - ConnectionStrings__wf-postgresdb=Host=wf-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-postgresdb
-    - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey={user.value};SecretKey=admin123
+    - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=admin123
     - RESOURCE_NAME=wf-news-worker
     - ASPNETCORE_URLS=http://+:8080;
 
