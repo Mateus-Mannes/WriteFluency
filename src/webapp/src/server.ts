@@ -11,11 +11,11 @@ import { environment } from './enviroments/enviroment';
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 // Use Aspire service discovery environment variables for SSR
-// Aspire sets: services__wf-api__apihttp__0=wf-api:5000
+// Aspire sets: services__wf-api__http__0=http://wf-api:8080
 // In Kubernetes: Uses Aspire service discovery
 // In local dev: Falls back to environment.apiUrl
-const aspireApiUrl = process.env['services__wf-api__apihttp__0'];
-const apiUrl = aspireApiUrl ? `http://${aspireApiUrl}` : environment.apiUrl;
+const aspireApiUrl = process.env['services__wf-api__http__0'];
+const apiUrl = aspireApiUrl || environment.apiUrl;
 
 console.log(`[Server] Using API URL: ${apiUrl}`);
 
