@@ -14,6 +14,7 @@ import { PropositionsService } from '../../api/listen-and-write/api/propositions
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
 import { BrowserService } from '../core/services/browser.service';
+import { SeoService } from '../core/services/seo.service';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -63,7 +64,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     private route: ActivatedRoute,
     private propositionsService: PropositionsService,
     private textComparisonsService: TextComparisonsService,
-    private browserService: BrowserService
+    private browserService: BrowserService,
+    private seoService: SeoService
   ) {
     // Get the exercise ID from route parameters
     this.route.params.pipe(
@@ -105,6 +107,48 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.propositionsService.apiPropositionIdGet(id).subscribe({
       next: (data) => {
         this.proposition.set(data);
+        
+        // Update SEO meta tags for this specific exercise
+        const complexityDesc = data.complexity?.description || 'Intermediate';
+        const subjectDesc = data.subject?.description || 'News';
+        const duration = data.audioDurationSeconds 
+          ? `${Math.ceil(data.audioDurationSeconds / 60)} min`
+          : '1-2 min';
+        
+        this.seoService.updateMetaTags({
+          title: `${data.title} - ${complexityDesc} Level Exercise | WriteFluency`,
+          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise about ${subjectDesc}. Listen to real news audio and improve your dictation skills. Duration: ${duration}.`,
+          keywords: `${subjectDesc}, ${complexityDesc} level, English writing exercise, listening comprehension, dictation practice`,
+          type: 'article',
+          url: `/listen-and-write/${id}`,
+          image: data.imageFileId ? `${this.getMinioUrl()}/${data.imageFileId}` : undefined,
+          publishedTime: data.publishedOn || undefined
+        });
+
+        // Add structured data for this exercise
+        const exerciseData = this.seoService.generateExerciseStructuredData({
+          id: id,
+          title: data.title || 'English Writing Exercise',
+          topic: subjectDesc,
+          level: complexityDesc,
+          duration: duration,
+          imageUrl: data.imageFileId ? `${this.getMinioUrl()}/${data.imageFileId}` : undefined,
+          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise.`
+        });
+
+        // Add breadcrumb structured data
+        const breadcrumbData = this.seoService.generateBreadcrumbStructuredData([
+          { name: 'Home', url: '/' },
+          { name: 'Exercises', url: '/exercises' },
+          { name: data.title || 'Exercise', url: `/listen-and-write/${id}` }
+        ]);
+
+        // Combine structured data
+        const structuredData = {
+          '@context': 'https://schema.org',
+          '@graph': [exerciseData, breadcrumbData]
+        };
+        this.seoService.addStructuredData(structuredData);
       },
       error: (error) => {
         console.error('Error loading proposition:', error);
@@ -113,6 +157,12 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.browserService.navigateTo('/');
       }
     });
+  }
+
+  private getMinioUrl(): string {
+    // Import environment to get minioUrl
+    // This will be tree-shaken in production if not used elsewhere
+    return 'https://minioapi.writefluency.com'; // TODO: Import from environment if needed
   }
 
   restoreExerciseState() 
