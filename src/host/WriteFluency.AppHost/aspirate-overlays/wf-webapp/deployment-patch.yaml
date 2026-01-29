@@ -11,6 +11,8 @@ spec:
       labels:
         app: wf-webapp
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: wf-webapp
         envFrom:

@@ -20,6 +20,8 @@ env:
   Propositions__DailyRequestsLimit: ${{ vars.Propositions__DailyRequestsLimit }}
   Propositions__LimitPerTopic: ${{ vars.Propositions__LimitPerTopic }}
   Propositions__NewsRequestLimit: ${{ vars.Propositions__NewsRequestLimit }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
 jobs:
   deploy:

@@ -22,6 +22,15 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
   propositions_limit_per_topic="${Propositions__LimitPerTopic}"
   propositions_news_request_limit="${Propositions__NewsRequestLimit}"
 
+  # Create image pull secret for GHCR
+  echo "🔑 Creating GHCR image pull secret..."
+  kubectl create secret docker-registry ghcr-secret \
+    --docker-server=ghcr.io \
+    --docker-username="${GHCR_USERNAME}" \
+    --docker-password="${GHCR_TOKEN}" \
+    --namespace=writefluency \
+    --dry-run=client -o yaml | kubectl apply -f -
+
 else
   echo "🔐 Running locally — using .NET user secrets"
 

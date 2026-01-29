@@ -8,6 +8,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: wf-minio-init
         envFrom:

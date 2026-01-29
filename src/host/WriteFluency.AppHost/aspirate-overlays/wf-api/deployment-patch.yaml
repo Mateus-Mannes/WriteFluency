@@ -10,6 +10,8 @@ spec:
       maxUnavailable: 0
   template:
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: wf-api
         envFrom:

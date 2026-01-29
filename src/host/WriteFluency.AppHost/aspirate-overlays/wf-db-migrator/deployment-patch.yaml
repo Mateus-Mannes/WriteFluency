@@ -8,6 +8,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       initContainers:
       - name: wait-for-postgres
         image: busybox
