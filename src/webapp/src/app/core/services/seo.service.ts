@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { DOCUMENT } from '@angular/common';
 import { environment } from '../../../enviroments/enviroment';
 
 export interface SEOConfig {
@@ -22,6 +23,7 @@ export class SeoService {
   private meta = inject(Meta);
   private titleService = inject(Title);
   private router = inject(Router);
+  private document = inject(DOCUMENT);
 
   private defaultConfig: SEOConfig = {
     title: 'WriteFluency - Practice English Writing with Real News',
@@ -80,31 +82,33 @@ export class SeoService {
   }
 
   addStructuredData(data: any): void {
-    let script: HTMLScriptElement | null = document.querySelector('script[type="application/ld+json"]');
+    // Structured data manipulation works with Angular Universal's DOM implementation
+    let script: HTMLScriptElement | null = this.document.querySelector('script[type="application/ld+json"]');
     
     if (!script) {
-      script = document.createElement('script');
+      script = this.document.createElement('script');
       script.type = 'application/ld+json';
-      document.head.appendChild(script);
+      this.document.head.appendChild(script);
     }
 
     script.textContent = JSON.stringify(data);
   }
 
   removeStructuredData(): void {
-    const script = document.querySelector('script[type="application/ld+json"]');
+    const script = this.document.querySelector('script[type="application/ld+json"]');
     if (script) {
       script.remove();
     }
   }
 
   private updateCanonicalUrl(url: string): void {
-    let link: HTMLLinkElement | null = document.querySelector('link[rel="canonical"]');
+    // Canonical URL manipulation works with Angular Universal's DOM implementation
+    let link: HTMLLinkElement | null = this.document.querySelector('link[rel="canonical"]');
     
     if (!link) {
-      link = document.createElement('link');
+      link = this.document.createElement('link');
       link.setAttribute('rel', 'canonical');
-      document.head.appendChild(link);
+      this.document.head.appendChild(link);
     }
     
     link.setAttribute('href', url);
