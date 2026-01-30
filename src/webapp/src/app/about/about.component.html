@@ -1,0 +1,105 @@
+<div class="about-page">
+  <section class="page-hero">
+    <div class="hero-content">
+      <p class="eyebrow text-label">About WriteFluency</p>
+      <h1 class="page-title text-display">
+        A focused way to practice writing with real news.
+      </h1>
+      <p class="page-subtitle text-body">
+        WriteFluency turns short news audio into repeatable writing practice. It is built for learners who want clear feedback, steady progress, and meaningful topics.
+      </p>
+      <div class="hero-actions">
+        <a class="hero-cta" mat-raised-button color="primary" routerLink="/exercises">
+          <mat-icon>play_circle_outline</mat-icon>
+          <span>Browse exercises</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="story-section">
+    <div class="section-container">
+      <div class="story-grid">
+        <mat-card class="info-card">
+          <mat-card-content>
+            <mat-icon class="info-icon">tips_and_updates</mat-icon>
+            <h2 class="info-title text-heading">Why it exists</h2>
+            <p class="info-text text-body">
+              Writing improves fastest when you practice in context. These exercises keep it practical and focused.
+            </p>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="info-card">
+          <mat-card-content>
+            <mat-icon class="info-icon">track_changes</mat-icon>
+            <h2 class="info-title text-heading">What it focuses on</h2>
+            <p class="info-text text-body">
+              Short sessions, real-world topics, and clear corrections that highlight exactly what to improve.
+            </p>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="info-card">
+          <mat-card-content>
+            <mat-icon class="info-icon">bolt</mat-icon>
+            <h2 class="info-title text-heading">How it evolves</h2>
+            <p class="info-text text-body">
+              Your suggestions shape the roadmap. If something feels off or missing, I would love to hear it.
+            </p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-section">
+    <div class="section-container">
+      <mat-card class="contact-card">
+        <mat-card-content>
+          <div class="contact-header">
+            <div>
+              <h2 class="section-title text-title">Contact</h2>
+              <p class="section-subtitle text-body">
+                Reach out for support, suggestions, or bug reports.
+              </p>
+            </div>
+            <div class="creator-badge" aria-label="Project creator">
+              <mat-icon>person</mat-icon>
+              <span class="text-body">Created by {{ creatorName }}</span>
+            </div>
+          </div>
+
+          <div class="contact-links">
+            <a
+              class="contact-link"
+              mat-stroked-button
+              color="primary"
+              [href]="'mailto:' + contactEmail"
+              aria-label="Email support"
+            >
+              <mat-icon>mail</mat-icon>
+              <span>{{ contactEmail }}</span>
+            </a>
+            <a
+              class="contact-link"
+              mat-stroked-button
+              color="primary"
+              [href]="linkedInUrl"
+              target="_blank"
+              rel="noopener"
+              aria-label="LinkedIn profile"
+            >
+              <mat-icon>work</mat-icon>
+              <span>{{ linkedInLabel }}</span>
+            </a>
+          </div>
+
+          <p class="contact-note text-caption">
+            Email is the fastest way to reach me.
+          </p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+</div>
