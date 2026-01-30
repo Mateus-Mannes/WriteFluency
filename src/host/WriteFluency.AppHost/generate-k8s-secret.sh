@@ -21,15 +21,8 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
   propositions_daily_requests_limit="${Propositions__DailyRequestsLimit}"
   propositions_limit_per_topic="${Propositions__LimitPerTopic}"
   propositions_news_request_limit="${Propositions__NewsRequestLimit}"
-
-  # Create image pull secret for GHCR
-  echo "🔑 Creating GHCR image pull secret..."
-  kubectl create secret docker-registry ghcr-secret \
-    --docker-server=ghcr.io \
-    --docker-username="${GHCR_USERNAME}" \
-    --docker-password="${GHCR_TOKEN}" \
-    --namespace=writefluency \
-    --dry-run=client -o yaml | kubectl apply -f -
+  ghcr_username="${GHCR_USERNAME}"
+  ghcr_token="${GHCR_TOKEN}"
 
 else
   echo "🔐 Running locally — using .NET user secrets"
@@ -48,7 +41,18 @@ else
   propositions_daily_requests_limit=$(jq -r '.["Propositions:DailyRequestsLimit"]' "$USER_SECRETS")
   propositions_limit_per_topic=$(jq -r '.["Propositions:LimitPerTopic"]' "$USER_SECRETS")
   propositions_news_request_limit=$(jq -r '.["Propositions:NewsRequestLimit"]' "$USER_SECRETS")
+  ghcr_username=$(jq -r '.["GHCR_USERNAME"]' "$USER_SECRETS")
+  ghcr_token=$(jq -r '.["GHCR_TOKEN"]' "$USER_SECRETS")
 fi
+
+# Create image pull secret for GHCR
+echo "🔑 Creating GHCR image pull secret..."
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io \
+  --docker-username="${ghcr_username}" \
+  --docker-password="${ghcr_token}" \
+  --namespace=writefluency \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -f - <<EOF
 apiVersion: v1

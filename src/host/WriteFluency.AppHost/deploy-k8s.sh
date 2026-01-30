@@ -4,6 +4,9 @@ set -e
 
 KUBE_CONTEXT=$1
 
+# Create cert-manager namespace first (required before applying cert-manager resources)
+kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+
 ./generate-k8s-secret.sh
 
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml

@@ -40,11 +40,8 @@ Redirect to ports:
 
 ``` bash
 
-# HTTP 80 -> 32379
-sudo iptables -t nat -A PREROUTING -p tcp --dport 80  -j REDIRECT --to-ports 32379
-
-# HTTPS 443 -> 30524
-sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-ports 30524
-
+iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 32379; 
+iptables -t nat -D PREROUTING -p tcp --dport 443 -j REDIRECT --to-ports 30524; 
+iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 80 -j REDIRECT --to-ports 32379; iptables -t nat -A PREROUTING -p tcp -m addrtype --dst-type LOCAL --dport 443 -j REDIRECT --to-ports 30524
 
 ```
