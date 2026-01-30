@@ -327,6 +327,9 @@ export class ListenAndWriteComponent implements OnDestroy {
     if (stateKey) {
       this.browserService.removeItem(stateKey);
     }
+    this.initialText.set(null);
+    this.initialAutoPause.set(null);
+    this.result.set(null);
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.setNewState('intro');
   }
