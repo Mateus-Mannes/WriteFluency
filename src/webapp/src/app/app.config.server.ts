@@ -2,22 +2,15 @@ import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
 import { provideServerRendering, withRoutes } from '@angular/ssr';
 import { appConfig } from './app.config';
 import { serverRoutes } from './app.routes.server';
-import { provideApi } from 'src/api/listen-and-write/provide-api';
-import { environment } from '../enviroments/enviroment';
 
-// Server-side API URL - uses Aspire service discovery in Kubernetes
-// Aspire sets: services__wf-api__http__0=http://wf-api:8080
-// Falls back to build-time environment for local development
-const aspireApiUrl = process.env['services__wf-api__http__0'];
-const serverApiUrl = aspireApiUrl || environment.apiUrl;
-
-console.log(`[SSR] Using API URL: ${serverApiUrl}`);
+// SSR now uses the same external API URL as the browser (from environment)
+// CoreDNS rewrite rule in Kubernetes will resolve api.writefluency.com to internal service
+// This ensures Angular transfer cache works correctly (no duplicate HTTP requests)
 
 const serverConfig: ApplicationConfig = {
   providers: [
-    provideServerRendering(withRoutes(serverRoutes)),
-    // Override the API URL for server-side rendering
-    provideApi(serverApiUrl)
+    provideServerRendering(withRoutes(serverRoutes))
+    // No API URL override - uses the same provideApi from appConfig
   ]
 };
 

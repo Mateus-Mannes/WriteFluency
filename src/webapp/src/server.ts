@@ -10,12 +10,9 @@ import { environment } from './enviroments/enviroment';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
-// Use Aspire service discovery environment variables for SSR
-// Aspire sets: services__wf-api__http__0=http://wf-api:8080
-// In Kubernetes: Uses Aspire service discovery
-// In local dev: Falls back to environment.apiUrl
-const aspireApiUrl = process.env['services__wf-api__http__0'];
-const apiUrl = aspireApiUrl || environment.apiUrl;
+// Server now uses the same external API URL as the browser
+// CoreDNS rewrite in k8s resolves api.writefluency.com to wf-api service internally
+const apiUrl = environment.apiUrl;
 
 console.log(`[Server] Using API URL: ${apiUrl}`);
 

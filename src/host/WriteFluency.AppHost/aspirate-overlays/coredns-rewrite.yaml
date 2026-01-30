@@ -1,0 +1,40 @@
+---
+# CoreDNS ConfigMap patch to rewrite external API hostname to internal Kubernetes service
+# This solves the Angular SSR + hydration duplicate HTTP request issue by:
+# 1. SSR pod and browser both use the same external URL (api.writefluency.com)
+# 2. Inside the cluster, CoreDNS rewrites api.writefluency.com -> wf-api.writefluency.svc.cluster.local
+# 3. This avoids hairpin NAT timeouts and ensures Angular transfer cache works correctly
+#
+# Apply with: kubectl apply -f coredns-rewrite.yaml
+# Then restart CoreDNS: kubectl -n kube-system rollout restart deployment coredns
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        # Rewrite external API hostname to internal service for in-cluster requests
+        # This enables SSR and browser to use the same URL while avoiding hairpin NAT
+        rewrite name api.writefluency.com wf-api.writefluency.svc.cluster.local
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+            ttl 30
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf {
+            max_concurrent 1000
+        }
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
