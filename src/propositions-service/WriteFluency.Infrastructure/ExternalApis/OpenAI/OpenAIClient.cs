@@ -255,6 +255,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
                 - Use general terms (e.g., 'a man,' 'a major city') when a name is not essential.
 
+                - Write in neutral third person only. Do not use first-person or second-person pronouns (I, we, my, our, me, us, you, your).
                 - Do not refer to the article, news source, journalist, or writing process.
 
                 - Avoid acronyms, abbreviations, dates, and complex numbers. Use simple, spoken equivalents instead. 
@@ -267,6 +268,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
                 - The users are Advanced and fluent English learners, so use natural and sophisticated language.
 
+            If the article is primarily a product list, product comparison, buying guide, affiliate content, or review, return null.
             If the article does not provide enough clear, interesting, or informative content to generate a meaningful paragraph and title, return null.
         ";
 
@@ -499,6 +501,9 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Excessive category listings or tags
         - Little to no coherent narrative or informative content
         - Predominantly consists of short, disconnected phrases typical of UI elements
+        - Product lists, rankings, or listicles (e.g., "best X", "top picks")
+        - Product comparisons or head-to-head reviews
+        - Buying guides, shopping advice, affiliate or deal-focused content
 
         Output format:
         - Respond with only one word: "valid" or "invalid"
