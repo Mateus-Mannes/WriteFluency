@@ -118,6 +118,19 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
                 return Result.Fail(new Error("Generated title is empty"));
             }
 
+            var titleValidationResult = await ValidateTitleAsync(title, paragraphText, properNames!, cancellationToken);
+            if (titleValidationResult.IsFailed)
+            {
+                _logger.LogError("Failed to validate generated title");
+                return Result.Fail(new Error("Failed to validate generated title").CausedBy(titleValidationResult.Errors));
+            }
+
+            if (!titleValidationResult.Value)
+            {
+                _logger.LogError("Generated title did not pass validation");
+                return Result.Fail(new Error("Generated title did not pass validation"));
+            }
+
             // Adjust difficulty for beginner/intermediate levels
             if (ShouldAdjustComplexity(complexity))
             {
@@ -286,11 +299,14 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
     private string GenerateTitleSystemPrompt()
     => """
-        You are generating a title based strictly on the provided text.
+        You are generating an engaging, informative title based strictly on the provided text.
 
-        Critical rule (must follow):
-        - Every PROPER NAME from the provided list must appear in the title.
-        - If it is not possible to include all proper names in a single coherent title, return null.
+        Critical rules (must follow):
+        - Every PROPER NAME from the provided list must appear in the title (preserve spelling).
+        - The title must describe a specific action, event, or claim from the text, not just list names.
+        - Title length: 8 to 22 words. If the proper names alone exceed 22 words, return null.
+        - Avoid comma-separated list style (no "A, B, C" title).
+        - If it is not possible to include all proper names in a single coherent title that meets the rules, return null.
 
         Output only the title text, without any additional commentary or formatting.
     """;
@@ -353,6 +369,74 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             --- TEXT START ---
             {paragraph}
             --- TEXT END ---
+        ";
+
+    private async Task<Result<bool>> ValidateTitleAsync(string title, string paragraphText, List<string> properNames, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _chatClient.GetResponseAsync<string>(
+                [
+                    new ChatMessage(ChatRole.System, ValidateTitleSystemPrompt()),
+                    new ChatMessage(ChatRole.User, ValidateTitleUserPrompt(title, paragraphText, properNames))
+                ],
+                CreateChatOptions(maxTokens: 80, temperature: 0.3f),
+                cancellationToken: cancellationToken);
+
+            // Parse the response - expecting "valid" or "invalid"
+            var result = response.Result.Trim().ToLowerInvariant();
+
+            if (result.Contains("invalid"))
+            {
+                _logger.LogWarning("Title validation: Invalid title detected");
+                return Result.Ok(false);
+            }
+            else if (result.Contains("valid"))
+            {
+                _logger.LogInformation("Title validation: Valid title detected");
+                return Result.Ok(true);
+            }
+            else
+            {
+                _logger.LogWarning("Title validation: Unexpected response format: {Response}", result);
+                // Default to invalid if response is unclear
+                return Result.Ok(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate title");
+            return Result.Fail(new Error($"Failed to validate title: {ex.Message}"));
+        }
+    }
+
+    private string ValidateTitleSystemPrompt()
+    => """
+        You are a title validator. Determine whether the provided title meets ALL rules below.
+
+        Rules (all must be satisfied):
+        - The title reflects a specific action, event, or claim from the provided text.
+        - Every proper name from the provided list appears in the title exactly as written.
+        - The title is not just a comma-separated list of names.
+        - Title length is 8 to 22 words (count words separated by spaces).
+
+        Output format:
+        - Respond with only one word: "valid" or "invalid"
+        - Do not include any additional explanation or commentary
+    """;
+
+    private string ValidateTitleUserPrompt(string title, string paragraphText, List<string> properNames)
+        => @$"
+            Title: {title}
+
+            Proper names that MUST appear in the title:
+            {(properNames != null && properNames.Count > 0 ? string.Join(", ", properNames) : "None")}
+
+            --- TEXT START ---
+            {paragraphText}
+            --- TEXT END ---
+
+            Is this a valid title? Respond with only 'valid' or 'invalid'.
         ";
 
     private async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
