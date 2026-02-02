@@ -189,8 +189,27 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
     private async Task<string> AdjustTextComplexityAsync(string paragraphText, string title, ComplexityEnum complexity, CancellationToken cancellationToken)
     {
+        if (complexity == ComplexityEnum.Beginner)
+        {
+            // Step down in two passes to preserve clearer separation between levels.
+            var intermediateResponse = await _chatClient.GetResponseAsync<string>(
+                CreateMessages(AdaptAdvancedToIntermediateSystemPrompt(), AdaptTextDifficultyUserPrompt(paragraphText, title)),
+                CreateChatOptions(maxTokens: 1200),
+                cancellationToken: cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(intermediateResponse.Result))
+                return string.Empty;
+
+            var beginnerResponse = await _chatClient.GetResponseAsync<string>(
+                CreateMessages(AdaptIntermediateToBeginnerSystemPrompt(), AdaptTextDifficultyUserPrompt(intermediateResponse.Result, title)),
+                CreateChatOptions(maxTokens: 1200),
+                cancellationToken: cancellationToken);
+
+            return beginnerResponse.Result;
+        }
+
         var response = await _chatClient.GetResponseAsync<string>(
-            CreateMessages(AdaptTextDifficultySystemPrompt(), AdaptTextDifficultyUserPrompt(paragraphText, title, complexity)),
+            CreateMessages(AdaptAdvancedToIntermediateSystemPrompt(), AdaptTextDifficultyUserPrompt(paragraphText, title)),
             CreateChatOptions(maxTokens: 1200),
             cancellationToken: cancellationToken);
 
@@ -323,15 +342,13 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             --- TEXT END ---
         ";
 
-    private string AdaptTextDifficultySystemPrompt()
+    private string AdaptAdvancedToIntermediateSystemPrompt()
     => """
         You are given:
-        - A title
-        - A single paragraph of text written at an advanced English level
-        - A target complexity level: Beginner or Intermediate
+        - A title (do not change it)
+        - A single paragraph written at an advanced English level
 
-        Your task is to rewrite ONLY the paragraph by SIMPLIFYING the language to match the target complexity level.
-        The title must remain EXACTLY the same and must NOT be modified.
+        Your task is to rewrite ONLY the paragraph to an INTERMEDIATE level.
 
         Core rules (must follow):
         - The original paragraph is already advanced and correct.
@@ -342,16 +359,12 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Keep all proper names exactly as they appear in the original paragraph.
         - Do NOT introduce new proper names.
 
-        Simplification rules:
-        - Beginner:
-        - Use short, direct sentences.
-        - Use simple verb tenses and active voice.
-        - Prefer common, everyday vocabulary.
-        - Avoid complex clauses, passive voice, and abstract expressions.
-        - Intermediate:
+        Intermediate simplification rules:
         - Use clear sentences with moderate length.
         - Allow basic connectors such as because, when, after, and while.
         - Use a wider vocabulary than Beginner, but avoid advanced or academic wording.
+        - Prefer simpler verb tenses and avoid dense clauses.
+        - Make the paragraph about 10 to 15 percent shorter than the original.
 
         Formatting and language rules:
         - Rewrite ONLY the paragraph.
@@ -362,10 +375,41 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         If you cannot simplify the paragraph while fully preserving its original meaning, return null.
     """;
 
-    private string AdaptTextDifficultyUserPrompt(string paragraph, string title, ComplexityEnum complexity)
-        => @$"
-            Target complexity level: {complexity}
+    private string AdaptIntermediateToBeginnerSystemPrompt()
+    => """
+        You are given:
+        - A title (do not change it)
+        - A single paragraph written at an intermediate English level
 
+        Your task is to rewrite ONLY the paragraph to a BEGINNER level.
+
+        Core rules (must follow):
+        - The original paragraph is already intermediate and correct.
+        - Do NOT change the meaning, facts, events, or message of the paragraph.
+        - Do NOT add new information.
+        - Do NOT remove important details.
+        - The rewritten paragraph must communicate the same story and content as the original text.
+        - Keep all proper names exactly as they appear in the original paragraph.
+        - Do NOT introduce new proper names.
+
+        Beginner simplification rules:
+        - Use short, direct sentences.
+        - Use simple verb tenses and active voice.
+        - Prefer common, everyday vocabulary.
+        - Avoid complex clauses, passive voice, and abstract expressions.
+        - Make the paragraph about 10 to 15 percent shorter than the original.
+
+        Formatting and language rules:
+        - Rewrite ONLY the paragraph.
+        - Return a single paragraph with no line breaks.
+        - Do not use quotes, symbols, abbreviations, or special punctuation.
+        - Use natural, globally understandable English.
+
+        If you cannot simplify the paragraph while fully preserving its original meaning, return null.
+    """;
+
+    private string AdaptTextDifficultyUserPrompt(string paragraph, string title)
+        => @$"
             TITLE: {title}
 
             --- TEXT START ---
