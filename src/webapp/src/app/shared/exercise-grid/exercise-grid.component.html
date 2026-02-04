@@ -62,10 +62,16 @@
         <a [routerLink]="['/listen-and-write', exercise.id]" class="exercise-card-link">
           <!-- Thumbnail -->
           <div class="exercise-thumbnail">
-            @if (exercise.imageUrl) {
-              <img [src]="exercise.imageUrl" 
+            @if (exercise.imageBaseId && !exercise.imageLoadFailed) {
+              <img [ngSrc]="exercise.imageBaseId"
+                   ngSrcset="320w, 640w"
+                   [loaderParams]="imageLoaderParams"
+                   sizes="(max-width: 600px) 92vw, (max-width: 992px) 48vw, 320px"
+                   fill
+                   (error)="onOptimizedImageError(exercise.id)"
                    [alt]="'Thumbnail for ' + exercise.title + ' - ' + exercise.level + ' level ' + exercise.topic + ' exercise'" 
                    loading="lazy" 
+                   decoding="async"
                    fetchpriority="auto"/>
             } @else {
               <div class="exercise-placeholder">

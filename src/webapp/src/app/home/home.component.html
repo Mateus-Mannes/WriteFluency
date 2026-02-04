@@ -5,11 +5,11 @@
       <!-- Left side: Content -->
       <div class="hero-content">
         <h1 class="hero-headline text-display">
-          Practice writing with real news — and instant feedback.
+          English writing practice with real news audio and instant feedback.
         </h1>
         
         <p class="hero-description text-body">
-          Listen to audio from real news articles, type what you hear, and get instant feedback with highlighted corrections. Improve your English writing skills one exercise at a time.
+          Practice English writing online in just a few minutes a day. Listen, type what you hear, and improve your writing skills with clear corrections.
         </p>
         
         <a [routerLink]="['/exercises']" class="hero-cta" mat-raised-button color="primary" (click)="scrollToTop()">
@@ -72,12 +72,19 @@
             </div>
           </div>
           <div class="mockup-content">
-            <img 
-              src="assets/hero.gif" 
-              fetchpriority="high"
-              alt="WriteFluency exercise demo showing listen and write interface"
+            <video
               class="mockup-gif"
-            />
+              width="1280"
+              height="720"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="metadata"
+              poster="assets/hero-poster.webp"
+              aria-label="WriteFluency exercise demo showing listen and write interface">
+              <source src="assets/hero.mp4" type="video/mp4" />
+            </video>
           </div>
         </div>
       </div>
@@ -148,8 +155,12 @@
         </a>
       </div>
       
-      <!-- Exercise Grid Component - limited to 9 items, no filters or pagination -->
-      <app-exercise-grid [maxItems]="9" [hideFilters]="true" [hidePagination]="true" />
+      <!-- Exercise Grid Component - deferred to reduce initial critical-path work -->
+      @defer (on idle) {
+        <app-exercise-grid [maxItems]="9" [hideFilters]="true" [hidePagination]="true" />
+      } @placeholder {
+        <div class="latest-exercises-placeholder text-body">Loading latest exercises...</div>
+      }
     </div>
   </section>
 </div>

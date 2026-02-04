@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.Core;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
 using WriteFluency.Application.Propositions.Interfaces;
 using WriteFluency.Common;
 using WriteFluency.Data;
@@ -17,7 +20,8 @@ namespace WriteFluency.Application;
 public class ApplicationTestBase : IDisposable
 {
     private readonly SqliteConnection _connection;
-    protected readonly Dictionary<Guid, byte[]> UploadedFiles = new();
+    protected readonly Dictionary<string, byte[]> UploadedFiles = new();
+    private static readonly byte[] SampleImageBytes = CreateSampleImageBytes();
 
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceScope _scope;
@@ -66,7 +70,7 @@ public class ApplicationTestBase : IDisposable
 
         var articleExtractorMock = Substitute.For<IArticleExtractor>();
         articleExtractorMock.DownloadImageAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(Array.Empty<byte>()));
+            .Returns(Result.Ok(SampleImageBytes));
         articleExtractorMock.GetVisibleTextAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(faker.Lorem.Paragraph(3000)));
         services.AddSingleton(articleExtractorMock);
@@ -86,9 +90,9 @@ public class ApplicationTestBase : IDisposable
         
         Result<string> UploadBehavior(CallInfo x)
         {
-            var fileId = Guid.NewGuid();
+            var fileId = Guid.NewGuid().ToString();
             UploadedFiles[fileId] = (byte[])x[1];
-            return Result.Ok(fileId.ToString());
+            return Result.Ok(fileId);
         }
 
         fileServiceMock
@@ -99,12 +103,21 @@ public class ApplicationTestBase : IDisposable
             .UploadFileAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(UploadBehavior);
 
+        fileServiceMock
+            .UploadFileWithObjectNameAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var objectName = callInfo.ArgAt<string>(2);
+                UploadedFiles[objectName] = callInfo.ArgAt<byte[]>(1);
+                return Result.Ok(objectName);
+            });
+
         services.AddSingleton(fileServiceMock);
 
         var propositionOptions = new PropositionOptions
         {
-            DailyRequestsLimit = 100,
-            PropositionsLimitPerTopic = 300,
+            DailyRequestsLimit = 30,
+            PropositionsLimitPerTopic = 20,
             NewsRequestLimit = 3
         };
         var optionsMonitor = Substitute.For<IOptionsMonitor<PropositionOptions>>();
@@ -117,5 +130,13 @@ public class ApplicationTestBase : IDisposable
         _connection.Close();
         _connection.Dispose();
         _scope.Dispose();
+    }
+
+    private static byte[] CreateSampleImageBytes()
+    {
+        using var image = new Image<Rgba32>(1280, 720, new Rgba32(40, 80, 120));
+        using var outputStream = new MemoryStream();
+        image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = 80 });
+        return outputStream.ToArray();
     }
 }

@@ -5,6 +5,10 @@
   min-height: 100vh;
 }
 
+.app-main {
+  display: block;
+}
+
 // Prevent scrolling when unsupported screen is shown
 :host-context(.unsupported-active) {
   overflow: hidden;

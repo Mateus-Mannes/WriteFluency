@@ -6,6 +6,7 @@ using FluentResults;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
 using WriteFluency.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,32 @@ namespace WriteFluency.Propositions;
 
 public class CreatePropositionService
 {
+    private sealed record ImageVariant(string Suffix, int Width, int Height);
+
+    private static readonly ImageVariant[] OptimizedImageVariants =
+    [
+        new("w320", 320, 180),
+        new("w512", 512, 288),
+        new("w640", 640, 360),
+        new("w1024", 1024, 576),
+    ];
+
+    private const int MaxValidationImageBytes = 153600;
+    private const int CompressionQuality = 60;
+    private const int MaxOriginalJpegBytes = 122880; // 120 KB
+
+    private static readonly ImageVariant BaseVariant = OptimizedImageVariants
+        .OrderByDescending(variant => variant.Width)
+        .First();
+
+    private static readonly IReadOnlyDictionary<string, int> MaxVariantBytesBySuffix = new Dictionary<string, int>
+    {
+        ["w320"] = 61440,   // 60 KB (grid)
+        ["w640"] = 61440,   // 60 KB (grid)
+        ["w512"] = 81920,   // 80 KB (news)
+        ["w1024"] = 122880, // 120 KB (news)
+    };
+
     private readonly INewsClient _newsClient;
     private readonly IArticleExtractor _articleExtractor;
     private readonly IGenerativeAIClient _generativeAIClient;
@@ -60,7 +87,7 @@ public class CreatePropositionService
         var newsIds = newsResult.Value.Select(n => n.ExternalId).ToList();
         
         // Check for existing propositions in database (includes soft delete filter automatically)
-        var existingNewsIds = await _context.Propositions
+        var existingNewsIds = await _context.Propositions.AsNoTracking()
             .Where(p => newsIds.Contains(p.NewsInfo.Id))
             .Select(p => p.NewsInfo.Id)
             .ToListAsync(cancellationToken);
@@ -97,21 +124,27 @@ public class CreatePropositionService
         var imageResult = await _articleExtractor.DownloadImageAsync(newsArticle.ImageUrl, cancellationToken);
         if (imageResult.IsSuccess)
         {
-            var imageBytes = imageResult.Value;
-            
-            // Check and compress image if it exceeds 150 KB
-            if (imageBytes.Length > 153600)
+            var originalImageBytes = imageResult.Value;
+            var processedImageResult = await ProcessImageAsync(originalImageBytes, cancellationToken);
+            if (processedImageResult.IsFailed)
             {
-                imageBytes = await CompressImageAsync(imageBytes, cancellationToken);
-                
-                // If still too large after compression, reject it
-                if (imageBytes.Length > 153600)
-                {
-                    return Result.Fail(new Error($"Image exceeds maximum size of 150 KB even after compression ({imageBytes.Length / 1024} KB): {newsArticle.Title}"));
-                }
+                return Result.Fail(new Error("Failed to process image").CausedBy(processedImageResult.Errors));
             }
 
-            var imageValidation = await _generativeAIClient.ValidateImageAsync(imageBytes, newsArticle.Title, cancellationToken);
+            using var processedImage = processedImageResult.Value;
+            var processedJpegResult = await EncodeJpegAsync(processedImage, cancellationToken);
+            if (processedJpegResult.IsFailed)
+            {
+                return Result.Fail(new Error("Failed to compress image").CausedBy(processedJpegResult.Errors));
+            }
+
+            var processedImageBytes = processedJpegResult.Value;
+            if (processedImageBytes.Length > MaxOriginalJpegBytes)
+            {
+                return Result.Fail(new Error($"Image exceeds max original size limit ({processedImageBytes.Length / 1024} KB > {MaxOriginalJpegBytes / 1024} KB)"));
+            }
+
+            var imageValidation = await _generativeAIClient.ValidateImageAsync(processedImageBytes, newsArticle.Title, cancellationToken);
             if (imageValidation.IsFailed)
             {
                 return Result.Fail(new Error("Failed to validate image").CausedBy(imageValidation.Errors));
@@ -121,13 +154,59 @@ public class CreatePropositionService
                 return Result.Fail(new Error($"Image is invalid or not coherent with article: {newsArticle.Title}"));
             }
 
-            // If valid, upload the image
-            var uploadResult = await _fileService.UploadFileAsync(Proposition.ImageBucketName, imageBytes, newsArticle.ImageUrl, cancellationToken: cancellationToken);
-            if (uploadResult.IsFailed)
+            var imageBaseId = Guid.NewGuid().ToString("N");
+            var optimizedVariantsResult = await GenerateOptimizedVariantsAsync(processedImage, cancellationToken);
+            if (optimizedVariantsResult.IsFailed)
             {
-                return Result.Fail(new Error("Failed to upload image").CausedBy(uploadResult.Errors));
+                return Result.Fail(new Error("Failed to generate optimized image variants").CausedBy(optimizedVariantsResult.Errors));
             }
-            builder.SetImageFileId(uploadResult.Value);
+
+            if (optimizedVariantsResult.Value.Count != OptimizedImageVariants.Length)
+            {
+                return Result.Fail(new Error($"Expected {OptimizedImageVariants.Length} optimized variants but generated {optimizedVariantsResult.Value.Count}"));
+            }
+
+            var oversizedVariant = optimizedVariantsResult.Value
+                .FirstOrDefault(item =>
+                    MaxVariantBytesBySuffix.TryGetValue(item.Variant.Suffix, out var maxBytes)
+                    && item.Bytes.Length > maxBytes);
+
+            if (oversizedVariant.Variant is not null)
+            {
+                var maxBytes = MaxVariantBytesBySuffix[oversizedVariant.Variant.Suffix];
+                return Result.Fail(new Error($"Variant {oversizedVariant.Variant.Suffix} is too large ({oversizedVariant.Bytes.Length / 1024} KB > {maxBytes / 1024} KB)"));
+            }
+
+            var originalObjectName = $"{imageBaseId}.jpg";
+            var uploadOriginalResult = await _fileService.UploadFileWithObjectNameAsync(
+                Proposition.ImageBucketName,
+                processedImageBytes,
+                originalObjectName,
+                "image/jpeg",
+                cancellationToken);
+
+            if (uploadOriginalResult.IsFailed)
+            {
+                return Result.Fail(new Error("Failed to upload image").CausedBy(uploadOriginalResult.Errors));
+            }
+
+            builder.SetImageFileId(uploadOriginalResult.Value);
+
+            foreach (var (variant, variantBytes) in optimizedVariantsResult.Value)
+            {
+                var variantObjectName = $"{imageBaseId}_{variant.Suffix}.webp";
+                var uploadVariantResult = await _fileService.UploadFileWithObjectNameAsync(
+                    Proposition.ImageBucketName,
+                    variantBytes,
+                    variantObjectName,
+                    "image/webp",
+                    cancellationToken);
+
+                if (uploadVariantResult.IsFailed)
+                {
+                    return Result.Fail(new Error($"Failed to upload optimized image variant {variantObjectName}").CausedBy(uploadVariantResult.Errors));
+                }
+            }
         }
         else
         {
@@ -149,54 +228,84 @@ public class CreatePropositionService
             .Bind(_ => builder.Build(dto, newsArticle));
     }
 
-    private async Task<byte[]> CompressImageAsync(byte[] imageBytes, CancellationToken cancellationToken = default)
+    private async Task<Result<Image>> ProcessImageAsync(byte[] imageBytes, CancellationToken cancellationToken = default)
     {
-        using var inputStream = new MemoryStream(imageBytes);
-        using var image = await Image.LoadAsync(inputStream, cancellationToken);
-        using var outputStream = new MemoryStream();
-        
-        // Start with quality 75 and reduce dimensions if needed
-        var quality = 75;
-        var scaleFactor = 1.0;
-        
-        // Try different compression levels until we get under 150 KB
-        while (quality >= 50)
+        Image? image = null;
+
+        try
         {
-            outputStream.SetLength(0);
-            outputStream.Position = 0;
-            
-            // Resize if needed
-            if (scaleFactor < 1.0)
+            using var inputStream = new MemoryStream(imageBytes);
+            image = await Image.LoadAsync(inputStream, cancellationToken);
+
+            image.Mutate(x => x.AutoOrient());
+            image.Mutate(x => x.Resize(new ResizeOptions
             {
-                var newWidth = (int)(image.Width * scaleFactor);
-                var newHeight = (int)(image.Height * scaleFactor);
-                image.Mutate(x => x.Resize(newWidth, newHeight));
-            }
-            
-            await image.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = quality }, cancellationToken);
-            
-            if (outputStream.Length <= 153600)
-            {
-                return outputStream.ToArray();
-            }
-            
-            // Try lower quality
-            quality -= 10;
-            
-            // If quality is too low, try reducing dimensions
-            if (quality < 50 && scaleFactor == 1.0)
-            {
-                scaleFactor = 0.8;
-                quality = 75;
-            }
-            else if (quality < 50 && scaleFactor > 0.5)
-            {
-                scaleFactor -= 0.1;
-                quality = 75;
-            }
+                Mode = ResizeMode.Crop,
+                Position = AnchorPositionMode.Top,
+                Size = new Size(BaseVariant.Width, BaseVariant.Height)
+            }));
+
+            return Result.Ok(image);
         }
-        
-        // Return best effort
-        return outputStream.ToArray();
+        catch (Exception ex)
+        {
+            image?.Dispose();
+            _logger.LogWarning(ex, "Failed to process image");
+            return Result.Fail(new Error("Failed to process image").CausedBy(ex));
+        }
     }
+
+    private async Task<Result<byte[]>> EncodeJpegAsync(Image image, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var outputStream = new MemoryStream();
+            await image.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = CompressionQuality }, cancellationToken);
+            var compressedBytes = outputStream.ToArray();
+
+            if (compressedBytes.Length > MaxValidationImageBytes)
+            {
+                return Result.Fail(new Error($"Image exceeds maximum size of {MaxValidationImageBytes / 1024} KB after compression ({compressedBytes.Length / 1024} KB)"));
+            }
+
+            return Result.Ok(compressedBytes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to encode image");
+            return Result.Fail(new Error("Failed to compress image").CausedBy(ex));
+        }
+    }
+
+    private async Task<Result<IReadOnlyList<(ImageVariant Variant, byte[] Bytes)>>> GenerateOptimizedVariantsAsync(
+        Image baseImage,
+        CancellationToken cancellationToken = default)
+    {
+        var variants = new List<(ImageVariant, byte[])>();
+
+        try
+        {
+            foreach (var variant in OptimizedImageVariants)
+            {
+                using var resized = baseImage.Clone(ctx =>
+                    ctx.Resize(new ResizeOptions
+                    {
+                        Mode = ResizeMode.Max,
+                        Size = new Size(variant.Width, variant.Height)
+                    }));
+
+                using var outputStream = new MemoryStream();
+                await resized.SaveAsWebpAsync(outputStream, new WebpEncoder { Quality = CompressionQuality }, cancellationToken);
+                variants.Add((variant, outputStream.ToArray()));
+            }
+
+            return Result.Ok<IReadOnlyList<(ImageVariant, byte[])>>(variants);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to generate optimized image variants");
+            return Result.Fail(new Error("Failed to generate optimized image variants").CausedBy(ex));
+        }
+    }
+
 }

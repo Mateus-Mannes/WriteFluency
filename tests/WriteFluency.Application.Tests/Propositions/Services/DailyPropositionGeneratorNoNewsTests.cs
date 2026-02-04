@@ -35,7 +35,7 @@ public class DailyPropositionGeneratorNoNewsTests : ApplicationTestBase
     {
         await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
         var createdPropositionsCount = await _context.Propositions.CountAsync();
-        createdPropositionsCount.ShouldBe(273);
+        createdPropositionsCount.ShouldBe(81);
         var propositions = await _context.Propositions.OrderBy(x => x.PublishedOn).ToListAsync();
         VerifyDistributions(propositions);
     }

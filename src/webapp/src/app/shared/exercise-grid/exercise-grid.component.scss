@@ -155,8 +155,8 @@
 
 .meta-topic {
   padding: 0.25rem 0.75rem;
-  background-color: rgba(58, 125, 255, 0.1);
-  color: vars.$color-primary;
+  background-color: #dfe9ff;
+  color: #1f4fa8;
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.75rem;
@@ -169,18 +169,18 @@
   font-size: 0.75rem;
 
   &.level-beginner {
-    background-color: rgba(0, 194, 168, 0.15);
-    color: vars.$color-accent-success;
+    background-color: #d7f3ed;
+    color: #0f675a;
   }
 
   &.level-intermediate {
-    background-color: rgba(255, 214, 107, 0.3);
-    color: #d4a000;
+    background-color: #ffefc7;
+    color: #7a5600;
   }
 
   &.level-advanced {
-    background-color: rgba(255, 107, 107, 0.15);
-    color: vars.$color-accent-warning;
+    background-color: #ffd8d8;
+    color: #8c2121;
   }
 }
 

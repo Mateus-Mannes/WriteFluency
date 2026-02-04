@@ -33,9 +33,9 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {
     // Set SEO meta tags for homepage
     this.seoService.updateMetaTags({
-      title: 'WriteFluency - Practice English Writing with Real News',
-      description: 'Improve your English writing skills with WriteFluency. Listen to real news articles, type what you hear, and get instant feedback with highlighted corrections. Practice daily with beginner to advanced exercises.',
-      keywords: 'English writing practice, listening comprehension, dictation exercises, English learning, ESL, language learning, writing skills, news articles',
+      title: 'English Writing Practice Online | Daily Exercises | WriteFluency',
+      description: 'Practice English writing online with short daily exercises. Listen to real news audio, write what you hear, and improve your English writing with instant feedback.',
+      keywords: 'english writing practice, english writing exercises online, practice english writing daily, improve english writing, listening and writing exercises',
       type: 'website',
       url: '/'
     });

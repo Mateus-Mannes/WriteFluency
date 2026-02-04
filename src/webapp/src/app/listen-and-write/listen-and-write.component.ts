@@ -13,6 +13,7 @@ import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highl
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
+import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 
@@ -114,6 +115,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         const duration = data.audioDurationSeconds 
           ? `${Math.ceil(data.audioDurationSeconds / 60)} min`
           : '1-2 min';
+        const exerciseImageUrl = this.getExerciseImageUrl(data.imageFileId);
         
         this.seoService.updateMetaTags({
           title: `${data.title} - ${complexityDesc} Level Exercise | WriteFluency`,
@@ -121,7 +123,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           keywords: `${subjectDesc}, ${complexityDesc} level, English writing exercise, listening comprehension, dictation practice`,
           type: 'article',
           url: `/listen-and-write/${id}`,
-          image: data.imageFileId ? `${this.getMinioUrl()}/${data.imageFileId}` : undefined,
+          image: exerciseImageUrl,
           publishedTime: data.publishedOn || undefined
         });
 
@@ -132,7 +134,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           topic: subjectDesc,
           level: complexityDesc,
           duration: duration,
-          imageUrl: data.imageFileId ? `${this.getMinioUrl()}/${data.imageFileId}` : undefined,
+          imageUrl: exerciseImageUrl,
           description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise.`
         });
 
@@ -159,10 +161,12 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
   }
 
-  private getMinioUrl(): string {
-    // Import environment to get minioUrl
-    // This will be tree-shaken in production if not used elsewhere
-    return 'https://minioapi.writefluency.com'; // TODO: Import from environment if needed
+  private getExerciseImageUrl(imageFileId?: string | null): string | undefined {
+    if (!imageFileId) {
+      return undefined;
+    }
+
+    return `${environment.minioUrl}/images/${imageFileId}`;
   }
 
   restoreExerciseState() 

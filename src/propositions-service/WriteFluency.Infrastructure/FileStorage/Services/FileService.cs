@@ -8,6 +8,8 @@ namespace WriteFluency.Infrastructure.FileStorage;
 
 public class FileService : IFileService
 {
+    private const string ImmutableAssetCacheControl = "public, max-age=31536000, immutable";
+
     private readonly IMinioClient _minioClient;
     private readonly ILogger<FileService> _logger;
 
@@ -39,27 +41,64 @@ public class FileService : IFileService
         string? contentType = null,
         CancellationToken cancellationToken = default)
     {
+        var objectName = string.IsNullOrWhiteSpace(fileExtension)
+            ? Guid.NewGuid().ToString()
+            : $"{Guid.NewGuid()}.{fileExtension}";
+
+        return await UploadFileInternalAsync(bucketName, file, objectName, contentType);
+    }
+
+    public async Task<Result<string>> UploadFileWithObjectNameAsync(
+        string bucketName,
+        byte[] file,
+        string objectName,
+        string? contentType = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await UploadFileInternalAsync(bucketName, file, objectName, contentType);
+    }
+
+    private async Task<Result<string>> UploadFileInternalAsync(
+        string bucketName,
+        byte[] file,
+        string objectName,
+        string? contentType)
+    {
         try
         {
-            var bucketExists = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
-            if (!bucketExists)
+            await EnsureBucketExistsAsync(bucketName);
+
+            var headers = new Dictionary<string, string>
             {
-                await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
-            }
-            var objectName = Guid.NewGuid().ToString() + "." + fileExtension;
+                ["Cache-Control"] = ImmutableAssetCacheControl
+            };
+
             using var stream = new MemoryStream(file);
             await _minioClient.PutObjectAsync(new PutObjectArgs()
                 .WithBucket(bucketName)
-                .WithObject(objectName.ToString())
+                .WithObject(objectName)
                 .WithStreamData(stream)
                 .WithObjectSize(stream.Length)
-                .WithContentType(contentType ?? "application/octet-stream"));
+                .WithContentType(contentType ?? "application/octet-stream")
+                .WithHeaders(headers));
+
             return Result.Ok(objectName);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error uploading file to MinIO: {Message}", ex.Message);
             return Result.Fail<string>($"Error uploading file to MinIO: {ex.Message}");
+        }
+    }
+
+    private async Task EnsureBucketExistsAsync(string bucketName)
+    {
+        var bucketExists = await _minioClient.BucketExistsAsync(
+            new BucketExistsArgs().WithBucket(bucketName));
+
+        if (!bucketExists)
+        {
+            await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
         }
     }
 

@@ -9,7 +9,7 @@ configMapGenerator:
 - name: wf-news-worker-env
   literals:
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES=true
-    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=false
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
     - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
     - HTTPS_PORTS=8443
@@ -17,4 +17,3 @@ configMapGenerator:
     - ConnectionStrings__wf-minio=Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=admin123
     - RESOURCE_NAME=wf-news-worker
     - ASPNETCORE_URLS=http://+:8080;
-

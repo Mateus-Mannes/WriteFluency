@@ -26,16 +26,16 @@ export class SeoService {
   private document = inject(DOCUMENT);
 
   private defaultConfig: SEOConfig = {
-    title: 'WriteFluency - Practice English Writing with Real News',
-    description: 'Improve your English writing skills with WriteFluency. Listen to real news articles, type what you hear, and get instant feedback with highlighted corrections. Practice daily with beginner to advanced exercises.',
+    title: 'English Writing Practice Online | WriteFluency',
+    description: 'Practice English writing online with short daily exercises. Listen to real news audio, write what you hear, and improve your writing with instant feedback.',
     image: `${environment.production ? 'https://writefluency.com' : 'http://localhost:4200'}/assets/hero.gif`,
-    keywords: 'English writing practice, listening comprehension, dictation exercises, English learning, ESL, language learning, writing skills, news articles',
+    keywords: 'english writing practice, english writing exercises online, practice english writing daily, improve english writing, listening and writing exercises',
     type: 'website'
   };
 
   updateMetaTags(config: Partial<SEOConfig>): void {
     const seoConfig: SEOConfig = { ...this.defaultConfig, ...config };
-    const url = seoConfig.url || this.getAbsoluteUrl(this.router.url);
+    const url = this.normalizeUrl(seoConfig.url || this.router.url);
 
     // Update title
     this.titleService.setTitle(seoConfig.title);
@@ -115,10 +115,22 @@ export class SeoService {
   }
 
   private getAbsoluteUrl(path: string): string {
-    const baseUrl = environment.production 
-      ? 'https://writefluency.com' 
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${this.getSiteBaseUrl()}${normalizedPath}`;
+  }
+
+  private normalizeUrl(urlOrPath: string): string {
+    try {
+      return new URL(urlOrPath).toString();
+    } catch {
+      return this.getAbsoluteUrl(urlOrPath);
+    }
+  }
+
+  private getSiteBaseUrl(): string {
+    return environment.production
+      ? 'https://writefluency.com'
       : 'http://localhost:4200';
-    return `${baseUrl}${path}`;
   }
 
   // Helper method to generate exercise structured data
@@ -171,21 +183,13 @@ export class SeoService {
     };
   }
 
-  // WebSite structured data with search action
+  // WebSite structured data
   generateWebsiteStructuredData(): any {
     return {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'WriteFluency',
-      url: this.getAbsoluteUrl('/'),
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: this.getAbsoluteUrl('/exercises?search={search_term_string}')
-        },
-        'query-input': 'required name=search_term_string'
-      }
+      url: this.getAbsoluteUrl('/')
     };
   }
 

@@ -17,6 +17,13 @@ public interface IFileService
         string url,
         CancellationToken cancellationToken = default);
 
+    Task<Result<string>> UploadFileWithObjectNameAsync(
+        string bucketName,
+        byte[] file,
+        string objectName,
+        string? contentType = null,
+        CancellationToken cancellationToken = default);
+
     Task<byte[]> GetFileAsync(
         string bucketName,
         string objectName,

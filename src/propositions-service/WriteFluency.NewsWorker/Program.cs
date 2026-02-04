@@ -30,6 +30,7 @@ builder.EnrichNpgsqlDbContext<AppDbContext>(
 builder.Services.AddOptions<NewsOptions>().Bind(builder.Configuration.GetSection(NewsOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<CloudflareOptions>().Bind(builder.Configuration.GetSection(CloudflareOptions.Section));
 
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
@@ -52,6 +53,34 @@ builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
     client.DefaultRequestHeaders.Accept.Clear();
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", openAIOptions.Key);
+});
+
+builder.Services.AddHttpClient<ICloudflareCachePurgeClient, CloudflareCachePurgeClient>(client =>
+{
+    var options = builder.Configuration.GetSection(CloudflareOptions.Section).Get<CloudflareOptions>() ?? new CloudflareOptions();
+    var baseAddress = options.BaseAddress?.Trim();
+
+    if (!string.IsNullOrWhiteSpace(baseAddress) && !baseAddress.EndsWith('/'))
+    {
+        baseAddress += "/";
+    }
+
+    if (Uri.TryCreate(baseAddress, UriKind.Absolute, out var baseUri))
+    {
+        client.BaseAddress = baseUri;
+    }
+    else
+    {
+        client.BaseAddress = new Uri("https://api.cloudflare.com/client/v4/");
+    }
+
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
+builder.Services.AddHttpClient("cache-warmup", client =>
+{
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("WriteFluency-NewsWorker/1.0");
 });
 
 // Using new microsoft AI abstraction

@@ -18,6 +18,7 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
   postgres_password="${POSTGRES_PASSWORD}"
   minio_password="${MINIO_ROOT_PASSWORD}"
   cloud_flare_token="${CLOUDFLARE_API_TOKEN}"
+  cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-$CLOUDFLARE_API_TOKEN}"
   propositions_daily_requests_limit="${Propositions__DailyRequestsLimit}"
   propositions_limit_per_topic="${Propositions__LimitPerTopic}"
   propositions_news_request_limit="${Propositions__NewsRequestLimit}"
@@ -35,6 +36,8 @@ else
   openai_key=$(jq -r '.["ExternalApis:OpenAI:Key"]' "$USER_SECRETS")
   tts_key=$(jq -r '.["ExternalApis:TextToSpeech:Key"]' "$USER_SECRETS")
   news_key=$(jq -r '.["ExternalApis:News:Key"]' "$USER_SECRETS")
+  cloud_flare_token=$(jq -r '.["CLOUDFLARE_API_TOKEN"] // ""' "$USER_SECRETS")
+  cloud_flare_cache_token=$(jq -r '.["ExternalApis:Cloudflare:ApiToken"] // .["CLOUDFLARE_API_TOKEN_CACHE"] // .["CLOUDFLARE_API_TOKEN"] // ""' "$USER_SECRETS")
   app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
   postgres_password="postgres"
   minio_password="admin123"
@@ -68,6 +71,7 @@ stringData:
   ExternalApis__OpenAI__Key: "$openai_key"
   ExternalApis__TextToSpeech__Key: "$tts_key"
   ExternalApis__News__Key: "$news_key"
+  ExternalApis__Cloudflare__ApiToken: "$cloud_flare_cache_token"
   MINIO_ROOT_USER: minioadmin
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
@@ -90,4 +94,3 @@ type: Opaque
 stringData:
   api-token: "$cloud_flare_token"
 EOF
-

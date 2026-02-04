@@ -80,6 +80,12 @@ app.get('/sitemap.xml', async (req, res) => {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+  </url>
+  <url>
+    <loc>${baseUrl}/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
   </url>`;
 
     // Fetch all exercises from API using our server-side client

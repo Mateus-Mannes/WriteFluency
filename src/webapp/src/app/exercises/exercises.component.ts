@@ -24,9 +24,9 @@ export class ExercisesComponent implements OnInit {
   ngOnInit(): void {
     // Set SEO meta tags for exercises page
     this.seoService.updateMetaTags({
-      title: 'Browse All English Writing Exercises | WriteFluency',
-      description: 'Browse our complete collection of English writing exercises. Filter by topic, difficulty level, and more. Practice listening and writing with real news articles from beginner to advanced levels.',
-      keywords: 'English exercises, writing practice, listening exercises, ESL practice, language learning exercises, dictation practice',
+      title: 'English Writing Exercises Online | WriteFluency',
+      description: 'Browse English writing exercises by level and topic. Practice listening and writing with real news content and improve your English writing skills daily.',
+      keywords: 'english writing exercises, english writing practice online, daily writing practice, listening and writing exercises, dictation practice',
       type: 'website',
       url: '/exercises'
     });

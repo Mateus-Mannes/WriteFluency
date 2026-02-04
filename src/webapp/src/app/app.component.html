@@ -1,6 +1,11 @@
-@if (!isScreenSupported()) {
-  <app-unsupported-screen></app-unsupported-screen>
-} @else {
+@if (isScreenSupported()) {
   <app-navbar></app-navbar>
-  <router-outlet></router-outlet>
 }
+
+<main id="main-content" class="app-main">
+  @if (!isScreenSupported()) {
+    <app-unsupported-screen></app-unsupported-screen>
+  } @else {
+    <router-outlet></router-outlet>
+  }
+</main>

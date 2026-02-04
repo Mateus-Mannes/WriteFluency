@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SubjectEnum } from '../../../api/listen-and-write/model/subjectEnum';
 import { ComplexityEnum } from '../../../api/listen-and-write/model/complexityEnum';
 import { PropositionsService } from '../../../api/listen-and-write/api/propositions.service';
-import { environment } from '../../../enviroments/enviroment';
+import { minioVariantImageLoader } from '../image-loaders/minio-variant-image.loader';
 
 export interface Exercise {
   id: number;
@@ -21,7 +21,8 @@ export interface Exercise {
   level: ComplexityEnum;
   duration: string;
   date: Date;
-  imageUrl?: string;
+  imageBaseId?: string;
+  imageLoadFailed?: boolean;
 }
 
 @Component({
@@ -29,6 +30,7 @@ export interface Exercise {
   standalone: true,
   imports: [
     CommonModule,
+    NgOptimizedImage,
     RouterLink,
     MatButtonModule,
     MatIconModule,
@@ -42,6 +44,12 @@ export interface Exercise {
   templateUrl: './exercise-grid.component.html',
   styleUrls: ['./exercise-grid.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [
+    {
+      provide: IMAGE_LOADER,
+      useValue: minioVariantImageLoader,
+    }
+  ],
 })
 export class ExerciseGridComponent implements OnInit {
   private propositionsService = inject(PropositionsService);
@@ -73,6 +81,7 @@ export class ExerciseGridComponent implements OnInit {
   // Available filter options
   topics = ['all', ...Object.values(SubjectEnum)];
   levels = ['all', ...Object.values(ComplexityEnum)];
+  readonly imageLoaderParams = { defaultWidth: 640 };
   sortOptions = [
     { value: 'newest', label: 'Newest to Oldest' },
     { value: 'oldest', label: 'Oldest to Newest' }
@@ -142,9 +151,10 @@ export class ExerciseGridComponent implements OnInit {
           level: item.level!,
           duration: this.formatDuration(item.audioDurationSeconds || 60),
           date: new Date(item.publishedOn!),
-          imageUrl: item.imageFileId
-            ? `${environment.minioUrl}/images/${item.imageFileId}`
-            : undefined
+          imageBaseId: item.imageFileId
+            ? this.getImageBaseId(item.imageFileId)
+            : undefined,
+          imageLoadFailed: false
         }));
         
         this.exercises.set(exercises);
@@ -269,5 +279,20 @@ export class ExerciseGridComponent implements OnInit {
   formatLevelName(level: string): string {
     if (level === 'all') return 'All Levels';
     return level;
+  }
+
+  onOptimizedImageError(exerciseId: number): void {
+    this.exercises.update(items =>
+      items.map(item =>
+        item.id === exerciseId
+          ? { ...item, imageLoadFailed: true }
+          : item
+      )
+    );
+  }
+
+  private getImageBaseId(imageFileId: string): string {
+    const lastDot = imageFileId.lastIndexOf('.');
+    return lastDot > 0 ? imageFileId.slice(0, lastDot) : imageFileId;
   }
 }

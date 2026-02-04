@@ -1,10 +1,20 @@
 <div class="news-image-container">
-    @if (imageUrl()) {
-        <img class="news-image" 
-            [ngSrc]="imageUrl()" 
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 90vw">
+    @if (imageBaseId(); as imageBaseId) {
+        @if (!imageLoadFailed()) {
+            <img class="news-image" 
+                [ngSrc]="imageBaseId"
+                ngSrcset="512w, 1024w"
+                [loaderParams]="imageLoaderParams"
+                fill
+                priority
+                sizes="(max-width: 600px) 92vw, 500px"
+                alt="News image"
+                (error)="onOptimizedImageError()">
+        } @else {
+            <div class="news-image-placeholder"></div>
+        }
+    } @else {
+        <div class="news-image-placeholder"></div>
     }
 </div>
 

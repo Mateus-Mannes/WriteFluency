@@ -17,6 +17,7 @@ env:
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_API_TOKEN_CACHE: ${{ secrets.CLOUDFLARE_API_TOKEN_CACHE }}
   Propositions__DailyRequestsLimit: ${{ vars.Propositions__DailyRequestsLimit }}
   Propositions__LimitPerTopic: ${{ vars.Propositions__LimitPerTopic }}
   Propositions__NewsRequestLimit: ${{ vars.Propositions__NewsRequestLimit }}
