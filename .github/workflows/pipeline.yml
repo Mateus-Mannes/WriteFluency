@@ -104,3 +104,35 @@ jobs:
     - name: Deploy to Cluster
       working-directory: ./src/host/WriteFluency.AppHost
       run: ./deploy-k8s.sh $KUBE_CONTEXT
+
+    - name: Purge Cloudflare cache
+      if: success()
+      env:
+        CLOUDFLARE_ZONE_NAME: writefluency.com
+        CLOUDFLARE_ZONE_ID: 7441ef61fbb296b61b4cb4e418f4ebc6
+      run: |
+        set -euo pipefail
+        CF_TOKEN="${CLOUDFLARE_API_TOKEN_CACHE:-$CLOUDFLARE_API_TOKEN}"
+        if [ -z "${CF_TOKEN}" ]; then
+          echo "CLOUDFLARE_API_TOKEN_CACHE or CLOUDFLARE_API_TOKEN is required."
+          exit 1
+        fi
+
+        ZONE_ID="${CLOUDFLARE_ZONE_ID:-}"
+        if [ -z "${ZONE_ID}" ] || [ "${ZONE_ID}" = "null" ]; then
+          echo "Cloudflare zone id not found. Set CLOUDFLARE_ZONE_ID."
+          exit 1
+        fi
+
+        echo "Purging Cloudflare cache for zone ${ZONE_ID}..."
+        response="$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
+          -H "Authorization: Bearer ${CF_TOKEN}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}')"
+
+        echo "${response}" | jq
+        success="$(echo "${response}" | jq -r '.success')"
+        if [ "${success}" != "true" ]; then
+          echo "Cloudflare purge failed."
+          exit 1
+        fi
