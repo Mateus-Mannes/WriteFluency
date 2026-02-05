@@ -32,6 +32,10 @@ export class ExerciseSectionComponent implements OnInit {
     { label: '5s', value: 5 }
   ];
   selectedAutoPause = signal(2);
+  shortcutSeekSeconds = computed(() => {
+    const selected = this.selectedAutoPause();
+    return selected > 0 ? selected : 3;
+  });
 
   maxWords = computed(() => {
     return this.proposition()?.text?.trim().split(/\s+/).filter(Boolean).length || 0;
@@ -60,8 +64,9 @@ export class ExerciseSectionComponent implements OnInit {
     if (this.initialText()) {
       this.text.set(this.initialText()?.toString() || '');
     }
-    if (this.initialAutoPause()) {
-      this.selectedAutoPause.set(Number(this.initialAutoPause()));
+    const initialAutoPause = this.initialAutoPause();
+    if (initialAutoPause !== null && initialAutoPause !== undefined) {
+      this.selectedAutoPause.set(Number(initialAutoPause));
     }
   }
 

@@ -14,13 +14,15 @@ export class ExerciseTourService {
   ) { }
 
   finishTour() {
-    if (this.shepherd) {
+    if (this.shepherd.isActive) {
       this.shepherd.complete();
     }
   }
 
   cancelTour() {
-    this.shepherd.cancel();
+    if (this.shepherd.isActive) {
+      this.shepherd.cancel();
+    }
   }
 
   /**
@@ -40,6 +42,8 @@ export class ExerciseTourService {
         modalOverlayOpeningRadius: 10,
       };
       this.shepherd.modal = true;
+      // Prevent Shepherd from using arrow keys so it doesn't clash with audio shortcuts.
+      this.shepherd.keyboardNavigation = false;
 
       this.shepherd.addSteps([
         {

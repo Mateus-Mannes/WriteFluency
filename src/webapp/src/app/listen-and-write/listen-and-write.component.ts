@@ -187,7 +187,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       const parsed = JSON.parse(state);
 
       this.initialText.set(parsed.userText || null);
-      this.initialAutoPause.set(parsed.autoPause || 5);
+      this.initialAutoPause.set(parsed.autoPause ?? 2);
 
       if (this.newsAudioComponent && parsed.pausedTime) {
         this.newsAudioComponent.forwardAudio(parsed.pausedTime);
@@ -214,16 +214,21 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.exerciseTourService.finishTour();
       }
     }
-    // Rewind 3s: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
+    // Rewind: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
     if (modifierKey && event.code === 'ArrowLeft') {
       event.preventDefault();
-      this.newsAudioComponent.rewindAudio(3);
+      this.newsAudioComponent.rewindAudio(this.getShortcutSeekSeconds());
     }
-    // Forward 3s: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
+    // Forward: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
     if (modifierKey && event.code === 'ArrowRight') {
       event.preventDefault();
-      this.newsAudioComponent.forwardAudio(3);
+      this.newsAudioComponent.forwardAudio(this.getShortcutSeekSeconds());
     }
+  }
+
+  private getShortcutSeekSeconds(): number {
+    const selectedAutoPause = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
+    return selectedAutoPause > 0 ? selectedAutoPause : 3;
   }
 
   playAudioWithAutoPause() {
@@ -288,6 +293,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.clearAutoPauseTimer();
     // Remove focus from textarea when audio starts
     this.exerciseSectionComponent?.blurTextArea();
+    // Native audio controls can keep focus and swallow shortcuts after a mouse click.
+    this.browserService.blurActiveElement();
     // Get auto-pause duration from exercise section
     const duration = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
     if (duration > 0) {

@@ -21,6 +21,7 @@ export class SubmitTourService {
       modalOverlayOpeningRadius: 10,
     };
     this.shepherd.modal = true;
+    this.shepherd.keyboardNavigation = false;
 
     this.shepherd.addSteps([
       {

@@ -7,7 +7,9 @@ export class ListenFirstTourService {
   constructor(private shepherd: ShepherdService) { }
 
   cancelTour() {
-    this.shepherd.cancel();
+    if (this.shepherd.isActive) {
+      this.shepherd.cancel();
+    }
   }
 
   prompt(anchorSelector: string, onListen: () => void, onSkip: () => void) {
@@ -22,6 +24,7 @@ export class ListenFirstTourService {
     };
 
     this.shepherd.modal = true;
+    this.shepherd.keyboardNavigation = false;
 
     this.shepherd.addSteps([
       {

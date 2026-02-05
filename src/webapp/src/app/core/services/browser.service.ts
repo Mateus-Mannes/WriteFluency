@@ -72,4 +72,13 @@ export class BrowserService {
     if (!this.isBrowser) return false;
     return document.hidden;
   }
+
+  blurActiveElement(): void {
+    if (!this.isBrowser) return;
+
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  }
 }
