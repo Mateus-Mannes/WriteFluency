@@ -122,7 +122,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise about ${subjectDesc}. Listen to real news audio and improve your dictation skills. Duration: ${duration}.`,
           keywords: `${subjectDesc}, ${complexityDesc} level, English writing exercise, listening comprehension, dictation practice`,
           type: 'article',
-          url: `/listen-and-write/${id}`,
+          url: `/english-writing-exercise/${id}`,
           image: exerciseImageUrl,
           publishedTime: data.publishedOn || undefined
         });
@@ -142,7 +142,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         const breadcrumbData = this.seoService.generateBreadcrumbStructuredData([
           { name: 'Home', url: '/' },
           { name: 'Exercises', url: '/exercises' },
-          { name: data.title || 'Exercise', url: `/listen-and-write/${id}` }
+          { name: data.title || 'Exercise', url: `/english-writing-exercise/${id}` }
         ]);
 
         // Combine structured data

@@ -59,7 +59,7 @@
   } @else {
     @for (exercise of exercises(); track exercise.id) {
       <mat-card class="exercise-card">
-        <a [routerLink]="['/listen-and-write', exercise.id]" class="exercise-card-link">
+        <a [routerLink]="['/english-writing-exercise', exercise.id]" class="exercise-card-link">
           <!-- Thumbnail -->
           <div class="exercise-thumbnail">
             @if (exercise.imageBaseId && !exercise.imageLoadFailed) {

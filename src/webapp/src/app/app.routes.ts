@@ -17,7 +17,7 @@ export const appRoutes: Routes = [
             import('./about/about.component').then((m) => m.AboutComponent),
     },
     {
-        path: 'listen-and-write/:id',
+        path: 'english-writing-exercise/:id',
         loadComponent: () =>
             import('./listen-and-write/listen-and-write.component').then((m) => m.ListenAndWriteComponent),
     },

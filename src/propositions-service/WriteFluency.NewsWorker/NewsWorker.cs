@@ -208,7 +208,7 @@ public class NewsWorker : BackgroundService
         {
             if (siteBaseAddress is not null)
             {
-                var propositionUrl = new Uri(siteBaseAddress, $"listen-and-write/{proposition.Id}");
+                var propositionUrl = new Uri(siteBaseAddress, $"english-writing-exercise/{proposition.Id}");
                 urlsToWarm.Add(propositionUrl.ToString());
             }
 

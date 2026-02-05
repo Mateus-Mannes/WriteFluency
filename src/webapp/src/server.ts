@@ -106,7 +106,7 @@ app.get('/sitemap.xml', async (req, res) => {
 
           sitemap += `
   <url>
-    <loc>${baseUrl}/listen-and-write/${exercise.id}</loc>
+    <loc>${baseUrl}/english-writing-exercise/${exercise.id}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <lastmod>${publishDate}</lastmod>

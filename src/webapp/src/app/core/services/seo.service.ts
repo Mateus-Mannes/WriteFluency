@@ -146,7 +146,7 @@ export class SeoService {
     return {
       '@context': 'https://schema.org',
       '@type': 'LearningResource',
-      '@id': this.getAbsoluteUrl(`/listen-and-write/${exercise.id}`),
+      '@id': this.getAbsoluteUrl(`/english-writing-exercise/${exercise.id}`),
       name: exercise.title,
       description: exercise.description || `Practice your English writing skills with this ${exercise.level.toLowerCase()} level exercise about ${exercise.topic}. Listen to the audio and type what you hear.`,
       educationalLevel: exercise.level,
