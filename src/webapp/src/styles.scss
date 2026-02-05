@@ -25,6 +25,7 @@ body {
   @include mat.toolbar-overrides((
     standard-height: vars.$nav-bar-height,
   ));
+  color-scheme: light;
 }
 
 .mat-mdc-tooltip.tooltip-original-text {
@@ -67,6 +68,17 @@ p, h1, h2, h3, h4, h5, h6, span, label {
   border: 0;
   max-width: 520px;
   font-family: inherit;
+  width: min(90vw, 520px);
+  margin: 0 1rem;
+  box-sizing: border-box;
+}
+
+.shepherd-element.wf-tour.shepherd-centered {
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .shepherd-element.wf-tour .shepherd-header {

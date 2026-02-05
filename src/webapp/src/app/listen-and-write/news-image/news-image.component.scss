@@ -45,3 +45,17 @@
     border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.06);
 }
+
+@media (max-width: 600px) {
+    .news-font {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+
+    .news-font p {
+        width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+}

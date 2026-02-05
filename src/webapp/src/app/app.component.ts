@@ -1,10 +1,7 @@
-import { Component, ChangeDetectionStrategy, signal, HostListener, PLATFORM_ID, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { NavbarComponent } from './shared/navbar/navbar.component';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { UnsupportedScreenComponent } from './shared/unsupported-screen/unsupported-screen.component';
-import { BrowserService } from './core/services/browser.service';
 import { MatIconRegistry } from '@angular/material/icon';
 import { Insights } from '../telemetry/insights.service';
 
@@ -17,41 +14,15 @@ import { Insights } from '../telemetry/insights.service';
       CommonModule,
       RouterOutlet,
       NavbarComponent,
-      UnsupportedScreenComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent {
-  // Minimum supported width (desktop only - requires keyboard shortcuts)
-  private readonly MIN_SUPPORTED_WIDTH = 1100;
-  
-  // Signal to track if screen is supported
-  isScreenSupported = signal(true);
-
-  private platformId = inject(PLATFORM_ID);
-  private browserService = inject(BrowserService);
   private matIconRegistry = inject(MatIconRegistry);
   private insights = inject(Insights);
 
   constructor() {
     this.matIconRegistry.setDefaultFontSetClass('material-symbols-outlined');
     void this.insights;
-
-    // Check initial screen size only in browser
-    if (isPlatformBrowser(this.platformId)) {
-      this.checkScreenSize();
-    }
-  }
-
-  @HostListener('window:resize')
-  onResize() {
-    this.checkScreenSize();
-  }
-
-  private checkScreenSize() {
-    if (isPlatformBrowser(this.platformId)) {
-      const isSupported = this.browserService.getWindowWidth() >= this.MIN_SUPPORTED_WIDTH;
-      this.isScreenSupported.set(isSupported);
-    }
   }
 }

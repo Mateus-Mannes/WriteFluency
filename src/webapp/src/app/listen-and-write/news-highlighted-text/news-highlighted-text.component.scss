@@ -73,3 +73,9 @@
         0 4px 12px rgba(58, 125, 255, 0.08),
         0 2px 4px rgba(58, 125, 255, 0.06);
 }
+
+@media (max-width: 600px) {
+    .text-area {
+        height: clamp(220px, 38dvh, 320px);
+    }
+}

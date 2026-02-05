@@ -6,11 +6,38 @@
     border: 2px solid #E5E7EB;
     border-radius: 32px;
     background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    background-color: #ffffff;
+    color-scheme: light;
     box-shadow: 
         0 2px 8px rgba(0, 0, 0, 0.04),
         0 1px 3px rgba(0, 0, 0, 0.03);
     transition: all 0.3s ease;
     padding: 0.25rem;
+}
+
+.audio::-webkit-media-controls-panel {
+    background-color: #ffffff !important;
+}
+
+.audio::-webkit-media-controls-enclosure {
+    background-color: #ffffff !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+    .audio {
+        background-color: #ffffff !important;
+        color-scheme: light !important;
+    }
+
+    .audio::-webkit-media-controls-panel,
+    .audio::-webkit-media-controls-enclosure {
+        background-color: #ffffff !important;
+    }
+
+    .audio::-webkit-media-controls-current-time-display,
+    .audio::-webkit-media-controls-time-remaining-display {
+        color: #1A1A1A;
+    }
 }
 
 .audio:hover {

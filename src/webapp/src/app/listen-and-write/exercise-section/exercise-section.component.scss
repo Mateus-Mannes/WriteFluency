@@ -1,5 +1,14 @@
 @use '../../../styles/variables' as vars;
 
+.exercise-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .exercise-footer-row {
   display: flex;
   justify-content: space-between;
@@ -210,4 +219,46 @@
   height: 20px;
   font-size: 20px;
   line-height: 20px;
+}
+
+.mobile-hint {
+  display: none;
+  margin: 0.5rem 0 0.2rem;
+}
+
+@media (max-width: 600px) {
+  .exercise-header-row {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .auto-pause-selector {
+    display: none;
+  }
+
+  #exercise-word-count {
+    width: 100%;
+  }
+
+  .exercise-footer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .exercise-instructions {
+    display: none;
+  }
+
+  .submit-btn {
+    width: 100%;
+  }
+
+  .exercise-text-area {
+    height: clamp(220px, 38dvh, 320px);
+  }
+
+  .mobile-hint {
+    display: block;
+  }
 }

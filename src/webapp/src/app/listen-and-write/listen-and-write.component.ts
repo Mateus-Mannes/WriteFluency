@@ -256,6 +256,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     if (this.newsAudioComponent.audioEnded) {
       this.setNewState('exercise');
+      this.browserService.scrollToTop();
       return;
     }
 
@@ -265,10 +266,12 @@ export class ListenAndWriteComponent implements OnDestroy {
         () => this.newsAudioComponent.playAudio(),
         () => {
           this.setNewState('exercise');
+          this.browserService.scrollToTop();
         }
       );
     } else {
       this.setNewState('exercise');
+      this.browserService.scrollToTop();
     }
   }
 
@@ -291,6 +294,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   applyAutoPause() {
     this.clearAutoPauseTimer();
+    if (this.isMobileLayout()) return;
     // Remove focus from textarea when audio starts
     this.exerciseSectionComponent?.blurTextArea();
     // Native audio controls can keep focus and swallow shortcuts after a mouse click.
@@ -321,6 +325,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.result.set(result);
         this.onSaveExerciseState();
         this.setNewState('results');
+        this.browserService.scrollToTop();
       },
       error: (error) => {
         alert('Error processing your exercise. Please try again.');
@@ -377,7 +382,11 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     if(this.isFirstTime() && state === 'exercise') {
-      this.exerciseTourService.startTour();
+      if (this.isMobileLayout()) {
+        this.exerciseTourService.startMobileTour();
+      } else {
+        this.exerciseTourService.startTour();
+      }
     }
   }
 
@@ -387,5 +396,10 @@ export class ListenAndWriteComponent implements OnDestroy {
       return true;
     }
     return false;
+  }
+
+  private isMobileLayout(): boolean {
+    const width = this.browserService.getWindowWidth();
+    return width > 0 && width <= 1100;
   }
 }

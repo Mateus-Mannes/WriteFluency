@@ -12,7 +12,11 @@
         ></app-news-info>
 
     <div class="news-audio">
-        <app-news-audio id="newsAudio" [proposition]="proposition()" (playClicked)="onAudioPlayClicked()" [listenSuggestion]="exerciseState() == 'intro'" (paused)="onAudioPaused()"></app-news-audio>
+        <app-news-audio id="newsAudio"
+            [proposition]="proposition()"
+            (playClicked)="onAudioPlayClicked()"
+            [listenSuggestion]="exerciseState() == 'intro'"
+            (paused)="onAudioPaused()"></app-news-audio>
     </div>
 
     @if(exerciseState() === 'intro') {
@@ -41,8 +45,8 @@
         <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
 
         <div class="exercise-results-actions">
-            <button class="final-action-btn text-body" type="button" id="exercise-submit" (click)="onTryAgain()">Try Again</button>
-            <button class="final-action-btn text-body" type="button" id="exercise-submit" (click)="onFindAnotherExercise()">Find Another Exercise</button>
+            <button class="final-action-btn text-body" type="button" id="exercise-try-again" (click)="onTryAgain()">Try Again</button>
+            <button class="final-action-btn text-body" type="button" id="exercise-find-another" (click)="onFindAnotherExercise()">Find Another Exercise</button>
         </div>
     }
 

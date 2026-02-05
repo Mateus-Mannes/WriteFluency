@@ -186,4 +186,117 @@ export class ExerciseTourService {
       this.shepherd.start();
     }, 50);
   }
+
+  /**
+   * Mobile-friendly guided tour with fewer steps and touch-first guidance.
+   */
+  startMobileTour() {
+    setTimeout(() => {
+      if (this.shepherd.isActive) {
+        this.shepherd.cancel();
+      }
+
+      this.shepherd.defaultStepOptions = {
+        scrollTo: true,
+        cancelIcon: { enabled: true },
+        classes: 'wf-tour',
+        modalOverlayOpeningPadding: 10,
+        modalOverlayOpeningRadius: 10,
+      };
+      this.shepherd.modal = true;
+      this.shepherd.keyboardNavigation = false;
+
+      this.shepherd.addSteps([
+        {
+          id: 'intro-tutorial-mobile',
+          title: 'Mobile Preview',
+          text: 'This mobile version is a preview. Features like auto‑pause and keyboard shortcuts are limited on mobile, so the experience is best on desktop with a keyboard.',
+          attachTo: undefined,
+          buttons: [
+            {
+              text: 'Start',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
+          id: 'audio-mobile',
+          title: 'Audio Controls',
+          text: 'Tap play and pause here while you type.',
+          attachTo: { element: '#newsAudio', on: 'bottom' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Next',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
+          id: 'auto-pause-mobile',
+          title: 'Desktop Recommended',
+          text: 'We recommend using a desktop for the full experience. Mobile is mainly for a quick look at the app.',
+          attachTo: { element: '#exercise-auto-pause', on: 'bottom' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Next',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
+          id: 'submit-mobile',
+          title: 'Submit',
+          text: 'When you are done, tap Submit to get feedback.',
+          attachTo: { element: '#exercise-submit', on: 'top' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Finish',
+              classes: 'wf-primary',
+              action: () => this.shepherd.complete(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+          ],
+        },
+      ]);
+
+      this.shepherd.tourObject?.on('complete', () => {
+        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
+      this.shepherd.tourObject?.on('cancel', () => {
+        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+      });
+
+      this.shepherd.start();
+    }, 50);
+  }
 }

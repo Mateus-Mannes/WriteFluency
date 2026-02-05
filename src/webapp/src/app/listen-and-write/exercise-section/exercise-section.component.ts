@@ -4,6 +4,7 @@ import { SubmitTourService } from '../services/submit-tour.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Proposition } from 'src/api/listen-and-write';
+import { BrowserService } from '../../core/services/browser.service';
 
 @Component({
   selector: 'app-exercise-section',
@@ -57,16 +58,24 @@ export class ExerciseSectionComponent implements OnInit {
     return 'word-count-highlight';
   }
 
-  constructor(private submitTour: SubmitTourService) { }
+  constructor(
+    private submitTour: SubmitTourService,
+    private browserService: BrowserService
+  ) { }
 
   ngOnInit(): void {
     // Initialize text and auto-pause from inputs
     if (this.initialText()) {
       this.text.set(this.initialText()?.toString() || '');
     }
-    const initialAutoPause = this.initialAutoPause();
-    if (initialAutoPause !== null && initialAutoPause !== undefined) {
-      this.selectedAutoPause.set(Number(initialAutoPause));
+    if (this.isMobileLayout()) {
+      this.autoPauseOptions = [{ label: 'Off', value: 0 }];
+      this.selectedAutoPause.set(0);
+    } else {
+      const initialAutoPause = this.initialAutoPause();
+      if (initialAutoPause !== null && initialAutoPause !== undefined) {
+        this.selectedAutoPause.set(Number(initialAutoPause));
+      }
     }
   }
 
@@ -97,5 +106,10 @@ export class ExerciseSectionComponent implements OnInit {
 
   saveState() {
     this.saveExerciseState.emit();
+  }
+
+  private isMobileLayout(): boolean {
+    const width = this.browserService.getWindowWidth();
+    return width > 0 && width <= 900;
   }
 }
