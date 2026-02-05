@@ -5,6 +5,8 @@ import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { UnsupportedScreenComponent } from './shared/unsupported-screen/unsupported-screen.component';
 import { BrowserService } from './core/services/browser.service';
+import { MatIconRegistry } from '@angular/material/icon';
+import { Insights } from '../telemetry/insights.service';
 
 @Component({
     selector: 'app-root',
@@ -28,8 +30,13 @@ export class AppComponent {
 
   private platformId = inject(PLATFORM_ID);
   private browserService = inject(BrowserService);
+  private matIconRegistry = inject(MatIconRegistry);
+  private insights = inject(Insights);
 
   constructor() {
+    this.matIconRegistry.setDefaultFontSetClass('material-symbols-outlined');
+    void this.insights;
+
     // Check initial screen size only in browser
     if (isPlatformBrowser(this.platformId)) {
       this.checkScreenSize();

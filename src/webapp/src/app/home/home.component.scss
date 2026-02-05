@@ -212,15 +212,34 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.mockup-poster {
+  width: 100%;
+  height: auto;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  display: block;
+  object-fit: contain;
 }
 
 .mockup-gif {
-    width: 100%;
-    height: auto;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-    display: block;
-    object-fit: contain;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  display: block;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 200ms ease;
+
+  &.is-ready {
+    opacity: 1;
+  }
 }
 
 // ========================

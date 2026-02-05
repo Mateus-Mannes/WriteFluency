@@ -27,6 +27,7 @@ import { SeoService } from '../core/services/seo.service';
 })
 export class HomeComponent implements OnInit {
   private seoService = inject(SeoService);
+  isHeroVideoReady = false;
   
   constructor(private browserService: BrowserService) {}
 
@@ -53,5 +54,9 @@ export class HomeComponent implements OnInit {
 
   scrollToTop(): void {
     this.browserService.scrollToTop();
+  }
+
+  onHeroVideoLoaded(): void {
+    this.isHeroVideoReady = true;
   }
 }

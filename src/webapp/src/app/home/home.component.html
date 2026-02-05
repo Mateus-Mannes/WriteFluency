@@ -72,17 +72,27 @@
             </div>
           </div>
           <div class="mockup-content">
+            <img
+              class="mockup-poster"
+              src="assets/hero-poster.webp"
+              width="1280"
+              height="720"
+              alt="WriteFluency exercise demo showing listen and write interface"
+              fetchpriority="high"
+              loading="eager"
+              decoding="async" />
             <video
               class="mockup-gif"
+              [class.is-ready]="isHeroVideoReady"
               width="1280"
               height="720"
               autoplay
               muted
               loop
               playsinline
-              preload="metadata"
-              poster="assets/hero-poster.webp"
-              aria-label="WriteFluency exercise demo showing listen and write interface">
+              preload="none"
+              aria-hidden="true"
+              (loadeddata)="onHeroVideoLoaded()">
               <source src="assets/hero.mp4" type="video/mp4" />
             </video>
           </div>
