@@ -26,7 +26,8 @@ public class CreatePropositionService
     ];
 
     private const int MaxValidationImageBytes = 153600;
-    private const int CompressionQuality = 60;
+    private const int JpegCompressionQuality = 60;
+    private const int WebpCompressionQuality = 50;
     private const int MaxOriginalJpegBytes = 122880; // 120 KB
 
     private static readonly ImageVariant BaseVariant = OptimizedImageVariants
@@ -260,7 +261,7 @@ public class CreatePropositionService
         try
         {
             using var outputStream = new MemoryStream();
-            await image.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = CompressionQuality }, cancellationToken);
+            await image.SaveAsJpegAsync(outputStream, new JpegEncoder { Quality = JpegCompressionQuality }, cancellationToken);
             var compressedBytes = outputStream.ToArray();
 
             if (compressedBytes.Length > MaxValidationImageBytes)
@@ -295,7 +296,7 @@ public class CreatePropositionService
                     }));
 
                 using var outputStream = new MemoryStream();
-                await resized.SaveAsWebpAsync(outputStream, new WebpEncoder { Quality = CompressionQuality }, cancellationToken);
+                await resized.SaveAsWebpAsync(outputStream, new WebpEncoder { Quality = WebpCompressionQuality }, cancellationToken);
                 variants.Add((variant, outputStream.ToArray()));
             }
 

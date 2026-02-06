@@ -23,7 +23,13 @@
   justify-content: center;
 }
 
-@media (min-height: 820px) {
+@supports (height: 100svh) {
+  .hero-section {
+    min-height: calc(100svh - (vars.$nav-bar-height * 1));
+  }
+}
+
+@media (min-width: 992px) and (min-height: 820px) {
     .hero-section {
         margin-top: calc(vars.$nav-bar-height * -1);
         min-height: calc(100vh) !important;
@@ -225,20 +231,58 @@
   object-fit: contain;
 }
 
-.mockup-gif {
+.mockup-animation {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: auto;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
-  display: block;
-  object-fit: contain;
-  opacity: 0;
-  transition: opacity 200ms ease;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none;
+  animation: heroFrames 12s steps(1, end) infinite;
+  background-image: var(--hero-frame-1);
+}
 
-  &.is-ready {
-    opacity: 1;
+@keyframes heroFrames {
+  0%,
+  33.33% {
+    background-image: var(--hero-frame-1);
+  }
+  33.34%,
+  50% {
+    background-image: var(--hero-frame-2);
+  }
+  50.01%,
+  70% {
+    background-image: var(--hero-frame-3);
+  }
+  70.01%,
+  100% {
+    background-image: var(--hero-frame-4);
+  }
+}
+
+.mockup-content {
+  --hero-frame-1: url('../../assets/hero-listening-1024.webp');
+  --hero-frame-2: url('../../assets/hero-writing-1024.webp');
+  --hero-frame-3: url('../../assets/hero-submitting-1024.webp');
+  --hero-frame-4: url('../../assets/hero-result-final-1024.webp');
+}
+
+@media (max-width: 900px) {
+  .mockup-content {
+    --hero-frame-1: url('../../assets/hero-listening-640.webp');
+    --hero-frame-2: url('../../assets/hero-writing-640.webp');
+    --hero-frame-3: url('../../assets/hero-submitting-640.webp');
+    --hero-frame-4: url('../../assets/hero-result-final-640.webp');
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mockup-animation {
+    animation: none;
+    background-image: var(--hero-frame-1);
   }
 }
 

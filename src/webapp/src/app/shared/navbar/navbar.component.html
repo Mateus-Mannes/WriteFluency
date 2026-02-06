@@ -13,16 +13,16 @@
 
     <!-- Navigation Links -->
     <nav class="nav-links">
-      <a href="/" class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()">
-        <mat-icon>home</mat-icon>
+      <a href="/" class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()" aria-label="Home">
+        <mat-icon aria-hidden="true">home</mat-icon>
         <span>Home</span>
       </a>
-      <a href="/exercises" class="nav-link" routerLink="/exercises" routerLinkActive="active" (click)="scrollToTop()">
-        <mat-icon>library_books</mat-icon>
+      <a href="/exercises" class="nav-link" routerLink="/exercises" routerLinkActive="active" (click)="scrollToTop()" aria-label="Exercises">
+        <mat-icon aria-hidden="true">library_books</mat-icon>
         <span>Exercises</span>
       </a>
-      <a href="/about" class="nav-link" routerLink="/about" routerLinkActive="active" (click)="scrollToTop()">
-        <mat-icon>info</mat-icon>
+      <a href="/about" class="nav-link" routerLink="/about" routerLinkActive="active" (click)="scrollToTop()" aria-label="About">
+        <mat-icon aria-hidden="true">info</mat-icon>
         <span>About</span>
       </a>
     </nav>

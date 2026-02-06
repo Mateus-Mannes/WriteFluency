@@ -8,9 +8,8 @@ generatorOptions:
 configMapGenerator:
 - name: wf-webapp-env
   literals:
-    - NODE_ENV=development
+    - NODE_ENV=production
     - services__wf-api__http__0=http://wf-api:8080
     - services__wf-api__apihttp__0=wf-api:5000
     - services__wf-api__apihttps__0=wf-api:5001
     - PORT=4200
-

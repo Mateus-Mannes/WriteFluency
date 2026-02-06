@@ -74,27 +74,16 @@
           <div class="mockup-content">
             <img
               class="mockup-poster"
-              src="assets/hero-poster.webp"
-              width="1280"
-              height="720"
+              src="assets/hero-listening-640.webp"
+              srcset="assets/hero-listening-640.webp 640w, assets/hero-listening-1024.webp 1024w"
+              sizes="(max-width: 900px) 92vw, 600px"
+              width="640"
+              height="360"
               alt="WriteFluency exercise demo showing listen and write interface"
               fetchpriority="high"
               loading="eager"
               decoding="async" />
-            <video
-              class="mockup-gif"
-              [class.is-ready]="isHeroVideoReady"
-              width="1280"
-              height="720"
-              autoplay
-              muted
-              loop
-              playsinline
-              preload="none"
-              aria-hidden="true"
-              (loadeddata)="onHeroVideoLoaded()">
-              <source src="assets/hero.mp4" type="video/mp4" />
-            </video>
+            <div class="mockup-animation" aria-hidden="true"></div>
           </div>
         </div>
       </div>

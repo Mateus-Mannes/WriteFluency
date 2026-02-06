@@ -16,17 +16,40 @@
     <link rel="apple-touch-icon" href="assets/app-icon.svg">
 
     <!-- LCP poster preload -->
-    <link rel="preload" as="image" href="assets/hero-poster.webp" type="image/webp" fetchpriority="high">
+    <link
+      rel="preload"
+      as="image"
+      href="assets/hero-listening-640.webp"
+      imagesrcset="assets/hero-listening-640.webp 640w, assets/hero-listening-1024.webp 1024w"
+      imagesizes="(max-width: 900px) 92vw, 600px"
+      type="image/webp"
+      fetchpriority="high">
     
-    <!-- Preconnect to external domains for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Preconnect + DNS-prefetch for external font hosts -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fonts (load stylesheets early without blocking render) -->
     <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,article,bolt,business_center,check_circle,circle,clear_all,computer,edit,error_outline,fast_forward,fast_rewind,flash_on,flight,grid_view,headphones,health_and_safety,home,info,library_books,looks_3,looks_one,looks_two,mail,newspaper,person,play_arrow,play_circle_outline,public,restaurant,science,search_off,sports_soccer,theater_comedy,timer,tips_and_updates,today,track_changes,trending_up,work&display=swap" />
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'">
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,article,bolt,business_center,check_circle,circle,clear_all,computer,edit,error_outline,fast_forward,fast_rewind,flash_on,flight,grid_view,headphones,health_and_safety,home,info,library_books,looks_3,looks_one,looks_two,mail,newspaper,person,play_arrow,play_circle_outline,public,restaurant,science,search_off,sports_soccer,theater_comedy,timer,tips_and_updates,today,track_changes,trending_up,work&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,article,bolt,business_center,check_circle,circle,clear_all,computer,edit,error_outline,fast_forward,fast_rewind,flash_on,flight,grid_view,headphones,health_and_safety,home,info,library_books,looks_3,looks_one,looks_two,mail,newspaper,person,play_arrow,play_circle_outline,public,restaurant,science,search_off,sports_soccer,theater_comedy,timer,tips_and_updates,today,track_changes,trending_up,work&display=swap">
+    </noscript>
 
 </head>
   <body>
