@@ -3,11 +3,11 @@
         @if (!imageLoadFailed()) {
             <img class="news-image" 
                 [ngSrc]="imageBaseId"
-                ngSrcset="512w, 1024w"
+                ngSrcset="320w, 512w, 640w, 1024w"
                 [loaderParams]="imageLoaderParams"
                 fill
                 priority
-                sizes="(max-width: 600px) 92vw, 500px"
+                sizes="(max-width: 600px) 92vw, (max-width: 900px) 520px, 500px"
                 alt="News image"
                 (error)="onOptimizedImageError()">
         } @else {

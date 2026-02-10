@@ -18,7 +18,7 @@ import { minioVariantImageLoader } from '../../shared/image-loaders/minio-varian
 export class NewsImageComponent {
 
   proposition = input<Proposition | null>();
-  readonly imageLoaderParams = { defaultWidth: 1024 };
+  readonly imageLoaderParams = { defaultWidth: 640 };
   imageLoadFailed = signal(false);
 
   imageBaseId = computed(() => this.getImageBaseId(this.proposition()?.imageFileId));
@@ -39,6 +39,7 @@ export class NewsImageComponent {
       return null;
     }
     const lastDot = imageFileId.lastIndexOf('.');
-    return lastDot > 0 ? imageFileId.slice(0, lastDot) : imageFileId;
+    const baseId = lastDot > 0 ? imageFileId.slice(0, lastDot) : imageFileId;
+    return baseId.replace(/_w\d+$/, '');
   }
 }
