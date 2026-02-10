@@ -155,7 +155,7 @@
       </div>
       
       <!-- Exercise Grid Component - deferred to reduce initial critical-path work -->
-      @defer (on idle) {
+      @defer {
         <app-exercise-grid [maxItems]="9" [hideFilters]="true" [hidePagination]="true" />
       } @placeholder {
         <div class="latest-exercises-placeholder text-body">Loading latest exercises...</div>
