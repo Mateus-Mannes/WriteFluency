@@ -57,7 +57,7 @@
       <p>{{ error() }}</p>
     </div>
   } @else {
-    @for (exercise of exercises(); track exercise.id) {
+    @for (exercise of exercises(); track exercise.id; let i = $index) {
       <mat-card class="exercise-card">
         <a [routerLink]="['/english-writing-exercise', exercise.id]" class="exercise-card-link">
           <!-- Thumbnail -->
@@ -70,9 +70,8 @@
                    fill
                    (error)="onOptimizedImageError(exercise.id)"
                    [alt]="'Thumbnail for ' + exercise.title + ' - ' + exercise.level + ' level ' + exercise.topic + ' exercise'" 
-                   loading="lazy" 
-                   decoding="async"
-                   fetchpriority="auto"/>
+                   [priority]="!maxItems && i === 0"
+                   decoding="async"/>
             } @else {
               <div class="exercise-placeholder">
                 <mat-icon>article</mat-icon>
