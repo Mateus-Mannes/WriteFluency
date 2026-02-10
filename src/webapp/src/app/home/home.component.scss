@@ -93,34 +93,42 @@
 // Value chips
 .value-chips {
   margin-top: 0.5rem;
+}
 
-  mat-chip-listbox {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    pointer-events: none;
+.value-chip-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .value-chip-list {
+    justify-content: center;
   }
+}
 
-  mat-chip-option {
-    pointer-events: none;
-    background-color: rgba(58, 125, 255, 0.1) !important;
-    color: vars.$color-primary !important;
-    border: 1px solid rgba(58, 125, 255, 0.2);
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 0.35rem;
+.value-chip {
+  background-color: rgba(58, 125, 255, 0.1);
+  color: vars.$color-primary;
+  border: 1px solid rgba(58, 125, 255, 0.2);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.125rem;
+  border-radius: 999px;
+
+  mat-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
     line-height: 1.125rem;
-
-    mat-icon {
-      font-size: 1.125rem;
-      width: 1.125rem;
-      height: 1.125rem;
-      line-height: 1.125rem;
-      vertical-align: middle;
-      margin-top: -0.125rem;
-    }
+    vertical-align: middle;
+    margin-top: -0.125rem;
   }
 }
 

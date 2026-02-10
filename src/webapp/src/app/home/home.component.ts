@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
 import { ExerciseGridComponent } from '../shared/exercise-grid/exercise-grid.component';
 import { BrowserService } from '../core/services/browser.service';
@@ -17,7 +16,6 @@ import { SeoService } from '../core/services/seo.service';
     RouterLink,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatCardModule,
     ExerciseGridComponent,
   ],
