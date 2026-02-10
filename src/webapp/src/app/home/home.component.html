@@ -72,17 +72,22 @@
             </div>
           </div>
           <div class="mockup-content">
-            <img
-              class="mockup-poster"
-              src="assets/hero-listening-640.webp"
-              srcset="assets/hero-listening-640.webp 640w, assets/hero-listening-1024.webp 1024w"
-              sizes="(max-width: 900px) 92vw, 600px"
-              width="640"
-              height="360"
-              alt="WriteFluency exercise demo showing listen and write interface"
-              fetchpriority="high"
-              loading="eager"
-              decoding="async" />
+            <picture>
+              <source media="(max-width: 900px)" srcset="assets/hero-listening-640.webp" />
+              <source
+                media="(min-width: 901px)"
+                srcset="assets/hero-listening-640.webp 640w, assets/hero-listening-1024.webp 1024w"
+                sizes="600px" />
+              <img
+                class="mockup-poster"
+                src="assets/hero-listening-640.webp"
+                width="640"
+                height="360"
+                alt="WriteFluency exercise demo showing listen and write interface"
+                fetchpriority="high"
+                loading="eager"
+                decoding="async" />
+            </picture>
             <div class="mockup-animation" aria-hidden="true"></div>
           </div>
         </div>
