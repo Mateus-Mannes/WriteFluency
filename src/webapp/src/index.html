@@ -31,17 +31,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Fonts (load stylesheets early without blocking render) -->
+    <!-- Fonts (load stylesheets immediately to avoid layout shifts) -->
     <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'">
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap">
     <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,article,bolt,business_center,check_circle,circle,clear_all,computer,edit,error_outline,fast_forward,fast_rewind,flash_on,flight,grid_view,headphones,health_and_safety,home,info,library_books,looks_3,looks_one,looks_two,mail,newspaper,person,play_arrow,play_circle_outline,public,restaurant,science,search_off,sports_soccer,theater_comedy,timer,tips_and_updates,today,track_changes,trending_up,work&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'">
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=account_balance,article,bolt,business_center,check_circle,circle,clear_all,computer,edit,error_outline,fast_forward,fast_rewind,flash_on,flight,grid_view,headphones,health_and_safety,home,info,library_books,looks_3,looks_one,looks_two,mail,newspaper,person,play_arrow,play_circle_outline,public,restaurant,science,search_off,sports_soccer,theater_comedy,timer,tips_and_updates,today,track_changes,trending_up,work&display=swap">
     <noscript>
       <link
         rel="stylesheet"

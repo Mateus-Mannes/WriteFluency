@@ -46,6 +46,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   exerciseState = signal<ExerciseState>('intro');
 
   stateAnimOn = signal(false);
+  stateAnimEnabled = signal(false);
 
   proposition = signal<Proposition | null>(null);
 
@@ -68,6 +69,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     private browserService: BrowserService,
     private seoService: SeoService
   ) {
+    let lastState: ExerciseState | null = null;
     // Get the exercise ID from route parameters
     this.route.params.pipe(
       takeUntilDestroyed()
@@ -85,12 +87,24 @@ export class ListenAndWriteComponent implements OnDestroy {
     // Animate state changes
     effect(() => {
       const state = this.exerciseState();
+      const animEnabled = this.stateAnimEnabled();
+      if (lastState === null) {
+        lastState = state;
+        return;
+      }
+      if (!animEnabled) {
+        lastState = state;
+        return;
+      }
+      if (state === lastState) return;
+      lastState = state;
       this.stateAnimOn.set(false);
       queueMicrotask(() => this.stateAnimOn.set(true));
     });
 
     afterNextRender(() => {
       this.restoreExerciseState();
+      queueMicrotask(() => this.stateAnimEnabled.set(true));
     });
   }
 
