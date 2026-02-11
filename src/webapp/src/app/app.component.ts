@@ -3,7 +3,6 @@ import { NavbarComponent } from './shared/navbar/navbar.component';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatIconRegistry } from '@angular/material/icon';
-import { Insights } from '../telemetry/insights.service';
 
 @Component({
     selector: 'app-root',
@@ -19,10 +18,7 @@ import { Insights } from '../telemetry/insights.service';
 })
 export class AppComponent {
   private matIconRegistry = inject(MatIconRegistry);
-  private insights = inject(Insights);
-
   constructor() {
     this.matIconRegistry.setDefaultFontSetClass('material-symbols-outlined');
-    void this.insights;
   }
 }
