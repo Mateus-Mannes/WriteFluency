@@ -3,7 +3,7 @@
         @if (!imageLoadFailed()) {
             <img class="news-image" 
                 [ngSrc]="imageBaseId"
-                ngSrcset="320w, 512w, 640w, 1024w"
+                [ngSrcset]="imageSrcset()"
                 [loaderParams]="imageLoaderParams"
                 fill
                 priority
