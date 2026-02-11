@@ -4,7 +4,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { BrowserService } from '../../core/services/browser.service';
 
 @Component({
   selector: 'app-navbar',
@@ -22,9 +21,4 @@ import { BrowserService } from '../../core/services/browser.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
-  constructor(private browserService: BrowserService) {}
-
-  scrollToTop(): void {
-    this.browserService.scrollToTop();
-  }
 }

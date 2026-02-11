@@ -5,7 +5,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { ExerciseGridComponent } from '../shared/exercise-grid/exercise-grid.component';
-import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 
 @Component({
@@ -26,8 +25,6 @@ import { SeoService } from '../core/services/seo.service';
 export class HomeComponent implements OnInit {
   private seoService = inject(SeoService);
   
-  constructor(private browserService: BrowserService) {}
-
   ngOnInit(): void {
     // Set SEO meta tags for homepage
     this.seoService.updateMetaTags({
@@ -48,10 +45,6 @@ export class HomeComponent implements OnInit {
     };
     this.seoService.addStructuredData(structuredData);
 
-  }
-
-  scrollToTop(): void {
-    this.browserService.scrollToTop();
   }
 
 }

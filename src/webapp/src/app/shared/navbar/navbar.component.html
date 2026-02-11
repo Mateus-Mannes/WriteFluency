@@ -1,7 +1,7 @@
 <mat-toolbar role="navigation" aria-label="Main navigation" class="app-toolbar">
   <div class="toolbar-content">
     <!-- Brand Logo -->
-    <a class="brand" href="/" aria-label="WriteFluency Home" (click)="scrollToTop()">
+    <a class="brand" routerLink="/" aria-label="WriteFluency Home">
       <img class="logo" src="../../../assets/app-icon.svg" alt="WriteFluency logo" width="36" height="36" />
       <span class="brand-text">
         <span class="text-primary-dark">Write</span><span class="text-primary">Fluency</span>
@@ -13,15 +13,15 @@
 
     <!-- Navigation Links -->
     <nav class="nav-links">
-      <a href="/" class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="scrollToTop()" aria-label="Home">
+      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" aria-label="Home">
         <mat-icon aria-hidden="true">home</mat-icon>
         <span>Home</span>
       </a>
-      <a href="/exercises" class="nav-link" routerLink="/exercises" routerLinkActive="active" (click)="scrollToTop()" aria-label="Exercises">
+      <a class="nav-link" routerLink="/exercises" routerLinkActive="active" aria-label="Exercises">
         <mat-icon aria-hidden="true">library_books</mat-icon>
         <span>Exercises</span>
       </a>
-      <a href="/about" class="nav-link" routerLink="/about" routerLinkActive="active" (click)="scrollToTop()" aria-label="About">
+      <a class="nav-link" routerLink="/about" routerLinkActive="active" aria-label="About">
         <mat-icon aria-hidden="true">info</mat-icon>
         <span>About</span>
       </a>
