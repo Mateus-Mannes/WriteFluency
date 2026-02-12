@@ -12,6 +12,10 @@ export class BrowserService {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
+  isBrowserEnvironment(): boolean {
+    return this.isBrowser;
+  }
+
   // LocalStorage methods
   getItem(key: string): string | null {
     if (!this.isBrowser) return null;

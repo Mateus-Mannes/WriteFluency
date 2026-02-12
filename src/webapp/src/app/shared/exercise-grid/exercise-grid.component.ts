@@ -21,8 +21,10 @@ export interface Exercise {
   level: ComplexityEnum;
   duration: string;
   date: Date;
+  imageFileId?: string | null;
   imageBaseId?: string;
   imageLoadFailed?: boolean;
+  newsUrl?: string;
 }
 
 @Component({
@@ -151,10 +153,12 @@ export class ExerciseGridComponent implements OnInit {
           level: item.level!,
           duration: this.formatDuration(item.audioDurationSeconds || 60),
           date: new Date(item.publishedOn!),
+          imageFileId: item.imageFileId,
           imageBaseId: item.imageFileId
             ? this.getImageBaseId(item.imageFileId)
             : undefined,
-          imageLoadFailed: false
+          imageLoadFailed: false,
+          newsUrl: item.newsUrl ?? ''
         }));
         
         this.exercises.set(exercises);
@@ -294,5 +298,17 @@ export class ExerciseGridComponent implements OnInit {
   private getImageBaseId(imageFileId: string): string {
     const lastDot = imageFileId.lastIndexOf('.');
     return lastDot > 0 ? imageFileId.slice(0, lastDot) : imageFileId;
+  }
+
+  getInitialPropositionState(exercise: Exercise) {
+    return {
+      id: exercise.id,
+      title: exercise.title,
+      subjectId: exercise.topic,
+      complexityId: exercise.level,
+      imageFileId: exercise.imageFileId,
+      newsUrl: exercise.newsUrl,
+      date: exercise.date
+    };
   }
 }

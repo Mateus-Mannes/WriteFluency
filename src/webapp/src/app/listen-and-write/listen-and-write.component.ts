@@ -1,6 +1,6 @@
 import { Component, signal, ViewChild, HostListener, effect, OnDestroy, afterNextRender } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
 import { NewsImageComponent } from './news-image/news-image.component';
 import { NewsAudioComponent } from './news-audio/news-audio.component';
@@ -64,6 +64,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     private listenFirstTourService: ListenFirstTourService,
     private exerciseTourService: ExerciseTourService,
     private route: ActivatedRoute,
+    private router: Router,
     private propositionsService: PropositionsService,
     private textComparisonsService: TextComparisonsService,
     private browserService: BrowserService,
@@ -80,6 +81,14 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
+        if(this.browserService.isBrowserEnvironment()) {
+          const initialProposition = this.getInitialPropositionFromState();
+          if (initialProposition && initialProposition.id === this.exerciseId) {
+            this.proposition.set(initialProposition);
+          } else {
+            this.proposition.set(null);
+          }
+        }
         this.loadProposition(this.exerciseId);
       }
     });
@@ -106,6 +115,18 @@ export class ListenAndWriteComponent implements OnDestroy {
       this.restoreExerciseState();
       queueMicrotask(() => this.stateAnimEnabled.set(true));
     });
+  }
+
+  private getInitialPropositionFromState(): Proposition | null {
+    const state = this.router.currentNavigation()?.extras?.state ?? history.state;
+    const initialProposition = state?.initialProposition;
+    if (!initialProposition || typeof initialProposition !== 'object') {
+      return null;
+    }
+    const proposition = initialProposition as Proposition;
+    proposition.publishedOn = initialProposition.date;
+    proposition.newsInfo = { url: initialProposition.newsUrl };
+    return proposition;
   }
 
   private getExerciseStateKey(): string | null {

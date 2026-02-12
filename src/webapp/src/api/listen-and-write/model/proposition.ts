@@ -9,6 +9,7 @@
  */
 import { SubjectEnum } from './subjectEnum';
 import { NewsInfo } from './newsInfo';
+import { PropositionGenerationLog } from './propositionGenerationLog';
 import { Subject } from './subject';
 import { Complexity } from './complexity';
 import { ComplexityEnum } from './complexityEnum';
@@ -27,6 +28,10 @@ export interface Proposition {
     title?: string | null;
     imageFileId?: string | null;
     createdAt?: string;
+    isDeleted?: boolean;
+    deletedAt?: string | null;
+    propositionGenerationLogId?: number | null;
+    propositionGenerationLog?: PropositionGenerationLog;
     newsInfo?: NewsInfo;
     complexity?: Complexity;
     subject?: Subject;

@@ -59,7 +59,10 @@
   } @else {
     @for (exercise of exercises(); track exercise.id; let i = $index) {
       <mat-card class="exercise-card">
-        <a [routerLink]="['/english-writing-exercise', exercise.id]" class="exercise-card-link">
+        <a
+          [routerLink]="['/english-writing-exercise', exercise.id]"
+          [state]="{ initialProposition: getInitialPropositionState(exercise) }"
+          class="exercise-card-link">
           <!-- Thumbnail -->
           <div class="exercise-thumbnail">
             @if (exercise.imageBaseId && !exercise.imageLoadFailed) {

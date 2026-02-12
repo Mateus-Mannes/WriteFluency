@@ -7,5 +7,6 @@ public record ExerciseListItemDto(
     ComplexityEnum Level,
     DateTime PublishedOn,
     string? ImageFileId,
-    int AudioDurationSeconds
+    int AudioDurationSeconds,
+    string NewsUrl
 );

@@ -133,45 +133,6 @@
         }
       }
     },
-    "/api/proposition/generate-proposition": {
-      "post": {
-        "tags": [
-          "Propositions"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetPropositionDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PropositionDto"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/proposition/exercises": {
       "get": {
         "tags": [
@@ -418,6 +379,10 @@
           "audioDurationSeconds": {
             "type": "integer",
             "format": "int32"
+          },
+          "newsUrl": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -456,26 +421,6 @@
           "hasNext": {
             "type": "boolean",
             "readOnly": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "GetPropositionDto": {
-        "type": "object",
-        "properties": {
-          "complexity": {
-            "$ref": "#/components/schemas/ComplexityEnum"
-          },
-          "subject": {
-            "$ref": "#/components/schemas/SubjectEnum"
-          },
-          "alreadyGeneratedIds": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -661,6 +606,22 @@
             "type": "string",
             "format": "date-time"
           },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "propositionGenerationLogId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "propositionGenerationLog": {
+            "$ref": "#/components/schemas/PropositionGenerationLog"
+          },
           "newsInfo": {
             "$ref": "#/components/schemas/NewsInfo"
           },
@@ -673,16 +634,46 @@
         },
         "additionalProperties": false
       },
-      "PropositionDto": {
+      "PropositionGenerationLog": {
         "type": "object",
         "properties": {
-          "audio": {
-            "type": "string",
-            "format": "byte",
-            "nullable": true
+          "id": {
+            "type": "integer",
+            "format": "int32"
           },
-          "propositionInfo": {
-            "$ref": "#/components/schemas/Proposition"
+          "generationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/SubjectEnum"
+          },
+          "complexityId": {
+            "$ref": "#/components/schemas/ComplexityEnum"
+          },
+          "successCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "complexity": {
+            "$ref": "#/components/schemas/Complexity"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/Subject"
+          },
+          "propositions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Proposition"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

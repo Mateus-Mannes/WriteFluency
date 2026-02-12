@@ -19,6 +19,7 @@ export interface ExerciseListItemDto {
     publishedOn?: string;
     imageFileId?: string | null;
     audioDurationSeconds?: number;
+    newsUrl?: string | null;
 }
 export namespace ExerciseListItemDto {
 }

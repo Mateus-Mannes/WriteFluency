@@ -189,7 +189,8 @@ public class PropositionService
                 p.ComplexityId,
                 p.PublishedOn,
                 p.ImageFileId,
-                p.AudioDurationSeconds
+                p.AudioDurationSeconds,
+                p.NewsInfo.Url
             ))
             .ToListAsync(cancellationToken);
         

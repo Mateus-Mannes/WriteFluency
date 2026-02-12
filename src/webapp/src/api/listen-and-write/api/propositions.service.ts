@@ -19,11 +19,7 @@ import { OpenApiHttpParams, QueryParamStyle } from '../query.params';
 // @ts-ignore
 import { ExerciseListItemDtoPagedResultDto } from '../model/exerciseListItemDtoPagedResultDto';
 // @ts-ignore
-import { GetPropositionDto } from '../model/getPropositionDto';
-// @ts-ignore
 import { Proposition } from '../model/proposition';
-// @ts-ignore
-import { PropositionDto } from '../model/propositionDto';
 // @ts-ignore
 import { TopicsDtoResult } from '../model/topicsDtoResult';
 
@@ -31,16 +27,13 @@ import { TopicsDtoResult } from '../model/topicsDtoResult';
 import { BASE_PATH, COLLECTION_FORMATS }                     from '../variables';
 import { Configuration }                                     from '../configuration';
 import { BaseService } from '../api.base.service';
-import {
-    PropositionsServiceInterface
-} from './propositions.serviceInterface';
 
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class PropositionsService extends BaseService implements PropositionsServiceInterface {
+export class PropositionsService extends BaseService {
 
     constructor(protected httpClient: HttpClient, @Optional() @Inject(BASE_PATH) basePath: string|string[], @Optional() configuration?: Configuration) {
         super(basePath, configuration);
@@ -146,77 +139,6 @@ export class PropositionsService extends BaseService implements PropositionsServ
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters.toHttpParams(),
-                responseType: <any>responseType_,
-                ...(withCredentials ? { withCredentials } : {}),
-                headers: localVarHeaders,
-                observe: observe,
-                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
-                reportProgress: reportProgress
-            }
-        );
-    }
-
-    /**
-     * @endpoint post /api/proposition/generate-proposition
-     * @param getPropositionDto 
-     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
-     * @param reportProgress flag to report request and response progress.
-     * @param options additional options
-     */
-    public apiPropositionGeneratePropositionPost(getPropositionDto: GetPropositionDto, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<PropositionDto>;
-    public apiPropositionGeneratePropositionPost(getPropositionDto: GetPropositionDto, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<PropositionDto>>;
-    public apiPropositionGeneratePropositionPost(getPropositionDto: GetPropositionDto, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<PropositionDto>>;
-    public apiPropositionGeneratePropositionPost(getPropositionDto: GetPropositionDto, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
-        if (getPropositionDto === null || getPropositionDto === undefined) {
-            throw new Error('Required parameter getPropositionDto was null or undefined when calling apiPropositionGeneratePropositionPost.');
-        }
-
-        let localVarHeaders = this.defaultHeaders;
-
-        // authentication (google) required
-        localVarHeaders = this.configuration.addCredentialToHeaders('google', 'Authorization', localVarHeaders, 'Bearer ');
-
-        // authentication (jwt_auth) required
-        localVarHeaders = this.configuration.addCredentialToHeaders('jwt_auth', 'Authorization', localVarHeaders, 'Bearer ');
-
-        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
-            'application/json'
-        ]);
-        if (localVarHttpHeaderAcceptSelected !== undefined) {
-            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
-        }
-
-        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
-
-        const localVarTransferCache: boolean = options?.transferCache ?? true;
-
-
-        // to determine the Content-Type header
-        const consumes: string[] = [
-            'application/json'
-        ];
-        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
-        if (httpContentTypeSelected !== undefined) {
-            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
-        }
-
-        let responseType_: 'text' | 'json' | 'blob' = 'json';
-        if (localVarHttpHeaderAcceptSelected) {
-            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
-                responseType_ = 'text';
-            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
-                responseType_ = 'json';
-            } else {
-                responseType_ = 'blob';
-            }
-        }
-
-        let localVarPath = `/api/proposition/generate-proposition`;
-        const { basePath, withCredentials } = this.configuration;
-        return this.httpClient.request<PropositionDto>('post', `${basePath}${localVarPath}`,
-            {
-                context: localVarHttpContext,
-                body: getPropositionDto,
                 responseType: <any>responseType_,
                 ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
