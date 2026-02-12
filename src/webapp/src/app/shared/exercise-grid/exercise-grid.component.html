@@ -64,14 +64,16 @@
           [state]="{ initialProposition: getInitialPropositionState(exercise) }"
           class="exercise-card-link">
           <!-- Thumbnail -->
-          <div class="exercise-thumbnail">
+          <div class="exercise-thumbnail" [class.is-loaded]="exercise.imageBaseId && !exercise.imageIsLoading && !exercise.imageLoadFailed">
             @if (exercise.imageBaseId && !exercise.imageLoadFailed) {
+              <div class="exercise-image-skeleton" [class.is-loading]="exercise.imageIsLoading"></div>
               <img [ngSrc]="exercise.imageBaseId"
                    ngSrcset="320w, 640w"
                    [loaderParams]="imageLoaderParams"
                    sizes="(max-width: 600px) 92vw, (max-width: 992px) 48vw, 320px"
                    fill
                    (error)="onOptimizedImageError(exercise.id)"
+                   (load)="onOptimizedImageLoad(exercise.id)"
                    [alt]="'Thumbnail for ' + exercise.title + ' - ' + exercise.level + ' level ' + exercise.topic + ' exercise'" 
                    [priority]="!maxItems && i === 0"
                    decoding="async"/>

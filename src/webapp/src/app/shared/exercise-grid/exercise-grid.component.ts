@@ -24,6 +24,7 @@ export interface Exercise {
   imageFileId?: string | null;
   imageBaseId?: string;
   imageLoadFailed?: boolean;
+  imageIsLoading?: boolean;
   newsUrl?: string;
 }
 
@@ -158,6 +159,7 @@ export class ExerciseGridComponent implements OnInit {
             ? this.getImageBaseId(item.imageFileId)
             : undefined,
           imageLoadFailed: false,
+          imageIsLoading: !!item.imageFileId,
           newsUrl: item.newsUrl ?? ''
         }));
         
@@ -289,7 +291,17 @@ export class ExerciseGridComponent implements OnInit {
     this.exercises.update(items =>
       items.map(item =>
         item.id === exerciseId
-          ? { ...item, imageLoadFailed: true }
+          ? { ...item, imageLoadFailed: true, imageIsLoading: false }
+          : item
+      )
+    );
+  }
+
+  onOptimizedImageLoad(exerciseId: number): void {
+    this.exercises.update(items =>
+      items.map(item =>
+        item.id === exerciseId
+          ? { ...item, imageIsLoading: false }
           : item
       )
     );

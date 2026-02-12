@@ -101,8 +101,44 @@
   img {
     width: 100%;
     height: 100%;
+    opacity: 0;
     object-fit: cover;
     object-position: center top;
+    transition: opacity 0.35s ease;
+  }
+}
+
+.exercise-thumbnail.is-loaded img {
+  opacity: 1;
+}
+
+.exercise-image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.18), rgba(58, 125, 255, 0.06));
+  transition: opacity 0.35s ease;
+  overflow: hidden;
+}
+
+.exercise-image-skeleton.is-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.5) 45%, transparent 75%);
+  animation: exercise-image-shimmer 1.2s ease-in-out infinite;
+}
+
+.exercise-thumbnail.is-loaded .exercise-image-skeleton {
+  opacity: 0;
+}
+
+@keyframes exercise-image-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
   }
 }
 

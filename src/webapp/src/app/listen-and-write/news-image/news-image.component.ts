@@ -22,18 +22,25 @@ export class NewsImageComponent {
   readonly imageLoaderParams = { defaultWidth: 640 };
   readonly imageSrcset = computed(() => this.unifiedSrcset);
   imageLoadFailed = signal(false);
+  imageIsLoading = signal(false);
 
   imageBaseId = computed(() => this.getImageBaseId(this.proposition()?.imageFileId));
 
   constructor() {
     effect(() => {
-      this.proposition();
+      const baseId = this.imageBaseId();
       this.imageLoadFailed.set(false);
+      this.imageIsLoading.set(!!baseId);
     });
+  }
+
+  onOptimizedImageLoad(): void {
+    this.imageIsLoading.set(false);
   }
 
   onOptimizedImageError(): void {
     this.imageLoadFailed.set(true);
+    this.imageIsLoading.set(false);
   }
 
   private getImageBaseId(imageFileId?: string | null): string | null {

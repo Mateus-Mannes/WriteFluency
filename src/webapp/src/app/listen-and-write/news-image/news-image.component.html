@@ -1,5 +1,6 @@
-<div class="news-image-container">
+<div class="news-image-container" [class.is-loaded]="imageBaseId() && !imageIsLoading() && !imageLoadFailed()">
     @if (imageBaseId(); as imageBaseId) {
+        <div class="news-image-placeholder" [class.is-loading]="imageIsLoading()"></div>
         @if (!imageLoadFailed()) {
             <img class="news-image" 
                 [ngSrc]="imageBaseId"
@@ -9,9 +10,8 @@
                 priority
                 sizes="(max-width: 600px) 92vw, (max-width: 900px) 520px, 500px"
                 alt="News image"
+                (load)="onOptimizedImageLoad()"
                 (error)="onOptimizedImageError()">
-        } @else {
-            <div class="news-image-placeholder"></div>
         }
     } @else {
         <div class="news-image-placeholder"></div>
