@@ -274,8 +274,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   pauseAudioWithTimerClear() {
     this.newsAudioComponent.pauseAudio();
     this.clearAutoPauseTimer();
-    // Refocus textarea when audio is manually paused
-    this.exerciseSectionComponent?.focusTextArea();
   }
 
   clearAutoPauseTimer() {
@@ -342,8 +340,6 @@ export class ListenAndWriteComponent implements OnDestroy {
           this.newsAudioComponent.pauseAudio();
         }
         this.clearAutoPauseTimer();
-        // Refocus textarea when audio is auto-paused
-        this.exerciseSectionComponent?.focusTextArea();
       }, duration * 1000);
     }
   }
@@ -392,6 +388,9 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onAudioPaused() {
     this.onSaveExerciseState();
+    if (this.exerciseState() !== 'exercise') return;
+    // When the user pauses via native controls, restore focus so shortcuts keep working.
+    this.exerciseSectionComponent?.focusTextArea();
   }
 
   onSaveExerciseState() {
