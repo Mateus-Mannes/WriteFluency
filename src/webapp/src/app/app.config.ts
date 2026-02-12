@@ -1,5 +1,5 @@
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
 import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { environment } from '../enviroments/enviroment';
@@ -9,7 +9,9 @@ import { provideApi } from 'src/api/listen-and-write/provide-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(appRoutes),
+    provideRouter(appRoutes,
+      withInMemoryScrolling({ scrollPositionRestoration: 'disabled' })
+    ),
     provideHttpClient(withInterceptorsFromDi(), withFetch()),
     provideApi(environment.apiUrl),
     provideZoneChangeDetection(),
