@@ -109,6 +109,8 @@
 .exercise-results-container {
     display: grid;
     column-gap: 1rem;
+    row-gap: 0.3rem;
+    align-items: stretch;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
     grid-template-areas:
@@ -131,6 +133,8 @@
     .exercise-results-section {
         grid-area: exercise-results-section;
         justify-self: end;
+        align-self: stretch;
+        height: 100%;
     }
 
     .exercise-original-text {
