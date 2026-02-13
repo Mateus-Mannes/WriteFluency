@@ -1,13 +1,23 @@
 @if(listenSuggestion()) {
     <p class="text-body"><b>Suggestion:</b> Listen for the full audio before getting started:</p>
 }
-<audio #audioRef
-  class="audio"
-  [class.audio-playing]="isAudioPlaying()"
-  controls
-  preload="auto"
-  (play)="onPlay()"
-  (pause)="onPause()"
-  (ended)="onEnded()"
-  [src]="audioUrl()">
-</audio>
+<div class="audio-wrapper">
+  @if (isAudioLoading()) {
+    <div class="audio-placeholder wf-image-skeleton" aria-hidden="true"></div>
+  }
+  <audio #audioRef
+    class="audio"
+    [class.audio-playing]="isAudioPlaying()"
+    [class.audio-loading]="isAudioLoading()"
+    controls
+    preload="auto"
+    (loadstart)="onLoadStart()"
+    (loadeddata)="onLoadedData()"
+    (canplay)="onCanPlay()"
+    (error)="onAudioError()"
+    (play)="onPlay()"
+    (pause)="onPause()"
+    (ended)="onEnded()"
+    [src]="audioUrl()">
+  </audio>
+</div>

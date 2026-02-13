@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed, PLATFORM_ID, inject } from '@angular/core';
+import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed, PLATFORM_ID, inject, effect } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Proposition } from 'src/api/listen-and-write';
 import { environment } from 'src/enviroments/enviroment';
@@ -21,6 +21,12 @@ export class NewsAudioComponent implements OnDestroy {
     }
     return environment.minioUrl + '/propositions/' + this.proposition()?.audioFileId;
   });
+  isAudioLoading = signal(false);
+
+  private readonly resetAudioLoading = effect(() => {
+    const url = this.audioUrl();
+    this.isAudioLoading.set(!!url);
+  });
 
   ngOnDestroy() {
     // Auto-pause when component is destroyed
@@ -42,6 +48,24 @@ export class NewsAudioComponent implements OnDestroy {
     this.audioPlayed = true;
     this.isAudioPlaying.set(true);
     this.playClicked.emit();
+  }
+
+  onLoadStart() {
+    if (this.audioUrl()) {
+      this.isAudioLoading.set(true);
+    }
+  }
+
+  onLoadedData() {
+    this.isAudioLoading.set(false);
+  }
+
+  onCanPlay() {
+    this.isAudioLoading.set(false);
+  }
+
+  onAudioError() {
+    this.isAudioLoading.set(false);
   }
 
   onPause() {

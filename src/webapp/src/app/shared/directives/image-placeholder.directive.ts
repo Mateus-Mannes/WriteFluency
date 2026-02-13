@@ -2,6 +2,7 @@ import { isPlatformServer } from '@angular/common';
 import {
   Directive,
   ElementRef,
+  HostBinding,
   HostListener,
   Inject,
   Input,
@@ -21,6 +22,7 @@ export class ImagePlaceholderDirective implements OnChanges {
   @Input() appImagePlaceholder: ImageSrc = null;
 
   private readonly skeletonClass = 'wf-image-skeleton';
+  @HostBinding('class.wf-image-skeleton') isSkeleton = true;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: object,
@@ -30,6 +32,7 @@ export class ImagePlaceholderDirective implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (isPlatformServer(this.platformId)) {
+      this.isSkeleton = true;
       return;
     }
 
@@ -58,6 +61,7 @@ export class ImagePlaceholderDirective implements OnChanges {
       return;
     }
 
+    this.isSkeleton = true;
     this.renderer.addClass(image, this.skeletonClass);
 
     if (image.complete && image.naturalWidth > 0) {
@@ -66,12 +70,7 @@ export class ImagePlaceholderDirective implements OnChanges {
   }
 
   removeSkeleton(): void {
-    // use timeout to ensure this runs after load event
-    setTimeout(() => {
-      // assert the DOM element still exists before trying to remove class
-      if (this.imageRef && this.imageRef.nativeElement) {
-        this.renderer.removeClass(this.imageRef.nativeElement, this.skeletonClass);
-      }
-    }, 2000);
+    this.isSkeleton = false;
+    this.renderer.removeClass(this.imageRef.nativeElement, this.skeletonClass);
   }
 }
