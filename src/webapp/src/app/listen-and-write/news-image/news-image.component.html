@@ -9,6 +9,7 @@
                 priority
                 sizes="(max-width: 600px) 92vw, (max-width: 900px) 520px, 500px"
                 alt="News image"
+                [appImagePlaceholder]="imageBaseId"
                 (error)="onOptimizedImageError()">
         } @else {
             <div class="news-image-placeholder"></div>

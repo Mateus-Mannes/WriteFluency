@@ -1,11 +1,12 @@
 import { CommonModule, IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { Component, computed, effect, input, signal } from '@angular/core';
 import { Proposition } from 'src/api/listen-and-write';
+import { ImagePlaceholderDirective } from '../../shared/directives/image-placeholder.directive';
 import { minioVariantImageLoader } from '../../shared/image-loaders/minio-variant-image.loader';
 
 @Component({
   selector: 'app-news-image',
-  imports: [ NgOptimizedImage, CommonModule ],
+  imports: [ NgOptimizedImage, CommonModule, ImagePlaceholderDirective ],
   templateUrl: './news-image.component.html',
   styleUrl: './news-image.component.scss',
   providers: [

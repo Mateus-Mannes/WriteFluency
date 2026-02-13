@@ -13,6 +13,7 @@ import { SubjectEnum } from '../../../api/listen-and-write/model/subjectEnum';
 import { ComplexityEnum } from '../../../api/listen-and-write/model/complexityEnum';
 import { PropositionsService } from '../../../api/listen-and-write/api/propositions.service';
 import { minioVariantImageLoader } from '../image-loaders/minio-variant-image.loader';
+import { ImagePlaceholderDirective } from '../directives/image-placeholder.directive';
 
 export interface Exercise {
   id: number;
@@ -42,6 +43,7 @@ export interface Exercise {
     MatPaginatorModule,
     MatProgressSpinnerModule,
     FormsModule,
+    ImagePlaceholderDirective,
   ],
   templateUrl: './exercise-grid.component.html',
   styleUrls: ['./exercise-grid.component.scss'],

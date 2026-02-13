@@ -62,6 +62,26 @@ p, h1, h2, h3, h4, h5, h6, span, label {
     flex-direction: column;
 }
 
+.wf-image-skeleton {
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0) 8%, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0) 33%),
+    linear-gradient(135deg, rgba(58, 125, 255, 0.08), rgba(58, 125, 255, 0.02));
+  background-size: 200% 100%, 100% 100%;
+  animation: wf-skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: inherit;
+  filter: saturate(0.95);
+}
+
+@keyframes wf-skeleton-shimmer {
+  0% {
+    background-position: -160% 0, 0 0;
+  }
+
+  100% {
+    background-position: 160% 0, 0 0;
+  }
+}
+
 /* WriteFluency Shepherd theme */
 .shepherd-element.wf-tour {
   border-radius: 16px;
