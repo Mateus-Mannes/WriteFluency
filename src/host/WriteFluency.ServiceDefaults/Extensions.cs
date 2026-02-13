@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 
 namespace Microsoft.Extensions.Hosting;
@@ -47,6 +48,8 @@ public static class Extensions
 
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        // Keep Information+; suppress Verbose/Debug everywhere.
+        builder.Logging.SetMinimumLevel(LogLevel.Information);
         var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
         var resourceAttributes = new Dictionary<string, object>();
         if (!string.IsNullOrWhiteSpace(resourceName))
