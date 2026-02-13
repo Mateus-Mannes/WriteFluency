@@ -108,12 +108,18 @@ public class NewsWorker : BackgroundService
                     var warmupInterval = GetWarmupInterval(_cloudflareOptions.CurrentValue);
                     if (!generatedNow && ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
                     {
-                        _logger.LogInformation(
-                            "Triggering periodic cache warm-up (every {IntervalHours} hour(s)).",
-                            warmupInterval.TotalHours);
+                        using (var activity = ActivitySource.StartActivity("news-worker.warmup", ActivityKind.Internal))
+                        {
+                            activity?.SetTag("worker.name", nameof(NewsWorker));
+                            activity?.SetTag("worker.started_at_utc", DateTime.UtcNow.ToString("O"));
 
-                        await WarmCloudflareCacheAsync(null, stoppingToken);
-                        lastWarmupExecution = now;
+                            _logger.LogInformation(
+                                "Triggering periodic cache warm-up (every {IntervalHours} hour(s)).",
+                                warmupInterval.TotalHours);
+
+                            await WarmCloudflareCacheAsync(null, stoppingToken);
+                            lastWarmupExecution = now;
+                        }
                     }
                 }
             }
