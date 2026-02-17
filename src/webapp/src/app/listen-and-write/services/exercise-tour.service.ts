@@ -84,6 +84,30 @@ export class ExerciseTourService {
           ],
         },
         {
+          id: 'audio-player',
+          title: 'Audio Player Controls',
+          text: 'This is your audio player! Click the three dots menu to adjust <b>playback speed</b> (try 0.75x if the audio is too fast). You can also drag the progress bar to jump to any point in the recording.',
+          attachTo: { element: '#newsAudio', on: 'bottom' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Next',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
           id: 'auto-pause',
           title: 'Audio Auto-Pause',
           text: 'Audio will auto-pause every X seconds so you can type. You can change this here.',
@@ -227,8 +251,8 @@ export class ExerciseTourService {
         },
         {
           id: 'audio-mobile',
-          title: 'Audio Controls',
-          text: 'Tap play and pause here while you type.',
+          title: 'Audio Player',
+          text: 'Tap play/pause while you type. You can also tap the three dots to adjust <b>playback speed</b> (try 0.75x for slower audio). Drag the progress bar to jump to any part of the recording.',
           attachTo: { element: '#newsAudio', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
