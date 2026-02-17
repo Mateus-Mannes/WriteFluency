@@ -52,6 +52,8 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   result = signal<TextComparisonResult | null>(null);
 
+  isSubmitting = signal<boolean>(false);
+
   initialText = signal<string | null>(null);
   
   initialAutoPause = signal<number | null>(null);
@@ -346,20 +348,36 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onExerciseSubmit() {
     this.newsAudioComponent.pauseAudio();
+    this.isSubmitting.set(true);
+    
+    const startTime = Date.now();
+    const minLoadingTime = 2000; // 2 seconds minimum
 
     this.textComparisonsService.apiTextComparisonCompareTextsPost({
       originalText: this.proposition()!.text,
       userText: this.exerciseSectionComponent.text()
     }).subscribe({
       next: (result: TextComparisonResult) => {
-        this.userText.set(this.exerciseSectionComponent.text());
-        this.result.set(result);
-        this.onSaveExerciseState();
-        this.setNewState('results');
-        this.browserService.scrollToTop();
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsed);
+        
+        setTimeout(() => {
+          this.userText.set(this.exerciseSectionComponent.text());
+          this.result.set(result);
+          this.onSaveExerciseState();
+          this.setNewState('results');
+          this.browserService.scrollToTop();
+          this.isSubmitting.set(false);
+        }, remainingTime);
       },
       error: (error) => {
-        alert('Error processing your exercise. Please try again.');
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsed);
+        
+        setTimeout(() => {
+          this.isSubmitting.set(false);
+          alert('Error processing your exercise. Please try again.');
+        }, remainingTime);
       }
     });
   }

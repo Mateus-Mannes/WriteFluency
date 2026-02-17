@@ -1,3 +1,12 @@
+@if(isSubmitting()) {
+    <div class="loader-overlay">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p class="loader-text">Analyzing your text...</p>
+        </div>
+    </div>
+}
+
 <div [class]="{
     'container': true,
     'exercise-intro-container': exerciseState() == 'intro',
