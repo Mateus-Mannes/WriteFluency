@@ -53,9 +53,19 @@ public class NewsWorker : BackgroundService
 
         DateTimeOffset? lastExecution = null;
         DateTimeOffset? lastWarmupExecution = null;
+        Activity? dayCycleActivity = null;
+        DateTime dayCycleStartedAtUtc = DateTime.UtcNow;
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            if (dayCycleActivity is null)
+            {
+                dayCycleStartedAtUtc = DateTime.UtcNow;
+                dayCycleActivity = ActivitySource.StartActivity("news-worker.daily-cycle", ActivityKind.Internal);
+                dayCycleActivity?.SetTag("worker.name", nameof(NewsWorker));
+                dayCycleActivity?.SetTag("worker.started_at_utc", dayCycleStartedAtUtc.ToString("O"));
+            }
+
             try
             {
                 using var scope = _serviceProvider.CreateScope();
@@ -63,18 +73,16 @@ public class NewsWorker : BackgroundService
 
                 string cron;
                 string isActiveStr;
-                using (SuppressInstrumentationScope.Begin())
-                {
-                    cron = await db.AppSettings
+
+                cron = await db.AppSettings
                         .Where(x => x.Key == AppSettings.NewsWorkerCron.Key)
                         .Select(x => x.Value)
                         .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.NewsWorkerCron.Value;
 
-                    isActiveStr = await db.AppSettings
-                        .Where(x => x.Key == AppSettings.IsNewsWorkerActive.Key)
-                        .Select(x => x.Value)
-                        .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.IsNewsWorkerActive.Value;
-                }
+                isActiveStr = await db.AppSettings
+                    .Where(x => x.Key == AppSettings.IsNewsWorkerActive.Key)
+                    .Select(x => x.Value)
+                    .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.IsNewsWorkerActive.Value;
 
                 var isActive = bool.TryParse(isActiveStr, out var parsed) && parsed && !_environment.IsDevelopment();
 
@@ -87,26 +95,43 @@ public class NewsWorker : BackgroundService
 
                 if (!isActive)
                 {
-                    _logger.LogDebug("Worker is disabled.");
+                    _logger.LogWarning("Worker is disabled.");
                 }
                 else
                 {
                     var now = DateTimeOffset.UtcNow;
                     var cronExpr = CronExpression.Parse(cron);
                     var next = cronExpr.GetNextOccurrence(lastExecution ?? now.AddMinutes(-1), TimeZoneInfo.Utc);
-                    var generatedNow = false;
+
+                    // Log next scheduled execution time for better observability
+                    _logger.LogInformation("Current time: {CurrentTime}. Next scheduled execution: {NextExecution}.", now, next);
 
                     if (next.HasValue && next.Value <= now)
                     {
                         _logger.LogInformation("Triggering scheduled execution (cron matched at {CronTime})", next.Value);
+                        var generationStartedAtUtc = DateTime.UtcNow;
+                        var generationStopwatch = Stopwatch.StartNew();
                         await GenerateDailyPropositionsAsync(stoppingToken);
+                        generationStopwatch.Stop();
+
+                        dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
+                        var dayCycleDurationMs = (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds;
+                        dayCycleActivity?.SetTag("worker.duration_ms", dayCycleDurationMs);
+                        dayCycleActivity?.Dispose();
+                        dayCycleActivity = null;
+
+                        dayCycleStartedAtUtc = DateTime.UtcNow;
+                        dayCycleActivity = ActivitySource.StartActivity("news-worker.daily-cycle", ActivityKind.Internal);
+                        dayCycleActivity?.SetTag("worker.name", nameof(NewsWorker));
+                        dayCycleActivity?.SetTag("worker.started_at_utc", dayCycleStartedAtUtc.ToString("O"));
+
                         lastExecution = now;
                         lastWarmupExecution = now;
-                        generatedNow = true;
+                        _logger.LogInformation("Scheduled execution completed at {ExecutionTime}.", DateTime.UtcNow);
                     }
 
                     var warmupInterval = GetWarmupInterval(_cloudflareOptions.CurrentValue);
-                    if (!generatedNow && ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
+                    if (ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
                     {
                         using (var activity = ActivitySource.StartActivity("news-worker.warmup", ActivityKind.Internal))
                         {
