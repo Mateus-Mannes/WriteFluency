@@ -287,6 +287,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   beginExercise() {
     this.newsAudioComponent.pauseAudio();
+    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.clearAutoPauseTimer();
 
     if (this.newsAudioComponent.audioEnded) {
