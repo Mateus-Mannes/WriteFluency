@@ -48,8 +48,8 @@ export class ExerciseTourService {
       this.shepherd.addSteps([
         {
           id: 'intro-tutorial',
-          title: 'Interactive Tutorial',
-          text: 'Welcome! This is an interactive tutorial to help you get started with the exercise. You can follow the steps, interact with the UI, and skip at any time.',
+          title: 'Quick Tour',
+          text: 'Welcome! You’re about to turn what you hear into your own writing — let’s make this fun and easy. We’ll guide you through the key spots, and you can skip anytime.',
           attachTo: undefined, // Center of screen
           buttons: [
             {
@@ -59,6 +59,30 @@ export class ExerciseTourService {
             },
             {
               text: 'Skip Tutorial',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
+          id: 'writing-tip',
+          title: 'Your Writing Space',
+          text: 'This is where you write what you hear. Follow the audio and type as you go. Not sure how to spell a word? Write it how it sounds or skip it and keep going. The goal is to capture what you understand until the end, not to be perfect.',
+          attachTo: { element: '#exercise-text-area', on: 'top' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Next',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
               classes: 'wf-secondary',
               action: () => this.shepherd.cancel(),
             },
@@ -77,6 +101,11 @@ export class ExerciseTourService {
               action: () => this.shepherd.next(),
             },
             {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+            {
               text: 'Skip',
               classes: 'wf-secondary',
               action: () => this.shepherd.cancel(),
@@ -86,7 +115,7 @@ export class ExerciseTourService {
         {
           id: 'audio-player',
           title: 'Audio Player Controls',
-          text: 'This is your audio player! Click the three dots menu to adjust <b>playback speed</b> (try 0.75x if the audio is too fast). You can also drag the progress bar to jump to any point in the recording.',
+          text: 'Your audio player — slow it down, jump around, or replay. Click the three dots to adjust <b>playback speed</b> (try 0.75x if it’s too fast).',
           attachTo: { element: '#newsAudio', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
@@ -110,7 +139,7 @@ export class ExerciseTourService {
         {
           id: 'auto-pause',
           title: 'Audio Auto-Pause',
-          text: 'Audio will auto-pause every X seconds so you can type. You can change this here.',
+          text: 'Audio will auto-pause every X seconds so you can type. You can change this here, or turn it off if you want full control.',
           attachTo: { element: '#exercise-auto-pause', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
@@ -134,7 +163,7 @@ export class ExerciseTourService {
         {
           id: 'word-counter',
           title: 'Word Counter',
-          text: 'This is just a helper. You don’t need to match the exact word count.',
+          text: 'Just a guide — perfect match isn’t the goal.',
           attachTo: { element: '#exercise-word-count', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
@@ -158,7 +187,7 @@ export class ExerciseTourService {
         {
           id: 'submit',
           title: 'Submit Your Answer',
-          text: 'Done? Click Submit. It’s okay if it’s not perfect — this is for learning.',
+          text: 'When you’re done, submit for feedback. Progress over perfection.',
           attachTo: { element: '#exercise-submit', on: 'top' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
@@ -186,7 +215,7 @@ export class ExerciseTourService {
           attachTo: undefined, // Center of screen
           buttons: [
             {
-              text: 'Finish',
+              text: 'Next',
               classes: 'wf-primary',
               action: () => this.shepherd.complete(),
             },
@@ -194,6 +223,11 @@ export class ExerciseTourService {
               text: 'Back',
               classes: 'wf-secondary',
               action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
             },
           ],
         },
@@ -238,7 +272,7 @@ export class ExerciseTourService {
           attachTo: undefined,
           buttons: [
             {
-              text: 'Start',
+              text: 'Next',
               classes: 'wf-primary',
               action: () => this.shepherd.next(),
             },
@@ -250,9 +284,33 @@ export class ExerciseTourService {
           ],
         },
         {
+          id: 'writing-tip-mobile',
+          title: 'Your Writing Space',
+          text: 'This is where you write what you hear. Follow the audio and type as you go. Not sure how to spell a word? Write it how it sounds or skip it and keep going. The goal is to capture what you understand until the end, not to be perfect.',
+          attachTo: { element: '#exercise-text-area', on: 'top' },
+          floatingUIOptions: { middleware: [offset(16)] },
+          buttons: [
+            {
+              text: 'Next',
+              classes: 'wf-primary',
+              action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
+            },
+          ],
+        },
+        {
           id: 'audio-mobile',
           title: 'Audio Player',
-          text: 'Tap play/pause while you type. You can also tap the three dots to adjust <b>playback speed</b> (try 0.75x for slower audio). Drag the progress bar to jump to any part of the recording.',
+          text: 'Your audio player — slow it down, jump around, or replay. Tap the three dots to adjust <b>playback speed</b> (try 0.75x if it’s too fast).',
           attachTo: { element: '#newsAudio', on: 'bottom' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
@@ -260,6 +318,11 @@ export class ExerciseTourService {
               text: 'Next',
               classes: 'wf-primary',
               action: () => this.shepherd.next(),
+            },
+            {
+              text: 'Back',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.back(),
             },
             {
               text: 'Skip',
@@ -295,12 +358,12 @@ export class ExerciseTourService {
         {
           id: 'submit-mobile',
           title: 'Submit',
-          text: 'When you are done, tap Submit to get feedback.',
+          text: 'When you’re done, submit for feedback. Progress over perfection.',
           attachTo: { element: '#exercise-submit', on: 'top' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
             {
-              text: 'Finish',
+              text: 'Next',
               classes: 'wf-primary',
               action: () => this.shepherd.complete(),
             },
@@ -308,6 +371,11 @@ export class ExerciseTourService {
               text: 'Back',
               classes: 'wf-secondary',
               action: () => this.shepherd.back(),
+            },
+            {
+              text: 'Skip',
+              classes: 'wf-secondary',
+              action: () => this.shepherd.cancel(),
             },
           ],
         },
