@@ -548,6 +548,16 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Product lists, rankings, or listicles (e.g., "best X", "top picks")
         - Product comparisons or head-to-head reviews
         - Buying guides, shopping advice, affiliate or deal-focused content
+        - Advertising, marketing, or promotional copy
+        - Deals, discounts, coupons, giveaways, or gift-card offers
+        - Brand-led announcements focused on sales, pricing, or subscriptions
+        - Any 18+ or adult-only content
+        - Sexual content, including sexual acts, explicit sexual details, nudity, pornography, or sexualized descriptions
+        - Sexual scandals or stories centered on sexual activity
+        - Prostitution or sex work
+        - Sexual violence, assault, or exploitation
+        - Explicit reproductive details tied to sexual activity
+        - Extreme or graphic violence, gore, torture, or dismemberment
 
         Output format:
         - Respond with only one word: "valid" or "invalid"

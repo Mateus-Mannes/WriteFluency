@@ -25,10 +25,10 @@ public class CreatePropositionService
         new("w1024", 1024, 576),
     ];
 
-    private const int MaxValidationImageBytes = 153600;
+    private const int MaxValidationImageBytes = 184320; // 180 KB
     private const int JpegCompressionQuality = 60;
     private const int WebpCompressionQuality = 50;
-    private const int MaxOriginalJpegBytes = 122880; // 120 KB
+    private const int MaxOriginalJpegBytes = 153600; // 150 KB
 
     private static readonly ImageVariant BaseVariant = OptimizedImageVariants
         .OrderByDescending(variant => variant.Width)
@@ -36,10 +36,10 @@ public class CreatePropositionService
 
     private static readonly IReadOnlyDictionary<string, int> MaxVariantBytesBySuffix = new Dictionary<string, int>
     {
-        ["w320"] = 61440,   // 60 KB (grid)
-        ["w640"] = 61440,   // 60 KB (grid)
-        ["w512"] = 81920,   // 80 KB (news)
-        ["w1024"] = 122880, // 120 KB (news)
+        ["w320"] = 92160,   // 90 KB (grid)
+        ["w640"] = 92160,   // 90 KB (grid)
+        ["w512"] = 112640,  // 110 KB (news)
+        ["w1024"] = 153600, // 150 KB (news)
     };
 
     private readonly INewsClient _newsClient;
