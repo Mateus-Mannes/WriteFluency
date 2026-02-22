@@ -14,10 +14,13 @@ public class TextComparisonEndpointGroup : IEndpointMapper
 
     private Ok<TextComparisonResult> CompareTexts(
         [FromBody] CompareTextsDto compareTextsDto,
-        TextComparisonService textComparisonService)
+        TextComparisonService textComparisonService,
+        ILogger<TextComparisonEndpointGroup> logger)
     {
+        logger.LogInformation("Comparing texts: UserText='{UserText}'", compareTextsDto.UserText);
         var result = textComparisonService
             .CompareTexts(compareTextsDto.OriginalText, compareTextsDto.UserText);
+        logger.LogInformation("Comparison result: Accuracy={AccuracyPercentage}, Comparisons={Comparisons}", result.AccuracyPercentage, result.Comparisons.Count);
         return TypedResults.Ok(result);
     }
 }

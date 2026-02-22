@@ -570,7 +570,8 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             {articleContent}
             --- TEXT END ---
 
-            Is this a valid news article? Respond with only 'valid' or 'invalid'.
+            Classify this text using the system rules.
+            Respond with only 'valid' or 'invalid'.
         ";
 
     public async Task<Result<bool>> ValidateImageAsync(byte[] imageBytes, string articleTitle, CancellationToken cancellationToken = default)
