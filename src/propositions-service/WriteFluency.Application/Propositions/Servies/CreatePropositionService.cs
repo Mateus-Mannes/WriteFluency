@@ -44,6 +44,7 @@ public class CreatePropositionService
 
     private readonly INewsClient _newsClient;
     private readonly IArticleExtractor _articleExtractor;
+    private readonly IArticleContentPolicyValidator _articleContentPolicyValidator;
     private readonly IGenerativeAIClient _generativeAIClient;
     private readonly ITextToSpeechClient _textToSpeechClient;
     private readonly IFileService _fileService;
@@ -53,6 +54,7 @@ public class CreatePropositionService
     public CreatePropositionService(
         INewsClient newsClient,
         IArticleExtractor articleExtractor,
+        IArticleContentPolicyValidator articleContentPolicyValidator,
         IGenerativeAIClient generativeAIClient,
         ITextToSpeechClient textToSpeechClient,
         IFileService fileService,
@@ -61,6 +63,7 @@ public class CreatePropositionService
     {
         _articleExtractor = articleExtractor;
         _newsClient = newsClient;
+        _articleContentPolicyValidator = articleContentPolicyValidator;
         _generativeAIClient = generativeAIClient;
         _textToSpeechClient = textToSpeechClient;
         _fileService = fileService;
@@ -216,6 +219,7 @@ public class CreatePropositionService
 
         return await _articleExtractor.GetVisibleTextAsync(newsArticle.Url, cancellationToken)
             .Map(articleText => articleText.Length > 3000 ? articleText[..3000] : articleText)
+            .Bind(articleText => ValidateArticleContentPolicy(articleText, newsArticle.Url))
             .Bind(articleText => builder.SetArticleText(articleText))
             .Bind(articleText => _generativeAIClient.GenerateTextAsync(dto.Complexity, articleText, cancellationToken))
             .Bind(propositionText => builder.SetPropositionText(propositionText))
@@ -307,6 +311,19 @@ public class CreatePropositionService
             _logger.LogWarning(ex, "Failed to generate optimized image variants");
             return Result.Fail(new Error("Failed to generate optimized image variants").CausedBy(ex));
         }
+    }
+
+    private Result<string> ValidateArticleContentPolicy(string articleText, string articleUrl)
+    {
+        var validationResult = _articleContentPolicyValidator.Validate(articleText);
+        if (validationResult.IsSuccess)
+            return Result.Ok(articleText);
+
+        var errorMessage = string.Join(", ", validationResult.Errors.Select(error => error.Message));
+        _logger.LogWarning("Article rejected by deterministic content policy. Url: {Url}. Reason: {Reason}",
+            articleUrl, errorMessage);
+
+        return Result.Fail(new Error($"Article content rejected by policy: {errorMessage}"));
     }
 
 }

@@ -98,6 +98,11 @@ public class CreatePropositionServiceTests : ApplicationTestBase
             .Returns(Result.Ok(new AudioDto(faker.Random.Bytes(1000), faker.Random.Guid().ToString(), 60)));
         services.AddSingleton(textToSpeechClientMock);
 
+        var articleContentPolicyValidatorMock = Substitute.For<IArticleContentPolicyValidator>();
+        articleContentPolicyValidatorMock.Validate(Arg.Any<string>())
+            .Returns(Result.Ok());
+        services.AddSingleton(articleContentPolicyValidatorMock);
+
         var fileServiceMock = Substitute.For<IFileService>();
         _fileServiceMock = fileServiceMock;
 

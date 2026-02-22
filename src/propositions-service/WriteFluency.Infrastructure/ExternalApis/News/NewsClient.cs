@@ -23,7 +23,9 @@ public class NewsClient : BaseHttpClientService, INewsClient
         "espn.co.uk",
         "kiwiblog.co.nz",
         "bbc.com",
-        "anglotopia.net"
+        "anglotopia.net",
+        "www.iphoneincanada.ca",
+        "nypost.com"
     ];
 
     public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)

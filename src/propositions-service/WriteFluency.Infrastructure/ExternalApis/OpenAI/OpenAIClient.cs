@@ -85,8 +85,8 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
             if (!validationResult.Value)
             {
-                _logger.LogError("Article content is invalid (navigation/boilerplate detected)");
-                return Result.Fail(new Error("Article content is invalid (navigation/boilerplate detected)"));
+                _logger.LogError("Article content is invalid according to AI validation rules");
+                return Result.Fail(new Error("Article content is invalid according to AI validation rules"));
             }
 
             // Generate initial paragraph from article
@@ -502,7 +502,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             
             if (result.Contains("invalid"))
             {
-                _logger.LogWarning("Article content validation: Invalid article detected (navigation/boilerplate content)");
+                _logger.LogWarning("Article content validation: Invalid article detected by AI validation rules");
                 return Result.Ok(false);
             }
             else if (result.Contains("valid"))
@@ -557,6 +557,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Prostitution or sex work
         - Sexual violence, assault, or exploitation
         - Explicit reproductive details tied to sexual activity
+        - Any violence-related content, including murder, shootings, stabbings, assaults, abuse, war, terrorism, kidnapping, or violent crime
         - Extreme or graphic violence, gore, torture, or dismemberment
 
         Output format:

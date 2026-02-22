@@ -93,6 +93,7 @@ builder.Services.AddChatClient(services =>
 }, ServiceLifetime.Scoped);
 
 builder.Services.AddTransient<IArticleExtractor, ArticleExtractor>();
+builder.Services.AddTransient<IArticleContentPolicyValidator, ArticleContentPolicyValidator>();
 builder.Services.AddTransient<IFileService, FileService>();
 builder.Services.AddTransient<CreatePropositionService>();
 builder.Services.AddTransient<DailyPropositionGenerator>();
