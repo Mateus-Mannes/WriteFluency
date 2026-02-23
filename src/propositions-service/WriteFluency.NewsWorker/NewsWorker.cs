@@ -1,8 +1,6 @@
 using Cronos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using OpenTelemetry;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using WriteFluency.Data;
@@ -18,7 +16,7 @@ namespace WriteFluency.NewsWorker;
 public class NewsWorker : BackgroundService
 {
     private const string CacheWarmupHttpClientName = "cache-warmup";
-    private static readonly string[] ImageVariantSuffixes = ["w320", "w512", "w640", "w1024"];
+    private const int WarmupRecentExercisesLimit = 20;
     private static readonly ActivitySource ActivitySource = new(nameof(NewsWorker));
 
     private readonly IServiceProvider _serviceProvider;
@@ -54,7 +52,25 @@ public class NewsWorker : BackgroundService
         DateTimeOffset? lastExecution = null;
         DateTimeOffset? lastWarmupExecution = null;
         Activity? dayCycleActivity = null;
+        Activity? waitingWindowActivity = null;
         DateTime dayCycleStartedAtUtc = DateTime.UtcNow;
+        DateTime waitingWindowStartedAtUtc = DateTime.UtcNow;
+        var waitingCyclesCount = 0;
+
+        void CloseWaitingWindow()
+        {
+            if (waitingWindowActivity is null)
+            {
+                return;
+            }
+
+            waitingWindowActivity.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
+            waitingWindowActivity.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - waitingWindowStartedAtUtc).TotalMilliseconds);
+            waitingWindowActivity.SetTag("worker.waiting_cycles_count", waitingCyclesCount);
+            waitingWindowActivity.Dispose();
+            waitingWindowActivity = null;
+            waitingCyclesCount = 0;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -73,6 +89,8 @@ public class NewsWorker : BackgroundService
 
                 string cron;
                 string isActiveStr;
+                var ranScheduledExecution = false;
+                var ranPeriodicWarmup = false;
 
                 cron = await db.AppSettings
                         .Where(x => x.Key == AppSettings.NewsWorkerCron.Key)
@@ -89,6 +107,7 @@ public class NewsWorker : BackgroundService
                 if (_environment.IsDevelopment() && _configuration.GetValue<bool>("RunNewsWorkerOnStartup"))
                 {
                     _logger.LogInformation("Running immediately in Development mode.");
+                    CloseWaitingWindow();
                     await GenerateDailyPropositionsAsync(stoppingToken);
                     return;
                 }
@@ -108,11 +127,10 @@ public class NewsWorker : BackgroundService
 
                     if (next.HasValue && next.Value <= now)
                     {
+                        ranScheduledExecution = true;
+                        CloseWaitingWindow();
                         _logger.LogInformation("Triggering scheduled execution (cron matched at {CronTime})", next.Value);
-                        var generationStartedAtUtc = DateTime.UtcNow;
-                        var generationStopwatch = Stopwatch.StartNew();
                         await GenerateDailyPropositionsAsync(stoppingToken);
-                        generationStopwatch.Stop();
 
                         dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
                         var dayCycleDurationMs = (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds;
@@ -133,6 +151,7 @@ public class NewsWorker : BackgroundService
                     var warmupInterval = GetWarmupInterval(_cloudflareOptions.CurrentValue);
                     if (ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
                     {
+                        CloseWaitingWindow();
                         using (var activity = ActivitySource.StartActivity("news-worker.warmup", ActivityKind.Internal))
                         {
                             activity?.SetTag("worker.name", nameof(NewsWorker));
@@ -142,15 +161,45 @@ public class NewsWorker : BackgroundService
                                 "Triggering periodic cache warm-up (every {IntervalHours} hour(s)).",
                                 warmupInterval.TotalHours);
 
-                            await WarmCloudflareCacheAsync(null, stoppingToken);
+                            await WarmCloudflareCacheAsync(stoppingToken);
+                            ranPeriodicWarmup = true;
                             lastWarmupExecution = now;
                         }
                     }
                 }
+
+                var isWaitingCycle = !ranScheduledExecution && !ranPeriodicWarmup;
+                if (isWaitingCycle)
+                {
+                    if (waitingWindowActivity is null)
+                    {
+                        waitingWindowStartedAtUtc = DateTime.UtcNow;
+                        waitingCyclesCount = 0;
+                        waitingWindowActivity = ActivitySource.StartActivity("news-worker.waiting-window", ActivityKind.Internal);
+                        waitingWindowActivity?.SetTag("worker.name", nameof(NewsWorker));
+                        waitingWindowActivity?.SetTag("worker.started_at_utc", waitingWindowStartedAtUtc.ToString("O"));
+                    }
+
+                    waitingCyclesCount++;
+                    waitingWindowActivity?.SetTag("worker.waiting_cycles_count", waitingCyclesCount);
+                }
+                else if (waitingWindowActivity is not null)
+                {
+                    CloseWaitingWindow();
+                }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex) when (stoppingToken.IsCancellationRequested)
             {
+                _logger.LogError(ex, "NewsWorker is stopping due to cancellation request.");
+                CloseWaitingWindow();
+                dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
+                dayCycleActivity?.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds);
+                dayCycleActivity?.Dispose();
                 break;
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogError(ex, "NewsWorker loop received a non-shutdown cancellation and will continue.");
             }
             catch (Exception ex)
             {
@@ -159,6 +208,11 @@ public class NewsWorker : BackgroundService
 
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
+
+        CloseWaitingWindow();
+        dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
+        dayCycleActivity?.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds);
+        dayCycleActivity?.Dispose();
     }
 
     private async Task GenerateDailyPropositionsAsync(CancellationToken cancellationToken)
@@ -166,8 +220,6 @@ public class NewsWorker : BackgroundService
         using var activity = ActivitySource.StartActivity("news-worker.daily-processing", ActivityKind.Internal);
         activity?.SetTag("worker.name", nameof(NewsWorker));
         activity?.SetTag("worker.started_at_utc", DateTime.UtcNow.ToString("O"));
-
-        var generationStartedAtUtc = DateTime.UtcNow;
 
         using var scope = _serviceProvider.CreateScope();
         var generator = scope.ServiceProvider.GetRequiredService<DailyPropositionGenerator>();
@@ -184,22 +236,14 @@ public class NewsWorker : BackgroundService
             }
         }
 
-        await WarmCloudflareCacheAsync(generationStartedAtUtc, cancellationToken);
+        await WarmCloudflareCacheAsync(cancellationToken);
     }
 
-    private async Task WarmCloudflareCacheAsync(DateTime? generationStartedAtUtc, CancellationToken cancellationToken)
+    private async Task WarmCloudflareCacheAsync(CancellationToken cancellationToken)
     {
         var options = _cloudflareOptions.CurrentValue;
         if (!options.WarmupEnabled)
         {
-            return;
-        }
-
-        if (!Uri.TryCreate(options.AssetsBaseAddress, UriKind.Absolute, out var assetsBaseAddress))
-        {
-            _logger.LogWarning(
-                "Cloudflare warm-up skipped because assets base URL is invalid: {AssetsBaseAddress}",
-                options.AssetsBaseAddress);
             return;
         }
 
@@ -212,62 +256,30 @@ public class NewsWorker : BackgroundService
             }
         }
 
-        List<WarmupProposition> generatedPropositions;
+        List<int> recentExerciseIds;
         using (var scope = _serviceProvider.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var propositionsQuery = db.Propositions
+            recentExerciseIds = await db.Propositions
                 .AsNoTracking()
-                .Where(p => !p.IsDeleted);
-
-            if (generationStartedAtUtc.HasValue)
-            {
-                propositionsQuery = propositionsQuery.Where(p => p.CreatedAt >= generationStartedAtUtc.Value);
-            }
-
-            var maxPropositionsToWarm = Math.Clamp(options.WarmupRecentPropositionsLimit, 20, 500);
-            generatedPropositions = await propositionsQuery
+                .Where(p => !p.IsDeleted)
                 .OrderByDescending(p => p.PublishedOn)
-                .Take(maxPropositionsToWarm)
-                .Select(p => new WarmupProposition(p.Id, p.ImageFileId, p.AudioFileId))
+                .Take(WarmupRecentExercisesLimit)
+                .Select(p => p.Id)
                 .ToListAsync(cancellationToken);
         }
 
         var siteBaseAddress = TryGetSiteBaseAddress(options.PurgeUrls);
 
-        foreach (var proposition in generatedPropositions)
+        foreach (var exerciseId in recentExerciseIds)
         {
-            if (siteBaseAddress is not null)
-            {
-                var propositionUrl = new Uri(siteBaseAddress, $"english-writing-exercise/{proposition.Id}");
-                urlsToWarm.Add(propositionUrl.ToString());
-            }
-
-            if (!string.IsNullOrWhiteSpace(proposition.AudioFileId))
-            {
-                var audioUrl = new Uri(assetsBaseAddress, $"propositions/{proposition.AudioFileId}");
-                urlsToWarm.Add(audioUrl.ToString());
-            }
-
-            if (string.IsNullOrWhiteSpace(proposition.ImageFileId))
+            if (siteBaseAddress is null)
             {
                 continue;
             }
 
-            var originalImageUrl = new Uri(assetsBaseAddress, $"images/{proposition.ImageFileId}");
-            urlsToWarm.Add(originalImageUrl.ToString());
-
-            var imageBaseId = GetImageBaseId(proposition.ImageFileId);
-            if (string.IsNullOrWhiteSpace(imageBaseId))
-            {
-                continue;
-            }
-
-            foreach (var suffix in ImageVariantSuffixes)
-            {
-                var variantUrl = new Uri(assetsBaseAddress, $"images/{imageBaseId}_{suffix}.webp");
-                urlsToWarm.Add(variantUrl.ToString());
-            }
+            var propositionUrl = new Uri(siteBaseAddress, $"english-writing-exercise/{exerciseId}");
+            urlsToWarm.Add(propositionUrl.ToString());
         }
 
         if (urlsToWarm.Count == 0)
@@ -279,42 +291,38 @@ public class NewsWorker : BackgroundService
         var client = _httpClientFactory.CreateClient(CacheWarmupHttpClientName);
         client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.WarmupTimeoutSeconds, 5, 120));
 
-        var maxConcurrency = Math.Clamp(options.WarmupConcurrency, 1, 20);
-        using var semaphore = new SemaphoreSlim(maxConcurrency);
-
-        var failures = new ConcurrentBag<string>();
+        var failures = new List<string>();
         var successCount = 0;
 
-        await Task.WhenAll(urlsToWarm.Select(async url =>
+        foreach (var url in urlsToWarm)
         {
-            await semaphore.WaitAsync(cancellationToken);
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    Interlocked.Increment(ref successCount);
-                    return;
+                    successCount++;
+                    continue;
                 }
 
                 failures.Add($"{url} -> {(int)response.StatusCode}");
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
+            }
+            catch (OperationCanceledException)
+            {
+                failures.Add($"{url} -> OperationCanceledException (request timeout/canceled)");
             }
             catch (Exception ex)
             {
                 failures.Add($"{url} -> {ex.GetType().Name}: {ex.Message}");
             }
-            finally
-            {
-                semaphore.Release();
-            }
-        }));
+        }
 
-        if (!failures.IsEmpty)
+        if (failures.Count > 0)
         {
             _logger.LogWarning(
                 "Cloudflare warm-up completed with partial failures ({SuccessCount}/{TotalCount} succeeded). Sample failures: {SampleFailures}",
@@ -345,17 +353,6 @@ public class NewsWorker : BackgroundService
         return new Uri(uri.GetLeftPart(UriPartial.Authority).TrimEnd('/') + "/");
     }
 
-    private static string? GetImageBaseId(string? imageFileId)
-    {
-        if (string.IsNullOrWhiteSpace(imageFileId))
-        {
-            return null;
-        }
-
-        var lastDot = imageFileId.LastIndexOf('.');
-        return lastDot > 0 ? imageFileId[..lastDot] : imageFileId;
-    }
-
     private static TimeSpan GetWarmupInterval(CloudflareOptions options)
     {
         var clampedHours = Math.Clamp(options.WarmupIntervalHours, 1, 24);
@@ -371,6 +368,4 @@ public class NewsWorker : BackgroundService
 
         return !lastWarmupExecution.HasValue || now - lastWarmupExecution.Value >= interval;
     }
-
-    private sealed record WarmupProposition(int Id, string? ImageFileId, string AudioFileId);
 }
