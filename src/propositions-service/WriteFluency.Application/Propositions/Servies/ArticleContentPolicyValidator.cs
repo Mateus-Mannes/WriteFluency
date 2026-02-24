@@ -40,43 +40,17 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
 
     private static readonly string[] ViolenceTerms =
     [
-        "violence",
-        "violent",
-        "murder",
-        "kill",
-        "killed",
-        "killing",
-        "homicide",
-        "manslaughter",
-        "shooting",
-        "shot",
-        "gunfire",
-        "stab",
-        "stabbing",
         "behead",
         "torture",
         "gore",
         "dismember",
-        "kidnap",
         "abduction",
-        "terror",
-        "terrorist",
-        "terrorism",
-        "bombing",
-        "war",
-        "armed conflict"
     ];
 
     private static readonly string[] CommercialContentTerms =
     [
-        "best",
         "top picks",
         "top products",
-        "roundup",
-        "product comparison",
-        "vs",
-        "versus",
-        "head to head",
         "buying guide",
         "gift guide",
         "shopping guide",
@@ -91,12 +65,6 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
         "giveaway",
         "gift card",
         "affiliate",
-        "sponsored",
-        "price",
-        "prices",
-        "pricing",
-        "subscription",
-        "subscribe and save"
     ];
 
     private static readonly Regex NonWordRegex = new(@"\W+", RegexOptions.Compiled);

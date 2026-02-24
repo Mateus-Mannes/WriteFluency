@@ -12,10 +12,13 @@ using Microsoft.EntityFrameworkCore;
 using WriteFluency.Data;
 using Microsoft.Extensions.AI;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+builder.Logging.AddFilter("WriteFluency.Propositions.DailyPropositionGenerator", LogLevel.Warning);
 
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-postgresdb")));

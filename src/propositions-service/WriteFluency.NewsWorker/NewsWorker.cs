@@ -17,6 +17,7 @@ public class NewsWorker : BackgroundService
 {
     private const string CacheWarmupHttpClientName = "cache-warmup";
     private const int WarmupRecentExercisesLimit = 20;
+    private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(1);
     private static readonly ActivitySource ActivitySource = new(nameof(NewsWorker));
 
     private readonly IServiceProvider _serviceProvider;
@@ -47,204 +48,309 @@ public class NewsWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("NewsWorker started.");
-
         DateTimeOffset? lastExecution = null;
         DateTimeOffset? lastWarmupExecution = null;
-        Activity? dayCycleActivity = null;
-        Activity? waitingWindowActivity = null;
-        DateTime dayCycleStartedAtUtc = DateTime.UtcNow;
-        DateTime waitingWindowStartedAtUtc = DateTime.UtcNow;
-        var waitingCyclesCount = 0;
-
-        void CloseWaitingWindow()
-        {
-            if (waitingWindowActivity is null)
-            {
-                return;
-            }
-
-            waitingWindowActivity.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
-            waitingWindowActivity.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - waitingWindowStartedAtUtc).TotalMilliseconds);
-            waitingWindowActivity.SetTag("worker.waiting_cycles_count", waitingCyclesCount);
-            waitingWindowActivity.Dispose();
-            waitingWindowActivity = null;
-            waitingCyclesCount = 0;
-        }
+        bool? lastKnownIsActive = null;
+        string? lastKnownCron = null;
+        string? lastInvalidCron = null;
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (dayCycleActivity is null)
-            {
-                dayCycleStartedAtUtc = DateTime.UtcNow;
-                dayCycleActivity = ActivitySource.StartActivity("news-worker.daily-cycle", ActivityKind.Internal);
-                dayCycleActivity?.SetTag("worker.name", nameof(NewsWorker));
-                dayCycleActivity?.SetTag("worker.started_at_utc", dayCycleStartedAtUtc.ToString("O"));
-            }
-
             try
             {
-                using var scope = _serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                string cron;
-                string isActiveStr;
-                var ranScheduledExecution = false;
-                var ranPeriodicWarmup = false;
-
-                cron = await db.AppSettings
-                        .Where(x => x.Key == AppSettings.NewsWorkerCron.Key)
-                        .Select(x => x.Value)
-                        .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.NewsWorkerCron.Value;
-
-                isActiveStr = await db.AppSettings
-                    .Where(x => x.Key == AppSettings.IsNewsWorkerActive.Key)
-                    .Select(x => x.Value)
-                    .FirstOrDefaultAsync(stoppingToken) ?? AppSettings.IsNewsWorkerActive.Value;
-
-                var isActive = bool.TryParse(isActiveStr, out var parsed) && parsed && !_environment.IsDevelopment();
+                var settings = await GetWorkerRuntimeSettingsAsync(stoppingToken);
+                var isActive = bool.TryParse(settings.IsActiveRawValue, out var parsed) && parsed && !_environment.IsDevelopment();
 
                 if (_environment.IsDevelopment() && _configuration.GetValue<bool>("RunNewsWorkerOnStartup"))
                 {
-                    _logger.LogInformation("Running immediately in Development mode.");
-                    CloseWaitingWindow();
-                    await GenerateDailyPropositionsAsync(stoppingToken);
+                    await RunDailyGenerationAsync(
+                        trigger: "development-startup",
+                        cronExpression: settings.CronExpression,
+                        scheduledAtUtc: DateTimeOffset.UtcNow,
+                        cancellationToken: stoppingToken);
                     return;
+                }
+
+                if (lastKnownIsActive != isActive || !string.Equals(lastKnownCron, settings.CronExpression, StringComparison.Ordinal))
+                {
+                    _logger.LogInformation(
+                        "NewsWorker schedule updated. IsActive={IsActive} Cron={Cron}",
+                        isActive,
+                        settings.CronExpression);
+                    lastKnownIsActive = isActive;
+                    lastKnownCron = settings.CronExpression;
                 }
 
                 if (!isActive)
                 {
-                    _logger.LogWarning("Worker is disabled.");
+                    await Task.Delay(PollingInterval, stoppingToken);
+                    continue;
+                }
+
+                CronExpression cronExpression;
+                try
+                {
+                    cronExpression = CronExpression.Parse(settings.CronExpression);
+                    lastInvalidCron = null;
+                }
+                catch (CronFormatException ex)
+                {
+                    if (!string.Equals(lastInvalidCron, settings.CronExpression, StringComparison.Ordinal))
+                    {
+                        _logger.LogError(ex, "NewsWorker cron is invalid. Cron={Cron}", settings.CronExpression);
+                        lastInvalidCron = settings.CronExpression;
+                    }
+
+                    await Task.Delay(PollingInterval, stoppingToken);
+                    continue;
+                }
+
+                var now = DateTimeOffset.UtcNow;
+                var next = cronExpression.GetNextOccurrence(lastExecution ?? now.AddMinutes(-1), TimeZoneInfo.Utc);
+
+                if (next.HasValue && next.Value <= now)
+                {
+                    var dailyRunCompleted = await RunDailyGenerationAsync(
+                        trigger: "scheduled",
+                        cronExpression: settings.CronExpression,
+                        scheduledAtUtc: next.Value,
+                        cancellationToken: stoppingToken);
+
+                    if (dailyRunCompleted)
+                    {
+                        lastExecution = now;
+                        lastWarmupExecution = now;
+                    }
                 }
                 else
                 {
-                    var now = DateTimeOffset.UtcNow;
-                    var cronExpr = CronExpression.Parse(cron);
-                    var next = cronExpr.GetNextOccurrence(lastExecution ?? now.AddMinutes(-1), TimeZoneInfo.Utc);
-
-                    // Log next scheduled execution time for better observability
-                    _logger.LogInformation("Current time: {CurrentTime}. Next scheduled execution: {NextExecution}.", now, next);
-
-                    if (next.HasValue && next.Value <= now)
+                    var warmupOptions = _cloudflareOptions.CurrentValue;
+                    var warmupInterval = GetWarmupInterval(warmupOptions);
+                    if (warmupOptions.WarmupEnabled && ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
                     {
-                        ranScheduledExecution = true;
-                        CloseWaitingWindow();
-                        _logger.LogInformation("Triggering scheduled execution (cron matched at {CronTime})", next.Value);
-                        await GenerateDailyPropositionsAsync(stoppingToken);
+                        var warmupCompleted = await RunWarmupAsync(
+                            trigger: "periodic",
+                            cancellationToken: stoppingToken);
 
-                        dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
-                        var dayCycleDurationMs = (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds;
-                        dayCycleActivity?.SetTag("worker.duration_ms", dayCycleDurationMs);
-                        dayCycleActivity?.Dispose();
-                        dayCycleActivity = null;
-
-                        dayCycleStartedAtUtc = DateTime.UtcNow;
-                        dayCycleActivity = ActivitySource.StartActivity("news-worker.daily-cycle", ActivityKind.Internal);
-                        dayCycleActivity?.SetTag("worker.name", nameof(NewsWorker));
-                        dayCycleActivity?.SetTag("worker.started_at_utc", dayCycleStartedAtUtc.ToString("O"));
-
-                        lastExecution = now;
-                        lastWarmupExecution = now;
-                        _logger.LogInformation("Scheduled execution completed at {ExecutionTime}.", DateTime.UtcNow);
-                    }
-
-                    var warmupInterval = GetWarmupInterval(_cloudflareOptions.CurrentValue);
-                    if (ShouldRunPeriodicWarmup(now, lastWarmupExecution, warmupInterval))
-                    {
-                        CloseWaitingWindow();
-                        using (var activity = ActivitySource.StartActivity("news-worker.warmup", ActivityKind.Internal))
+                        if (warmupCompleted)
                         {
-                            activity?.SetTag("worker.name", nameof(NewsWorker));
-                            activity?.SetTag("worker.started_at_utc", DateTime.UtcNow.ToString("O"));
-
-                            _logger.LogInformation(
-                                "Triggering periodic cache warm-up (every {IntervalHours} hour(s)).",
-                                warmupInterval.TotalHours);
-
-                            await WarmCloudflareCacheAsync(stoppingToken);
-                            ranPeriodicWarmup = true;
                             lastWarmupExecution = now;
                         }
                     }
                 }
-
-                var isWaitingCycle = !ranScheduledExecution && !ranPeriodicWarmup;
-                if (isWaitingCycle)
-                {
-                    if (waitingWindowActivity is null)
-                    {
-                        waitingWindowStartedAtUtc = DateTime.UtcNow;
-                        waitingCyclesCount = 0;
-                        waitingWindowActivity = ActivitySource.StartActivity("news-worker.waiting-window", ActivityKind.Internal);
-                        waitingWindowActivity?.SetTag("worker.name", nameof(NewsWorker));
-                        waitingWindowActivity?.SetTag("worker.started_at_utc", waitingWindowStartedAtUtc.ToString("O"));
-                    }
-
-                    waitingCyclesCount++;
-                    waitingWindowActivity?.SetTag("worker.waiting_cycles_count", waitingCyclesCount);
-                }
-                else if (waitingWindowActivity is not null)
-                {
-                    CloseWaitingWindow();
-                }
             }
-            catch (OperationCanceledException ex) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogError(ex, "NewsWorker is stopping due to cancellation request.");
-                CloseWaitingWindow();
-                dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
-                dayCycleActivity?.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds);
-                dayCycleActivity?.Dispose();
                 break;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogError(ex, "NewsWorker loop received a non-shutdown cancellation and will continue.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in NewsWorker.");
+                _logger.LogError(ex, "Unexpected error in NewsWorker loop.");
             }
 
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(PollingInterval, stoppingToken);
         }
-
-        CloseWaitingWindow();
-        dayCycleActivity?.SetTag("worker.completed_at_utc", DateTime.UtcNow.ToString("O"));
-        dayCycleActivity?.SetTag("worker.duration_ms", (long)(DateTime.UtcNow - dayCycleStartedAtUtc).TotalMilliseconds);
-        dayCycleActivity?.Dispose();
     }
 
-    private async Task GenerateDailyPropositionsAsync(CancellationToken cancellationToken)
+    private async Task<WorkerRuntimeSettings> GetWorkerRuntimeSettingsAsync(CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity("news-worker.daily-processing", ActivityKind.Internal);
-        activity?.SetTag("worker.name", nameof(NewsWorker));
-        activity?.SetTag("worker.started_at_utc", DateTime.UtcNow.ToString("O"));
-
         using var scope = _serviceProvider.CreateScope();
-        var generator = scope.ServiceProvider.GetRequiredService<DailyPropositionGenerator>();
-        await generator.GenerateDailyPropositionsAsync(cancellationToken);
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var settingsByKey = await db.AppSettings
+            .AsNoTracking()
+            .Where(x => x.Key == AppSettings.NewsWorkerCron.Key || x.Key == AppSettings.IsNewsWorkerActive.Key)
+            .ToDictionaryAsync(x => x.Key, x => x.Value, cancellationToken);
 
-        if(!_environment.IsDevelopment())
-        {
-            var purgeResult = await _cloudflareCachePurgeClient.PurgeConfiguredUrlsAsync(cancellationToken);
-            if (purgeResult.IsFailed)
-            {
-                _logger.LogWarning(
-                    "Daily proposition generation finished, but Cloudflare purge failed: {Errors}",
-                    string.Join(", ", purgeResult.Errors.Select(x => x.Message)));
-            }
-        }
-
-        await WarmCloudflareCacheAsync(cancellationToken);
+        var cronExpression = settingsByKey.GetValueOrDefault(AppSettings.NewsWorkerCron.Key) ?? AppSettings.NewsWorkerCron.Value;
+        var isActiveRawValue = settingsByKey.GetValueOrDefault(AppSettings.IsNewsWorkerActive.Key) ?? AppSettings.IsNewsWorkerActive.Value;
+        return new WorkerRuntimeSettings(cronExpression, isActiveRawValue);
     }
 
-    private async Task WarmCloudflareCacheAsync(CancellationToken cancellationToken)
+    private async Task<bool> RunDailyGenerationAsync(
+        string trigger,
+        string cronExpression,
+        DateTimeOffset scheduledAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var runId = Guid.NewGuid().ToString("N");
+        var startedAtUtc = DateTimeOffset.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
+
+        using var activity = ActivitySource.StartActivity("news-worker.daily-generation", ActivityKind.Internal);
+        activity?.SetTag("worker.name", nameof(NewsWorker));
+        activity?.SetTag("worker.event", "daily-generation");
+        activity?.SetTag("worker.run_id", runId);
+        activity?.SetTag("worker.trigger", trigger);
+        activity?.SetTag("worker.cron", cronExpression);
+        activity?.SetTag("worker.scheduled_at_utc", scheduledAtUtc.ToString("O"));
+        activity?.SetTag("worker.started_at_utc", startedAtUtc.ToString("O"));
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var generator = scope.ServiceProvider.GetRequiredService<DailyPropositionGenerator>();
+            await generator.GenerateDailyPropositionsAsync(cancellationToken);
+
+            var purgeStatus = "skipped-development";
+            var purgeErrors = string.Empty;
+
+            if (!_environment.IsDevelopment())
+            {
+                var purgeResult = await _cloudflareCachePurgeClient.PurgeConfiguredUrlsAsync(cancellationToken);
+                if (purgeResult.IsFailed)
+                {
+                    purgeStatus = "failed";
+                    purgeErrors = string.Join(" | ", purgeResult.Errors.Select(x => x.Message).Take(5));
+                }
+                else
+                {
+                    purgeStatus = "succeeded";
+                }
+            }
+
+            if (_cloudflareOptions.CurrentValue.WarmupEnabled)
+            {
+                await RunWarmupAsync(
+                    trigger: "daily-generation",
+                    cancellationToken: cancellationToken);
+            }
+
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            activity?.SetTag("worker.completed_at_utc", DateTimeOffset.UtcNow.ToString("O"));
+            activity?.SetTag("worker.duration_ms", stopwatch.ElapsedMilliseconds);
+            activity?.SetTag("worker.purge_status", purgeStatus);
+
+            if (string.IsNullOrWhiteSpace(purgeErrors))
+            {
+                _logger.LogInformation(
+                    "NewsWorker run completed. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus}",
+                    runId,
+                    trigger,
+                    cronExpression,
+                    scheduledAtUtc,
+                    stopwatch.ElapsedMilliseconds,
+                    purgeStatus);
+            }
+            else
+            {
+                activity?.SetTag("worker.purge_errors", purgeErrors);
+                _logger.LogWarning(
+                    "NewsWorker run completed with warnings. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus} PurgeErrors={PurgeErrors}",
+                    runId,
+                    trigger,
+                    cronExpression,
+                    scheduledAtUtc,
+                    stopwatch.ElapsedMilliseconds,
+                    purgeStatus,
+                    purgeErrors);
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("worker.completed_at_utc", DateTimeOffset.UtcNow.ToString("O"));
+            activity?.SetTag("worker.duration_ms", stopwatch.ElapsedMilliseconds);
+            _logger.LogError(
+                ex,
+                "NewsWorker run failed. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs}",
+                runId,
+                trigger,
+                cronExpression,
+                scheduledAtUtc,
+                stopwatch.ElapsedMilliseconds);
+
+            return false;
+        }
+    }
+
+    private async Task<bool> RunWarmupAsync(string trigger, CancellationToken cancellationToken)
+    {
+        var runId = Guid.NewGuid().ToString("N");
+        var startedAtUtc = DateTimeOffset.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
+
+        using var activity = ActivitySource.StartActivity("news-worker.warmup", ActivityKind.Internal);
+        activity?.SetTag("worker.name", nameof(NewsWorker));
+        activity?.SetTag("worker.event", "warmup");
+        activity?.SetTag("worker.run_id", runId);
+        activity?.SetTag("worker.trigger", trigger);
+        activity?.SetTag("worker.started_at_utc", startedAtUtc.ToString("O"));
+
+        try
+        {
+            var result = await WarmCloudflareCacheAsync(cancellationToken);
+
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            activity?.SetTag("worker.completed_at_utc", DateTimeOffset.UtcNow.ToString("O"));
+            activity?.SetTag("worker.duration_ms", stopwatch.ElapsedMilliseconds);
+            activity?.SetTag("worker.warmup_status", result.Status.ToString());
+            activity?.SetTag("worker.warmup_total_urls", result.TotalCount);
+            activity?.SetTag("worker.warmup_success_count", result.SuccessCount);
+            activity?.SetTag("worker.warmup_failure_count", result.Failures.Count);
+
+            if (result.Status == WarmupStatus.CompletedWithFailures)
+            {
+                var sampleFailures = string.Join(" | ", result.Failures.Take(5));
+                activity?.SetTag("worker.warmup_sample_failures", sampleFailures);
+                _logger.LogWarning(
+                    "NewsWorker run completed with warnings. Event=warmup RunId={RunId} Trigger={Trigger} DurationMs={DurationMs} Status={Status} SuccessCount={SuccessCount} TotalCount={TotalCount} SampleFailures={SampleFailures}",
+                    runId,
+                    trigger,
+                    stopwatch.ElapsedMilliseconds,
+                    result.Status,
+                    result.SuccessCount,
+                    result.TotalCount,
+                    sampleFailures);
+                return true;
+            }
+
+            _logger.LogInformation(
+                "NewsWorker run completed. Event=warmup RunId={RunId} Trigger={Trigger} DurationMs={DurationMs} Status={Status} SuccessCount={SuccessCount} TotalCount={TotalCount}",
+                runId,
+                trigger,
+                stopwatch.ElapsedMilliseconds,
+                result.Status,
+                result.SuccessCount,
+                result.TotalCount);
+
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("worker.completed_at_utc", DateTimeOffset.UtcNow.ToString("O"));
+            activity?.SetTag("worker.duration_ms", stopwatch.ElapsedMilliseconds);
+            _logger.LogError(
+                ex,
+                "NewsWorker run failed. Event=warmup RunId={RunId} Trigger={Trigger} DurationMs={DurationMs}",
+                runId,
+                trigger,
+                stopwatch.ElapsedMilliseconds);
+
+            return false;
+        }
+    }
+
+    private async Task<WarmupResult> WarmCloudflareCacheAsync(CancellationToken cancellationToken)
     {
         var options = _cloudflareOptions.CurrentValue;
         if (!options.WarmupEnabled)
         {
-            return;
+            return WarmupResult.Disabled;
         }
 
         var urlsToWarm = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -284,8 +390,7 @@ public class NewsWorker : BackgroundService
 
         if (urlsToWarm.Count == 0)
         {
-            _logger.LogInformation("Cloudflare warm-up skipped because no URLs were collected.");
-            return;
+            return WarmupResult.SkippedNoUrls;
         }
 
         var client = _httpClientFactory.CreateClient(CacheWarmupHttpClientName);
@@ -324,18 +429,10 @@ public class NewsWorker : BackgroundService
 
         if (failures.Count > 0)
         {
-            _logger.LogWarning(
-                "Cloudflare warm-up completed with partial failures ({SuccessCount}/{TotalCount} succeeded). Sample failures: {SampleFailures}",
-                successCount,
-                urlsToWarm.Count,
-                string.Join(" | ", failures.Take(10)));
-            return;
+            return WarmupResult.CompletedWithFailures(urlsToWarm.Count, successCount, failures);
         }
 
-        _logger.LogInformation(
-            "Cloudflare warm-up completed successfully ({SuccessCount}/{TotalCount} URLs).",
-            successCount,
-            urlsToWarm.Count);
+        return WarmupResult.Completed(urlsToWarm.Count, successCount);
     }
 
     private static Uri? TryGetSiteBaseAddress(IEnumerable<string>? configuredUrls)
@@ -367,5 +464,27 @@ public class NewsWorker : BackgroundService
         }
 
         return !lastWarmupExecution.HasValue || now - lastWarmupExecution.Value >= interval;
+    }
+
+    private sealed record WorkerRuntimeSettings(string CronExpression, string IsActiveRawValue);
+
+    private enum WarmupStatus
+    {
+        Disabled = 0,
+        SkippedNoUrls = 1,
+        Completed = 2,
+        CompletedWithFailures = 3
+    }
+
+    private sealed record WarmupResult(WarmupStatus Status, int TotalCount, int SuccessCount, IReadOnlyList<string> Failures)
+    {
+        public static WarmupResult Disabled { get; } = new(WarmupStatus.Disabled, 0, 0, Array.Empty<string>());
+        public static WarmupResult SkippedNoUrls { get; } = new(WarmupStatus.SkippedNoUrls, 0, 0, Array.Empty<string>());
+
+        public static WarmupResult Completed(int totalCount, int successCount) =>
+            new(WarmupStatus.Completed, totalCount, successCount, Array.Empty<string>());
+
+        public static WarmupResult CompletedWithFailures(int totalCount, int successCount, IReadOnlyList<string> failures) =>
+            new(WarmupStatus.CompletedWithFailures, totalCount, successCount, failures);
     }
 }
