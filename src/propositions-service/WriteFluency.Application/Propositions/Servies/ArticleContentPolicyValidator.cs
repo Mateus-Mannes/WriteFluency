@@ -54,9 +54,6 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
         "buying guide",
         "gift guide",
         "shopping guide",
-        "review",
-        "reviews",
-        "deals",
         "discount",
         "discounts",
         "coupon",
@@ -65,6 +62,7 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
         "giveaway",
         "gift card",
         "affiliate",
+        "sale"
     ];
 
     private static readonly Regex NonWordRegex = new(@"\W+", RegexOptions.Compiled);
@@ -75,24 +73,41 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
             return Result.Fail("Article content is empty");
 
         var normalizedText = Normalize(articleContent);
+        var validationErrors = new List<Error>();
 
-        if (ContainsAnyTerm(normalizedText, ViolenceTerms))
-            return Result.Fail("Article content contains violence-related content");
+        AddViolationIfAny(validationErrors, normalizedText, ViolenceTerms, nameof(ViolenceTerms));
 
-        if (ContainsAnyTerm(normalizedText, CommercialContentTerms))
-            return Result.Fail("Article content contains commercial/listicle content");
+        AddViolationIfAny(validationErrors, normalizedText, CommercialContentTerms, nameof(CommercialContentTerms));
 
-        if (ContainsAnyTerm(normalizedText, SexualTerms))
-            return Result.Fail("Article content contains sexual content");
+        AddViolationIfAny(validationErrors, normalizedText, SexualTerms, nameof(SexualTerms));
 
-        if (ContainsAnyTerm(normalizedText, AbuseTerms))
-            return Result.Fail("Article content contains abuse-related content");
+        AddViolationIfAny(validationErrors, normalizedText, AbuseTerms, nameof(AbuseTerms));
+
+        if (validationErrors.Count > 0)
+            return Result.Fail(validationErrors);
 
         return Result.Ok();
     }
 
-    private static bool ContainsAnyTerm(string normalizedText, IEnumerable<string> terms)
-        => terms.Any(term => normalizedText.Contains(Normalize(term), StringComparison.Ordinal));
+    private static void AddViolationIfAny(
+        ICollection<Error> validationErrors,
+        string normalizedText,
+        IEnumerable<string> terms,
+        string messagePrefix)
+    {
+        var matchedTerms = FindMatchedTerms(normalizedText, terms);
+        if (matchedTerms.Count == 0)
+            return;
+
+        var identifiedTerms = string.Join(", ", matchedTerms.Select(term => $"'{term}'"));
+        validationErrors.Add(new Error($"{messagePrefix}. Invalid terms identified: {identifiedTerms}"));
+    }
+
+    private static IReadOnlyList<string> FindMatchedTerms(string normalizedText, IEnumerable<string> terms)
+        => terms
+            .Where(term => normalizedText.Contains(Normalize(term), StringComparison.Ordinal))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
     private static string Normalize(string input)
     {
