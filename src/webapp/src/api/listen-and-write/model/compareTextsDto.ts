@@ -12,5 +12,5 @@
 export interface CompareTextsDto { 
     originalText?: string | null;
     userText?: string | null;
+    propositionId?: number | null;
 }
-

@@ -17,10 +17,17 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         TextComparisonService textComparisonService,
         ILogger<TextComparisonEndpointGroup> logger)
     {
-        logger.LogInformation("Comparing texts: UserText='{UserText}'", compareTextsDto.UserText);
+        logger.LogInformation(
+            "Comparing texts for proposition {PropositionId}: UserText='{UserText}'",
+            compareTextsDto.PropositionId,
+            compareTextsDto.UserText);
         var result = textComparisonService
             .CompareTexts(compareTextsDto.OriginalText, compareTextsDto.UserText);
-        logger.LogInformation("Comparison result: Accuracy={AccuracyPercentage}, Comparisons={Comparisons}", result.AccuracyPercentage, result.Comparisons.Count);
+        logger.LogInformation(
+            "Comparison result for proposition {PropositionId}: Accuracy={AccuracyPercentage}, Comparisons={Comparisons}",
+            compareTextsDto.PropositionId,
+            result.AccuracyPercentage,
+            result.Comparisons.Count);
         return TypedResults.Ok(result);
     }
 }

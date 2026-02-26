@@ -9,6 +9,7 @@ import { ExerciseSectionComponent } from './exercise-section/exercise-section.co
 import { ExerciseResultsSectionComponent } from './exercise-results-section/exercise-results-section.component';
 import { ListenFirstTourService } from './services/listen-first-tour.service';
 import { ExerciseTourService } from './services/exercise-tour.service';
+import { SubmitTourService } from './services/submit-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
@@ -65,6 +66,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   constructor(
     private listenFirstTourService: ListenFirstTourService,
     private exerciseTourService: ExerciseTourService,
+    private submitTour: SubmitTourService,
     private route: ActivatedRoute,
     private router: Router,
     private propositionsService: PropositionsService,
@@ -348,6 +350,18 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onExerciseSubmit() {
+    const submitWarning = this.getSubmitWarningMessage();
+    if (submitWarning) {
+      queueMicrotask(() => {
+        this.submitTour.startRecommendationTour(submitWarning, () => this.submitExercise());
+      });
+      return;
+    }
+
+    this.submitExercise();
+  }
+
+  private submitExercise() {
     this.newsAudioComponent.pauseAudio();
     this.isSubmitting.set(true);
     
@@ -356,7 +370,8 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     this.textComparisonsService.apiTextComparisonCompareTextsPost({
       originalText: this.proposition()!.text,
-      userText: this.exerciseSectionComponent.text()
+      userText: this.exerciseSectionComponent.text(),
+      propositionId: this.proposition()?.id ?? null
     }).subscribe({
       next: (result: TextComparisonResult) => {
         const elapsed = Date.now() - startTime;
@@ -381,6 +396,59 @@ export class ListenAndWriteComponent implements OnDestroy {
         }, remainingTime);
       }
     });
+  }
+
+  private getSubmitWarningMessage(): string | null {
+    const warnings: string[] = [];
+
+    if (!this.hasCompletedAudioPlayback()) {
+      warnings.push('We strongly recommend listening through the audio before submitting. You can skip words or write what you think you heard.');
+      warnings.push('If you submit too early, the accuracy percentage can be less precise and you may lose points.');
+      warnings.push('If auto-pause is enabled, press play again after each pause using Ctrl/Cmd + Enter.');
+    }
+
+    const minimumWords = this.getMinimumWordsForSubmit();
+    const userWords = this.exerciseSectionComponent?.wordCount ?? 0;
+    if (minimumWords > 0 && userWords < minimumWords) {
+      warnings.push(`Your text is still short (${userWords} words). Partial answers can reduce correction accuracy.`);
+    }
+
+    if (warnings.length === 0) {
+      return null;
+    }
+
+    return `Quick reminder before submitting:\n\n- ${warnings.join('\n\n- ')}`;
+  }
+
+  private hasCompletedAudioPlayback(): boolean {
+    if (this.newsAudioComponent?.audioEnded) {
+      return true;
+    }
+
+    const audio = this.newsAudioComponent?.audioRef?.nativeElement;
+    if (!audio) {
+      return false;
+    }
+
+    const duration = audio.duration;
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return false;
+    }
+
+    return audio.currentTime >= Math.max(0, duration - 0.25);
+  }
+
+  private getMinimumWordsForSubmit(): number {
+    const originalWords = this.countWords(this.proposition()?.text);
+    if (originalWords === 0) {
+      return 0;
+    }
+
+    return Math.max(3, Math.ceil(originalWords * 0.2));
+  }
+
+  private countWords(text: string | null | undefined): number {
+    return (text || '').trim().split(/\s+/).filter(Boolean).length;
   }
 
   ngOnDestroy(): void {
