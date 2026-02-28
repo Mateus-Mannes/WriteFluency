@@ -9,8 +9,9 @@ import { environment } from '../enviroments/enviroment';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import { shouldUseAppInsights } from './insights.check';
 
-if (!environment.production) {
+if (!shouldUseAppInsights()) {
   let provider: WebTracerProvider;
 
   provider = new WebTracerProvider({

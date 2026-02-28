@@ -3,6 +3,7 @@ import { offset } from '@floating-ui/dom';
 import { ShepherdService } from 'angular-shepherd';
 import { BrowserService } from '../../core/services/browser.service';
 import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
+import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
 
 @Injectable({ providedIn: 'root' })
 
@@ -10,7 +11,8 @@ export class ExerciseTourService {
 
   constructor(
     private shepherd: ShepherdService,
-    private browserService: BrowserService
+    private browserService: BrowserService,
+    private exerciseSessionTracking: ExerciseSessionTrackingService
   ) { }
 
   finishTour() {
@@ -45,7 +47,7 @@ export class ExerciseTourService {
       // Prevent Shepherd from using arrow keys so it doesn't clash with audio shortcuts.
       this.shepherd.keyboardNavigation = false;
 
-      this.shepherd.addSteps([
+      const steps = [
         {
           id: 'intro-tutorial',
           title: 'Quick Tour',
@@ -231,13 +233,26 @@ export class ExerciseTourService {
             },
           ],
         },
-      ]);
+      ];
+
+      this.shepherd.addSteps(this.withTrackedButtons('exercise-tour', steps));
+      this.exerciseSessionTracking.trackEvent('shepherd_tour_opened', {
+        tour_name: 'exercise-tour'
+      });
 
       // Ensure localStorage is updated when tour ends (must be after addSteps)
       this.shepherd.tourObject?.on('complete', () => {
+        this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
+          tour_name: 'exercise-tour',
+          outcome: 'complete'
+        });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
       this.shepherd.tourObject?.on('cancel', () => {
+        this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
+          tour_name: 'exercise-tour',
+          outcome: 'cancel'
+        });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
 
@@ -264,7 +279,7 @@ export class ExerciseTourService {
       this.shepherd.modal = true;
       this.shepherd.keyboardNavigation = false;
 
-      this.shepherd.addSteps([
+      const steps = [
         {
           id: 'intro-tutorial-mobile',
           title: 'Mobile Preview',
@@ -379,16 +394,63 @@ export class ExerciseTourService {
             },
           ],
         },
-      ]);
+      ];
+
+      this.shepherd.addSteps(this.withTrackedButtons('exercise-tour-mobile', steps));
+      this.exerciseSessionTracking.trackEvent('shepherd_tour_opened', {
+        tour_name: 'exercise-tour-mobile'
+      });
 
       this.shepherd.tourObject?.on('complete', () => {
+        this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
+          tour_name: 'exercise-tour-mobile',
+          outcome: 'complete'
+        });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
       this.shepherd.tourObject?.on('cancel', () => {
+        this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
+          tour_name: 'exercise-tour-mobile',
+          outcome: 'cancel'
+        });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
       });
 
       this.shepherd.start();
     }, 50);
+  }
+
+  private withTrackedButtons(
+    tourName: string,
+    steps: Array<{ id?: string; buttons?: Array<{ text?: string; action?: () => void }> } & Record<string, unknown>>
+  ): Array<Record<string, unknown>> {
+    return steps.map((step) => {
+      if (!step.buttons?.length) {
+        return step;
+      }
+
+      const stepId = step.id ?? 'unknown';
+      return {
+        ...step,
+        buttons: step.buttons.map((button) => {
+          const originalAction = button.action;
+          return {
+            ...button,
+            action: () => {
+              this.exerciseSessionTracking.trackEvent('shepherd_button_clicked', {
+                tour_name: tourName,
+                step_id: stepId,
+                button_text: this.getButtonText(button.text)
+              });
+              originalAction?.();
+            },
+          };
+        }),
+      };
+    });
+  }
+
+  private getButtonText(text: string | undefined): string {
+    return (text ?? '').replace(/<[^>]*>/g, '').trim();
   }
 }

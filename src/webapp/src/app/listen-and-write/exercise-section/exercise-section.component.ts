@@ -18,6 +18,8 @@ export class ExerciseSectionComponent implements OnInit {
 
   submitConfirmed = output<void>();
 
+  textChanged = output<string>();
+
   saveExerciseState = output<void>();
 
   proposition = input<Proposition | null>();
@@ -101,6 +103,7 @@ export class ExerciseSectionComponent implements OnInit {
   onTextChange(event: Event) {
     const value = (event.target as HTMLTextAreaElement).value;
     this.text.set(value);
+    this.textChanged.emit(value);
     this.saveState();
   }
 

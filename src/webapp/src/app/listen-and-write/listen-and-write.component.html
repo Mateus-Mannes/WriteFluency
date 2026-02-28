@@ -41,6 +41,7 @@
             [initialText]="initialText()" 
             [initialAutoPause]="initialAutoPause()" 
             (submitConfirmed)="onExerciseSubmit()" 
+            (textChanged)="onExerciseTextChanged($event)"
             (saveExerciseState)="onSaveExerciseState()">
         </app-exercise-section>
     }

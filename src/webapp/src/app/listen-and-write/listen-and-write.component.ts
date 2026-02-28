@@ -17,10 +17,15 @@ import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and
 import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
+import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
+const BEGIN_EXERCISE_CONVERSION_SEND_TO = 'AW-17978787910/kwApCJDixoAcEMaQ-vxC';
+const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
+type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
+type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -43,6 +48,8 @@ export class ListenAndWriteComponent implements OnDestroy {
   @ViewChild(NewsAudioComponent) newsAudioComponent!: NewsAudioComponent;
 
   private autoPauseTimer: any = null;
+  private pendingAudioPlaySource: AudioPlaySource | null = null;
+  private pendingAudioPlaySourceTimer: ReturnType<typeof setTimeout> | null = null;
 
   exerciseState = signal<ExerciseState>('intro');
 
@@ -72,7 +79,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     private propositionsService: PropositionsService,
     private textComparisonsService: TextComparisonsService,
     private browserService: BrowserService,
-    private seoService: SeoService
+    private seoService: SeoService,
+    private exerciseSessionTracking: ExerciseSessionTrackingService
   ) {
     let lastState: ExerciseState | null = null;
     // Get the exercise ID from route parameters
@@ -81,7 +89,17 @@ export class ListenAndWriteComponent implements OnDestroy {
     ).subscribe(params => {
       const id = params['id'];
       if (id) {
-        this.exerciseId = +id; // Convert to number
+        const parsedId = Number(id);
+        if (!Number.isFinite(parsedId)) {
+          return;
+        }
+
+        this.exerciseSessionTracking.endSession('route_changed');
+        this.exerciseId = parsedId;
+        this.exerciseSessionTracking.startSession({
+          exerciseId: this.exerciseId,
+          source: 'route_navigation'
+        });
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -147,6 +165,16 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.propositionsService.apiPropositionIdGet(id).subscribe({
       next: (data) => {
         this.proposition.set(data);
+        this.exerciseSessionTracking.updateSessionContext({
+          exerciseId: id
+        });
+        this.exerciseSessionTracking.trackEvent('exercise_content_loaded', {
+          title: data.title,
+          subject: data.subject?.description ?? '',
+          complexity: data.complexity?.description ?? ''
+        }, {
+          audio_duration_seconds: data.audioDurationSeconds ?? 0
+        });
         
         // Update SEO meta tags for this specific exercise
         const complexityDesc = data.complexity?.description || 'Intermediate';
@@ -245,9 +273,14 @@ export class ListenAndWriteComponent implements OnDestroy {
     // Play/Pause: Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac)
     if (modifierKey && event.key === 'Enter') {
       event.preventDefault();
+      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
+        shortcut: 'ctrl_or_cmd_enter',
+        action: this.newsAudioComponent.isAudioPlaying() ? 'pause' : 'play'
+      });
       if (this.newsAudioComponent.isAudioPlaying()) {
         this.pauseAudioWithTimerClear();
       } else {
+        this.markNextAudioPlaySource('keyboard_shortcut');
         this.playAudioWithAutoPause();
         // Finish the tutorial if active
         this.exerciseTourService.finishTour();
@@ -255,13 +288,27 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
     // Rewind: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
     if (modifierKey && event.code === 'ArrowLeft') {
+      const seekSeconds = this.getShortcutSeekSeconds();
       event.preventDefault();
-      this.newsAudioComponent.rewindAudio(this.getShortcutSeekSeconds());
+      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
+        shortcut: 'ctrl_or_cmd_arrow_left',
+        action: 'rewind'
+      }, {
+        seek_seconds: seekSeconds
+      });
+      this.newsAudioComponent.rewindAudio(seekSeconds);
     }
     // Forward: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
     if (modifierKey && event.code === 'ArrowRight') {
+      const seekSeconds = this.getShortcutSeekSeconds();
       event.preventDefault();
-      this.newsAudioComponent.forwardAudio(this.getShortcutSeekSeconds());
+      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
+        shortcut: 'ctrl_or_cmd_arrow_right',
+        action: 'forward'
+      }, {
+        seek_seconds: seekSeconds
+      });
+      this.newsAudioComponent.forwardAudio(seekSeconds);
     }
   }
 
@@ -288,32 +335,56 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   beginExercise() {
+    const isFirstTimeUser = this.isFirstTime();
+    this.exerciseSessionTracking.trackEvent('begin_exercise_clicked', {
+      is_first_time: isFirstTimeUser,
+      audio_ended_before_begin: this.newsAudioComponent.audioEnded
+    });
+    this.trackBeginExerciseConversion();
     this.newsAudioComponent.pauseAudio();
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.clearAutoPauseTimer();
 
     if (this.newsAudioComponent.audioEnded) {
+      this.exerciseSessionTracking.trackEvent('exercise_started', {
+        start_mode: 'audio_already_completed'
+      });
       this.setNewState('exercise');
       this.browserService.scrollToTop();
       return;
     }
 
-    if (this.isFirstTime()) {
+    if (isFirstTimeUser) {
+      this.exerciseSessionTracking.trackEvent('listen_first_prompt_shown');
       this.listenFirstTourService.prompt(
         '#newsAudio',
-        () => this.newsAudioComponent.playAudio(),
         () => {
+          this.markNextAudioPlaySource('listen_first_prompt');
+          this.newsAudioComponent.playAudio();
+        },
+        () => {
+          this.exerciseSessionTracking.trackEvent('exercise_started', {
+            start_mode: 'skip_listen_first_prompt'
+          });
           this.setNewState('exercise');
           this.browserService.scrollToTop();
         }
       );
     } else {
+      this.exerciseSessionTracking.trackEvent('exercise_started', {
+        start_mode: 'direct_start'
+      });
       this.setNewState('exercise');
       this.browserService.scrollToTop();
     }
   }
 
   onAudioPlayClicked() {
+    const playSource = this.consumePendingAudioPlaySource();
+    this.exerciseSessionTracking.trackEvent('audio_play_clicked', {
+      exercise_state: this.exerciseState(),
+      play_source: playSource
+    });
     this.cancelTour();
     
     // Apply auto-pause logic if in exercise state
@@ -351,6 +422,10 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onExerciseSubmit() {
     const submitWarning = this.getSubmitWarningMessage();
+    this.exerciseSessionTracking.trackEvent('exercise_submit_clicked', {
+      has_submit_warning: Boolean(submitWarning)
+    });
+
     if (submitWarning) {
       queueMicrotask(() => {
         this.submitTour.startRecommendationTour(submitWarning, () => this.submitExercise());
@@ -362,8 +437,19 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private submitExercise() {
+    const userText = this.exerciseSectionComponent.text();
     this.newsAudioComponent.pauseAudio();
     this.isSubmitting.set(true);
+    this.exerciseSessionTracking.markSubmitted();
+    this.exerciseSessionTracking.trackTextChanged(userText);
+    this.exerciseSessionTracking.trackEvent('exercise_submit_confirmed', {
+      text_snapshot: userText.slice(0, 1200),
+      text_truncated: userText.length > 1200
+    }, {
+      text_char_count: userText.length,
+      text_word_count: this.countWords(userText)
+    });
+    this.trackExerciseSubmitConversion();
     
     const startTime = Date.now();
     const minLoadingTime = 2000; // 2 seconds minimum
@@ -378,6 +464,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         const remainingTime = Math.max(0, minLoadingTime - elapsed);
         
         setTimeout(() => {
+          this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded');
           this.userText.set(this.exerciseSectionComponent.text());
           this.result.set(result);
           this.onSaveExerciseState();
@@ -391,10 +478,47 @@ export class ListenAndWriteComponent implements OnDestroy {
         const remainingTime = Math.max(0, minLoadingTime - elapsed);
         
         setTimeout(() => {
+          this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
+            error: error?.message ?? 'unknown_error'
+          });
           this.isSubmitting.set(false);
           alert('Error processing your exercise. Please try again.');
         }, remainingTime);
       }
+    });
+  }
+
+  private trackExerciseSubmitConversion(): void {
+    if (!this.browserService.isBrowserEnvironment()) {
+      return;
+    }
+
+    const gtag = (globalThis as typeof globalThis & { gtag?: GtagEvent }).gtag;
+    if (typeof gtag !== 'function') {
+      return;
+    }
+
+    gtag('event', 'conversion', {
+      send_to: EXERCISE_SUBMIT_CONVERSION_SEND_TO,
+      value: 1.0,
+      currency: 'BRL'
+    });
+  }
+
+  private trackBeginExerciseConversion(): void {
+    if (!this.browserService.isBrowserEnvironment()) {
+      return;
+    }
+
+    const gtag = (globalThis as typeof globalThis & { gtag?: GtagEvent }).gtag;
+    if (typeof gtag !== 'function') {
+      return;
+    }
+
+    gtag('event', 'conversion', {
+      send_to: BEGIN_EXERCISE_CONVERSION_SEND_TO,
+      value: 1.0,
+      currency: 'BRL'
     });
   }
 
@@ -452,11 +576,16 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearPendingAudioPlaySource();
+    this.exerciseSessionTracking.endSession('component_destroyed');
     // Clean up timer to prevent memory leaks
     this.clearAutoPauseTimer();
   }
 
   onTryAgain() {
+    this.exerciseSessionTracking.trackEvent('exercise_post_submit_click', {
+      action: 'try_again'
+    });
     const stateKey = this.getExerciseStateKey();
     if (stateKey) {
       this.browserService.removeItem(stateKey);
@@ -469,6 +598,10 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onFindAnotherExercise() {
+    this.exerciseSessionTracking.trackEvent('exercise_post_submit_click', {
+      action: 'find_another_exercise'
+    });
+    this.exerciseSessionTracking.endSession('navigate_to_exercises');
     // Redirect to home page
     this.browserService.navigateTo('/exercises');
   }
@@ -492,6 +625,10 @@ export class ListenAndWriteComponent implements OnDestroy {
     };
 
     this.browserService.setItem(stateKey, JSON.stringify(state));
+  }
+
+  onExerciseTextChanged(text: string) {
+    this.exerciseSessionTracking.trackTextChanged(text);
   }
 
   setNewState(state: ExerciseState) {
@@ -522,5 +659,28 @@ export class ListenAndWriteComponent implements OnDestroy {
   private isMobileLayout(): boolean {
     const width = this.browserService.getWindowWidth();
     return width > 0 && width <= 1100;
+  }
+
+  private markNextAudioPlaySource(source: AudioPlaySource): void {
+    this.clearPendingAudioPlaySource();
+    this.pendingAudioPlaySource = source;
+    this.pendingAudioPlaySourceTimer = setTimeout(() => {
+      this.pendingAudioPlaySource = null;
+      this.pendingAudioPlaySourceTimer = null;
+    }, 2000);
+  }
+
+  private consumePendingAudioPlaySource(): AudioPlaySource {
+    const source = this.pendingAudioPlaySource ?? 'manual_click';
+    this.clearPendingAudioPlaySource();
+    return source;
+  }
+
+  private clearPendingAudioPlaySource(): void {
+    if (this.pendingAudioPlaySourceTimer) {
+      clearTimeout(this.pendingAudioPlaySourceTimer);
+      this.pendingAudioPlaySourceTimer = null;
+    }
+    this.pendingAudioPlaySource = null;
   }
 }
