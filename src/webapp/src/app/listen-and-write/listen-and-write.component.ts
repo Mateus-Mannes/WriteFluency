@@ -658,7 +658,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private isMobileLayout(): boolean {
     const width = this.browserService.getWindowWidth();
-    return width > 0 && width <= 1100;
+    return width > 0 && width <= 900;
   }
 
   private markNextAudioPlaySource(source: AudioPlaySource): void {

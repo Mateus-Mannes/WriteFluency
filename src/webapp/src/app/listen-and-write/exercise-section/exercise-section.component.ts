@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, signal, ViewChild, ElementRef, output, computed, OnInit } from '@angular/core';
+import { Component, input, signal, ViewChild, ElementRef, output, computed, OnInit, HostListener } from '@angular/core';
 import { SubmitTourService } from '../services/submit-tour.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -27,13 +27,16 @@ export class ExerciseSectionComponent implements OnInit {
   initialText = input<string | null>();
   initialAutoPause = input<number | null>();
 
-  autoPauseOptions = [
+  private readonly desktopAutoPauseOptions = [
     { label: 'Off', value: 0 },
     { label: '2s', value: 2 },
     { label: '3s', value: 3 },
     { label: '4s', value: 4 },
     { label: '5s', value: 5 }
   ];
+  autoPauseOptions = [...this.desktopAutoPauseOptions];
+  private isMobileMode = false;
+  private lastDesktopAutoPause = 2;
   selectedAutoPause = signal(2);
   shortcutSeekSeconds = computed(() => {
     const selected = this.selectedAutoPause();
@@ -70,15 +73,20 @@ export class ExerciseSectionComponent implements OnInit {
     if (this.initialText()) {
       this.text.set(this.initialText()?.toString() || '');
     }
-    if (this.isMobileLayout()) {
-      this.autoPauseOptions = [{ label: 'Off', value: 0 }];
-      this.selectedAutoPause.set(0);
-    } else {
-      const initialAutoPause = this.initialAutoPause();
-      if (initialAutoPause !== null && initialAutoPause !== undefined) {
-        this.selectedAutoPause.set(Number(initialAutoPause));
-      }
+
+    const initialAutoPause = this.initialAutoPause();
+    if (initialAutoPause !== null && initialAutoPause !== undefined) {
+      const parsedAutoPause = Number(initialAutoPause);
+      this.selectedAutoPause.set(parsedAutoPause);
+      this.lastDesktopAutoPause = parsedAutoPause;
     }
+
+    this.syncLayoutMode();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.syncLayoutMode();
   }
 
   focusTextArea() {
@@ -97,6 +105,9 @@ export class ExerciseSectionComponent implements OnInit {
 
   selectAutoPause(value: number) {
     this.selectedAutoPause.set(value);
+    if (!this.isMobileMode) {
+      this.lastDesktopAutoPause = value;
+    }
     this.saveState();
   }
 
@@ -114,5 +125,30 @@ export class ExerciseSectionComponent implements OnInit {
   private isMobileLayout(): boolean {
     const width = this.browserService.getWindowWidth();
     return width > 0 && width <= 900;
+  }
+
+  private syncLayoutMode(): void {
+    const shouldUseMobileMode = this.isMobileLayout();
+    if (shouldUseMobileMode === this.isMobileMode) {
+      return;
+    }
+
+    this.isMobileMode = shouldUseMobileMode;
+
+    if (shouldUseMobileMode) {
+      this.autoPauseOptions = [{ label: 'Off', value: 0 }];
+      this.lastDesktopAutoPause = this.selectedAutoPause();
+      if (this.selectedAutoPause() !== 0) {
+        this.selectedAutoPause.set(0);
+        this.saveState();
+      }
+      return;
+    }
+
+    this.autoPauseOptions = [...this.desktopAutoPauseOptions];
+    if (this.selectedAutoPause() !== this.lastDesktopAutoPause) {
+      this.selectedAutoPause.set(this.lastDesktopAutoPause);
+      this.saveState();
+    }
   }
 }
