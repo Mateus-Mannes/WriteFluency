@@ -13,7 +13,9 @@
         <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
     </div>
 </div>
-<textarea #exerciseTextArea id="exercise-text-area" class="exercise-text-area" [value]="text()" (input)="onTextChange($event)"></textarea>
+<textarea #exerciseTextArea id="exercise-text-area" class="exercise-text-area" [value]="text()"
+    (input)="onTextChange($event)" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+    data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>
 
 <div class="exercise-footer-row">
 
