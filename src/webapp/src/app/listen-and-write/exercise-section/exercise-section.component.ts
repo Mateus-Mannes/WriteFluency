@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Proposition } from 'src/api/listen-and-write';
 import { BrowserService } from '../../core/services/browser.service';
+import { ExerciseSessionTrackingService } from '../services/exercise-session-tracking.service';
 
 @Component({
   selector: 'app-exercise-section',
@@ -65,7 +66,8 @@ export class ExerciseSectionComponent implements OnInit {
 
   constructor(
     private submitTour: SubmitTourService,
-    private browserService: BrowserService
+    private browserService: BrowserService,
+    private exerciseSessionTracking: ExerciseSessionTrackingService
   ) { }
 
   ngOnInit(): void {
@@ -104,9 +106,18 @@ export class ExerciseSectionComponent implements OnInit {
   }
 
   selectAutoPause(value: number) {
+    const previousValue = this.selectedAutoPause();
     this.selectedAutoPause.set(value);
     if (!this.isMobileMode) {
       this.lastDesktopAutoPause = value;
+    }
+    if (previousValue !== value) {
+      this.exerciseSessionTracking.trackEvent('exercise_auto_pause_changed', {
+        source: 'exercise_section',
+        previous_auto_pause_seconds: previousValue,
+        auto_pause_seconds: value,
+        auto_pause_enabled: value > 0
+      });
     }
     this.saveState();
   }

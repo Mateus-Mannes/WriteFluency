@@ -12,8 +12,6 @@ export type InsightsMeasurements = Record<string, number>;
 export class Insights {
     private angularPlugin = new AngularPlugin();
     private initialized = false;
-    private currentOperationId: string | null = null;
-    private currentOperationParentId: string | null = null;
     private appInsights = new ApplicationInsights({
         config: {
             instrumentationKey: environment.instrumentationKey,
@@ -71,14 +69,6 @@ export class Insights {
             }
             envelope.tags['ai.cloud.role'] = 'wf-webapp'; 
             envelope.tags['ai.cloud.roleInstance'] = 'angular-client'; 
-
-            if (this.currentOperationId) {
-                envelope.tags['ai.operation.id'] = this.currentOperationId;
-            }
-
-            if (this.currentOperationParentId) {
-                envelope.tags['ai.operation.parentId'] = this.currentOperationParentId;
-            }
         });
 
         this.appInsights.loadAppInsights();
@@ -114,8 +104,4 @@ export class Insights {
         this.appInsights.trackTrace({ message, properties, measurements });
     }
 
-    setOperationContext(operationId: string | null, operationParentId: string | null = null): void {
-        this.currentOperationId = operationId;
-        this.currentOperationParentId = operationParentId;
-    }
 }

@@ -50,6 +50,7 @@ public static class Extensions
     {
         // Keep Information+; suppress Verbose/Debug everywhere.
         builder.Logging.SetMinimumLevel(LogLevel.Information);
+        var aiConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
         var resourceAttributes = new Dictionary<string, object>();
         if (!string.IsNullOrWhiteSpace(resourceName))
@@ -65,10 +66,13 @@ public static class Extensions
         {
             logging.IncludeFormattedMessage = true;
             logging.IncludeScopes = true;
-#if !DEBUG 
-            logging.SetResourceBuilder(resourceBuilder);
-            logging.AddAzureMonitorLogExporter();
-#endif
+
+            if (!string.IsNullOrWhiteSpace(aiConnectionString))
+            {
+                logging.SetResourceBuilder(resourceBuilder);
+                logging.AddAzureMonitorLogExporter(options => options.ConnectionString = aiConnectionString);
+            }
+
         });
 
         builder.Services.AddOpenTelemetry()
@@ -97,10 +101,12 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
-#if !DEBUG
-                tracing.SetResourceBuilder(resourceBuilder);
-                tracing.AddAzureMonitorTraceExporter();
-#endif
+
+                if (!string.IsNullOrWhiteSpace(aiConnectionString))
+                {
+                    tracing.SetResourceBuilder(resourceBuilder);
+                    tracing.AddAzureMonitorTraceExporter(options => options.ConnectionString = aiConnectionString);
+                }
             });
 
         builder.AddOpenTelemetryExporters();

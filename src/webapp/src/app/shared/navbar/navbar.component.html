@@ -1,7 +1,7 @@
 <mat-toolbar role="navigation" aria-label="Main navigation" class="app-toolbar">
   <div class="toolbar-content">
     <!-- Brand Logo -->
-    <a class="brand" routerLink="/" aria-label="WriteFluency Home">
+    <a class="brand" routerLink="/" aria-label="WriteFluency Home" (click)="onNavClick('brand', '/')">
       <img class="logo" src="../../../assets/app-icon.svg" alt="WriteFluency logo" width="36" height="36" />
       <span class="brand-text">
         <span class="text-primary-dark">Write</span><span class="text-primary">Fluency</span>
@@ -13,15 +13,15 @@
 
     <!-- Navigation Links -->
     <nav class="nav-links">
-      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" aria-label="Home">
+      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" aria-label="Home" (click)="onNavClick('home', '/')">
         <mat-icon aria-hidden="true">home</mat-icon>
         <span>Home</span>
       </a>
-      <a class="nav-link" routerLink="/exercises" routerLinkActive="active" aria-label="Exercises">
+      <a class="nav-link" routerLink="/exercises" routerLinkActive="active" aria-label="Exercises" (click)="onNavClick('exercises', '/exercises')">
         <mat-icon aria-hidden="true">library_books</mat-icon>
         <span>Exercises</span>
       </a>
-      <a class="nav-link" routerLink="/about" routerLinkActive="active" aria-label="About">
+      <a class="nav-link" routerLink="/about" routerLinkActive="active" aria-label="About" (click)="onNavClick('about', '/about')">
         <mat-icon aria-hidden="true">info</mat-icon>
         <span>About</span>
       </a>

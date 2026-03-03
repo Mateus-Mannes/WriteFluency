@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -96,7 +97,39 @@ app.UseCors(opts =>
         opts.WithOrigins(clients)
         .AllowAnyMethod()
         .AllowAnyHeader();
-    else opts.AllowAnyOrigin();
+    else opts.AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+});
+
+app.Use(async (context, next) =>
+{
+    var sessionId = context.Request.Headers["x-wf-session-id"].ToString();
+    var operationId = context.Request.Headers["x-wf-operation-id"].ToString();
+
+    static void EnrichActivity(Activity? activity, string session, string operation)
+    {
+        if (activity is null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(session))
+        {
+            activity.SetTag("wf.session_id", session);
+            activity.AddBaggage("wf.session_id", session);
+        }
+
+        if (!string.IsNullOrWhiteSpace(operation))
+        {
+            activity.SetTag("wf.operation_id", operation);
+            activity.AddBaggage("wf.operation_id", operation);
+        }
+    }
+
+    EnrichActivity(Activity.Current, sessionId, operationId);
+    await next();
+    EnrichActivity(Activity.Current, sessionId, operationId);
 });
 
 // Configure the HTTP request pipeline.

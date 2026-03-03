@@ -1,12 +1,13 @@
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
 import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { environment } from '../enviroments/enviroment';
 import { InsightsModule } from '../telemetry/insights.module';
 import { appRoutes } from './app.routes';
 import { provideApi } from 'src/api/listen-and-write/provide-api';
 import { shouldUseAppInsights } from 'src/telemetry/insights.check';
+import { SessionCorrelationInterceptor } from './core/interceptors/session-correlation.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ scrollPositionRestoration: 'disabled' })
     ),
     provideHttpClient(withInterceptorsFromDi(), withFetch()),
+    { provide: HTTP_INTERCEPTORS, useClass: SessionCorrelationInterceptor, multi: true },
     provideApi(environment.apiUrl),
     provideZoneChangeDetection(),
     ...(shouldUseAppInsights() && typeof window !== 'undefined'

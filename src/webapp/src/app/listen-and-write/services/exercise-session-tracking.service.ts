@@ -39,6 +39,14 @@ export class ExerciseSessionTrackingService {
     return this.session !== null;
   }
 
+  getCurrentSessionId(): string | null {
+    return this.session?.sessionId ?? null;
+  }
+
+  getCurrentOperationId(): string | null {
+    return this.session?.operationId ?? null;
+  }
+
   startSession(params: { exerciseId: number | null; source?: string }): void {
     if (!this.browserService.isBrowserEnvironment() || !this.isTrackingEnabled()) {
       this.session = null;
@@ -64,8 +72,6 @@ export class ExerciseSessionTrackingService {
     };
 
     this.resetTextTrackingState();
-    this.insights?.setOperationContext(operationId);
-
     this.trackEvent('exercise_session_started', {
       source: params.source ?? 'listen-and-write',
     });
@@ -81,7 +87,6 @@ export class ExerciseSessionTrackingService {
       has_submitted: this.session.hasSubmitted
     });
 
-    this.insights?.setOperationContext(null);
     this.session = null;
     this.resetTextTrackingState();
   }
