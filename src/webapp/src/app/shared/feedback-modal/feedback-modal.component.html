@@ -1,0 +1,71 @@
+@if (isOpen) {
+  <div class="feedback-modal-backdrop">
+    <div class="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+      <button type="button" class="close-btn" (click)="close()" aria-label="Close feedback modal">
+        &times;
+      </button>
+
+      @if (view === 'form') {
+        <h2 id="feedback-modal-title">Quick feedback?</h2>
+        <p class="description">
+          WriteFluency is new and I'm trying to improve it. If you have 10 seconds, your feedback really helps.
+        </p>
+
+        <section class="question-block">
+          <p class="question-label">How helpful was this exercise? <span class="required">*</span></p>
+          <div class="rating-row" role="radiogroup" aria-label="How helpful was this exercise?">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <button
+                type="button"
+                class="star-btn"
+                [class.active]="rating >= star"
+                [attr.aria-checked]="rating === star"
+                role="radio"
+                [attr.aria-label]="'Rate ' + star + ' star' + (star > 1 ? 's' : '')"
+                (click)="setRating(star)">
+                <span aria-hidden="true">&#9733;</span>
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="question-block">
+          <p class="question-label">What felt off? (optional)</p>
+          <div class="tags-grid">
+            @for (tag of tagOptions; track tag.value) {
+              <label class="tag-item">
+                <input
+                  type="checkbox"
+                  [checked]="isTagSelected(tag.value)"
+                  (change)="onTagToggled(tag.value, $event)">
+                <span>{{ tag.label }}</span>
+              </label>
+            }
+          </div>
+        </section>
+
+        <section class="question-block">
+          <p class="question-label">Anything else? (optional)</p>
+          <textarea
+            rows="3"
+            [value]="comment"
+            (input)="onCommentChanged($event)"
+            placeholder="Anything you wish worked better? (even one sentence helps)"></textarea>
+        </section>
+
+        <div class="actions">
+          <button type="button" class="primary-btn" [disabled]="rating < 1" (click)="submit()">Send feedback</button>
+          <button type="button" class="secondary-btn" (click)="dismissNotNow()">Not now</button>
+        </div>
+      } @else {
+        <h2 id="feedback-modal-title">Thanks for the feedback!</h2>
+        <p class="description">Want another exercise?</p>
+
+        <div class="actions actions-thanks">
+          <button type="button" class="primary-btn" (click)="onFindAnotherExercise()">Find another exercise</button>
+          <button type="button" class="secondary-btn" (click)="close()">Close</button>
+        </div>
+      }
+    </div>
+  </div>
+}

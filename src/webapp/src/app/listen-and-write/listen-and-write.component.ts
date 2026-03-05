@@ -18,6 +18,8 @@ import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
+import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
+import { FeedbackModalComponent, FeedbackModalSubmission } from '../shared/feedback-modal/feedback-modal.component';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -36,7 +38,8 @@ type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prom
     ExerciseIntroSectionComponent,
     ExerciseSectionComponent,
     ExerciseResultsSectionComponent,
-    NewsHighlightedTextComponent
+    NewsHighlightedTextComponent,
+    FeedbackModalComponent
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
@@ -68,7 +71,12 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   userText = signal<string>('');
 
+  isFeedbackModalOpen = signal<boolean>(false);
+
   exerciseId: number | null = null;
+
+  private pendingLeaveAction: (() => void) | null = null;
+  private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -80,7 +88,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     private textComparisonsService: TextComparisonsService,
     private browserService: BrowserService,
     private seoService: SeoService,
-    private exerciseSessionTracking: ExerciseSessionTrackingService
+    private exerciseSessionTracking: ExerciseSessionTrackingService,
+    private feedbackService: FeedbackService
   ) {
     let lastState: ExerciseState | null = null;
     // Get the exercise ID from route parameters
@@ -576,34 +585,44 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.pendingRouteLeaveResolver) {
+      this.pendingRouteLeaveResolver(true);
+      this.pendingRouteLeaveResolver = null;
+    }
+
+    this.pendingLeaveAction = null;
     this.clearPendingAudioPlaySource();
     this.exerciseSessionTracking.endSession('component_destroyed');
     // Clean up timer to prevent memory leaks
     this.clearAutoPauseTimer();
   }
 
+  canDeactivateFromRoute(): boolean | Promise<boolean> {
+    if (!this.shouldPromptFeedbackOnLeave()) {
+      return true;
+    }
+
+    if (!this.openFeedbackModalIfEligible()) {
+      return true;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      this.pendingRouteLeaveResolver = resolve;
+    });
+  }
+
   onTryAgain() {
     this.exerciseSessionTracking.trackEvent('exercise_post_submit_click', {
       action: 'try_again'
     });
-    const stateKey = this.getExerciseStateKey();
-    if (stateKey) {
-      this.browserService.removeItem(stateKey);
-    }
-    this.initialText.set(null);
-    this.initialAutoPause.set(null);
-    this.result.set(null);
-    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
-    this.setNewState('intro');
+    this.attemptLeaveResults(() => this.resetExerciseForTryAgain());
   }
 
   onFindAnotherExercise() {
     this.exerciseSessionTracking.trackEvent('exercise_post_submit_click', {
       action: 'find_another_exercise'
     });
-    this.exerciseSessionTracking.endSession('navigate_to_exercises');
-    // Redirect to home page
-    this.browserService.navigateTo('/exercises');
+    this.attemptLeaveResults(() => this.navigateToExercises());
   }
 
   onAudioPaused() {
@@ -682,5 +701,109 @@ export class ListenAndWriteComponent implements OnDestroy {
       this.pendingAudioPlaySourceTimer = null;
     }
     this.pendingAudioPlaySource = null;
+  }
+
+  onFeedbackDismissed(_reason: 'not_now' | 'close'): void {
+    this.feedbackService.markDismissed();
+    this.closeFeedbackModal();
+    this.continuePendingLeaveFlow(true);
+  }
+
+  onFeedbackSubmitted(submission: FeedbackModalSubmission): void {
+    const proposition = this.proposition();
+    const feedbackEvent: ExerciseFeedbackEvent = {
+      rating: submission.rating,
+      tags: submission.tags,
+      comment: submission.comment,
+      exerciseId: String(proposition?.id ?? this.exerciseId ?? ''),
+      difficulty: proposition?.complexity?.description ?? '',
+      topic: proposition?.subject?.description ?? '',
+      sessionId: this.exerciseSessionTracking.getCurrentSessionId() ?? '',
+      timestamp: new Date().toISOString()
+    };
+
+    this.feedbackService.submitFeedback(feedbackEvent);
+  }
+
+  onFeedbackClosedAfterSubmit(): void {
+    this.closeFeedbackModal();
+    this.continuePendingLeaveFlow(true);
+  }
+
+  onFeedbackFindAnotherExercise(): void {
+    this.closeFeedbackModal();
+    this.continuePendingLeaveFlow(false);
+    this.navigateToExercises();
+  }
+
+  private attemptLeaveResults(action: () => void): void {
+    if (!this.shouldPromptFeedbackOnLeave()) {
+      action();
+      return;
+    }
+
+    if (!this.openFeedbackModalIfEligible()) {
+      action();
+      return;
+    }
+
+    this.pendingLeaveAction = action;
+  }
+
+  private shouldPromptFeedbackOnLeave(): boolean {
+    return this.exerciseState() === 'results' && this.feedbackService.shouldShowPrompt();
+  }
+
+  private openFeedbackModalIfEligible(): boolean {
+    if (this.isFeedbackModalOpen()) {
+      return true;
+    }
+
+    if (!this.feedbackService.consumePromptOpportunity()) {
+      return false;
+    }
+
+    this.isFeedbackModalOpen.set(true);
+    return true;
+  }
+
+  private closeFeedbackModal(): void {
+    this.isFeedbackModalOpen.set(false);
+  }
+
+  private continuePendingLeaveFlow(allowPendingAction: boolean): void {
+    const routeResolver = this.pendingRouteLeaveResolver;
+    this.pendingRouteLeaveResolver = null;
+
+    if (routeResolver) {
+      routeResolver(allowPendingAction);
+      this.pendingLeaveAction = null;
+      return;
+    }
+
+    const leaveAction = this.pendingLeaveAction;
+    this.pendingLeaveAction = null;
+
+    if (allowPendingAction) {
+      leaveAction?.();
+    }
+  }
+
+  private resetExerciseForTryAgain(): void {
+    const stateKey = this.getExerciseStateKey();
+    if (stateKey) {
+      this.browserService.removeItem(stateKey);
+    }
+
+    this.initialText.set(null);
+    this.initialAutoPause.set(null);
+    this.result.set(null);
+    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
+    this.setNewState('intro');
+  }
+
+  private navigateToExercises(): void {
+    this.exerciseSessionTracking.endSession('navigate_to_exercises');
+    this.router.navigate(['/exercises']);
   }
 }

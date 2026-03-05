@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { listenAndWriteFeedbackGuard } from './listen-and-write/listen-and-write-feedback.guard';
 
 export const appRoutes: Routes = [
     {
@@ -18,6 +19,7 @@ export const appRoutes: Routes = [
     },
     {
         path: 'english-writing-exercise/:id',
+        canDeactivate: [listenAndWriteFeedbackGuard],
         loadComponent: () =>
             import('./listen-and-write/listen-and-write.component').then((m) => m.ListenAndWriteComponent),
     },

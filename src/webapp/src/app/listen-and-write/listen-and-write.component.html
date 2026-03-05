@@ -61,3 +61,11 @@
     }
 
 </div>
+
+<app-feedback-modal
+    [isOpen]="isFeedbackModalOpen()"
+    (dismissed)="onFeedbackDismissed($event)"
+    (submitted)="onFeedbackSubmitted($event)"
+    (closedAfterSubmit)="onFeedbackClosedAfterSubmit()"
+    (findAnotherExercise)="onFeedbackFindAnotherExercise()">
+</app-feedback-modal>

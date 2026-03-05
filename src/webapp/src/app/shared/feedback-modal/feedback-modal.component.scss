@@ -1,0 +1,190 @@
+@use '../../../styles/variables' as vars;
+
+.feedback-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.feedback-modal {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  background: vars.$color-surface;
+  border-radius: 16px;
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.24);
+  padding: 1.25rem 1.25rem 1rem;
+  position: relative;
+}
+
+.feedback-modal * {
+  box-sizing: border-box;
+}
+
+h2 {
+  margin: 0 0 0.5rem;
+  padding-right: 2rem;
+}
+
+.description {
+  margin: 0 0 1rem;
+  color: rgba(26, 26, 26, 0.84);
+  line-height: 1.45;
+}
+
+.question-block {
+  margin-bottom: 1rem;
+}
+
+.question-label {
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+  color: vars.$color-text;
+}
+
+.required {
+  color: #d93025;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.star-btn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.85rem;
+  line-height: 1;
+  padding: 0.15rem;
+  color: #b5becb;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.star-btn:hover,
+.star-btn.active {
+  color: #ffb400;
+}
+
+.star-btn:hover {
+  transform: translateY(-1px);
+}
+
+.star-btn span {
+  color: inherit;
+}
+
+.tags-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 0.75rem;
+}
+
+.tag-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  color: vars.$color-text;
+}
+
+.tag-item input {
+  margin-top: 0.15rem;
+}
+
+textarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  min-height: 78px;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid rgba(47, 93, 204, 0.25);
+  border-radius: 10px;
+  padding: 0.62rem 0.7rem;
+  font: inherit;
+  color: vars.$color-text;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: vars.$color-primary;
+  box-shadow: 0 0 0 3px rgba(58, 125, 255, 0.14);
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.primary-btn,
+.secondary-btn {
+  border-radius: 10px;
+  border: none;
+  padding: 0.66rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+  color: #fff;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: rgba(58, 125, 255, 0.1);
+  color: vars.$color-primary-dark;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 1.8rem;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+}
+
+.actions-thanks {
+  margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .feedback-modal {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    padding: 1rem;
+  }
+
+  .tags-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+  }
+}
