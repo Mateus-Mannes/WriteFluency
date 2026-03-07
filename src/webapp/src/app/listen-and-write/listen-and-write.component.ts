@@ -19,12 +19,15 @@ import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
-import { FeedbackModalComponent, FeedbackModalSubmission } from '../shared/feedback-modal/feedback-modal.component';
+import {
+  FeedbackModalComponent,
+  FeedbackModalInteractionEvent,
+  FeedbackModalSubmission
+} from '../shared/feedback-modal/feedback-modal.component';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
-const BEGIN_EXERCISE_CONVERSION_SEND_TO = 'AW-17978787910/kwApCJDixoAcEMaQ-vxC';
 const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
 type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
 type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
@@ -349,7 +352,6 @@ export class ListenAndWriteComponent implements OnDestroy {
       is_first_time: isFirstTimeUser,
       audio_ended_before_begin: this.newsAudioComponent.audioEnded
     });
-    this.trackBeginExerciseConversion();
     this.newsAudioComponent.pauseAudio();
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.clearAutoPauseTimer();
@@ -458,8 +460,6 @@ export class ListenAndWriteComponent implements OnDestroy {
       text_char_count: userText.length,
       text_word_count: this.countWords(userText)
     });
-    this.trackExerciseSubmitConversion();
-    
     const startTime = Date.now();
     const minLoadingTime = 2000; // 2 seconds minimum
 
@@ -473,6 +473,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         const remainingTime = Math.max(0, minLoadingTime - elapsed);
         
         setTimeout(() => {
+          this.trackExerciseSubmitConversion(result.accuracyPercentage);
           this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded');
           this.userText.set(this.exerciseSectionComponent.text());
           this.result.set(result);
@@ -497,7 +498,11 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
   }
 
-  private trackExerciseSubmitConversion(): void {
+  private trackExerciseSubmitConversion(accuracyPercentage: number | null | undefined): void {
+    if (!Number.isFinite(accuracyPercentage) || (accuracyPercentage ?? 0) < 0.1) {
+      return;
+    }
+
     if (!this.browserService.isBrowserEnvironment()) {
       return;
     }
@@ -509,23 +514,6 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     gtag('event', 'conversion', {
       send_to: EXERCISE_SUBMIT_CONVERSION_SEND_TO,
-      value: 1.0,
-      currency: 'BRL'
-    });
-  }
-
-  private trackBeginExerciseConversion(): void {
-    if (!this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    const gtag = (globalThis as typeof globalThis & { gtag?: GtagEvent }).gtag;
-    if (typeof gtag !== 'function') {
-      return;
-    }
-
-    gtag('event', 'conversion', {
-      send_to: BEGIN_EXERCISE_CONVERSION_SEND_TO,
       value: 1.0,
       currency: 'BRL'
     });
@@ -704,6 +692,9 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onFeedbackDismissed(_reason: 'not_now' | 'close'): void {
+    this.exerciseSessionTracking.trackEvent('feedback_modal_dismissed', {
+      reason: _reason
+    });
     this.feedbackService.markDismissed();
     this.closeFeedbackModal();
     this.continuePendingLeaveFlow(true);
@@ -722,15 +713,40 @@ export class ListenAndWriteComponent implements OnDestroy {
       timestamp: new Date().toISOString()
     };
 
+    this.exerciseSessionTracking.trackEvent('feedback_modal_submitted', {
+      rating: submission.rating,
+      tags_count: submission.tags.length,
+      has_comment: Boolean(submission.comment)
+    }, {
+      feedback_rating: submission.rating,
+      feedback_tags_count: submission.tags.length,
+      feedback_comment_length: submission.comment?.length ?? 0
+    });
+
     this.feedbackService.submitFeedback(feedbackEvent);
   }
 
+  onFeedbackInteraction(event: FeedbackModalInteractionEvent): void {
+    this.exerciseSessionTracking.trackEvent('feedback_modal_interaction', {
+      action: event.action,
+      rating: event.rating,
+      tag: event.tag,
+      tag_selected: event.tagSelected,
+      tags_count: event.tagsCount,
+      has_comment: event.hasComment
+    }, {
+      feedback_comment_length: event.commentLength ?? 0
+    });
+  }
+
   onFeedbackClosedAfterSubmit(): void {
+    this.exerciseSessionTracking.trackEvent('feedback_modal_closed_after_submit');
     this.closeFeedbackModal();
     this.continuePendingLeaveFlow(true);
   }
 
   onFeedbackFindAnotherExercise(): void {
+    this.exerciseSessionTracking.trackEvent('feedback_modal_find_another_exercise_clicked');
     this.closeFeedbackModal();
     this.continuePendingLeaveFlow(false);
     this.navigateToExercises();
@@ -763,6 +779,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       return false;
     }
 
+    this.exerciseSessionTracking.trackEvent('feedback_modal_opened');
     this.isFeedbackModalOpen.set(true);
     return true;
   }

@@ -66,6 +66,7 @@
     [isOpen]="isFeedbackModalOpen()"
     (dismissed)="onFeedbackDismissed($event)"
     (submitted)="onFeedbackSubmitted($event)"
+    (interaction)="onFeedbackInteraction($event)"
     (closedAfterSubmit)="onFeedbackClosedAfterSubmit()"
     (findAnotherExercise)="onFeedbackFindAnotherExercise()">
 </app-feedback-modal>

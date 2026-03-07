@@ -50,6 +50,7 @@
             rows="3"
             [value]="comment"
             (input)="onCommentChanged($event)"
+            (blur)="onCommentBlur()"
             placeholder="Anything you wish worked better? (even one sentence helps)"></textarea>
         </section>
 

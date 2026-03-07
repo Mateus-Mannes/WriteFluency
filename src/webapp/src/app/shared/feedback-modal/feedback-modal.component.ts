@@ -6,6 +6,25 @@ export interface FeedbackModalSubmission {
   comment: string | null;
 }
 
+export interface FeedbackModalInteractionEvent {
+  action:
+    | 'opened'
+    | 'rating_selected'
+    | 'tag_toggled'
+    | 'comment_blurred'
+    | 'submit_clicked'
+    | 'dismissed_not_now'
+    | 'dismissed_close'
+    | 'thanks_closed'
+    | 'find_another_exercise_clicked';
+  rating?: number;
+  tag?: string;
+  tagSelected?: boolean;
+  tagsCount?: number;
+  commentLength?: number;
+  hasComment?: boolean;
+}
+
 interface FeedbackTagOption {
   value: string;
   label: string;
@@ -26,6 +45,7 @@ export class FeedbackModalComponent implements OnChanges {
   @Output() submitted = new EventEmitter<FeedbackModalSubmission>();
   @Output() closedAfterSubmit = new EventEmitter<void>();
   @Output() findAnotherExercise = new EventEmitter<void>();
+  @Output() interaction = new EventEmitter<FeedbackModalInteractionEvent>();
 
   protected readonly tagOptions: FeedbackTagOption[] = [
     { value: 'audio_speed_issue', label: 'Audio was too fast or slow' },
@@ -50,11 +70,18 @@ export class FeedbackModalComponent implements OnChanges {
     const isOpenChanged = changes['isOpen'];
     if (isOpenChanged?.currentValue && !isOpenChanged.previousValue) {
       this.resetState();
+      this.interaction.emit({
+        action: 'opened'
+      });
     }
   }
 
   protected setRating(value: number): void {
     this.rating = value;
+    this.interaction.emit({
+      action: 'rating_selected',
+      rating: value
+    });
   }
 
   protected isTagSelected(tag: string): boolean {
@@ -69,10 +96,16 @@ export class FeedbackModalComponent implements OnChanges {
 
     if (target.checked) {
       this.selectedTags.add(tag);
-      return;
+    } else {
+      this.selectedTags.delete(tag);
     }
 
-    this.selectedTags.delete(tag);
+    this.interaction.emit({
+      action: 'tag_toggled',
+      tag,
+      tagSelected: target.checked,
+      tagsCount: this.selectedTags.size
+    });
   }
 
   protected onCommentChanged(event: Event): void {
@@ -80,16 +113,34 @@ export class FeedbackModalComponent implements OnChanges {
     this.comment = target?.value ?? '';
   }
 
+  protected onCommentBlur(): void {
+    const trimmedComment = this.comment.trim();
+    this.interaction.emit({
+      action: 'comment_blurred',
+      commentLength: trimmedComment.length,
+      hasComment: trimmedComment.length > 0
+    });
+  }
+
   protected dismissNotNow(): void {
+    this.interaction.emit({
+      action: 'dismissed_not_now'
+    });
     this.dismissed.emit('not_now');
   }
 
   protected close(): void {
     if (this.view === 'thanks') {
+      this.interaction.emit({
+        action: 'thanks_closed'
+      });
       this.closedAfterSubmit.emit();
       return;
     }
 
+    this.interaction.emit({
+      action: 'dismissed_close'
+    });
     this.dismissed.emit('close');
   }
 
@@ -103,6 +154,14 @@ export class FeedbackModalComponent implements OnChanges {
       .map((option) => option.value)
       .filter((tag) => this.selectedTags.has(tag));
 
+    this.interaction.emit({
+      action: 'submit_clicked',
+      rating: this.rating,
+      tagsCount: tags.length,
+      hasComment: trimmedComment.length > 0,
+      commentLength: trimmedComment.length
+    });
+
     this.submitted.emit({
       rating: this.rating,
       tags,
@@ -113,6 +172,9 @@ export class FeedbackModalComponent implements OnChanges {
   }
 
   protected onFindAnotherExercise(): void {
+    this.interaction.emit({
+      action: 'find_another_exercise_clicked'
+    });
     this.findAnotherExercise.emit();
   }
 
