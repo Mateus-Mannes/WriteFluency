@@ -12,7 +12,9 @@
         "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21108",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22118",
         "ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL": "https://localhost:16175",
-        "ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true"
+        "ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true",
+        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21082",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22288"
       }
     },
     "http": {
@@ -26,7 +28,8 @@
         "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19131",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20146",
         "ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL": "http://localhost:16175",
-        "ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true"
+        "ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:22171"
       }
     }
   }
