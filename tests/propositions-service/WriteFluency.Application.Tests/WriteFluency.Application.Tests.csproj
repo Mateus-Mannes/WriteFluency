@@ -22,7 +22,7 @@
     <Folder Include="TestBase/" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/propositions-service/WriteFluency.Application/WriteFluency.Application.csproj" />
-    <ProjectReference Include="../../src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
+    <ProjectReference Include="../../../src/propositions-service/WriteFluency.Application/WriteFluency.Application.csproj" />
+    <ProjectReference Include="../../../src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
