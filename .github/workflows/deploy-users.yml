@@ -12,28 +12,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  GITHUB_ACTIONS: true
-  Jwt__Key: ${{ secrets.Jwt__Key }}
-  Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
-  Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
-  Authentication__Microsoft__ClientId: ${{ secrets.Authentication__Microsoft__ClientId }}
-  Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
-  Authentication__Apple__ClientId: ${{ secrets.Authentication__Apple__ClientId }}
-  Authentication__Apple__TeamId: ${{ secrets.Authentication__Apple__TeamId }}
-  Authentication__Apple__KeyId: ${{ secrets.Authentication__Apple__KeyId }}
-  Authentication__Apple__PrivateKey: ${{ secrets.Authentication__Apple__PrivateKey }}
-  Smtp__Host: ${{ secrets.Smtp__Host }}
-  Smtp__Port: ${{ secrets.Smtp__Port }}
-  Smtp__Username: ${{ secrets.Smtp__Username }}
-  Smtp__Password: ${{ secrets.Smtp__Password }}
-  Smtp__FromEmail: ${{ secrets.Smtp__FromEmail }}
-  Smtp__FromName: ${{ secrets.Smtp__FromName }}
-  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
-  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -43,6 +21,26 @@ jobs:
       K8S_IMAGE_TAG: ${{ github.ref_name }}
       KUBE_CONTEXT: github-context
 
+      GITHUB_ACTIONS: true
+      Jwt__Key: ${{ secrets.Jwt__Key }}
+      Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
+      Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
+      Authentication__Microsoft__ClientId: ${{ secrets.Authentication__Microsoft__ClientId }}
+      Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
+      Authentication__Apple__ClientId: ${{ secrets.Authentication__Apple__ClientId }}
+      Authentication__Apple__TeamId: ${{ secrets.Authentication__Apple__TeamId }}
+      Authentication__Apple__KeyId: ${{ secrets.Authentication__Apple__KeyId }}
+      Authentication__Apple__PrivateKey: ${{ secrets.Authentication__Apple__PrivateKey }}
+      Smtp__Host: ${{ secrets.Smtp__Host }}
+      Smtp__Port: ${{ secrets.Smtp__Port }}
+      Smtp__Username: ${{ secrets.Smtp__Username }}
+      Smtp__Password: ${{ secrets.Smtp__Password }}
+      Smtp__FromEmail: ${{ secrets.Smtp__FromEmail }}
+      Smtp__FromName: ${{ secrets.Smtp__FromName }}
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
