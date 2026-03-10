@@ -36,3 +36,37 @@ jobs:
 
     - name: Run .NET tests
       run: dotnet test
+
+  manifest-drift:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install Aspirate
+      run: dotnet tool install --global aspirate --version 9.1.0
+
+    - name: Add .dotnet tools to PATH
+      run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Regenerate manifest and kustomize output
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: |
+        aspirate generate --skip-build --non-interactive \
+          -pa wf-infra-minio-user=minioadmin \
+          -pa wf-infra-minio-password=admin123 \
+          -pa wf-infra-postgres-password=postgres
+
+    - name: Fail on manifest drift
+      run: |
+        if ! git diff --quiet -- src/host/WriteFluency.AppHost/manifest.json src/host/WriteFluency.AppHost/aspirate-output; then
+          echo "Manifest drift detected. Run aspirate generate and commit updated files."
+          git --no-pager diff -- src/host/WriteFluency.AppHost/manifest.json src/host/WriteFluency.AppHost/aspirate-output
+          exit 1
+        fi
