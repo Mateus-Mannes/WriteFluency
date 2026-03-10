@@ -21,11 +21,17 @@ var postgres = builder.AddPostgres("wf-postgres")
     .WithHostPort(5432)
     .WithDataVolume("writefluency-postgres-data");
 var postgresdb = postgres.AddDatabase("wf-postgresdb");
+var usersdb = postgres.AddDatabase("wf-usersdb");
 
 var dbMigrator = builder.AddProject<Projects.WriteFluency_DbMigrator>("wf-db-migrator")
     .WithReference(postgresdb)
     .WaitFor(postgresdb);
 dbMigrator.WithEnvironment("RESOURCE_NAME", dbMigrator.Resource.Name);
+
+var usersDbMigrator = builder.AddProject<Projects.WriteFluency_Users_DbMigrator>("wf-users-db-migrator")
+    .WithReference(usersdb)
+    .WaitFor(usersdb);
+usersDbMigrator.WithEnvironment("RESOURCE_NAME", usersDbMigrator.Resource.Name);
 
 var api = builder.AddProject<Projects.WriteFluency_WebApi>("wf-api")
     .WithReference(postgresdb).WaitFor(postgresdb)
@@ -43,6 +49,14 @@ var newsWorker = builder.AddProject<Projects.WriteFluency_NewsWorker>("wf-news-w
     .WithHttpsEndpoint()
     .WithHttpHealthCheck("health");
 newsWorker.WithEnvironment("RESOURCE_NAME", newsWorker.Resource.Name);
+
+var usersApi = builder.AddProject<Projects.WriteFluency_Users_WebApi>("wf-users-api")
+    .WithReference(usersdb).WaitFor(usersdb)
+    .WaitForCompletion(usersDbMigrator)
+    .WithHttpHealthCheck("health")
+    .WithHttpEndpoint(port: 5100, name: "usershttp", isProxied: false)
+    .WithHttpsEndpoint(port: 5101, name: "usershttps", isProxied: false);
+usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
 builder.AddNpmApp("wf-webapp", "../../webapp")
     .WithReference(api)

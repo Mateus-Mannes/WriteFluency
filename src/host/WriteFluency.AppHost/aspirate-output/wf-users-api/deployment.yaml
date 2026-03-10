@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-users-api
+  labels:
+    app: wf-users-api
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-users-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-users-api
+    spec:
+      containers:
+      - name: wf-users-api
+        image: ghcr.io/mateus-mannes/wf-users-api:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        - name: usershttp
+          containerPort: 5100
+        - name: usershttps
+          containerPort: 5101
+        envFrom:
+        - configMapRef:
+            name: wf-users-api-env
+      terminationGracePeriodSeconds: 180

@@ -1,6 +1,10 @@
 resources:
-  - ../aspirate-output
-  - letsencrypt.yaml
+  - ../aspirate-output/wf-api
+  - ../aspirate-output/wf-db-migrator
+  - ../aspirate-output/wf-news-worker
+  - ../aspirate-output/wf-webapp
+  - ../aspirate-output/wf-minio
+  - ../aspirate-output/wf-minio-init
   - ingress.yaml
 
 images:
@@ -28,10 +32,6 @@ patches:
     target:
       kind: Deployment
       name: wf-db-migrator
-  - path: wf-postgres/statefulset-patch.yaml
-    target:
-      kind: StatefulSet
-      name: wf-postgres
   - path: wf-minio/statefulset-patch.yaml
     target:
       kind: StatefulSet

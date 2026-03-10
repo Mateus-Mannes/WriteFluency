@@ -1,0 +1,20 @@
+resources:
+  - ../aspirate-output/wf-users-api
+  - ../aspirate-output/wf-users-db-migrator
+  - ingress.yaml
+
+images:
+  - name: ghcr.io/mateus-mannes/wf-users-api
+    newTag: replace_with_tag
+  - name: ghcr.io/mateus-mannes/wf-users-db-migrator
+    newTag: replace_with_tag
+
+patches:
+  - path: wf-users-api/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-users-api
+  - path: wf-users-db-migrator/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-users-db-migrator

@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-minio-init
+  labels:
+    app: wf-minio-init
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: wf-minio-init
+        envFrom:
+        - configMapRef:
+            name: wf-minio-init-env
+        - secretRef:
+            name: wf-propositions-secrets

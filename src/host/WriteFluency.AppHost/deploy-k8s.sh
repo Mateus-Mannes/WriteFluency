@@ -1,20 +1,62 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-KUBE_CONTEXT=$1
+TARGET=${1:-}
+KUBE_CONTEXT=${2:-}
 
-# Create cert-manager namespace first (required before applying cert-manager resources)
-kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+if [ -z "$TARGET" ] || [ -z "$KUBE_CONTEXT" ]; then
+  echo "Usage: ./deploy-k8s.sh <infra|users|propositions> <kube-context>"
+  exit 1
+fi
 
-./generate-k8s-secret.sh
+if [[ "$TARGET" != "infra" && "$TARGET" != "users" && "$TARGET" != "propositions" ]]; then
+  echo "Unsupported target '$TARGET'. Allowed values: infra, users, propositions"
+  exit 1
+fi
 
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+case "$TARGET" in
+  infra)
+    OVERLAY_PATH="./aspirate-overlays-infra"
+    ;;
+  users)
+    OVERLAY_PATH="./aspirate-overlays-users"
+    ;;
+  propositions)
+    OVERLAY_PATH="./aspirate-overlays-propositions"
+    ;;
+esac
+if [ ! -d "$OVERLAY_PATH" ]; then
+  echo "Overlay path not found: $OVERLAY_PATH"
+  exit 1
+fi
 
-echo "⏳ Waiting for cert-manager to be ready..."
-kubectl rollout status deployment cert-manager -n cert-manager --timeout=120s
-kubectl rollout status deployment cert-manager-webhook -n cert-manager --timeout=120s
-kubectl rollout status deployment cert-manager-cainjector -n cert-manager --timeout=120s
+if [[ "$TARGET" == "infra" ]]; then
+  kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+  ./generate-k8s-secret.sh infra
 
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
 
-aspirate apply -i ./aspirate-overlays --non-interactive --kube-context "$KUBE_CONTEXT"
+  echo "Waiting for cert-manager deployments"
+  kubectl rollout status deployment cert-manager -n cert-manager --timeout=180s
+  kubectl rollout status deployment cert-manager-webhook -n cert-manager --timeout=180s
+  kubectl rollout status deployment cert-manager-cainjector -n cert-manager --timeout=180s
+else
+  ./generate-k8s-secret.sh "$TARGET"
+fi
+
+aspirate apply -i "$OVERLAY_PATH" --non-interactive --kube-context "$KUBE_CONTEXT"
+
+if [[ "$TARGET" == "users" ]]; then
+  kubectl rollout status deployment wf-users-db-migrator -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-users-api -n writefluency --timeout=180s
+fi
+
+if [[ "$TARGET" == "propositions" ]]; then
+  kubectl rollout status deployment wf-db-migrator -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-api -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-news-worker -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-webapp -n writefluency --timeout=180s
+fi
+
+echo "Deployment completed for target '$TARGET'"

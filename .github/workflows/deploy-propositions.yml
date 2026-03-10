@@ -1,9 +1,16 @@
-name: CI/CD WriteFluency
+name: Deploy Propositions Stack
 
 on:
   push:
     tags:
-      - '*.*.*'
+      - 'propositions-v*'
+
+concurrency:
+  group: deploy-propositions-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 env:
   GITHUB_ACTIONS: true
@@ -27,6 +34,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: propositions-prod
 
     env:
       K8S_IMAGE_TAG: ${{ github.ref_name }}
@@ -68,7 +76,7 @@ jobs:
     - name: Configure kubeconfig using Service Account
       run: |
         mkdir -p ~/.kube
-        cat <<EOF > ~/.kube/config
+        cat <<EOF2 > ~/.kube/config
         apiVersion: v1
         kind: Config
         clusters:
@@ -86,7 +94,7 @@ jobs:
         - name: github
           user:
             token: ${{ secrets.KUBE_TOKEN }}
-        EOF
+        EOF2
 
     - name: Turn scripts executable
       run: |
@@ -94,45 +102,13 @@ jobs:
         chmod +x ./src/host/WriteFluency.AppHost/deploy-k8s.sh
         chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
 
-    - name: Login no GitHub Container Registry (GHCR)
+    - name: Login to GitHub Container Registry (GHCR)
       run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
 
-    - name: Build Images
+    - name: Build propositions images
       working-directory: ./src/host/WriteFluency.AppHost
-      run: ./build-k8s-images.sh $K8S_IMAGE_TAG
+      run: ./build-k8s-images.sh propositions $K8S_IMAGE_TAG
 
-    - name: Purge Cloudflare cache
-      if: success()
-      env:
-        CLOUDFLARE_ZONE_NAME: writefluency.com
-        CLOUDFLARE_ZONE_ID: 7441ef61fbb296b61b4cb4e418f4ebc6
-      run: |
-        set -euo pipefail
-        CF_TOKEN="${CLOUDFLARE_API_TOKEN_CACHE:-$CLOUDFLARE_API_TOKEN}"
-        if [ -z "${CF_TOKEN}" ]; then
-          echo "CLOUDFLARE_API_TOKEN_CACHE or CLOUDFLARE_API_TOKEN is required."
-          exit 1
-        fi
-
-        ZONE_ID="${CLOUDFLARE_ZONE_ID:-}"
-        if [ -z "${ZONE_ID}" ] || [ "${ZONE_ID}" = "null" ]; then
-          echo "Cloudflare zone id not found. Set CLOUDFLARE_ZONE_ID."
-          exit 1
-        fi
-
-        echo "Purging Cloudflare cache for zone ${ZONE_ID}..."
-        response="$(curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
-          -H "Authorization: Bearer ${CF_TOKEN}" \
-          -H "Content-Type: application/json" \
-          --data '{"purge_everything":true}')"
-
-        echo "${response}" | jq
-        success="$(echo "${response}" | jq -r '.success')"
-        if [ "${success}" != "true" ]; then
-          echo "Cloudflare purge failed."
-          exit 1
-        fi
-
-    - name: Deploy to Cluster
+    - name: Deploy propositions stack
       working-directory: ./src/host/WriteFluency.AppHost
-      run: ./deploy-k8s.sh $KUBE_CONTEXT
+      run: ./deploy-k8s.sh propositions $KUBE_CONTEXT

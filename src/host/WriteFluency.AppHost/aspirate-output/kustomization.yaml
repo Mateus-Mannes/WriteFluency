@@ -5,8 +5,10 @@ resources:
 - wf-minio-init
 - wf-postgres
 - wf-db-migrator
+- wf-users-db-migrator
 - wf-api
 - wf-news-worker
+- wf-users-api
 - wf-webapp
 - namespace.yaml
 

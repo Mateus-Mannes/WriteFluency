@@ -1,27 +1,41 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-TAG=$1
-KUSTOMIZATION_FILE="./aspirate-overlays/kustomization.yaml"
+TARGET=${1:-}
+TAG=${2:-}
 
-if [ -z "$TAG" ]; then
-  echo "❌ Please provide the new image tag. Example: ./build-k8s-images.sh 0.0.4"
+if [ -z "$TARGET" ] || [ -z "$TAG" ]; then
+  echo "Usage: ./build-k8s-images.sh <users|propositions> <tag>"
   exit 1
 fi
 
-echo "🔧 Replacing 'replace_with_tag' with '$TAG' in $KUSTOMIZATION_FILE"
-
-# Choose sed syntax based on OS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS
-  sed -i '' "s/replace_with_tag/$TAG/g" "$KUSTOMIZATION_FILE"
-else
-  # Linux
-  sed -i "s/replace_with_tag/$TAG/g" "$KUSTOMIZATION_FILE"
+if [[ "$TARGET" != "users" && "$TARGET" != "propositions" ]]; then
+  echo "Unsupported target '$TARGET'. Allowed values: users, propositions"
+  exit 1
 fi
 
-echo "🏗️  Running aspirate build with tag: $TAG"
+case "$TARGET" in
+  users)
+    KUSTOMIZATION_FILE="./aspirate-overlays-users/kustomization.yaml"
+    ;;
+  propositions)
+    KUSTOMIZATION_FILE="./aspirate-overlays-propositions/kustomization.yaml"
+    ;;
+esac
+if [ ! -f "$KUSTOMIZATION_FILE" ]; then
+  echo "Kustomization file not found: $KUSTOMIZATION_FILE"
+  exit 1
+fi
+
+echo "Setting image tags for target '${TARGET}' to '${TAG}' in ${KUSTOMIZATION_FILE}"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -E -i '' "s/(newTag:[[:space:]]*).*/\\1${TAG}/g" "$KUSTOMIZATION_FILE"
+else
+  sed -E -i "s/(newTag:[[:space:]]*).*/\\1${TAG}/g" "$KUSTOMIZATION_FILE"
+fi
+
+echo "Building and pushing images via Aspirate using manifest.json"
 aspirate build -ct "$TAG" --non-interactive -m ./manifest.json
 
-echo "✅ Build completed successfully with tag: $TAG"
+echo "Build completed for target '${TARGET}' with tag '${TAG}'"

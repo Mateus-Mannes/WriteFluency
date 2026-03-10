@@ -1,0 +1,102 @@
+name: Deploy Users Service
+
+on:
+  push:
+    tags:
+      - 'users-v*'
+
+concurrency:
+  group: deploy-users-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_ACTIONS: true
+  Jwt__Key: ${{ secrets.Jwt__Key }}
+  Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
+  Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
+  Authentication__Microsoft__ClientId: ${{ secrets.Authentication__Microsoft__ClientId }}
+  Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
+  Authentication__Apple__ClientId: ${{ secrets.Authentication__Apple__ClientId }}
+  Authentication__Apple__TeamId: ${{ secrets.Authentication__Apple__TeamId }}
+  Authentication__Apple__KeyId: ${{ secrets.Authentication__Apple__KeyId }}
+  Authentication__Apple__PrivateKey: ${{ secrets.Authentication__Apple__PrivateKey }}
+  Smtp__Host: ${{ secrets.Smtp__Host }}
+  Smtp__Port: ${{ secrets.Smtp__Port }}
+  Smtp__Username: ${{ secrets.Smtp__Username }}
+  Smtp__Password: ${{ secrets.Smtp__Password }}
+  Smtp__FromEmail: ${{ secrets.Smtp__FromEmail }}
+  Smtp__FromName: ${{ secrets.Smtp__FromName }}
+  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: users-prod
+
+    env:
+      K8S_IMAGE_TAG: ${{ github.ref_name }}
+      KUBE_CONTEXT: github-context
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Run .NET tests
+      run: dotnet test
+
+    - name: Install Aspirate
+      run: dotnet tool install --global aspirate --version 9.1.0
+
+    - name: Add .dotnet tools to PATH
+      run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Configure kubeconfig using Service Account
+      run: |
+        mkdir -p ~/.kube
+        cat <<EOF2 > ~/.kube/config
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - cluster:
+            server: ${{ secrets.KUBE_SERVER }}
+            certificate-authority-data: ${{ secrets.KUBE_CA }}
+          name: cluster
+        contexts:
+        - context:
+            cluster: cluster
+            user: github
+          name: github-context
+        current-context: github-context
+        users:
+        - name: github
+          user:
+            token: ${{ secrets.KUBE_TOKEN }}
+        EOF2
+
+    - name: Turn scripts executable
+      run: |
+        chmod +x ./src/host/WriteFluency.AppHost/build-k8s-images.sh
+        chmod +x ./src/host/WriteFluency.AppHost/deploy-k8s.sh
+        chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
+
+    - name: Login to GitHub Container Registry (GHCR)
+      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+    - name: Build users images
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: ./build-k8s-images.sh users $K8S_IMAGE_TAG
+
+    - name: Deploy users service
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: ./deploy-k8s.sh users $KUBE_CONTEXT

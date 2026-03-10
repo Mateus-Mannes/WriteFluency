@@ -1,0 +1,10 @@
+resources:
+  - namespace.yaml
+  - ../aspirate-output/wf-postgres
+  - letsencrypt.yaml
+
+patches:
+  - path: wf-postgres/statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: wf-postgres
