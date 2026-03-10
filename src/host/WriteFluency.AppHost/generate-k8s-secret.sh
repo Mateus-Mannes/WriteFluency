@@ -111,8 +111,8 @@ stringData:
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
   NODE_ENV: production
-  ConnectionStrings__wf-postgresdb: Host=wf-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-postgresdb
-  ConnectionStrings__wf-minio: Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
+  ConnectionStrings__wf-propositions-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-propositions-postgresdb
+  ConnectionStrings__wf-infra-minio: Endpoint=http://wf-infra-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
   Propositions__DailyRequestsLimit: "$propositions_daily_requests_limit"
   Propositions__LimitPerTopic: "$propositions_limit_per_topic"
@@ -146,7 +146,7 @@ stringData:
   Smtp__FromEmail: "$smtp_from_email"
   Smtp__FromName: "$smtp_from_name"
   POSTGRES_PASSWORD: "$postgres_password"
-  ConnectionStrings__wf-usersdb: Host=wf-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-usersdb
+  ConnectionStrings__wf-users-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-users-postgresdb
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
 EOF2
   exit 0

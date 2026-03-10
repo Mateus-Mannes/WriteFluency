@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wf-db-migrator
+  name: wf-propositions-db-migrator
   labels:
-    app: wf-db-migrator
+    app: wf-propositions-db-migrator
 spec:
   template:
     spec:
@@ -13,11 +13,11 @@ spec:
       initContainers:
       - name: wait-for-postgres
         image: busybox
-        command: ['sh', '-c', 'until nc -z wf-postgres 5432; do echo waiting for postgres; sleep 2; done;']
+        command: ['sh', '-c', 'until nc -z wf-infra-postgres 5432; do echo waiting for postgres; sleep 2; done;']
       containers:
-      - name: wf-db-migrator
+      - name: wf-propositions-db-migrator
         envFrom:
         - configMapRef:
-            name: wf-db-migrator-env
+            name: wf-propositions-db-migrator-env
         - secretRef:
             name: wf-propositions-secrets

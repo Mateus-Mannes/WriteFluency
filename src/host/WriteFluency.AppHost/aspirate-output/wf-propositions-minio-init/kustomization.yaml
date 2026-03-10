@@ -6,7 +6,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-- name: wf-minio-init-env
+- name: wf-propositions-minio-init-env
   literals:
     - MINIO_ROOT_USER=minioadmin
     - MINIO_ROOT_PASSWORD=admin123

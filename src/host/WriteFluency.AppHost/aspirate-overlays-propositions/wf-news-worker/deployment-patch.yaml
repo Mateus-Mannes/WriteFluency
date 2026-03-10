@@ -2,16 +2,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wf-news-worker
+  name: wf-propositions-news-worker
 spec:
   template:
     spec:
       imagePullSecrets:
       - name: ghcr-secret
       containers:
-      - name: wf-news-worker
+      - name: wf-propositions-news-worker
         envFrom:
         - configMapRef:
-            name: wf-news-worker-env
+            name: wf-propositions-news-worker-env
         - secretRef:
             name: wf-propositions-secrets

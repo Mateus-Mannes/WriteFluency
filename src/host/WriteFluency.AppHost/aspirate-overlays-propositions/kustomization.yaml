@@ -1,58 +1,58 @@
 resources:
-  - ../aspirate-output/wf-api
-  - ../aspirate-output/wf-db-migrator
-  - ../aspirate-output/wf-news-worker
-  - ../aspirate-output/wf-webapp
-  - ../aspirate-output/wf-minio
-  - ../aspirate-output/wf-minio-init
+  - ../aspirate-output/wf-propositions-api
+  - ../aspirate-output/wf-propositions-db-migrator
+  - ../aspirate-output/wf-propositions-news-worker
+  - ../aspirate-output/wf-propositions-webapp
+  - ../aspirate-output/wf-infra-minio
+  - ../aspirate-output/wf-propositions-minio-init
   - ingress.yaml
 
 images:
-  - name: ghcr.io/mateus-mannes/wf-api
+  - name: ghcr.io/mateus-mannes/wf-propositions-api
     newTag: replace_with_tag
-  - name: ghcr.io/mateus-mannes/wf-news-worker
+  - name: ghcr.io/mateus-mannes/wf-propositions-news-worker
     newTag: replace_with_tag
-  - name: ghcr.io/mateus-mannes/wf-db-migrator
+  - name: ghcr.io/mateus-mannes/wf-propositions-db-migrator
     newTag: replace_with_tag
-  - name: ghcr.io/mateus-mannes/wf-webapp
+  - name: ghcr.io/mateus-mannes/wf-propositions-webapp
     newTag: replace_with_tag
-  - name: ghcr.io/mateus-mannes/wf-minio-init
+  - name: ghcr.io/mateus-mannes/wf-propositions-minio-init
     newTag: replace_with_tag
 
 patches:
   - path: wf-api/deployment-patch.yaml
     target:
       kind: Deployment
-      name: wf-api
+      name: wf-propositions-api
   - path: wf-news-worker/deployment-patch.yaml
     target:
       kind: Deployment
-      name: wf-news-worker
+      name: wf-propositions-news-worker
   - path: wf-db-migrator/deployment-patch.yaml
     target:
       kind: Deployment
-      name: wf-db-migrator
+      name: wf-propositions-db-migrator
   - path: wf-minio/statefulset-patch.yaml
     target:
       kind: StatefulSet
-      name: wf-minio
+      name: wf-infra-minio
   - path: wf-minio-init/deployment-patch.yaml
     target:
       kind: Deployment
-      name: wf-minio-init
+      name: wf-propositions-minio-init
   - path: wf-webapp/deployment-patch.yaml
     target:
       kind: Deployment
-      name: wf-webapp
+      name: wf-propositions-webapp
   - path: wf-webapp/deployment-port-patch.yaml
     target:
       kind: Deployment
-      name: wf-webapp
+      name: wf-propositions-webapp
   - path: wf-webapp/configmap-patch.yaml
     target:
       kind: ConfigMap
-      name: wf-webapp-env
+      name: wf-propositions-webapp-env
   - path: wf-webapp/service-patch.yaml
     target:
       kind: Service
-      name: wf-webapp
+      name: wf-propositions-webapp

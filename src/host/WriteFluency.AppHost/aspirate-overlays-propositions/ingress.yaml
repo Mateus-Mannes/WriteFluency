@@ -27,7 +27,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wf-webapp
+                name: wf-propositions-webapp
                 port:
                   number: 4200
     - host: api.writefluency.com
@@ -37,7 +37,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wf-api
+                name: wf-propositions-api
                 port:
                   number: 8080
     - host: minio.writefluency.com
@@ -47,7 +47,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wf-minio
+                name: wf-infra-minio
                 port:
                   number: 9001
     - host: minioapi.writefluency.com
@@ -57,6 +57,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wf-minio
+                name: wf-infra-minio
                 port:
                   number: 9000

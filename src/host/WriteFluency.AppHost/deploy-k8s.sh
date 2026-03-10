@@ -53,10 +53,10 @@ if [[ "$TARGET" == "users" ]]; then
 fi
 
 if [[ "$TARGET" == "propositions" ]]; then
-  kubectl rollout status deployment wf-db-migrator -n writefluency --timeout=180s
-  kubectl rollout status deployment wf-api -n writefluency --timeout=180s
-  kubectl rollout status deployment wf-news-worker -n writefluency --timeout=180s
-  kubectl rollout status deployment wf-webapp -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-propositions-db-migrator -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-propositions-api -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-propositions-news-worker -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-propositions-webapp -n writefluency --timeout=180s
 fi
 
 echo "Deployment completed for target '$TARGET'"

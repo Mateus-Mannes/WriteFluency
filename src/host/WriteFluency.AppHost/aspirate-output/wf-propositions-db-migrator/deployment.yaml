@@ -2,30 +2,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wf-news-worker
+  name: wf-propositions-db-migrator
   labels:
-    app: wf-news-worker
+    app: wf-propositions-db-migrator
 spec:
   minReadySeconds: 60
   replicas: 1
   selector:
     matchLabels:
-      app: wf-news-worker
+      app: wf-propositions-db-migrator
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: wf-news-worker
+        app: wf-propositions-db-migrator
     spec:
       containers:
-      - name: wf-news-worker
-        image: ghcr.io/mateus-mannes/wf-news-worker:latest
+      - name: wf-propositions-db-migrator
+        image: ghcr.io/mateus-mannes/wf-propositions-db-migrator:latest
         imagePullPolicy: Always
-        ports:
-        - name: https
-          containerPort: 8443
         envFrom:
         - configMapRef:
-            name: wf-news-worker-env
+            name: wf-propositions-db-migrator-env
       terminationGracePeriodSeconds: 180

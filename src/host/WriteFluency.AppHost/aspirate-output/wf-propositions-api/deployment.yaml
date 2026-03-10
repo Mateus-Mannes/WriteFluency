@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-propositions-api
+  labels:
+    app: wf-propositions-api
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-propositions-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-propositions-api
+    spec:
+      containers:
+      - name: wf-propositions-api
+        image: ghcr.io/mateus-mannes/wf-propositions-api:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        - name: apihttp
+          containerPort: 5000
+        - name: apihttps
+          containerPort: 5001
+        envFrom:
+        - configMapRef:
+            name: wf-propositions-api-env
+      terminationGracePeriodSeconds: 180

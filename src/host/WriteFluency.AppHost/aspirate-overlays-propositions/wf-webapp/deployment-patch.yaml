@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wf-webapp
+  name: wf-propositions-webapp
   labels:
-    app: wf-webapp
+    app: wf-propositions-webapp
 spec:
   replicas: 2
   strategy:
@@ -16,12 +16,12 @@ spec:
   template:
     metadata:
       labels:
-        app: wf-webapp
+        app: wf-propositions-webapp
     spec:
       imagePullSecrets:
       - name: ghcr-secret
       containers:
-      - name: wf-webapp
+      - name: wf-propositions-webapp
         readinessProbe:
           httpGet:
             path: /
@@ -40,6 +40,6 @@ spec:
           failureThreshold: 3
         envFrom:
         - configMapRef:
-            name: wf-webapp-env
+            name: wf-propositions-webapp-env
         - secretRef:
             name: wf-propositions-secrets

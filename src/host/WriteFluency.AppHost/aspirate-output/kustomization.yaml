@@ -1,15 +1,15 @@
 namespace: writefluency
 
 resources:
-- wf-minio
-- wf-minio-init
-- wf-postgres
-- wf-db-migrator
+- wf-infra-minio
+- wf-propositions-minio-init
+- wf-infra-postgres
+- wf-propositions-db-migrator
 - wf-users-db-migrator
-- wf-api
-- wf-news-worker
+- wf-propositions-api
+- wf-propositions-news-worker
 - wf-users-api
-- wf-webapp
+- wf-propositions-webapp
 - namespace.yaml
 
 generatorOptions:

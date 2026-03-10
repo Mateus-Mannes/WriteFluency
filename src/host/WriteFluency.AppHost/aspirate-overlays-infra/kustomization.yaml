@@ -1,10 +1,10 @@
 resources:
   - namespace.yaml
-  - ../aspirate-output/wf-postgres
+  - ../aspirate-output/wf-infra-postgres
   - letsencrypt.yaml
 
 patches:
   - path: wf-postgres/statefulset-patch.yaml
     target:
       kind: StatefulSet
-      name: wf-postgres
+      name: wf-infra-postgres

@@ -2,29 +2,29 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: wf-postgres
+  name: wf-infra-postgres
   labels:
-    app: wf-postgres
+    app: wf-infra-postgres
 spec:
-  serviceName: "wf-postgres"
+  serviceName: "wf-infra-postgres"
   replicas: 1
   selector:
     matchLabels:
-      app: wf-postgres
+      app: wf-infra-postgres
   template:
     metadata:
       labels:
-        app: wf-postgres
+        app: wf-infra-postgres
     spec:
       containers:
-        - name: wf-postgres
+        - name: wf-infra-postgres
           image: docker.io/postgres:14.3
           imagePullPolicy: Always
           ports:
             - containerPort: 5432
           envFrom:
             - configMapRef:
-                name: wf-postgres-env
+                name: wf-infra-postgres-env
           volumeMounts:
             - name: writefluency-postgres-data
               mountPath: /var/lib/postgresql/data
