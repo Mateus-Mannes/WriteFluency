@@ -2,7 +2,6 @@ resources:
   - ../aspirate-output/wf-propositions-api
   - ../aspirate-output/wf-propositions-db-migrator
   - ../aspirate-output/wf-propositions-news-worker
-  - ../aspirate-output/wf-propositions-webapp
   - ../aspirate-output/wf-infra-minio
   - ../aspirate-output/wf-propositions-minio-init
   - ingress.yaml
@@ -13,8 +12,6 @@ images:
   - name: ghcr.io/mateus-mannes/wf-propositions-news-worker
     newTag: replace_with_tag
   - name: ghcr.io/mateus-mannes/wf-propositions-db-migrator
-    newTag: replace_with_tag
-  - name: ghcr.io/mateus-mannes/wf-propositions-webapp
     newTag: replace_with_tag
   - name: ghcr.io/mateus-mannes/wf-propositions-minio-init
     newTag: replace_with_tag
@@ -40,19 +37,3 @@ patches:
     target:
       kind: Deployment
       name: wf-propositions-minio-init
-  - path: wf-webapp/deployment-patch.yaml
-    target:
-      kind: Deployment
-      name: wf-propositions-webapp
-  - path: wf-webapp/deployment-port-patch.yaml
-    target:
-      kind: Deployment
-      name: wf-propositions-webapp
-  - path: wf-webapp/configmap-patch.yaml
-    target:
-      kind: ConfigMap
-      name: wf-propositions-webapp-env
-  - path: wf-webapp/service-patch.yaml
-    target:
-      kind: Service
-      name: wf-propositions-webapp

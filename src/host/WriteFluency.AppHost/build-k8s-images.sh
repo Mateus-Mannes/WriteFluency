@@ -7,7 +7,7 @@ TAG=${2:-}
 MANIFEST_FILE="./manifest.json"
 
 usage() {
-  echo "Usage: ./build-k8s-images.sh <users|propositions> <tag>"
+  echo "Usage: ./build-k8s-images.sh <users|propositions|webapp> <tag>"
 }
 
 require_command() {
@@ -31,32 +31,37 @@ update_overlay_tag() {
 }
 
 build_filtered_manifest() {
-  local prefix="$1"
+  local target="$1"
   local output_file="$2"
 
   local jq_filter
   jq_filter=$(cat <<'JQ'
+    def is_parameter: (.value.type | startswith("parameter."));
+    def is_infra: (.key | startswith("wf-infra-"));
+    def is_value_for($prefix): ((.value.type | startswith("value.")) and (.key | startswith($prefix)));
+
+    def include_for($target):
+      if $target == "users" then
+        (.key | startswith("wf-users-")) or is_infra or is_parameter or is_value_for("wf-users-")
+      elif $target == "propositions" then
+        (.key | startswith("wf-propositions-")) or is_infra or is_parameter or is_value_for("wf-propositions-")
+      elif $target == "webapp" then
+        (.key == "wf-webapp") or is_infra or is_parameter
+      else
+        false
+      end;
+
     .resources as $all
     | .resources = (
         $all
         | to_entries
-        | map(
-            select(
-              (.key | startswith($prefix))
-              or (.key | startswith("wf-infra-"))
-              or (.value.type | startswith("parameter."))
-              or (
-                (.value.type | startswith("value."))
-                and (.key | startswith($prefix))
-              )
-            )
-          )
+        | map(select(include_for($target)))
         | from_entries
       )
 JQ
   )
 
-  jq --arg prefix "$prefix" "$jq_filter" "$MANIFEST_FILE" > "$output_file"
+  jq --arg target "$target" "$jq_filter" "$MANIFEST_FILE" > "$output_file"
 }
 
 if [[ -z "$TARGET" || -z "$TAG" ]]; then
@@ -67,14 +72,18 @@ fi
 case "$TARGET" in
   users)
     KUSTOMIZATION_FILE="./aspirate-overlays-users/kustomization.yaml"
-    MANIFEST_PREFIX="wf-users-"
+    BUILD_TARGET="users"
     ;;
   propositions)
     KUSTOMIZATION_FILE="./aspirate-overlays-propositions/kustomization.yaml"
-    MANIFEST_PREFIX="wf-propositions-"
+    BUILD_TARGET="propositions"
+    ;;
+  webapp)
+    KUSTOMIZATION_FILE="./aspirate-overlays-webapp/kustomization.yaml"
+    BUILD_TARGET="webapp"
     ;;
   *)
-    echo "Unsupported target '$TARGET'. Allowed values: users, propositions"
+    echo "Unsupported target '$TARGET'. Allowed values: users, propositions, webapp"
     exit 1
     ;;
 esac
@@ -90,8 +99,8 @@ update_overlay_tag "$KUSTOMIZATION_FILE" "$TAG"
 FILTERED_MANIFEST=$(mktemp "${TMPDIR:-/tmp}/aspirate-manifest-${TARGET}.XXXXXX.json")
 trap 'rm -f "$FILTERED_MANIFEST"' EXIT
 
-echo "Creating filtered manifest for target '${TARGET}' with prefix '${MANIFEST_PREFIX}'"
-build_filtered_manifest "$MANIFEST_PREFIX" "$FILTERED_MANIFEST"
+echo "Creating filtered manifest for target '${TARGET}'"
+build_filtered_manifest "${BUILD_TARGET:-$TARGET}" "$FILTERED_MANIFEST"
 
 echo "Building and pushing images via Aspirate using filtered manifest: $FILTERED_MANIFEST"
 aspirate build -ct "$TAG" --non-interactive -m "$FILTERED_MANIFEST"

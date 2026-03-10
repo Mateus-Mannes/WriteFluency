@@ -2,30 +2,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wf-propositions-webapp
+  name: wf-webapp
   labels:
-    app: wf-propositions-webapp
+    app: wf-webapp
 spec:
   minReadySeconds: 60
   replicas: 1
   selector:
     matchLabels:
-      app: wf-propositions-webapp
+      app: wf-webapp
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: wf-propositions-webapp
+        app: wf-webapp
     spec:
       containers:
-      - name: wf-propositions-webapp
-        image: ghcr.io/mateus-mannes/wf-propositions-webapp:latest
+      - name: wf-webapp
+        image: ghcr.io/mateus-mannes/wf-webapp:latest
         imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 4200
         envFrom:
         - configMapRef:
-            name: wf-propositions-webapp-env
+            name: wf-webapp-env
       terminationGracePeriodSeconds: 180

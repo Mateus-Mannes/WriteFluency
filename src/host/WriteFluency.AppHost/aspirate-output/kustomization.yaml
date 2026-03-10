@@ -9,7 +9,7 @@ resources:
 - wf-propositions-api
 - wf-propositions-news-worker
 - wf-users-api
-- wf-propositions-webapp
+- wf-webapp
 - namespace.yaml
 
 generatorOptions:

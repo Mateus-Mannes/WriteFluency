@@ -27,7 +27,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wf-propositions-webapp
+                name: wf-webapp
                 port:
                   number: 4200
     - host: api.writefluency.com

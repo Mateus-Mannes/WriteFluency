@@ -6,7 +6,7 @@ generatorOptions:
   disableNameSuffixHash: true
 
 configMapGenerator:
-- name: wf-propositions-webapp-env
+- name: wf-webapp-env
   literals:
     - NODE_ENV=development
     - WF_PROPOSITIONS_API_HTTP=http://wf-propositions-api:8080

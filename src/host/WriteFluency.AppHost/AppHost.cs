@@ -58,7 +58,7 @@ var usersApi = builder.AddProject<Projects.WriteFluency_Users_WebApi>("wf-users-
     .WithHttpsEndpoint(port: 5101, name: "usershttps", isProxied: false);
 usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
-builder.AddNpmApp("wf-propositions-webapp", "../../webapp")
+builder.AddNpmApp("wf-webapp", "../../webapp")
     .WithReference(api)
     .WaitFor(api)
     .WithHttpEndpoint(port: 4200, env: "PORT")

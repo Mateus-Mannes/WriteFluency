@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: wf-propositions-webapp
+  name: wf-webapp
 spec:
   type: ClusterIP
   selector:
-    app: wf-propositions-webapp
+    app: wf-webapp
   ports:
   - name: http
     port: 4200

@@ -1,0 +1,24 @@
+resources:
+  - ../aspirate-output/wf-webapp
+
+images:
+  - name: ghcr.io/mateus-mannes/wf-webapp
+    newTag: replace_with_tag
+
+patches:
+  - path: wf-webapp/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-webapp
+  - path: wf-webapp/deployment-port-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-webapp
+  - path: wf-webapp/configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: wf-webapp-env
+  - path: wf-webapp/service-patch.yaml
+    target:
+      kind: Service
+      name: wf-webapp

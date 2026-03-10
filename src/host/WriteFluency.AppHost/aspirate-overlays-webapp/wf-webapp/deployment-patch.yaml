@@ -41,5 +41,3 @@ spec:
         envFrom:
         - configMapRef:
             name: wf-webapp-env
-        - secretRef:
-            name: wf-propositions-secrets

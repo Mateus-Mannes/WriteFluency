@@ -266,7 +266,7 @@
         }
       }
     },
-    "wf-propositions-webapp": {
+    "wf-webapp": {
       "type": "container.v1",
       "build": {
         "context": "../../webapp",
@@ -282,7 +282,7 @@
         "services__wf-propositions-api__apihttp__0": "{wf-propositions-api.bindings.apihttp.url}",
         "WF_PROPOSITIONS_API_APIHTTPS": "{wf-propositions-api.bindings.apihttps.url}",
         "services__wf-propositions-api__apihttps__0": "{wf-propositions-api.bindings.apihttps.url}",
-        "PORT": "{wf-propositions-webapp.bindings.http.targetPort}"
+        "PORT": "{wf-webapp.bindings.http.targetPort}"
       },
       "bindings": {
         "http": {
