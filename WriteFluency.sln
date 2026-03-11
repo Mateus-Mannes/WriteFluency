@@ -39,7 +39,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Application.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Infrastructure.Tests", "tests\propositions-service\WriteFluency.Infrastructure.Tests\WriteFluency.Infrastructure.Tests.csproj", "{CFCA00C4-09B1-4A84-A7E8-3C793FC82F63}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Users.WebApi", "src\users-service\WriteFluency.Users.WebApi.csproj", "{409D3A62-6761-4305-B3E1-D9EC6384A2F2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Users.WebApi", "src\users-service\WriteFluency.Users.WebApi\WriteFluency.Users.WebApi.csproj", "{409D3A62-6761-4305-B3E1-D9EC6384A2F2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Users.DbMigrator", "src\users-service\WriteFluency.Users.DbMigrator\WriteFluency.Users.DbMigrator.csproj", "{65DD894A-D9E7-4A14-9992-A05472F30D21}"
 EndProject
