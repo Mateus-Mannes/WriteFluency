@@ -1,3 +1,5 @@
+namespace: writefluency
+
 resources:
   - namespace.yaml
   - ../aspirate-output/wf-infra-postgres
