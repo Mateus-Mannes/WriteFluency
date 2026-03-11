@@ -21,7 +21,7 @@ builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogL
 builder.Logging.AddFilter("WriteFluency.Propositions.DailyPropositionGenerator", LogLevel.Warning);
 
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-postgresdb")));
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>
@@ -101,7 +101,7 @@ builder.Services.AddTransient<IFileService, FileService>();
 builder.Services.AddTransient<CreatePropositionService>();
 builder.Services.AddTransient<DailyPropositionGenerator>();
 
-builder.AddMinioClient("wf-minio", configureSettings: options =>
+builder.AddMinioClient("wf-infra-minio", configureSettings: options =>
 {
     options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
     options.UseSsl = false;

@@ -31,7 +31,7 @@ builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.Ge
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context and identity configuration
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-postgresdb")));
+builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
 builder.Services.AddIdentityCore<IdentityUser>()
     .AddApiEndpoints()
     .AddEntityFrameworkStores<AppDbContext>();
@@ -77,7 +77,7 @@ builder.Services.AddChatClient(services =>
 
 builder.Services.AddCors();
 
-builder.AddMinioClient("wf-minio", configureSettings: options =>
+builder.AddMinioClient("wf-infra-minio", configureSettings: options =>
 {
     if(options.Endpoint is not null)
         options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));

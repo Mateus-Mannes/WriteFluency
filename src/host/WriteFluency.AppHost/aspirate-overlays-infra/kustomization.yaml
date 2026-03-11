@@ -6,7 +6,7 @@ resources:
   - letsencrypt.yaml
 
 patches:
-  - path: wf-postgres/statefulset-patch.yaml
+  - path: wf-infra-postgres/statefulset-patch.yaml
     target:
       kind: StatefulSet
       name: wf-infra-postgres

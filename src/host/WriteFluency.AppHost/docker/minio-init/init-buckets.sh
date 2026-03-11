@@ -2,7 +2,7 @@
 set -e
 
 echo "Waiting for MinIO..."
-until mc alias set local http://wf-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
+until mc alias set local http://wf-infra-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
   sleep 1
 done
 

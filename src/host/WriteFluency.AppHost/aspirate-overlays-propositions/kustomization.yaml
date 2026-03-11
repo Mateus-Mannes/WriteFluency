@@ -31,11 +31,11 @@ patches:
     target:
       kind: Deployment
       name: wf-propositions-db-migrator
-  - path: wf-minio/statefulset-patch.yaml
+  - path: wf-infra-minio/statefulset-patch.yaml
     target:
       kind: StatefulSet
       name: wf-infra-minio
-  - path: wf-minio-init/deployment-patch.yaml
+  - path: wf-propositions-minio-init/deployment-patch.yaml
     target:
       kind: Deployment
       name: wf-propositions-minio-init

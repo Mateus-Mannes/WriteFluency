@@ -7,7 +7,7 @@ builder.Services.AddHostedService<Worker>();
 
 builder.AddServiceDefaults();
 
-builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-postgresdb")));
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>

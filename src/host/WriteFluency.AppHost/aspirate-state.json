@@ -1,6 +1,6 @@
 {
   "projectPath": ".",
-  "inputPath": "./aspirate-overlays",
+  "inputPath": "./aspirate-output",
   "outputPath": "aspirate-output",
   "namespace": "writefluency",
   "containerRegistry": "ghcr.io",

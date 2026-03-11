@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: wf-webapp-env
-data:
-  NODE_ENV: production
