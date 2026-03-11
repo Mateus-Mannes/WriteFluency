@@ -1,3 +1,5 @@
+namespace: writefluency
+
 resources:
   - ../aspirate-output/wf-propositions-api
   - ../aspirate-output/wf-propositions-db-migrator
