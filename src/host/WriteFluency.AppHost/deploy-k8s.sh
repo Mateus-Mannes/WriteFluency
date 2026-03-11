@@ -4,6 +4,7 @@ set -euo pipefail
 
 TARGET=${1:-}
 KUBE_CONTEXT=${2:-}
+CERT_MANAGER_VERSION="v1.19.4"
 
 if [ -z "$TARGET" ] || [ -z "$KUBE_CONTEXT" ]; then
   echo "Usage: ./deploy-k8s.sh <infra|users|propositions|webapp> <kube-context>"
@@ -38,7 +39,7 @@ if [[ "$TARGET" == "infra" ]]; then
   kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
   ./generate-k8s-secret.sh infra
 
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+  kubectl apply -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml"
 
   echo "Waiting for cert-manager deployments"
   kubectl rollout status deployment cert-manager -n cert-manager --timeout=180s
