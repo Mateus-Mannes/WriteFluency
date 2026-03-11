@@ -54,12 +54,10 @@ fi
 aspirate apply -i "$OVERLAY_PATH" --non-interactive --kube-context "$KUBE_CONTEXT"
 
 if [[ "$TARGET" == "users" ]]; then
-  kubectl rollout status deployment wf-users-db-migrator -n writefluency --timeout=180s
   kubectl rollout status deployment wf-users-api -n writefluency --timeout=180s
 fi
 
 if [[ "$TARGET" == "propositions" ]]; then
-  kubectl rollout status deployment wf-propositions-db-migrator -n writefluency --timeout=180s
   kubectl rollout status deployment wf-propositions-api -n writefluency --timeout=180s
   kubectl rollout status deployment wf-propositions-news-worker -n writefluency --timeout=180s
 fi
