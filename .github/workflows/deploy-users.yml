@@ -12,6 +12,16 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  GITHUB_ACTIONS: true
+  KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+  KUBE_CA: ${{ secrets.KUBE_CA }}
+  KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,7 +31,6 @@ jobs:
       K8S_IMAGE_TAG: ${{ github.ref_name }}
       KUBE_CONTEXT: github-context
 
-      GITHUB_ACTIONS: true
       Jwt__Key: ${{ secrets.Jwt__Key }}
       Authentication__Google__ClientId: ${{ secrets.Authentication__Google__ClientId }}
       Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
@@ -37,10 +46,6 @@ jobs:
       Smtp__Password: ${{ secrets.Smtp__Password }}
       Smtp__FromEmail: ${{ secrets.Smtp__FromEmail }}
       Smtp__FromName: ${{ secrets.Smtp__FromName }}
-      APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -67,8 +72,8 @@ jobs:
         kind: Config
         clusters:
         - cluster:
-            server: ${{ secrets.KUBE_SERVER }}
-            certificate-authority-data: ${{ secrets.KUBE_CA }}
+            server: $KUBE_SERVER
+            certificate-authority-data: $KUBE_CA
           name: cluster
         contexts:
         - context:
@@ -79,7 +84,7 @@ jobs:
         users:
         - name: github
           user:
-            token: ${{ secrets.KUBE_TOKEN }}
+            token: $KUBE_TOKEN
         EOF2
 
     - name: Turn scripts executable
@@ -89,7 +94,7 @@ jobs:
         chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
 
     - name: Login to GitHub Container Registry (GHCR)
-      run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+      run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
     - name: Build users images
       working-directory: ./src/host/WriteFluency.AppHost

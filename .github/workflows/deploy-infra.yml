@@ -17,6 +17,16 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  GITHUB_ACTIONS: true
+  KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+  KUBE_CA: ${{ secrets.KUBE_CA }}
+  KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,10 +34,6 @@ jobs:
 
     env:
       KUBE_CONTEXT: github-context
-
-      GITHUB_ACTIONS: true
-      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
     - name: Checkout
@@ -52,8 +58,8 @@ jobs:
         kind: Config
         clusters:
         - cluster:
-            server: ${{ secrets.KUBE_SERVER }}
-            certificate-authority-data: ${{ secrets.KUBE_CA }}
+            server: $KUBE_SERVER
+            certificate-authority-data: $KUBE_CA
           name: cluster
         contexts:
         - context:
@@ -64,7 +70,7 @@ jobs:
         users:
         - name: github
           user:
-            token: ${{ secrets.KUBE_TOKEN }}
+            token: $KUBE_TOKEN
         EOF2
 
     - name: Turn scripts executable
