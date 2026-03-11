@@ -39,6 +39,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Validate required secrets and variables
+      run: |
+        bash ./src/host/WriteFluency.AppHost/validate-required-env.sh \
+          KUBE_SERVER \
+          KUBE_CA \
+          KUBE_TOKEN \
+          GHCR_USERNAME \
+          GHCR_TOKEN \
+          POSTGRES_PASSWORD \
+          MINIO_ROOT_PASSWORD \
+          CLOUDFLARE_API_TOKEN
+
     - name: Install .NET
       uses: actions/setup-dotnet@v4
       with:
