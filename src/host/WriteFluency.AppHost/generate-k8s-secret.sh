@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/kubectl-utils.sh"
+
 TARGET=${1:-}
 if [ -z "$TARGET" ]; then
   echo "Usage: ./generate-k8s-secret.sh <infra|users|propositions>"
@@ -13,7 +16,7 @@ if [[ "$TARGET" != "infra" && "$TARGET" != "users" && "$TARGET" != "propositions
   exit 1
 fi
 
-kubectl apply -f aspirate-output/namespace.yaml
+retry_kubectl apply --validate=false -f aspirate-output/namespace.yaml
 
 # CI/environment-driven only. Local user-secrets fallback removed by request.
 jwt_key="${Jwt__Key:-}"
@@ -50,7 +53,7 @@ ghcr_username="${GHCR_USERNAME:-}"
 ghcr_token="${GHCR_TOKEN:-}"
 
 if [ "$TARGET" = "infra" ]; then
-  kubectl apply -f - <<EOF2
+  apply_stdin_with_retry <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:
@@ -67,14 +70,14 @@ EOF2
       --docker-username="${ghcr_username}" \
       --docker-password="${ghcr_token}" \
       --namespace=writefluency \
-      --dry-run=client -o yaml | kubectl apply -f -
+      --dry-run=client -o yaml | apply_stdin_with_retry
   else
     echo "Skipping ghcr-secret creation because GHCR credentials are not available."
   fi
 
   if [ -n "$cloud_flare_token" ]; then
-    kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
-    kubectl apply -f - <<EOF2
+    kubectl create namespace cert-manager --dry-run=client -o yaml | apply_stdin_with_retry
+    apply_stdin_with_retry <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:
@@ -92,7 +95,7 @@ EOF2
 fi
 
 if [ "$TARGET" = "propositions" ]; then
-  kubectl apply -f - <<EOF2
+  apply_stdin_with_retry <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:
@@ -122,7 +125,7 @@ EOF2
 fi
 
 if [ "$TARGET" = "users" ]; then
-  kubectl apply -f - <<EOF2
+  apply_stdin_with_retry <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:

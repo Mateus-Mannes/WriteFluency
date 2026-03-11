@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/kubectl-utils.sh"
+
 TARGET=${1:-}
 KUBE_CONTEXT=${2:-}
 CERT_MANAGER_VERSION="v1.19.4"
@@ -36,10 +39,10 @@ if [ ! -d "$OVERLAY_PATH" ]; then
 fi
 
 if [[ "$TARGET" == "infra" ]]; then
-  kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create namespace cert-manager --dry-run=client -o yaml | apply_stdin_with_retry
   ./generate-k8s-secret.sh infra
 
-  kubectl apply -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml"
+  retry_kubectl apply --validate=false -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml"
 
   echo "Waiting for cert-manager deployments"
   kubectl rollout status deployment cert-manager -n cert-manager --timeout=180s
