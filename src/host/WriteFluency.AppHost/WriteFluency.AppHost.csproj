@@ -17,6 +17,8 @@
     <ProjectReference Include="../../propositions-service/WriteFluency.DbMigrator/WriteFluency.DbMigrator.csproj" />
     <ProjectReference Include="../../propositions-service/WriteFluency.NewsWorker/WriteFluency.NewsWorker.csproj" />
     <ProjectReference Include="../../propositions-service/WriteFluency.WebApi/WriteFluency.WebApi.csproj" />
+    <ProjectReference Include="../../users-service/WriteFluency.Users.DbMigrator/WriteFluency.Users.DbMigrator.csproj" />
+    <ProjectReference Include="../../users-service/WriteFluency.Users.WebApi.csproj" />
   </ItemGroup>
   <Target Name="RestoreNpm" BeforeTargets="Build" Condition=" '$(DesignTimeBuild)' != 'true' ">
     <ItemGroup>

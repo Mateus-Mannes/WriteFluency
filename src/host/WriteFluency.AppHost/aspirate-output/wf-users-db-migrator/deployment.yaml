@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-users-db-migrator
+  labels:
+    app: wf-users-db-migrator
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-users-db-migrator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-users-db-migrator
+    spec:
+      containers:
+      - name: wf-users-db-migrator
+        image: ghcr.io/mateus-mannes/wf-users-db-migrator:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: wf-users-db-migrator-env
+      terminationGracePeriodSeconds: 180

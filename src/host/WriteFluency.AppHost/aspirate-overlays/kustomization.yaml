@@ -48,6 +48,10 @@ patches:
     target:
       kind: Deployment
       name: wf-webapp
+  - path: wf-webapp/configmap-patch.yaml
+    target:
+      kind: ConfigMap
+      name: wf-webapp-env
   - path: wf-webapp/service-patch.yaml
     target:
       kind: Service

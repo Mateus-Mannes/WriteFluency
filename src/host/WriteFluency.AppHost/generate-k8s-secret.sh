@@ -1,67 +1,102 @@
 #!/bin/bash
 
-# Script for applying the Kubernetes cluster secrets based on .NET user secrets
-# or GitHub Actions secrets (with real variable names like Authentication__Google__ClientId)
+set -euo pipefail
+
+TARGET=${1:-}
+if [ -z "$TARGET" ]; then
+  echo "Usage: ./generate-k8s-secret.sh <infra|users|propositions>"
+  exit 1
+fi
+
+if [[ "$TARGET" != "infra" && "$TARGET" != "users" && "$TARGET" != "propositions" ]]; then
+  echo "Unsupported target '$TARGET'. Allowed values: infra, users, propositions"
+  exit 1
+fi
 
 kubectl apply -f aspirate-output/namespace.yaml
 
-if [ "$GITHUB_ACTIONS" = "true" ]; then
-  echo "🔐 Running in GitHub Actions — using environment variables from secrets"
+# CI/environment-driven only. Local user-secrets fallback removed by request.
+jwt_key="${Jwt__Key:-}"
+google_client_id="${Authentication__Google__ClientId:-}"
+google_client_secret="${Authentication__Google__ClientSecret:-}"
+microsoft_client_id="${Authentication__Microsoft__ClientId:-}"
+microsoft_client_secret="${Authentication__Microsoft__ClientSecret:-}"
+apple_client_id="${Authentication__Apple__ClientId:-}"
+apple_team_id="${Authentication__Apple__TeamId:-}"
+apple_key_id="${Authentication__Apple__KeyId:-}"
+apple_private_key="${Authentication__Apple__PrivateKey:-}"
+smtp_host="${Smtp__Host:-}"
+smtp_port="${Smtp__Port:-}"
+smtp_username="${Smtp__Username:-}"
+smtp_password="${Smtp__Password:-}"
+smtp_from_email="${Smtp__FromEmail:-}"
+smtp_from_name="${Smtp__FromName:-}"
 
-  jwt_key="${Jwt__Key}"
-  google_client_id="${Authentication__Google__ClientId}"
-  google_client_secret="${Authentication__Google__ClientSecret}"
-  openai_key="${ExternalApis__OpenAI__Key}"
-  tts_key="${ExternalApis__TextToSpeech__Key}"
-  news_key="${ExternalApis__News__Key}"
-  app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
-  postgres_password="${POSTGRES_PASSWORD}"
-  minio_password="${MINIO_ROOT_PASSWORD}"
-  cloud_flare_token="${CLOUDFLARE_API_TOKEN}"
-  cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-$CLOUDFLARE_API_TOKEN}"
-  propositions_daily_requests_limit="${Propositions__DailyRequestsLimit}"
-  propositions_limit_per_topic="${Propositions__LimitPerTopic}"
-  propositions_news_request_limit="${Propositions__NewsRequestLimit}"
-  ghcr_username="${GHCR_USERNAME}"
-  ghcr_token="${GHCR_TOKEN}"
+openai_key="${ExternalApis__OpenAI__Key:-}"
+tts_key="${ExternalApis__TextToSpeech__Key:-}"
+news_key="${ExternalApis__News__Key:-}"
 
-else
-  echo "🔐 Running locally — using .NET user secrets"
+app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING:-}"
+postgres_password="${POSTGRES_PASSWORD:-}"
+minio_password="${MINIO_ROOT_PASSWORD:-}"
+cloud_flare_token="${CLOUDFLARE_API_TOKEN:-}"
+cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-${CLOUDFLARE_API_TOKEN:-}}"
 
-  USER_SECRETS=~/.microsoft/usersecrets/58584eae-ca83-4318-9cb9-76ac1239e00a/secrets.json
+propositions_daily_requests_limit="${Propositions__DailyRequestsLimit:-}"
+propositions_limit_per_topic="${Propositions__LimitPerTopic:-}"
+propositions_news_request_limit="${Propositions__NewsRequestLimit:-}"
 
-  jwt_key=$(jq -r '.["Jwt:Key"]' "$USER_SECRETS")
-  google_client_id=$(jq -r '.["Authentication:Google:ClientId"]' "$USER_SECRETS")
-  google_client_secret=$(jq -r '.["Authentication:Google:ClientSecret"]' "$USER_SECRETS")
-  openai_key=$(jq -r '.["ExternalApis:OpenAI:Key"]' "$USER_SECRETS")
-  tts_key=$(jq -r '.["ExternalApis:TextToSpeech:Key"]' "$USER_SECRETS")
-  news_key=$(jq -r '.["ExternalApis:News:Key"]' "$USER_SECRETS")
-  cloud_flare_token=$(jq -r '.["CLOUDFLARE_API_TOKEN"] // ""' "$USER_SECRETS")
-  cloud_flare_cache_token=$(jq -r '.["ExternalApis:Cloudflare:ApiToken"] // .["CLOUDFLARE_API_TOKEN_CACHE"] // .["CLOUDFLARE_API_TOKEN"] // ""' "$USER_SECRETS")
-  app_insights_connection_string=$(jq -r '.["APPLICATIONINSIGHTS_CONNECTION_STRING"]' "$USER_SECRETS")
-  postgres_password="postgres"
-  minio_password="admin123"
-  propositions_daily_requests_limit=$(jq -r '.["Propositions:DailyRequestsLimit"]' "$USER_SECRETS")
-  propositions_limit_per_topic=$(jq -r '.["Propositions:LimitPerTopic"]' "$USER_SECRETS")
-  propositions_news_request_limit=$(jq -r '.["Propositions:NewsRequestLimit"]' "$USER_SECRETS")
-  ghcr_username=$(jq -r '.["GHCR_USERNAME"]' "$USER_SECRETS")
-  ghcr_token=$(jq -r '.["GHCR_TOKEN"]' "$USER_SECRETS")
-fi
+ghcr_username="${GHCR_USERNAME:-}"
+ghcr_token="${GHCR_TOKEN:-}"
 
-# Create image pull secret for GHCR
-echo "🔑 Creating GHCR image pull secret..."
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=ghcr.io \
-  --docker-username="${ghcr_username}" \
-  --docker-password="${ghcr_token}" \
-  --namespace=writefluency \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-kubectl apply -f - <<EOF
+if [ "$TARGET" = "infra" ]; then
+  kubectl apply -f - <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:
-  name: wf-app-secrets
+  name: wf-infra-secrets
+  namespace: writefluency
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "$postgres_password"
+EOF2
+
+  if [ -n "$ghcr_username" ] && [ -n "$ghcr_token" ]; then
+    kubectl create secret docker-registry ghcr-secret \
+      --docker-server=ghcr.io \
+      --docker-username="${ghcr_username}" \
+      --docker-password="${ghcr_token}" \
+      --namespace=writefluency \
+      --dry-run=client -o yaml | kubectl apply -f -
+  else
+    echo "Skipping ghcr-secret creation because GHCR credentials are not available."
+  fi
+
+  if [ -n "$cloud_flare_token" ]; then
+    kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+    kubectl apply -f - <<EOF2
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token-secret
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: "$cloud_flare_token"
+EOF2
+  else
+    echo "Skipping cloudflare-api-token-secret because CLOUDFLARE_API_TOKEN is not available."
+  fi
+
+  exit 0
+fi
+
+if [ "$TARGET" = "propositions" ]; then
+  kubectl apply -f - <<EOF2
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wf-propositions-secrets
   namespace: writefluency
 type: Opaque
 stringData:
@@ -76,21 +111,43 @@ stringData:
   MINIO_ROOT_PASSWORD: "$minio_password"
   POSTGRES_PASSWORD: "$postgres_password"
   NODE_ENV: production
-  ConnectionStrings__wf-postgresdb: Host=wf-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-postgresdb
-  ConnectionStrings__wf-minio: Endpoint=http://wf-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
+  ConnectionStrings__wf-propositions-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-propositions-postgresdb
+  ConnectionStrings__wf-infra-minio: Endpoint=http://wf-infra-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
   Propositions__DailyRequestsLimit: "$propositions_daily_requests_limit"
   Propositions__LimitPerTopic: "$propositions_limit_per_topic"
   Propositions__NewsRequestLimit: "$propositions_news_request_limit"
-EOF
+EOF2
+  exit 0
+fi
 
-kubectl apply -f - <<EOF
+if [ "$TARGET" = "users" ]; then
+  kubectl apply -f - <<EOF2
 apiVersion: v1
 kind: Secret
 metadata:
-  name: cloudflare-api-token-secret
-  namespace: cert-manager
+  name: wf-users-secrets
+  namespace: writefluency
 type: Opaque
 stringData:
-  api-token: "$cloud_flare_token"
-EOF
+  Jwt__Key: "$jwt_key"
+  Authentication__Google__ClientId: "$google_client_id"
+  Authentication__Google__ClientSecret: "$google_client_secret"
+  Authentication__Microsoft__ClientId: "$microsoft_client_id"
+  Authentication__Microsoft__ClientSecret: "$microsoft_client_secret"
+  Authentication__Apple__ClientId: "$apple_client_id"
+  Authentication__Apple__TeamId: "$apple_team_id"
+  Authentication__Apple__KeyId: "$apple_key_id"
+  Authentication__Apple__PrivateKey: "$apple_private_key"
+  Smtp__Host: "$smtp_host"
+  Smtp__Port: "$smtp_port"
+  Smtp__Username: "$smtp_username"
+  Smtp__Password: "$smtp_password"
+  Smtp__FromEmail: "$smtp_from_email"
+  Smtp__FromName: "$smtp_from_name"
+  POSTGRES_PASSWORD: "$postgres_password"
+  ConnectionStrings__wf-users-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-users-postgresdb
+  APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
+EOF2
+  exit 0
+fi

@@ -1,0 +1,28 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: wf-propositions-api-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080;5000
+    - HTTPS_PORTS=5001
+    - ConnectionStrings__wf-propositions-postgresdb=Host=wf-infra-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-propositions-postgresdb
+    - WF_PROPOSITIONS_POSTGRESDB_HOST=wf-infra-postgres
+    - WF_PROPOSITIONS_POSTGRESDB_PORT=5432
+    - WF_PROPOSITIONS_POSTGRESDB_USERNAME=postgres
+    - WF_PROPOSITIONS_POSTGRESDB_PASSWORD=postgres
+    - WF_PROPOSITIONS_POSTGRESDB_URI=postgresql://postgres:{wf-infra-postgres-password-uri-encoded.value}@wf-infra-postgres:5432/wf-propositions-postgresdb
+    - WF_PROPOSITIONS_POSTGRESDB_JDBCCONNECTIONSTRING=jdbc:postgresql://wf-infra-postgres:5432/wf-propositions-postgresdb
+    - WF_PROPOSITIONS_POSTGRESDB_DATABASENAME=wf-propositions-postgresdb
+    - ConnectionStrings__wf-infra-minio=Endpoint=http://wf-infra-minio:9000;AccessKey=minioadmin;SecretKey=admin123
+    - RESOURCE_NAME=wf-propositions-api
+    - ASPNETCORE_URLS=http://+:8080;
+

@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wf-users-api
+spec:
+  type: ClusterIP
+  selector:
+    app: wf-users-api
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  - name: https
+    port: 8443
+    targetPort: 8443
+  - name: usershttp
+    port: 5100
+    targetPort: 5100
+  - name: usershttps
+    port: 5101
+    targetPort: 5101

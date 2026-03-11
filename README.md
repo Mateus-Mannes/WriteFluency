@@ -214,6 +214,22 @@ cd src/host/WriteFluency.AppHost
 ./build-k8s-images.sh
 ```
 
+### Regenerate Aspirate manifests (non-interactive)
+Use this command to regenerate manifests without rebuilding images and without interactive prompts for AppHost inputs:
+
+```bash
+cd src/host/WriteFluency.AppHost
+aspirate generate --skip-build --non-interactive \
+  -pa wf-infra-minio-user=minioadmin \
+  -pa wf-infra-minio-password=admin123 \
+  -pa wf-infra-postgres-password=postgres
+```
+
+Parameters passed with `-pa`:
+- `wf-infra-minio-user`: MinIO root user.
+- `wf-infra-minio-password`: MinIO root password.
+- `wf-infra-postgres-password`: Postgres password.
+
 ### Deploy to Kubernetes
 ```bash
 ./deploy-k8s.sh
@@ -252,5 +268,4 @@ This project is licensed under the terms specified in [LICENSE](LICENSE).
 - **.NET Aspire** for cloud-native orchestration
 - **Angular Team** for the excellent framework
 - News providers for article content
-
 

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-propositions-api
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: wf-propositions-api
+        envFrom:
+        - configMapRef:
+            name: wf-propositions-api-env
+        - secretRef:
+            name: wf-propositions-secrets

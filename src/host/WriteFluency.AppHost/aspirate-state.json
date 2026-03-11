@@ -12,6 +12,11 @@
   "containerRepositoryPrefix": "Mateus-Mannes",
   "kubeContext": "minikube",
   "outputFormat": "kustomize",
+  "parameters": [
+    "wf-infra-minio-user=minioadmin",
+    "wf-infra-minio-password=admin123",
+    "wf-infra-postgres-password=postgres"
+  ],
   "disableSecrets": true,
   "skipFinalKustomizeGeneration": false,
   "privateRegistryEmail": "aspir8@aka.ms",

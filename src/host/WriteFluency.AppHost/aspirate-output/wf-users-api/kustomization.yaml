@@ -1,0 +1,27 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: wf-users-api-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080;5100
+    - HTTPS_PORTS=5101
+    - ConnectionStrings__wf-users-postgresdb=Host=wf-infra-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-users-postgresdb
+    - WF_USERS_POSTGRESDB_HOST=wf-infra-postgres
+    - WF_USERS_POSTGRESDB_PORT=5432
+    - WF_USERS_POSTGRESDB_USERNAME=postgres
+    - WF_USERS_POSTGRESDB_PASSWORD=postgres
+    - WF_USERS_POSTGRESDB_URI=postgresql://postgres:{wf-infra-postgres-password-uri-encoded.value}@wf-infra-postgres:5432/wf-users-postgresdb
+    - WF_USERS_POSTGRESDB_JDBCCONNECTIONSTRING=jdbc:postgresql://wf-infra-postgres:5432/wf-users-postgresdb
+    - WF_USERS_POSTGRESDB_DATABASENAME=wf-users-postgresdb
+    - RESOURCE_NAME=wf-users-api
+    - ASPNETCORE_URLS=http://+:8080;
+

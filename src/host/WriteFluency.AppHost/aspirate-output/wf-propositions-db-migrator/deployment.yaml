@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-propositions-db-migrator
+  labels:
+    app: wf-propositions-db-migrator
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-propositions-db-migrator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-propositions-db-migrator
+    spec:
+      containers:
+      - name: wf-propositions-db-migrator
+        image: ghcr.io/mateus-mannes/wf-propositions-db-migrator:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: wf-propositions-db-migrator-env
+      terminationGracePeriodSeconds: 180

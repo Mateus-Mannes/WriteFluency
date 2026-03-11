@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-propositions-db-migrator
+  labels:
+    app: wf-propositions-db-migrator
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox
+        command: ['sh', '-c', 'until nc -z wf-infra-postgres 5432; do echo waiting for postgres; sleep 2; done;']
+      containers:
+      - name: wf-propositions-db-migrator
+        envFrom:
+        - configMapRef:
+            name: wf-propositions-db-migrator-env
+        - secretRef:
+            name: wf-propositions-secrets

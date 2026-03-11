@@ -1,0 +1,96 @@
+name: Deploy Infra
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/host/WriteFluency.AppHost/aspirate-overlays-infra/**'
+      - 'src/host/WriteFluency.AppHost/deploy-k8s.sh'
+      - 'src/host/WriteFluency.AppHost/generate-k8s-secret.sh'
+
+concurrency:
+  group: deploy-infra-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GITHUB_ACTIONS: true
+  KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+  KUBE_CA: ${{ secrets.KUBE_CA }}
+  KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: infra-prod
+
+    env:
+      KUBE_CONTEXT: github-context
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Validate required secrets and variables
+      run: |
+        bash ./src/host/WriteFluency.AppHost/validate-required-env.sh \
+          KUBE_SERVER \
+          KUBE_CA \
+          KUBE_TOKEN \
+          GHCR_USERNAME \
+          GHCR_TOKEN \
+          POSTGRES_PASSWORD \
+          MINIO_ROOT_PASSWORD \
+          CLOUDFLARE_API_TOKEN
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install Aspirate
+      run: dotnet tool install --global aspirate --version 9.1.0
+
+    - name: Add .dotnet tools to PATH
+      run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Configure kubeconfig using Service Account
+      run: |
+        mkdir -p ~/.kube
+        cat <<EOF2 > ~/.kube/config
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - cluster:
+            server: $KUBE_SERVER
+            certificate-authority-data: $KUBE_CA
+          name: cluster
+        contexts:
+        - context:
+            cluster: cluster
+            user: github
+          name: github-context
+        current-context: github-context
+        users:
+        - name: github
+          user:
+            token: $KUBE_TOKEN
+        EOF2
+
+    - name: Turn scripts executable
+      run: |
+        chmod +x ./src/host/WriteFluency.AppHost/build-k8s-images.sh
+        chmod +x ./src/host/WriteFluency.AppHost/deploy-k8s.sh
+        chmod +x ./src/host/WriteFluency.AppHost/generate-k8s-secret.sh
+
+    - name: Deploy infra resources
+      working-directory: ./src/host/WriteFluency.AppHost
+      run: ./deploy-k8s.sh infra $KUBE_CONTEXT

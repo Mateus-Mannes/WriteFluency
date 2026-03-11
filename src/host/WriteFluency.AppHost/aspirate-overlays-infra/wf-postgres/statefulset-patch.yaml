@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-infra-postgres
+  labels:
+    app: wf-infra-postgres
+spec:
+  template:
+    metadata:
+      labels:
+        app: wf-infra-postgres
+    spec:
+      containers:
+        - name: wf-infra-postgres
+          envFrom:
+            - configMapRef:
+                name: wf-infra-postgres-env
+            - secretRef:
+                name: wf-infra-secrets
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 15Gi
