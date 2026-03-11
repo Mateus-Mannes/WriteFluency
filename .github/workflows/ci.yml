@@ -63,9 +63,11 @@ jobs:
           -pa wf-infra-minio-password=admin123 \
           -pa wf-infra-postgres-password=postgres
 
-    - name: Fail on manifest drift
+    - name: Check manifest drift
       run: |
-        if ! git diff --quiet -- src/host/WriteFluency.AppHost/manifest.json src/host/WriteFluency.AppHost/aspirate-output; then
+        if git diff --quiet -- src/host/WriteFluency.AppHost/manifest.json src/host/WriteFluency.AppHost/aspirate-output; then
+          echo "No manifest drift detected."
+        else
           echo "Manifest drift detected. Run aspirate generate and commit updated files."
           git --no-pager diff -- src/host/WriteFluency.AppHost/manifest.json src/host/WriteFluency.AppHost/aspirate-output
           exit 1
