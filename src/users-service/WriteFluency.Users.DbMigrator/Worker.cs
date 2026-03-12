@@ -1,21 +1,29 @@
 namespace WriteFluency.Users.DbMigrator;
 
-public sealed class Worker(
+public class Worker(
+    IUsersMigrationExecutor migrationExecutor,
     IHostApplicationLifetime hostApplicationLifetime,
     ILogger<Worker> logger) : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => RunOnceAsync(stoppingToken);
+
+    public async Task RunOnceAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Users DB migrator started.");
 
-        await Task.Yield();
-
-        if (stoppingToken.IsCancellationRequested)
+        try
         {
-            return;
+            await migrationExecutor.MigrateAsync(stoppingToken);
+            logger.LogInformation("Users DB migrations applied successfully.");
         }
-
-        logger.LogInformation("Users DB migrator finished (no schema migrations configured yet).");
-        hostApplicationLifetime.StopApplication();
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Users DB migration failed.");
+            throw;
+        }
+        finally
+        {
+            hostApplicationLifetime.StopApplication();
+        }
     }
 }

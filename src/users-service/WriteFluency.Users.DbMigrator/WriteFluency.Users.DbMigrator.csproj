@@ -5,9 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../host/WriteFluency.ServiceDefaults/WriteFluency.ServiceDefaults.csproj" />
+    <ProjectReference Include="../WriteFluency.Users.WebApi/WriteFluency.Users.WebApi.csproj" />
   </ItemGroup>
 </Project>

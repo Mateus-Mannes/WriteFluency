@@ -269,3 +269,22 @@ This project is licensed under the terms specified in [LICENSE](LICENSE).
 - **Angular Team** for the excellent framework
 - News providers for article content
 
+
+## Users Service (US2) Local Smoke Check
+
+Run AppHost and validate users-service foundation:
+
+1. Start orchestration:
+   ```bash
+   cd src/host/WriteFluency.AppHost
+   dotnet run
+   ```
+2. Probe users-service health:
+   ```bash
+   curl -i http://localhost:5100/users/health
+   ```
+3. Verify users DB migration applied:
+   - Check `wf-users-db-migrator` logs in Aspire dashboard for `Users DB migrations applied successfully.`
+   - Connect to PostgreSQL and confirm Identity tables exist in `wf-users-postgresdb` (for example `AspNetUsers`, `AspNetRoles`).
+4. Confirm existing flows still boot:
+   - `wf-propositions-api` and `wf-propositions-news-worker` should be healthy in Aspire.
