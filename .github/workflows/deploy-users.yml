@@ -40,12 +40,6 @@ jobs:
       Authentication__Apple__TeamId: ${{ secrets.Authentication__Apple__TeamId }}
       Authentication__Apple__KeyId: ${{ secrets.Authentication__Apple__KeyId }}
       Authentication__Apple__PrivateKey: ${{ secrets.Authentication__Apple__PrivateKey }}
-      Smtp__Host: ${{ secrets.Smtp__Host }}
-      Smtp__Port: ${{ secrets.Smtp__Port }}
-      Smtp__Username: ${{ secrets.Smtp__Username }}
-      Smtp__Password: ${{ secrets.Smtp__Password }}
-      Smtp__FromEmail: ${{ secrets.Smtp__FromEmail }}
-      Smtp__FromName: ${{ secrets.Smtp__FromName }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -59,7 +53,7 @@ jobs:
           GHCR_USERNAME \
           GHCR_TOKEN \
           POSTGRES_PASSWORD \
-          APPLICATIONINSIGHTS_CONNECTION_STRING \
+          APPLICATIONINSIGHTS_CONNECTION_STRING
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4

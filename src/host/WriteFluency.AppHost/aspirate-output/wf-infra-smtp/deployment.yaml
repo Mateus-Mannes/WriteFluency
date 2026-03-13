@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-infra-smtp
+  labels:
+    app: wf-infra-smtp
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-infra-smtp
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wf-infra-smtp
+    spec:
+      containers:
+      - name: wf-infra-smtp
+        image: boky/postfix:latest
+        imagePullPolicy: Always
+        ports:
+        - name: smtp
+          containerPort: 25
+        envFrom:
+        - configMapRef:
+            name: wf-infra-smtp-env
+      terminationGracePeriodSeconds: 180

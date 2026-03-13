@@ -23,6 +23,22 @@ var postgres = builder.AddPostgres("wf-infra-postgres")
 var postgresdb = postgres.AddDatabase("wf-propositions-postgresdb");
 var usersdb = postgres.AddDatabase("wf-users-postgresdb");
 
+var redis = builder.AddRedis("wf-infra-redis", port: 6379)
+    .WithArgs("--maxmemory", "500mb", "--maxmemory-policy", "allkeys-lru")
+    .WithDataVolume("writefluency-redis-data");
+
+var smtp = builder.AddContainer("wf-infra-smtp", "boky/postfix", "latest")
+    .WithEnvironment("ALLOWED_SENDER_DOMAINS", "writefluency.com")
+    .WithEnvironment("POSTFIX_myhostname", "wf-infra-smtp.writefluency.svc.cluster.local")
+    .WithEnvironment("POSTFIX_smtp_tls_security_level", "may")
+    .WithEndpoint(2525, 25, name: "smtp", isProxied: false);
+
+var localMailpit = builder.ExecutionContext.IsRunMode
+    ? builder.AddContainer("wf-local-mailpit", "axllent/mailpit", "latest")
+        .WithEndpoint(1025, 1025, name: "smtp", isProxied: false)
+        .WithEndpoint(8025, 8025, name: "ui", isProxied: false)
+    : null;
+
 var dbMigrator = builder.AddProject<Projects.WriteFluency_DbMigrator>("wf-propositions-db-migrator")
     .WithReference(postgresdb)
     .WaitFor(postgresdb);
@@ -52,10 +68,30 @@ newsWorker.WithEnvironment("RESOURCE_NAME", newsWorker.Resource.Name);
 
 var usersApi = builder.AddProject<Projects.WriteFluency_Users_WebApi>("wf-users-api")
     .WithReference(usersdb).WaitFor(usersdb)
+    .WithReference(redis)
+    .WaitFor(redis)
     .WaitForCompletion(usersDbMigrator)
     .WithHttpHealthCheck("health")
     .WithHttpEndpoint(port: 5100, name: "usershttp", isProxied: false)
-    .WithHttpsEndpoint(port: 5101, name: "usershttps", isProxied: false);
+    .WithHttpsEndpoint(port: 5101, name: "usershttps", isProxied: false)
+    .WithEnvironment("Smtp__FromEmail", "noreply@writefluency.com")
+    .WithEnvironment("Smtp__FromName", "WriteFluency");
+
+if (builder.ExecutionContext.IsRunMode)
+{
+    usersApi
+        .WaitFor(localMailpit!)
+        .WithEnvironment("Smtp__Host", "localhost")
+        .WithEnvironment("Smtp__Port", "1025");
+}
+else
+{
+    usersApi
+        .WaitFor(smtp)
+        .WithEnvironment("Smtp__Host", "wf-infra-smtp")
+        .WithEnvironment("Smtp__Port", "2525");
+}
+
 usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
 builder.AddNpmApp("wf-webapp", "../../webapp")

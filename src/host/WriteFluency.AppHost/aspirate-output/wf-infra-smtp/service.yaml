@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wf-infra-smtp
+spec:
+  type: ClusterIP
+  selector:
+    app: wf-infra-smtp
+  ports:
+  - name: smtp
+    port: 2525
+    targetPort: 25

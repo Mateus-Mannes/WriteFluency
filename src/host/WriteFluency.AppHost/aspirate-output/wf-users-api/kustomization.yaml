@@ -22,6 +22,11 @@ configMapGenerator:
     - WF_USERS_POSTGRESDB_URI=postgresql://postgres:{wf-infra-postgres-password-uri-encoded.value}@wf-infra-postgres:5432/wf-users-postgresdb
     - WF_USERS_POSTGRESDB_JDBCCONNECTIONSTRING=jdbc:postgresql://wf-infra-postgres:5432/wf-users-postgresdb
     - WF_USERS_POSTGRESDB_DATABASENAME=wf-users-postgresdb
+    - Smtp__FromEmail=noreply@writefluency.com
+    - Smtp__FromName=WriteFluency
+    - ConnectionStrings__wf-infra-redis=wf-infra-redis:6379
+    - Smtp__Host=wf-infra-smtp
+    - Smtp__Port=2525
     - RESOURCE_NAME=wf-users-api
     - ASPNETCORE_URLS=http://+:8080;
 

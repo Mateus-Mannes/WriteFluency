@@ -4,6 +4,8 @@ resources:
 - wf-infra-minio
 - wf-propositions-minio-init
 - wf-infra-postgres
+- wf-infra-redis
+- wf-infra-smtp
 - wf-propositions-db-migrator
 - wf-users-db-migrator
 - wf-propositions-api

@@ -1,0 +1,125 @@
+namespace WriteFluency.Users.WebApi.Email;
+
+public static class EmailTemplateBuilder
+{
+    public static string BuildConfirmationEmail(string confirmationLink)
+    {
+        var content = $"""
+                       <p style="margin:0 0 16px 0;">Please confirm your WriteFluency account to start tracking your progress and keep your learning data safe.</p>
+                       <p style="margin:0 0 24px 0;">
+                         <a href="{confirmationLink}" style="display:inline-block;background:linear-gradient(135deg,#3A7DFF 0%,#4A8FFF 100%);color:#ffffff;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 20px;">Confirm my email</a>
+                       </p>
+                       <p style="margin:0;color:#4B5563;font-size:14px;line-height:1.5;">
+                         If the button does not work, copy and paste this link in your browser:<br />
+                         <a href="{confirmationLink}" style="color:#3A7DFF;word-break:break-all;">{confirmationLink}</a>
+                       </p>
+                       """;
+
+        return BuildLayout(
+            title: "Confirm your email",
+            subtitle: "One quick step to activate your account",
+            contentHtml: content);
+    }
+
+    public static string BuildPasswordResetLinkEmail(string resetLink)
+    {
+        var content = $"""
+                       <p style="margin:0 0 16px 0;">We received a request to reset your WriteFluency password.</p>
+                       <p style="margin:0 0 24px 0;">
+                         <a href="{resetLink}" style="display:inline-block;background:linear-gradient(135deg,#3A7DFF 0%,#4A8FFF 100%);color:#ffffff;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 20px;">Reset password</a>
+                       </p>
+                       <p style="margin:0;color:#4B5563;font-size:14px;line-height:1.5;">
+                         If you did not request this, you can ignore this email.
+                       </p>
+                       """;
+
+        return BuildLayout(
+            title: "Reset your password",
+            subtitle: "Secure your account access",
+            contentHtml: content);
+    }
+
+    public static string BuildPasswordResetCodeEmail(string resetCode)
+    {
+        var content = $"""
+                       <p style="margin:0 0 14px 0;">Use this code to reset your WriteFluency password:</p>
+                       <p style="margin:0 0 20px 0;font-size:30px;line-height:1;">
+                         <span style="letter-spacing:4px;background:#E8F0FF;border:1px solid #B8CEFF;color:#1A1A1A;border-radius:10px;padding:12px 16px;display:inline-block;"><strong>{resetCode}</strong></span>
+                       </p>
+                       <p style="margin:0;color:#4B5563;font-size:14px;">Do not share this code with anyone.</p>
+                       """;
+
+        return BuildLayout(
+            title: "Password reset code",
+            subtitle: "Use this code in the reset form",
+            contentHtml: content);
+    }
+
+    public static string BuildPasswordlessOtpEmail(string code)
+    {
+        var content = $"""
+                       <p style="margin:0 0 14px 0;">Your WriteFluency verification code is:</p>
+                       <p style="margin:0 0 20px 0;font-size:34px;line-height:1;">
+                         <span style="letter-spacing:6px;background:#E8F0FF;border:1px solid #B8CEFF;color:#1A1A1A;border-radius:10px;padding:12px 16px;display:inline-block;"><strong>{code}</strong></span>
+                       </p>
+                       <p style="margin:0 0 8px 0;color:#4B5563;font-size:14px;">Use this code to sign in or create your account.</p>
+                       <p style="margin:0;color:#4B5563;font-size:14px;">This code expires in 10 minutes and can only be used once.</p>
+                       """;
+
+        return BuildLayout(
+            title: "Your sign-in code",
+            subtitle: "Passwordless access to WriteFluency",
+            contentHtml: content);
+    }
+
+    private static string BuildLayout(string title, string subtitle, string contentHtml)
+    {
+        return $$"""
+                 <!doctype html>
+                 <html lang="en">
+                 <head>
+                   <meta charset="utf-8" />
+                   <meta name="viewport" content="width=device-width, initial-scale=1" />
+                   <title>{{title}}</title>
+                 </head>
+                 <body style="margin:0;padding:0;background:#F7FAFC;font-family:'Source Sans 3','Segoe UI',Arial,sans-serif;color:#1A1A1A;">
+                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F7FAFC;padding:28px 12px;">
+                     <tr>
+                       <td align="center">
+                         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:620px;">
+                           <tr>
+                             <td style="padding:0 0 14px 0;font-size:13px;color:#6B7280;text-align:left;">WriteFluency</td>
+                           </tr>
+                           <tr>
+                             <td style="background:#ffffff;border:1px solid #E5E7EB;border-radius:16px;overflow:hidden;">
+                               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                 <tr>
+                                   <td style="padding:18px 22px;background:linear-gradient(135deg,#3A7DFF 0%,#4A8FFF 100%);">
+                                     <p style="margin:0;font-size:13px;color:#DDEAFF;letter-spacing:.4px;text-transform:uppercase;">WriteFluency</p>
+                                     <h1 style="margin:6px 0 0 0;font-size:28px;line-height:1.2;color:#ffffff;">{{title}}</h1>
+                                     <p style="margin:8px 0 0 0;font-size:16px;line-height:1.4;color:#F2F7FF;">{{subtitle}}</p>
+                                   </td>
+                                 </tr>
+                                 <tr>
+                                   <td style="padding:24px 22px;font-size:16px;line-height:1.55;">
+                                     <p style="margin:0 0 16px 0;">Hi,</p>
+                                     {{contentHtml}}
+                                   </td>
+                                 </tr>
+                               </table>
+                             </td>
+                           </tr>
+                           <tr>
+                             <td style="padding:14px 6px 0 6px;text-align:center;font-size:12px;color:#6B7280;">
+                               This email was sent by WriteFluency. If this was not you, you can safely ignore it.
+                             </td>
+                           </tr>
+                         </table>
+                       </td>
+                     </tr>
+                   </table>
+                 </body>
+                 </html>
+                 """;
+    }
+}

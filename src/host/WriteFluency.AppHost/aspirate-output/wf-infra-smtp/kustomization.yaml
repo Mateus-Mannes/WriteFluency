@@ -1,0 +1,14 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: wf-infra-smtp-env
+  literals:
+    - ALLOWED_SENDER_DOMAINS=writefluency.com
+    - POSTFIX_myhostname=wf-infra-smtp.writefluency.svc.cluster.local
+    - POSTFIX_smtp_tls_security_level=may
+

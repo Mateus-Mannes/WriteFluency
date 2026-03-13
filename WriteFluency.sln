@@ -47,6 +47,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "users-service", "users-serv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Users.Tests", "tests\users-service\WriteFluency.Users.Tests\WriteFluency.Users.Tests.csproj", "{2B2E77D4-CA38-4C64-94D4-5A62A43FF6C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.Users.IntegrationTests", "tests\users-service\WriteFluency.Users.IntegrationTests\WriteFluency.Users.IntegrationTests.csproj", "{303229C3-8492-46EE-8BCB-8A86BAC7C85E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -237,6 +239,18 @@ Global
 		{2B2E77D4-CA38-4C64-94D4-5A62A43FF6C6}.Release|x64.Build.0 = Release|Any CPU
 		{2B2E77D4-CA38-4C64-94D4-5A62A43FF6C6}.Release|x86.ActiveCfg = Release|Any CPU
 		{2B2E77D4-CA38-4C64-94D4-5A62A43FF6C6}.Release|x86.Build.0 = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|x64.Build.0 = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Debug|x86.Build.0 = Debug|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|x64.ActiveCfg = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|x64.Build.0 = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|x86.ActiveCfg = Release|Any CPU
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -262,5 +276,6 @@ Global
 		{65DD894A-D9E7-4A14-9992-A05472F30D21} = {ABDFCEDE-61EE-DA95-EF82-3806A8CA2983}
 		{4DF128B7-867A-1DC8-F119-92090EC44E1F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{2B2E77D4-CA38-4C64-94D4-5A62A43FF6C6} = {4DF128B7-867A-1DC8-F119-92090EC44E1F}
+		{303229C3-8492-46EE-8BCB-8A86BAC7C85E} = {4DF128B7-867A-1DC8-F119-92090EC44E1F}
 	EndGlobalSection
 EndGlobal

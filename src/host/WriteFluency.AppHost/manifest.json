@@ -111,6 +111,40 @@
       "type": "value.v0",
       "connectionString": "{wf-infra-postgres.connectionString};Database=wf-users-postgresdb"
     },
+    "wf-infra-redis": {
+      "type": "container.v0",
+      "image": "redis:7.2-alpine",
+      "args": [
+        "--appendonly",
+        "yes"
+      ],
+      "bindings": {
+        "redis": {
+          "scheme": "tcp",
+          "protocol": "tcp",
+          "transport": "tcp",
+          "targetPort": 6379
+        }
+      }
+    },
+    "wf-infra-smtp": {
+      "type": "container.v0",
+      "image": "boky/postfix:latest",
+      "env": {
+        "ALLOWED_SENDER_DOMAINS": "writefluency.com",
+        "POSTFIX_myhostname": "wf-infra-smtp.writefluency.svc.cluster.local",
+        "POSTFIX_smtp_tls_security_level": "may"
+      },
+      "bindings": {
+        "smtp": {
+          "scheme": "tcp",
+          "protocol": "tcp",
+          "transport": "tcp",
+          "port": 2525,
+          "targetPort": 25
+        }
+      }
+    },
     "wf-propositions-db-migrator": {
       "type": "project.v0",
       "path": "../../propositions-service/WriteFluency.DbMigrator/WriteFluency.DbMigrator.csproj",
@@ -239,6 +273,11 @@
         "WF_USERS_POSTGRESDB_URI": "postgresql://postgres:{wf-infra-postgres-password-uri-encoded.value}@{wf-infra-postgres.bindings.tcp.host}:{wf-infra-postgres.bindings.tcp.port}/wf-users-postgresdb",
         "WF_USERS_POSTGRESDB_JDBCCONNECTIONSTRING": "jdbc:postgresql://{wf-infra-postgres.bindings.tcp.host}:{wf-infra-postgres.bindings.tcp.port}/wf-users-postgresdb",
         "WF_USERS_POSTGRESDB_DATABASENAME": "wf-users-postgresdb",
+        "Smtp__FromEmail": "noreply@writefluency.com",
+        "Smtp__FromName": "WriteFluency",
+        "ConnectionStrings__wf-infra-redis": "wf-infra-redis:6379",
+        "Smtp__Host": "wf-infra-smtp",
+        "Smtp__Port": "2525",
         "RESOURCE_NAME": "wf-users-api"
       },
       "bindings": {

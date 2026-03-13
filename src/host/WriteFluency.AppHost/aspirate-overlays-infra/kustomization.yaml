@@ -3,6 +3,8 @@ namespace: writefluency
 resources:
   - namespace.yaml
   - ../aspirate-output/wf-infra-postgres
+  - ../aspirate-output/wf-infra-redis
+  - ../aspirate-output/wf-infra-smtp
   - letsencrypt.yaml
 
 patches:
