@@ -45,9 +45,9 @@ if [[ "$TARGET" == "infra" ]]; then
   retry_kubectl apply --validate=false -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml"
 
   echo "Waiting for cert-manager deployments"
-  kubectl rollout status deployment cert-manager -n cert-manager --timeout=180s
-  kubectl rollout status deployment cert-manager-webhook -n cert-manager --timeout=180s
-  kubectl rollout status deployment cert-manager-cainjector -n cert-manager --timeout=180s
+  kubectl rollout status deployment cert-manager -n cert-manager --timeout=600s
+  kubectl rollout status deployment cert-manager-webhook -n cert-manager --timeout=600s
+  kubectl rollout status deployment cert-manager-cainjector -n cert-manager --timeout=600s
 else
   if [[ "$TARGET" == "users" || "$TARGET" == "propositions" ]]; then
     ./generate-k8s-secret.sh "$TARGET"
@@ -57,16 +57,16 @@ fi
 aspirate apply -i "$OVERLAY_PATH" --non-interactive --kube-context "$KUBE_CONTEXT"
 
 if [[ "$TARGET" == "users" ]]; then
-  kubectl rollout status deployment wf-users-api -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-users-api -n writefluency --timeout=600s
 fi
 
 if [[ "$TARGET" == "propositions" ]]; then
-  kubectl rollout status deployment wf-propositions-api -n writefluency --timeout=180s
-  kubectl rollout status deployment wf-propositions-news-worker -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-propositions-api -n writefluency --timeout=600s
+  kubectl rollout status deployment wf-propositions-news-worker -n writefluency --timeout=600s
 fi
 
 if [[ "$TARGET" == "webapp" ]]; then
-  kubectl rollout status deployment wf-webapp -n writefluency --timeout=180s
+  kubectl rollout status deployment wf-webapp -n writefluency --timeout=600s
 fi
 
 echo "Deployment completed for target '$TARGET'"
