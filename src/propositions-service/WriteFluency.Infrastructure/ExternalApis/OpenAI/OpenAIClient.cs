@@ -364,7 +364,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Allow basic connectors such as because, when, after, and while.
         - Use a wider vocabulary than Beginner, but avoid advanced or academic wording.
         - Prefer simpler verb tenses and avoid dense clauses.
-        - Make the paragraph about 10 to 15 percent shorter than the original.
+        - Make the paragraph 20 percent shorter than the original.
 
         Formatting and language rules:
         - Rewrite ONLY the paragraph.
@@ -397,7 +397,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Use simple verb tenses and active voice.
         - Prefer common, everyday vocabulary.
         - Avoid complex clauses, passive voice, and abstract expressions.
-        - Make the paragraph about 10 to 15 percent shorter than the original.
+        - Make the paragraph 50 percent shorter than the original.
 
         Formatting and language rules:
         - Rewrite ONLY the paragraph.
