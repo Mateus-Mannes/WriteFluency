@@ -20,6 +20,7 @@ env:
   GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
   GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
   APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
 
 jobs:
@@ -56,6 +57,7 @@ jobs:
           GHCR_USERNAME \
           GHCR_TOKEN \
           POSTGRES_PASSWORD \
+          REDIS_PASSWORD \
           APPLICATIONINSIGHTS_CONNECTION_STRING \
           Authentication__ExternalRedirect__AllowedReturnUrls__0
 

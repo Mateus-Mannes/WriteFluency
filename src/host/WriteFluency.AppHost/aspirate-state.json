@@ -15,7 +15,8 @@
   "parameters": [
     "wf-infra-minio-user=minioadmin",
     "wf-infra-minio-password=admin123",
-    "wf-infra-postgres-password=postgres"
+    "wf-infra-postgres-password=postgres",
+    "wf-infra-redis-password=admin123"
   ],
   "disableSecrets": true,
   "skipFinalKustomizeGeneration": false,

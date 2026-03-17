@@ -111,15 +111,41 @@
       "type": "value.v0",
       "connectionString": "{wf-infra-postgres.connectionString};Database=wf-users-postgresdb"
     },
+    "wf-infra-redis-password": {
+      "type": "parameter.v0",
+      "value": "{wf-infra-redis-password.inputs.value}",
+      "inputs": {
+        "value": {
+          "type": "string",
+          "secret": true
+        }
+      }
+    },
     "wf-infra-redis": {
       "type": "container.v0",
-      "image": "redis:7.2-alpine",
+      "connectionString": "{wf-infra-redis.bindings.tcp.host}:{wf-infra-redis.bindings.tcp.port},password={wf-infra-redis-password.value}",
+      "image": "docker.io/library/redis:8.2",
+      "entrypoint": "/bin/sh",
       "args": [
-        "--appendonly",
-        "yes"
+        "-c",
+        "redis-server --requirepass $REDIS_PASSWORD --save 60 1",
+        "--maxmemory",
+        "500mb",
+        "--maxmemory-policy",
+        "allkeys-lru"
       ],
+      "volumes": [
+        {
+          "name": "writefluency-redis-data",
+          "target": "/data",
+          "readOnly": false
+        }
+      ],
+      "env": {
+        "REDIS_PASSWORD": "{wf-infra-redis-password.value}"
+      },
       "bindings": {
-        "redis": {
+        "tcp": {
           "scheme": "tcp",
           "protocol": "tcp",
           "transport": "tcp",
@@ -273,9 +299,13 @@
         "WF_USERS_POSTGRESDB_URI": "postgresql://postgres:{wf-infra-postgres-password-uri-encoded.value}@{wf-infra-postgres.bindings.tcp.host}:{wf-infra-postgres.bindings.tcp.port}/wf-users-postgresdb",
         "WF_USERS_POSTGRESDB_JDBCCONNECTIONSTRING": "jdbc:postgresql://{wf-infra-postgres.bindings.tcp.host}:{wf-infra-postgres.bindings.tcp.port}/wf-users-postgresdb",
         "WF_USERS_POSTGRESDB_DATABASENAME": "wf-users-postgresdb",
+        "ConnectionStrings__wf-infra-redis": "{wf-infra-redis.connectionString}",
+        "WF_INFRA_REDIS_HOST": "{wf-infra-redis.bindings.tcp.host}",
+        "WF_INFRA_REDIS_PORT": "{wf-infra-redis.bindings.tcp.port}",
+        "WF_INFRA_REDIS_PASSWORD": "{wf-infra-redis-password.value}",
+        "WF_INFRA_REDIS_URI": "redis://:{wf-infra-redis-password-uri-encoded.value}@{wf-infra-redis.bindings.tcp.host}:{wf-infra-redis.bindings.tcp.port}",
         "Smtp__FromEmail": "noreply@writefluency.com",
         "Smtp__FromName": "WriteFluency",
-        "ConnectionStrings__wf-infra-redis": "wf-infra-redis:6379",
         "Smtp__Host": "wf-infra-smtp",
         "Smtp__Port": "2525",
         "RESOURCE_NAME": "wf-users-api"
@@ -336,6 +366,11 @@
     "wf-infra-postgres-password-uri-encoded": {
       "type": "annotated.string",
       "value": "{wf-infra-postgres-password.value}",
+      "filter": "uri"
+    },
+    "wf-infra-redis-password-uri-encoded": {
+      "type": "annotated.string",
+      "value": "{wf-infra-redis-password.value}",
       "filter": "uri"
     }
   }

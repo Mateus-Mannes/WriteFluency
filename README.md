@@ -222,13 +222,15 @@ cd src/host/WriteFluency.AppHost
 aspirate generate --skip-build --non-interactive \
   -pa wf-infra-minio-user=minioadmin \
   -pa wf-infra-minio-password=admin123 \
-  -pa wf-infra-postgres-password=postgres
+  -pa wf-infra-postgres-password=postgres \
+  -pa wf-infra-redis-password=admin123
 ```
 
 Parameters passed with `-pa`:
 - `wf-infra-minio-user`: MinIO root user.
 - `wf-infra-minio-password`: MinIO root password.
 - `wf-infra-postgres-password`: Postgres password.
+- `wf-infra-redis-password`: Redis password.
 
 ### Deploy to Kubernetes
 ```bash

@@ -23,7 +23,9 @@ var postgres = builder.AddPostgres("wf-infra-postgres")
 var postgresdb = postgres.AddDatabase("wf-propositions-postgresdb");
 var usersdb = postgres.AddDatabase("wf-users-postgresdb");
 
+var redisPassword = builder.AddParameter("wf-infra-redis-password", "admin123", secret: true);
 var redis = builder.AddRedis("wf-infra-redis", port: 6379)
+    .WithPassword(redisPassword)
     .WithArgs("--maxmemory", "500mb", "--maxmemory-policy", "allkeys-lru")
     .WithDataVolume("writefluency-redis-data");
 

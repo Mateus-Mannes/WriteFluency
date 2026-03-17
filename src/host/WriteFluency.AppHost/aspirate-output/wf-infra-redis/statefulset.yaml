@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-infra-redis
+  labels:
+    app: wf-infra-redis
+spec:
+  serviceName: "wf-infra-redis"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wf-infra-redis
+  template:
+    metadata:
+      labels:
+        app: wf-infra-redis
+    spec:
+      containers:
+        - name: wf-infra-redis
+          image: docker.io/library/redis:8.2
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+          args:
+            - '-c'
+            - 'redis-server --requirepass $REDIS_PASSWORD --save 60 1'
+            - '--maxmemory'
+            - '500mb'
+            - '--maxmemory-policy'
+            - 'allkeys-lru'
+          ports:
+            - containerPort: 6379
+          envFrom:
+            - configMapRef:
+                name: wf-infra-redis-env
+          volumeMounts:
+            - name: writefluency-redis-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: writefluency-redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

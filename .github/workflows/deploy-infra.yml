@@ -26,6 +26,7 @@ env:
   GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+  REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
 jobs:
   deploy:
@@ -49,6 +50,7 @@ jobs:
           GHCR_TOKEN \
           POSTGRES_PASSWORD \
           MINIO_ROOT_PASSWORD \
+          REDIS_PASSWORD \
           CLOUDFLARE_API_TOKEN
 
     - name: Install .NET

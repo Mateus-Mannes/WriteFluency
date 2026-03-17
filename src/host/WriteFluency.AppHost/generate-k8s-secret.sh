@@ -39,6 +39,7 @@ news_key="${ExternalApis__News__Key:-}"
 app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING:-}"
 postgres_password="${POSTGRES_PASSWORD:-}"
 minio_password="${MINIO_ROOT_PASSWORD:-}"
+redis_password="${REDIS_PASSWORD:-}"
 cloud_flare_token="${CLOUDFLARE_API_TOKEN:-}"
 cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-${CLOUDFLARE_API_TOKEN:-}}"
 
@@ -59,6 +60,7 @@ metadata:
 type: Opaque
 stringData:
   POSTGRES_PASSWORD: "$postgres_password"
+  REDIS_PASSWORD: "$redis_password"
 EOF2
 
   if [ -n "$ghcr_username" ] && [ -n "$ghcr_token" ]; then
@@ -147,6 +149,7 @@ stringData:
   Smtp__FromEmail: "noreply@writefluency.com"
   Smtp__FromName: "WriteFluency"
   POSTGRES_PASSWORD: "$postgres_password"
+  ConnectionStrings__wf-infra-redis: "wf-infra-redis:6379,password=$redis_password"
   ConnectionStrings__wf-users-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-users-postgresdb
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
 EOF2

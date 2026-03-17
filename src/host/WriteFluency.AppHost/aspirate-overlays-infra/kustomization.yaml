@@ -12,3 +12,7 @@ patches:
     target:
       kind: StatefulSet
       name: wf-infra-postgres
+  - path: wf-infra-redis/statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: wf-infra-redis

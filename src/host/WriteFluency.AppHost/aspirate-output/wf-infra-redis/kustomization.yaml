@@ -1,8 +1,12 @@
 resources:
-- deployment.yaml
+- statefulset.yaml
 - service.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
 
+configMapGenerator:
+- name: wf-infra-redis-env
+  literals:
+    - REDIS_PASSWORD=admin123
 

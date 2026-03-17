@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wf-infra-redis
+spec:
+  template:
+    spec:
+      containers:
+      - name: wf-infra-redis
+        envFrom:
+        - configMapRef:
+            name: wf-infra-redis-env
+        - secretRef:
+            name: wf-infra-secrets

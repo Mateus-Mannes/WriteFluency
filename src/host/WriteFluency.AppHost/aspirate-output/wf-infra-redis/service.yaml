@@ -8,6 +8,6 @@ spec:
   selector:
     app: wf-infra-redis
   ports:
-  - name: redis
+  - name: tcp
     port: 6379
     targetPort: 6379
