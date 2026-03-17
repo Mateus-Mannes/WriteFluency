@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -72,26 +74,54 @@ public class UsersServiceCollectionExtensionsTests
         smtpOptions.Port.ShouldBe(2525);
     }
 
-    private static IConfiguration BuildConfiguration(string? connectionString = null)
+    [Fact]
+    public async Task AddUsersPersistence_ShouldRegisterExternalProviders_WhenCredentialsAreConfigured()
     {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(BuildConfiguration(enableExternalProviders: true));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var schemeProvider = scope.ServiceProvider.GetRequiredService<IAuthenticationSchemeProvider>();
+        (await schemeProvider.GetSchemeAsync(GoogleDefaults.AuthenticationScheme)).ShouldNotBeNull();
+        (await schemeProvider.GetSchemeAsync(MicrosoftAccountDefaults.AuthenticationScheme)).ShouldNotBeNull();
+    }
+
+    private static IConfiguration BuildConfiguration(
+        string? connectionString = null,
+        bool enableExternalProviders = true)
+    {
+        var config = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:wf-users-postgresdb"] = connectionString
+                ?? "Host=localhost;Port=5432;Database=wf-users-postgresdb;Username=postgres;Password=postgres",
+            ["ConnectionStrings:wf-infra-redis"] = "localhost:6379",
+            ["Smtp:Host"] = "smtp.local",
+            ["Smtp:Port"] = "2525",
+            ["Smtp:FromEmail"] = "noreply@writefluency.local",
+            ["Smtp:FromName"] = "WriteFluency",
+            ["PasswordlessOtp:CodeLength"] = "6",
+            ["PasswordlessOtp:TtlMinutes"] = "10",
+            ["PasswordlessOtp:MaxVerifyAttempts"] = "5",
+            ["PasswordlessOtp:MaxRequestsPerWindowPerEmail"] = "3",
+            ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
+            ["PasswordlessOtp:RequestWindowMinutes"] = "15",
+            ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30",
+            ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html"
+        };
+
+        if (enableExternalProviders)
+        {
+            config["Authentication:Google:ClientId"] = "google-client-id";
+            config["Authentication:Google:ClientSecret"] = "google-secret";
+            config["Authentication:Microsoft:ClientId"] = "microsoft-client-id";
+            config["Authentication:Microsoft:ClientSecret"] = "microsoft-secret";
+        }
+
         return new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:wf-users-postgresdb"] = connectionString
-                    ?? "Host=localhost;Port=5432;Database=wf-users-postgresdb;Username=postgres;Password=postgres",
-                ["ConnectionStrings:wf-infra-redis"] = "localhost:6379",
-                ["Smtp:Host"] = "smtp.local",
-                ["Smtp:Port"] = "2525",
-                ["Smtp:FromEmail"] = "noreply@writefluency.local",
-                ["Smtp:FromName"] = "WriteFluency",
-                ["PasswordlessOtp:CodeLength"] = "6",
-                ["PasswordlessOtp:TtlMinutes"] = "10",
-                ["PasswordlessOtp:MaxVerifyAttempts"] = "5",
-                ["PasswordlessOtp:MaxRequestsPerWindowPerEmail"] = "3",
-                ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
-                ["PasswordlessOtp:RequestWindowMinutes"] = "15",
-                ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30"
-            })
+            .AddInMemoryCollection(config)
             .Build();
     }
 }

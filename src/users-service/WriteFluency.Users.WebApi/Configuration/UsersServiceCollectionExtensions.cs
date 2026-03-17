@@ -1,4 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Data;
@@ -43,8 +48,19 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => options.MaxVerifyAttempts > 0, "OTP max verify attempts must be greater than zero")
             .ValidateOnStart();
 
-        services.AddAuthentication(IdentityConstants.ApplicationScheme)
-            .AddIdentityCookies();
+        services.AddOptions<ExternalAuthenticationOptions>()
+            .Bind(configuration.GetSection(ExternalAuthenticationOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
+            ?? throw new InvalidOperationException("Authentication configuration section is required.");
+
+        var authenticationBuilder = services.AddAuthentication(IdentityConstants.ApplicationScheme);
+        authenticationBuilder.AddIdentityCookies();
+
+        AddGoogleProvider(authenticationBuilder, externalAuthOptions.Google);
+        AddMicrosoftProvider(authenticationBuilder, externalAuthOptions.Microsoft);
 
         services.AddAuthorization();
 
@@ -68,6 +84,7 @@ public static class UsersServiceCollectionExtensions
 
         services.AddScoped<PasswordlessOtpStore>();
         services.AddScoped<PasswordlessOtpService>();
+        services.AddScoped<IExternalLoginInfoResolver, DefaultExternalLoginInfoResolver>();
 
         services.AddSingleton<IAppEmailSender, SmtpAppEmailSender>();
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
@@ -76,4 +93,86 @@ public static class UsersServiceCollectionExtensions
 
         return services;
     }
+
+    private static void AddGoogleProvider(AuthenticationBuilder authenticationBuilder, ProviderOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ClientId) || string.IsNullOrWhiteSpace(options.ClientSecret))
+        {
+            return;
+        }
+
+        authenticationBuilder.AddGoogle(GoogleDefaults.AuthenticationScheme, googleOptions =>
+        {
+            googleOptions.ClientId = options.ClientId;
+            googleOptions.ClientSecret = options.ClientSecret;
+            googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
+            googleOptions.SaveTokens = true;
+            googleOptions.ClaimActions.MapJsonKey("email_verified", "email_verified");
+            googleOptions.ClaimActions.MapJsonKey("verified_email", "verified_email");
+            googleOptions.Events = BuildOAuthEvents("google");
+        });
+    }
+
+    private static void AddMicrosoftProvider(AuthenticationBuilder authenticationBuilder, ProviderOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ClientId) || string.IsNullOrWhiteSpace(options.ClientSecret))
+        {
+            return;
+        }
+
+        authenticationBuilder.AddMicrosoftAccount(MicrosoftAccountDefaults.AuthenticationScheme, microsoftOptions =>
+        {
+            microsoftOptions.ClientId = options.ClientId;
+            microsoftOptions.ClientSecret = options.ClientSecret;
+            microsoftOptions.SignInScheme = IdentityConstants.ExternalScheme;
+            microsoftOptions.SaveTokens = true;
+            microsoftOptions.Events = BuildOAuthEvents("microsoft");
+        });
+    }
+
+    private static OAuthEvents BuildOAuthEvents(string providerId)
+    {
+        return new OAuthEvents
+        {
+            OnRemoteFailure = context =>
+            {
+                context.HandleResponse();
+
+                var target = context.Properties?.RedirectUri ?? $"/users/auth/external/{providerId}/callback";
+                target = QueryHelpers.AddQueryString(
+                    target,
+                    ExternalAuthConstants.CallbackErrorCodeQueryName,
+                    MapRemoteFailureCode(context));
+
+                if (!target.Contains("returnUrl=", StringComparison.OrdinalIgnoreCase)
+                    && context.Properties?.Items.TryGetValue(ExternalAuthConstants.ReturnUrlItemName, out var returnUrl) == true
+                    && !string.IsNullOrWhiteSpace(returnUrl))
+                {
+                    target = QueryHelpers.AddQueryString(target, "returnUrl", returnUrl);
+                }
+
+                context.Response.Redirect(target);
+                return Task.CompletedTask;
+            }
+        };
+    }
+
+    private static string MapRemoteFailureCode(RemoteFailureContext context)
+    {
+        var providerError = context.Request.Query["error"].ToString();
+        if (string.Equals(providerError, "access_denied", StringComparison.OrdinalIgnoreCase))
+        {
+            return "access_denied";
+        }
+
+        var message = context.Failure?.Message ?? string.Empty;
+        if (message.Contains("correlation", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("state", StringComparison.OrdinalIgnoreCase))
+        {
+            return "invalid_state";
+        }
+
+        return "callback_error";
+    }
+
 }

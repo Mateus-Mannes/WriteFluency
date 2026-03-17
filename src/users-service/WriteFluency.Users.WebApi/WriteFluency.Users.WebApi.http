@@ -1,6 +1,19 @@
-@WriteFluency.Users.WebApi_HostAddress = http://localhost:5016
+@WriteFluency.Users.WebApi_HostAddress = https://localhost:5101
 
-GET {{WriteFluency.Users.WebApi_HostAddress}}/weatherforecast/
+### List available external providers
+GET {{WriteFluency.Users.WebApi_HostAddress}}/users/auth/external/providers
+Accept: application/json
+
+###
+
+### Start Google social login (open in browser for redirect-based flow)
+GET {{WriteFluency.Users.WebApi_HostAddress}}/users/auth/external/google/start?returnUrl=/users/swagger/index.html
+Accept: application/json
+
+###
+
+### Start Microsoft social login (open in browser for redirect-based flow)
+GET {{WriteFluency.Users.WebApi_HostAddress}}/users/auth/external/microsoft/start?returnUrl=/users/swagger/index.html
 Accept: application/json
 
 ###

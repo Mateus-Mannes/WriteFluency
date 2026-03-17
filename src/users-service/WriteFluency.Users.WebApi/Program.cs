@@ -19,17 +19,18 @@ builder.Services.AddUsersPersistence(builder.Configuration);
 
 var app = builder.Build();
 
+var usersApi = app.MapGroup("/users");
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi("/users/openapi/{documentName}.json");
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "WriteFluency Users API");
-        options.RoutePrefix = "swagger";
+        options.SwaggerEndpoint("/users/openapi/v1.json", "WriteFluency Users API");
+        options.RoutePrefix = "users/swagger";
     });
 }
 
-app.UsePathBase("/users");
 if (!app.Environment.IsEnvironment("Testing"))
 {
     app.UseHttpsRedirection();
@@ -38,7 +39,7 @@ if (!app.Environment.IsEnvironment("Testing"))
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapAuthEndpoints();
+usersApi.MapAuthEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();

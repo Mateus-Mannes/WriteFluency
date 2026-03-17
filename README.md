@@ -281,10 +281,53 @@ Run AppHost and validate users-service foundation:
    ```
 2. Probe users-service health:
    ```bash
-   curl -i http://localhost:5100/users/health
+   curl -i http://localhost:5100/health
    ```
 3. Verify users DB migration applied:
    - Check `wf-users-db-migrator` logs in Aspire dashboard for `Users DB migrations applied successfully.`
    - Connect to PostgreSQL and confirm Identity tables exist in `wf-users-postgresdb` (for example `AspNetUsers`, `AspNetRoles`).
 4. Confirm existing flows still boot:
    - `wf-propositions-api` and `wf-propositions-news-worker` should be healthy in Aspire.
+
+## Users Service (US4) Social Login Local Validation
+
+Google and Microsoft login are exposed by `users-service` under `/users/auth/external/*`.
+
+### Required local user secrets
+
+`users-service` and `propositions-service` share the same `UserSecretsId`, so set credentials once (for example from `src/propositions-service/WriteFluency.WebApi`):
+
+```bash
+cd src/propositions-service/WriteFluency.WebApi
+dotnet user-secrets set "Authentication:Google:ClientId" "<google-client-id>"
+dotnet user-secrets set "Authentication:Google:ClientSecret" "<google-client-secret>"
+dotnet user-secrets set "Authentication:Microsoft:ClientId" "<microsoft-client-id>"
+dotnet user-secrets set "Authentication:Microsoft:ClientSecret" "<microsoft-client-secret>"
+```
+
+### OAuth provider callback URLs (local)
+
+Configure these redirect/callback URLs in provider consoles:
+
+- Google: `https://localhost:5101/users/signin-google`
+- Microsoft: `https://localhost:5101/users/signin-microsoft`
+
+### Swagger-first local test flow
+
+1. Run AppHost:
+   ```bash
+   cd src/host/WriteFluency.AppHost
+   dotnet run
+   ```
+2. Open users Swagger at `https://localhost:5101/users/swagger`.
+3. Use these endpoints:
+   - `GET /users/auth/external/providers`
+   - `GET /users/auth/external/google/start?returnUrl=/users/swagger/index.html`
+   - `GET /users/auth/external/microsoft/start?returnUrl=/users/swagger/index.html`
+4. Start endpoint redirects to provider login, then back to Swagger with query params:
+   - Success: `?auth=success&provider=<google|microsoft>`
+   - Error: `?auth=error&provider=<google|microsoft>&code=<error_code>`
+
+### Future frontend integration contract
+
+Frontend can reuse the same start endpoint by passing an allowlisted frontend callback URL in `returnUrl` (for example `http://localhost:4200/auth/callback`).

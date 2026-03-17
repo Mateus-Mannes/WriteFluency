@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using StackExchange.Redis;
+using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Email;
 
@@ -29,6 +30,10 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Authentication:Google:ClientId", "test-google-client-id");
+        builder.UseSetting("Authentication:Google:ClientSecret", "test-google-client-secret");
+        builder.UseSetting("Authentication:Microsoft:ClientId", "test-microsoft-client-id");
+        builder.UseSetting("Authentication:Microsoft:ClientSecret", "test-microsoft-client-secret");
 
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
@@ -46,7 +51,9 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["PasswordlessOtp:MaxRequestsPerWindowPerEmail"] = "3",
                 ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
                 ["PasswordlessOtp:RequestWindowMinutes"] = "15",
-                ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "1"
+                ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "1",
+                ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
+                ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback"
             });
         });
 
@@ -60,6 +67,9 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
 
             services.RemoveAll<IAppEmailSender>();
             services.AddSingleton<IAppEmailSender>(_testEmailSender);
+
+            services.RemoveAll<IExternalLoginInfoResolver>();
+            services.AddScoped<IExternalLoginInfoResolver, TestingExternalLoginInfoResolver>();
         });
     }
 

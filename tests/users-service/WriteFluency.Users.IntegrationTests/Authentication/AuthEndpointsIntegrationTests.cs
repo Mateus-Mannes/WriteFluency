@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.WebUtilities;
 using Shouldly;
 using WriteFluency.Users.IntegrationTests.Infrastructure;
 
@@ -202,6 +203,144 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
     }
 
     [Fact]
+    public async Task ExternalProviders_ShouldListEnabledProviders()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var response = await client.GetAsync("/users/auth/external/providers");
+        response.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var providerIds = document.RootElement.EnumerateArray()
+            .Select(item => item.GetProperty("id").GetString())
+            .Where(value => value is not null)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        providerIds.ShouldContain("google");
+        providerIds.ShouldContain("microsoft");
+    }
+
+    [Theory]
+    [InlineData("google")]
+    [InlineData("microsoft")]
+    public async Task ExternalLoginFlow_ShouldAuthenticateUser_ForConfiguredProvider(string provider)
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var startClient = _fixture.CreateClient();
+        using var callbackClient = _fixture.CreateClient();
+
+        var email = $"{provider}-{Guid.NewGuid():N}@writefluency.test";
+        var scheme = string.Equals(provider, "google", StringComparison.OrdinalIgnoreCase) ? "Google" : "Microsoft";
+        var start = await startClient.GetAsync($"/users/auth/external/{provider}/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
+
+        start.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        start.Headers.Location.ShouldNotBeNull();
+
+        var callback = await callbackClient.GetAsync(
+            $"/users/auth/external/{provider}/callback?returnUrl=%2Fusers%2Fswagger%2Findex.html&test_provider={Uri.EscapeDataString(scheme)}&test_provider_key={Guid.NewGuid():N}&test_email={Uri.EscapeDataString(email)}");
+        callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        callback.Headers.Location.ShouldNotBeNull();
+        GetQueryParam(callback.Headers.Location!, "auth").ShouldBe("success");
+        GetQueryParam(callback.Headers.Location!, "provider").ShouldBe(provider);
+
+        var session = await callbackClient.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var sessionDoc = await JsonDocument.ParseAsync(await session.Content.ReadAsStreamAsync());
+        sessionDoc.RootElement.GetProperty("isAuthenticated").GetBoolean().ShouldBeTrue();
+        sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
+        sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task ExternalLoginCallback_WithoutExternalCookie_ShouldRedirectWithInvalidState()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var callback = await client.GetAsync("/users/auth/external/google/callback?returnUrl=%2Fusers%2Fswagger%2Findex.html");
+        callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        callback.Headers.Location.ShouldNotBeNull();
+        GetQueryParam(callback.Headers.Location!, "auth").ShouldBe("error");
+        GetQueryParam(callback.Headers.Location!, "code").ShouldBe("invalid_state");
+    }
+
+    [Fact]
+    public async Task ExternalLoginCallback_WithoutReturnUrl_ShouldReturnBadRequest()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var callback = await client.GetAsync("/users/auth/external/google/callback");
+        callback.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        using var errorDoc = await JsonDocument.ParseAsync(await callback.Content.ReadAsStreamAsync());
+        errorDoc.RootElement.TryGetProperty("error", out var error).ShouldBeTrue();
+        error.GetString().ShouldBe("invalid_return_url");
+    }
+
+    [Fact]
+    public async Task ExternalLoginFlow_ShouldRejectUnverifiedProviderEmail()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var startClient = _fixture.CreateClient();
+        using var callbackClient = _fixture.CreateClient();
+
+        var email = $"unverified-{Guid.NewGuid():N}@writefluency.test";
+        var start = await startClient.GetAsync("/users/auth/external/google/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
+        start.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        start.Headers.Location.ShouldNotBeNull();
+
+        var callback = await callbackClient.GetAsync(
+            $"/users/auth/external/google/callback?returnUrl=%2Fusers%2Fswagger%2Findex.html&test_provider=Google&test_provider_key={Guid.NewGuid():N}&test_email={Uri.EscapeDataString(email)}&test_email_verified=false");
+        callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        callback.Headers.Location.ShouldNotBeNull();
+        GetQueryParam(callback.Headers.Location!, "auth").ShouldBe("error");
+        GetQueryParam(callback.Headers.Location!, "code").ShouldBe("provider_email_unverified");
+    }
+
+    [Fact]
+    public async Task ExternalLoginStart_WithUnknownProvider_ShouldReturnBadRequest()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var response = await client.GetAsync("/users/auth/external/unknown/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task HealthEndpoint_ShouldReturnSuccess()
     {
         if (!CanRunIntegration())
@@ -212,7 +351,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         await _fixture.ResetAsync();
 
         using var client = _fixture.CreateClient();
-        var response = await client.GetAsync("/users/health");
+        var response = await client.GetAsync("/health");
 
         response.IsSuccessStatusCode.ShouldBeTrue();
     }
@@ -283,5 +422,14 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var match = Regex.Match(html, "<strong>\\s*([^<]+?)\\s*</strong>", RegexOptions.IgnoreCase);
         match.Success.ShouldBeTrue("Expected to find OTP code in email body");
         return match.Groups[1].Value.Trim();
+    }
+
+    private static string? GetQueryParam(Uri location, string key)
+    {
+        var source = location.IsAbsoluteUri ? location.Query : location.OriginalString;
+        var queryStringStart = source.IndexOf('?', StringComparison.Ordinal);
+        var queryString = queryStringStart >= 0 ? source[queryStringStart..] : string.Empty;
+        var query = QueryHelpers.ParseQuery(queryString);
+        return query.TryGetValue(key, out var values) ? values.ToString() : null;
     }
 }
