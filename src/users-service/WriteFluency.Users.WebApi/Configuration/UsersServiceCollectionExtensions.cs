@@ -105,6 +105,7 @@ public static class UsersServiceCollectionExtensions
         {
             googleOptions.ClientId = options.ClientId;
             googleOptions.ClientSecret = options.ClientSecret;
+            googleOptions.CallbackPath = "/users/signin-google";
             googleOptions.SignInScheme = IdentityConstants.ExternalScheme;
             googleOptions.SaveTokens = true;
             googleOptions.ClaimActions.MapJsonKey("email_verified", "email_verified");
@@ -124,6 +125,7 @@ public static class UsersServiceCollectionExtensions
         {
             microsoftOptions.ClientId = options.ClientId;
             microsoftOptions.ClientSecret = options.ClientSecret;
+            microsoftOptions.CallbackPath = "/users/signin-microsoft";
             microsoftOptions.SignInScheme = IdentityConstants.ExternalScheme;
             microsoftOptions.SaveTokens = true;
             microsoftOptions.Events = BuildOAuthEvents("microsoft");
