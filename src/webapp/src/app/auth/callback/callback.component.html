@@ -1,0 +1,12 @@
+<section class="auth-page">
+  <mat-card class="auth-card">
+    <h1 class="text-title">{{ title() }}</h1>
+    <p class="text-body" [class.success]="isSuccess()" [class.error]="!isSuccess()">{{ message() }}</p>
+
+    @if (!isBusy() && !isSuccess()) {
+      <div class="actions">
+        <a mat-flat-button color="primary" routerLink="/auth/login">Back to Login</a>
+      </div>
+    }
+  </mat-card>
+</section>

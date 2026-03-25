@@ -18,6 +18,26 @@ export const appRoutes: Routes = [
             import('./about/about.component').then((m) => m.AboutComponent),
     },
     {
+        path: 'auth/login',
+        loadComponent: () =>
+            import('./auth/login/login.component').then((m) => m.LoginComponent),
+    },
+    {
+        path: 'auth/register',
+        redirectTo: 'auth/login',
+        pathMatch: 'full',
+    },
+    {
+        path: 'auth/confirm-email',
+        loadComponent: () =>
+            import('./auth/confirm-email/confirm-email.component').then((m) => m.ConfirmEmailComponent),
+    },
+    {
+        path: 'auth/callback',
+        loadComponent: () =>
+            import('./auth/callback/callback.component').then((m) => m.CallbackComponent),
+    },
+    {
         path: 'english-writing-exercise/:id',
         canDeactivate: [listenAndWriteFeedbackGuard],
         loadComponent: () =>

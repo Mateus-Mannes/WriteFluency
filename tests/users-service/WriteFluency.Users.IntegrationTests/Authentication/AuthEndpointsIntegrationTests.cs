@@ -30,22 +30,22 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var email = $"reachability-{Guid.NewGuid():N}@writefluency.test";
         const string password = "Passw0rd!123";
 
-        var register = await client.PostAsJsonAsync("/users/auth/register", new { Email = email, Password = password });
+        var register = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/register", new { Email = email, Password = password });
         AssertEndpointIsMapped(register, "POST /users/auth/register");
 
-        var login = await client.PostAsJsonAsync("/users/auth/login?useCookies=true", new { Email = email, Password = password });
+        var login = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new { Email = email, Password = password });
         AssertEndpointIsMapped(login, "POST /users/auth/login");
 
         var confirmEmail = await client.GetAsync("/users/auth/confirmEmail?userId=invalid&code=invalid");
         AssertEndpointIsMapped(confirmEmail, "GET /users/auth/confirmEmail");
 
-        var resend = await client.PostAsJsonAsync("/users/auth/resendConfirmationEmail", new { Email = email });
+        var resend = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/resendConfirmationEmail", new { Email = email });
         AssertEndpointIsMapped(resend, "POST /users/auth/resendConfirmationEmail");
 
-        var forgot = await client.PostAsJsonAsync("/users/auth/forgotPassword", new { Email = email });
+        var forgot = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/forgotPassword", new { Email = email });
         AssertEndpointIsMapped(forgot, "POST /users/auth/forgotPassword");
 
-        var reset = await client.PostAsJsonAsync("/users/auth/resetPassword", new
+        var reset = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/resetPassword", new
         {
             Email = email,
             ResetCode = "invalid",
@@ -74,14 +74,14 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var sessionBefore = await client.GetAsync("/users/auth/session");
         IsUnauthenticatedStatus(sessionBefore.StatusCode).ShouldBeTrue();
 
-        var register = await client.PostAsJsonAsync("/users/auth/register", new
+        var register = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/register", new
         {
             Email = email,
             Password = password
         });
         register.IsSuccessStatusCode.ShouldBeTrue();
 
-        var loginBeforeConfirm = await client.PostAsJsonAsync("/users/auth/login?useCookies=true", new
+        var loginBeforeConfirm = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new
         {
             Email = email,
             Password = password
@@ -97,7 +97,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var confirm = await client.GetAsync(confirmationUri.PathAndQuery);
         confirm.IsSuccessStatusCode.ShouldBeTrue();
 
-        var login = await client.PostAsJsonAsync("/users/auth/login?useCookies=true", new
+        var login = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new
         {
             Email = email,
             Password = password
@@ -115,11 +115,79 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
         }
 
-        var logout = await client.PostAsJsonAsync("/users/auth/logout", new { });
+        var logout = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/logout", new { });
         logout.IsSuccessStatusCode.ShouldBeTrue();
 
         var sessionAfterLogout = await client.GetAsync("/users/auth/session");
         IsUnauthenticatedStatus(sessionAfterLogout.StatusCode).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Logout_WithCrossSiteOriginHeader_ShouldBeRejectedWithForbidden()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+
+        using var client = _fixture.CreateClient();
+
+        var email = $"csrf-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/users/auth/logout")
+        {
+            Content = JsonContent.Create(new { })
+        };
+        logoutRequest.Headers.TryAddWithoutValidation("Origin", "https://malicious.example");
+
+        var logout = await client.SendAsync(logoutRequest);
+        logout.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Logout_WithoutOriginOrReferer_ShouldBeRejectedWithForbidden()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+
+        using var client = _fixture.CreateClient();
+
+        var email = $"csrf-no-origin-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var logout = await client.PostAsJsonAsync("/users/auth/logout", new { });
+        logout.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Register_WithoutOriginOrReferer_ShouldBeRejectedWithForbidden()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+
+        using var client = _fixture.CreateClient();
+        var email = $"csrf-register-{Guid.NewGuid():N}@writefluency.test";
+
+        var register = await client.PostAsJsonAsync("/users/auth/register", new
+        {
+            Email = email,
+            Password = "Passw0rd!123"
+        });
+
+        register.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -136,7 +204,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         var email = $"passwordless-{Guid.NewGuid():N}@writefluency.test";
 
-        var requestOtp = await client.PostAsJsonAsync("/users/auth/passwordless/request", new
+        var requestOtp = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/request", new
         {
             Email = email
         });
@@ -145,7 +213,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var otpEmail = _fixture.EmailSender.FindLastBySubjectContains("sign-in code");
         otpEmail.ShouldNotBeNull();
 
-        var wrongVerify = await client.PostAsJsonAsync("/users/auth/passwordless/verify", new
+        var wrongVerify = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/verify", new
         {
             Email = email,
             Code = "000000"
@@ -153,7 +221,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         wrongVerify.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
 
         var otpCode = ExtractCode(otpEmail!.HtmlBody);
-        var verify = await client.PostAsJsonAsync("/users/auth/passwordless/verify", new
+        var verify = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/verify", new
         {
             Email = email,
             Code = otpCode
@@ -189,10 +257,10 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var getInfo = await client.GetAsync("/users/auth/manage/info");
         AssertEndpointIsMapped(getInfo, "GET /users/auth/manage/info");
 
-        var postInfo = await client.PostAsJsonAsync("/users/auth/manage/info", new { });
+        var postInfo = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/manage/info", new { });
         AssertEndpointIsMapped(postInfo, "POST /users/auth/manage/info");
 
-        var post2Fa = await client.PostAsJsonAsync("/users/auth/manage/2fa", new
+        var post2Fa = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/manage/2fa", new
         {
             Enable = false,
             ResetSharedKey = false,
@@ -241,7 +309,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         using var callbackClient = _fixture.CreateClient();
 
         var email = $"{provider}-{Guid.NewGuid():N}@writefluency.test";
-        var scheme = string.Equals(provider, "google", StringComparison.OrdinalIgnoreCase) ? "Google" : "Microsoft";
+        var scheme = ResolveProviderScheme(provider);
         var start = await startClient.GetAsync($"/users/auth/external/{provider}/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
 
         start.StatusCode.ShouldBe(HttpStatusCode.Redirect);
@@ -300,8 +368,9 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         error.GetString().ShouldBe("invalid_return_url");
     }
 
-    [Fact]
-    public async Task ExternalLoginFlow_ShouldRejectUnverifiedProviderEmail()
+    [Theory]
+    [InlineData("google", "Google")]
+    public async Task ExternalLoginFlow_ShouldRejectUnverifiedProviderEmail(string provider, string scheme)
     {
         if (!CanRunIntegration())
         {
@@ -313,12 +382,12 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         using var callbackClient = _fixture.CreateClient();
 
         var email = $"unverified-{Guid.NewGuid():N}@writefluency.test";
-        var start = await startClient.GetAsync("/users/auth/external/google/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
+        var start = await startClient.GetAsync($"/users/auth/external/{provider}/start?returnUrl=%2Fusers%2Fswagger%2Findex.html");
         start.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         start.Headers.Location.ShouldNotBeNull();
 
         var callback = await callbackClient.GetAsync(
-            $"/users/auth/external/google/callback?returnUrl=%2Fusers%2Fswagger%2Findex.html&test_provider=Google&test_provider_key={Guid.NewGuid():N}&test_email={Uri.EscapeDataString(email)}&test_email_verified=false");
+            $"/users/auth/external/{provider}/callback?returnUrl=%2Fusers%2Fswagger%2Findex.html&test_provider={Uri.EscapeDataString(scheme)}&test_provider_key={Guid.NewGuid():N}&test_email={Uri.EscapeDataString(email)}&test_email_verified=false");
         callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         callback.Headers.Location.ShouldNotBeNull();
         GetQueryParam(callback.Headers.Location!, "auth").ShouldBe("error");
@@ -374,7 +443,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
     private async Task RegisterConfirmAndLoginAsync(HttpClient client, string email, string password)
     {
-        var register = await client.PostAsJsonAsync("/users/auth/register", new
+        var register = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/register", new
         {
             Email = email,
             Password = password
@@ -390,7 +459,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var confirm = await client.GetAsync(confirmationUri.PathAndQuery);
         confirm.IsSuccessStatusCode.ShouldBeTrue();
 
-        var login = await client.PostAsJsonAsync("/users/auth/login?useCookies=true", new
+        var login = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new
         {
             Email = email,
             Password = password
@@ -431,5 +500,26 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var queryString = queryStringStart >= 0 ? source[queryStringStart..] : string.Empty;
         var query = QueryHelpers.ParseQuery(queryString);
         return query.TryGetValue(key, out var values) ? values.ToString() : null;
+    }
+
+    private static string ResolveProviderScheme(string provider)
+    {
+        return provider.ToLowerInvariant() switch
+        {
+            "google" => "Google",
+            "microsoft" => "Microsoft",
+            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unsupported provider")
+        };
+    }
+
+    private static async Task<HttpResponseMessage> PostAsJsonWithAllowedOriginAsync(HttpClient client, string requestUri, object payload)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = JsonContent.Create(payload)
+        };
+        request.Headers.TryAddWithoutValidation("Origin", "http://localhost:4200");
+
+        return await client.SendAsync(request);
     }
 }

@@ -1,0 +1,135 @@
+<section class="auth-page">
+  <mat-card class="auth-card">
+    <header class="card-head">
+      <h1 class="text-title">Sign In</h1>
+      <p class="text-body subtitle">Use email, password, or social sign-in. If you are new, we will create your account.</p>
+    </header>
+
+    <div class="social-block">
+      <h2 class="text-heading">Continue with</h2>
+      @if (externalProviders().length > 0) {
+        <div class="provider-list">
+          @for (provider of externalProviders(); track provider.id) {
+            <button class="social-btn" mat-stroked-button type="button" (click)="startExternalLogin(provider.id)" [disabled]="isBusy()">
+              <span class="provider-icon" [class.provider-icon--google]="provider.id === 'google'" [class.provider-icon--microsoft]="provider.id === 'microsoft'">
+                {{ provider.displayName.charAt(0) }}
+              </span>
+              <span class="provider-label">Continue with {{ provider.displayName }}</span>
+            </button>
+          }
+        </div>
+      } @else {
+        <p class="text-body subtitle">No social providers available right now.</p>
+      }
+    </div>
+
+    <div class="or-divider">
+      <mat-divider></mat-divider>
+      <span class="text-caption">OR</span>
+    </div>
+
+    @if (!usePasswordLogin()) {
+      <form [formGroup]="otpForm" class="auth-form">
+        @if (otpPhase() === 'request') {
+          <h2 class="text-heading">Email Sign-In</h2>
+          <p class="text-body subtitle compact-top">Step 1 of 2: Enter your email and we will send a 6-digit sign-in code.</p>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+          </mat-form-field>
+
+          @if (otpRequestMessage(); as message) {
+            <p class="info text-body">{{ message }}</p>
+          }
+
+          @if (otpError(); as error) {
+            <p class="error text-body">{{ error }}</p>
+          }
+
+          <button mat-flat-button class="primary-cta" type="button" (click)="requestOtp()" [disabled]="isBusy()">Send code</button>
+          <p class="hint text-caption">
+            You can request up to {{ otpRules.maxRequestsPerWindowPerEmail }} codes every {{ otpRules.requestWindowMinutes }} minutes, with {{ otpRules.minimumSecondsBetweenRequestsPerEmail }} seconds between sends.
+          </p>
+        } @else {
+          <h2 class="text-heading">Check Your Email</h2>
+          <p class="text-body subtitle compact-top">
+            Step 2 of 2: Enter the 6-digit code sent to <strong>{{ otpForm.controls.email.getRawValue() }}</strong>.
+          </p>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>6-digit code</mat-label>
+            <input matInput type="text" formControlName="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+          </mat-form-field>
+
+          @if (otpRequestMessage(); as message) {
+            <p class="info text-body">{{ message }}</p>
+          }
+
+          @if (otpError(); as error) {
+            <p class="error text-body">{{ error }}</p>
+          }
+
+          <button mat-flat-button class="primary-cta" type="button" (click)="verifyOtp()" [disabled]="isBusy()">Sign in</button>
+          <p class="hint text-caption">Code expires in {{ otpRules.ttlMinutes }} minutes. Attempts left: {{ otpVerifyAttemptsRemaining() }}.</p>
+
+          <div class="otp-actions">
+            <button
+              mat-button
+              class="otp-link"
+              type="button"
+              (click)="requestOtp()"
+              [disabled]="isBusy() || isOtpResendBlocked()">
+              Resend code
+              @if (otpResendCooldownSeconds() > 0) {
+                ({{ otpResendCooldownSeconds() }}s)
+              }
+            </button>
+
+            <button mat-button class="otp-link" type="button" (click)="useAnotherEmailForOtp()" [disabled]="isBusy()">
+              Use another email
+            </button>
+          </div>
+        }
+      </form>
+    } @else {
+      <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordLogin()" class="auth-form">
+        <h2 class="text-heading">Email + Password</h2>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" autocomplete="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" autocomplete="current-password" />
+        </mat-form-field>
+
+        @if (passwordError(); as error) {
+          <p class="error text-body">{{ error }}</p>
+        }
+
+        @if (passwordSuccessMessage(); as success) {
+          <p class="success text-body">{{ success }}</p>
+        }
+
+        <button mat-flat-button class="primary-cta" type="submit" [disabled]="isBusy()">Continue</button>
+      </form>
+    }
+
+    <button class="switch-mode text-body" type="button" (click)="toggleLoginMode()">
+      {{ usePasswordLogin() ? 'Use email code instead' : 'Use password instead' }}
+    </button>
+
+    <div class="footer-note text-body">
+      <span>New here? Use any method above and we will guide account creation automatically.</span>
+    </div>
+
+    @if (isBusy()) {
+      <div class="busy-indicator" aria-label="Loading">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+    }
+  </mat-card>
+</section>

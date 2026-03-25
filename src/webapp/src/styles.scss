@@ -13,8 +13,9 @@ html {
 }
 
 body {
-    margin: 0; 
+    margin: 0;
     font-family: 'Source Sans 3', sans-serif !important;
+    color: vars.$color-text;
 }
 
 .mat-icon.material-symbols-outlined {
@@ -41,8 +42,8 @@ body {
   ));
 }
 
-p, h1, h2, h3, h4, h5, h6, span, label {
-    color: vars.$color-text;
+p, h1, h2, h3, h4, h5, h6, label {
+    color: inherit;
     margin: 0;
 }
 

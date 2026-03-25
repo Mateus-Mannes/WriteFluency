@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -18,6 +19,11 @@ public static class UsersServiceCollectionExtensions
     private const string RedisConnectionStringName = "wf-infra-redis";
 
     public static IServiceCollection AddUsersPersistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        return AddUsersPersistence(services, configuration, isProduction: false);
+    }
+
+    public static IServiceCollection AddUsersPersistence(this IServiceCollection services, IConfiguration configuration, bool isProduction)
     {
         var connectionString = configuration.GetConnectionString(UsersConnectionStringName);
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -67,10 +73,35 @@ public static class UsersServiceCollectionExtensions
         services.ConfigureApplicationCookie(options =>
         {
             options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SameSite = isProduction ? SameSiteMode.Lax : SameSiteMode.None;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.SlidingExpiration = true;
+            options.Events = new CookieAuthenticationEvents
+            {
+                OnRedirectToLogin = context =>
+                {
+                    if (IsApiRequest(context.Request))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+                    }
+
+                    context.Response.Redirect(context.RedirectUri);
+                    return Task.CompletedTask;
+                },
+                OnRedirectToAccessDenied = context =>
+                {
+                    if (IsApiRequest(context.Request))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return Task.CompletedTask;
+                    }
+
+                    context.Response.Redirect(context.RedirectUri);
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         services.AddIdentityCore<ApplicationUser>(options =>
@@ -175,6 +206,11 @@ public static class UsersServiceCollectionExtensions
         }
 
         return "callback_error";
+    }
+
+    private static bool IsApiRequest(HttpRequest request)
+    {
+        return request.Path.StartsWithSegments("/users", StringComparison.OrdinalIgnoreCase);
     }
 
 }

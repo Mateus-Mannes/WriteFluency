@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -69,9 +71,31 @@ public class UsersServiceCollectionExtensionsTests
         identityApplicationScheme.ShouldNotBeNull();
         identityApplicationScheme.Name.ShouldBe(IdentityConstants.ApplicationScheme);
 
+        var cookieOptionsMonitor = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
+        var cookieOptions = cookieOptionsMonitor.Get(IdentityConstants.ApplicationScheme);
+        cookieOptions.Cookie.SameSite.ShouldBe(SameSiteMode.None);
+        cookieOptions.Cookie.SecurePolicy.ShouldBe(CookieSecurePolicy.Always);
+
         var smtpOptions = scope.ServiceProvider.GetRequiredService<IOptions<SmtpOptions>>().Value;
         smtpOptions.Host.ShouldBe("smtp.local");
         smtpOptions.Port.ShouldBe(2525);
+    }
+
+    [Fact]
+    public void AddUsersPersistence_WhenProduction_ShouldUseSameSiteLax()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(BuildConfiguration(), isProduction: true);
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var cookieOptionsMonitor = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
+        var cookieOptions = cookieOptionsMonitor.Get(IdentityConstants.ApplicationScheme);
+
+        cookieOptions.Cookie.SameSite.ShouldBe(SameSiteMode.Lax);
+        cookieOptions.Cookie.SecurePolicy.ShouldBe(CookieSecurePolicy.Always);
     }
 
     [Fact]

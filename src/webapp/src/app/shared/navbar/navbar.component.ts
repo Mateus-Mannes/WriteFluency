@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Insights } from '../../../telemetry/insights.service';
+import { AuthSessionStore } from '../../auth/services/auth-session.store';
 
 @Component({
   selector: 'app-navbar',
@@ -23,7 +24,8 @@ import { Insights } from '../../../telemetry/insights.service';
 })
 export class NavbarComponent {
   constructor(
-    @Optional() private insights: Insights | null
+    @Optional() private insights: Insights | null,
+    protected authSessionStore: AuthSessionStore
   ) { }
 
   onNavClick(target: string, route: string): void {
@@ -31,5 +33,10 @@ export class NavbarComponent {
       target,
       route
     });
+  }
+
+  async onLogout(): Promise<void> {
+    await this.authSessionStore.logout();
+    this.onNavClick('logout', '/auth/login');
   }
 }

@@ -1,0 +1,68 @@
+@use '../../../styles/variables' as vars;
+
+.auth-page {
+  min-height: calc(100vh - #{vars.$nav-bar-height});
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background:
+    linear-gradient(135deg, vars.$color-background 0%, #f0f7ff 52%, #f7fcfb 100%),
+    vars.$color-background;
+}
+
+.auth-card {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.45rem;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(26, 26, 26, 0.08);
+}
+
+.card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.subtitle {
+  opacity: 0.8;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.primary-cta {
+  border-radius: 12px;
+  height: 46px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f5f9ff !important;
+}
+
+.primary-cta .mdc-button__label,
+.primary-cta span {
+  color: #f5f9ff !important;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.error {
+  color: vars.$color-accent-warning;
+}
+
+.success {
+  color: vars.$color-accent-success;
+}

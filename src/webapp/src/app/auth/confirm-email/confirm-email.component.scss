@@ -1,0 +1,32 @@
+@use '../../../styles/variables' as vars;
+
+.auth-page {
+  min-height: calc(100vh - #{vars.$nav-bar-height});
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(circle at top right, rgba(58, 125, 255, 0.1), transparent 38%), vars.$color-background;
+}
+
+.auth-card {
+  width: min(500px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.success {
+  color: vars.$color-accent-success;
+}
+
+.error {
+  color: vars.$color-accent-warning;
+}

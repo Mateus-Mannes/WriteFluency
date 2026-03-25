@@ -38,12 +38,6 @@ jobs:
       Authentication__Microsoft__ClientId: ${{ secrets.Authentication__Microsoft__ClientId }}
       Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
       Authentication__ExternalRedirect__AllowedReturnUrls__0: ${{ vars.Authentication__ExternalRedirect__AllowedReturnUrls__0 }}
-      Authentication__ExternalRedirect__AllowedReturnUrls__1: ${{ vars.Authentication__ExternalRedirect__AllowedReturnUrls__1 }}
-      Authentication__ExternalRedirect__AllowedReturnUrls__2: ${{ vars.Authentication__ExternalRedirect__AllowedReturnUrls__2 }}
-      Authentication__Apple__ClientId: ${{ secrets.Authentication__Apple__ClientId }}
-      Authentication__Apple__TeamId: ${{ secrets.Authentication__Apple__TeamId }}
-      Authentication__Apple__KeyId: ${{ secrets.Authentication__Apple__KeyId }}
-      Authentication__Apple__PrivateKey: ${{ secrets.Authentication__Apple__PrivateKey }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4

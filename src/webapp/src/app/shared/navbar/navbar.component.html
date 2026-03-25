@@ -25,6 +25,18 @@
         <mat-icon aria-hidden="true">info</mat-icon>
         <span>About</span>
       </a>
+
+      @if (authSessionStore.isAuthenticated()) {
+        <button class="nav-link nav-button" type="button" (click)="onLogout()" [disabled]="authSessionStore.state().isLoading">
+          <mat-icon aria-hidden="true">logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      } @else {
+        <a class="nav-link" routerLink="/auth/login" routerLinkActive="active" aria-label="Login" (click)="onNavClick('login', '/auth/login')">
+          <mat-icon aria-hidden="true">person</mat-icon>
+          <span>Login</span>
+        </a>
+      }
     </nav>
   </div>
 </mat-toolbar>

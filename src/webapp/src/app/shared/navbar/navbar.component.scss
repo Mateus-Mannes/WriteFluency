@@ -101,6 +101,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: nowrap;
 }
 
 .nav-link {
@@ -116,6 +117,20 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+
+.nav-button {
+  border: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: inherit;
+  line-height: inherit;
+  margin: 0;
+  cursor: pointer;
 }
 
 .nav-link mat-icon {

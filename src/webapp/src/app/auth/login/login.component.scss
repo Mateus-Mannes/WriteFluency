@@ -1,0 +1,219 @@
+@use '../../../styles/variables' as vars;
+
+.auth-page {
+  width: 100%;
+  min-height: calc(100vh - #{vars.$nav-bar-height});
+  min-height: calc(100dvh - #{vars.$nav-bar-height});
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.65rem, 2.1vh, 1.25rem) 1rem;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(58, 125, 255, 0.22) 0%, rgba(58, 125, 255, 0) 34%),
+    radial-gradient(circle at 82% 86%, rgba(0, 194, 168, 0.16) 0%, rgba(0, 194, 168, 0) 36%),
+    linear-gradient(150deg, #edf3fb 0%, #e6eef9 45%, #eef5ff 100%);
+}
+
+@supports (height: 100svh) {
+  .auth-page {
+    min-height: calc(100svh - #{vars.$nav-bar-height});
+  }
+}
+
+.auth-card {
+  width: min(620px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.45rem;
+  position: relative;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(58, 125, 255, 0.18);
+  box-shadow:
+    0 22px 50px rgba(33, 80, 169, 0.13),
+    0 6px 16px rgba(26, 26, 26, 0.08);
+}
+
+.card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.subtitle {
+  opacity: 0.8;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.compact-top {
+  margin-top: -0.6rem;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.primary-cta {
+  border-radius: 12px;
+  height: 46px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f5f9ff !important;
+  --mdc-filled-button-label-text-color: #f5f9ff;
+}
+
+:host ::ng-deep .primary-cta .mdc-button__label {
+  color: #f5f9ff !important;
+}
+
+.switch-mode {
+  width: fit-content;
+  background: none;
+  border: none;
+  color: vars.$color-primary-dark;
+  padding: 0.2rem 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.or-divider {
+  position: relative;
+  display: grid;
+  align-items: center;
+  margin: 0.5rem 0 0.2rem 0;
+  height: 0;
+}
+
+.or-divider span {
+  justify-self: center;
+  background: #fff;
+  padding: 0 0.6rem;
+  color: #6f7683;
+  position: relative;
+  top: -0.65rem;
+}
+
+.social-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.social-btn {
+  justify-content: flex-start;
+  border-radius: 12px;
+  height: 46px;
+  border-color: rgba(26, 26, 26, 0.14);
+}
+
+:host ::ng-deep .social-btn .mdc-button__label {
+  display: flex;
+  align-items: center;
+}
+
+.provider-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  max-width: 24px;
+  max-height: 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+  line-height: 1;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: #8c94a3;
+  margin-right: 0.65rem;
+  flex: 0 0 auto;
+}
+
+.provider-icon--google {
+  border-radius: 999px;
+  background: conic-gradient(#4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%);
+}
+
+.provider-icon--microsoft {
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  border-radius: 2px;
+  background:
+    linear-gradient(#f25022 0 0) 0 0/11px 11px no-repeat,
+    linear-gradient(#7fba00 0 0) 13px 0/11px 11px no-repeat,
+    linear-gradient(#00a4ef 0 0) 0 13px/11px 11px no-repeat,
+    linear-gradient(#ffb900 0 0) 13px 13px/11px 11px no-repeat;
+}
+
+.provider-label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.otp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: -0.2rem;
+}
+
+.otp-link {
+  padding: 0 0.2rem;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.hint {
+  color: #6f7683;
+}
+
+.footer-note {
+  display: flex;
+  justify-content: center;
+  opacity: 0.8;
+  text-align: center;
+}
+
+.error {
+  color: vars.$color-accent-warning;
+}
+
+.info {
+  color: vars.$color-primary-dark;
+}
+
+.success {
+  color: vars.$color-accent-success;
+}
+
+.busy-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 14px;
+}
