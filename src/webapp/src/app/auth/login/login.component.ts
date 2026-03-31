@@ -224,7 +224,8 @@ export class LoginComponent implements OnInit, OnDestroy {
       await this.authSessionStore.refreshSession();
       await this.router.navigate(['/']);
     } catch (error: unknown) {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
+      const verifyStatus = this.getErrorStatus(error);
+      if (verifyStatus === 401) {
         const attemptsLeft = Math.max(0, this.otpVerifyAttemptsRemaining() - 1);
         this.otpVerifyAttemptsRemaining.set(attemptsLeft);
         if (attemptsLeft === 0) {

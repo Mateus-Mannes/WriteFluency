@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { RegisterComponent } from './register.component';
 import { AuthApiService } from '../services/auth-api.service';
@@ -14,7 +15,10 @@ describe('RegisterComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [RegisterComponent],
-      providers: [{ provide: AuthApiService, useValue: authApiServiceSpy }],
+      providers: [
+        { provide: AuthApiService, useValue: authApiServiceSpy },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RegisterComponent);
