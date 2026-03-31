@@ -90,8 +90,9 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         var confirmationEmail = _fixture.EmailSender.FindLastBySubjectContains("Confirm your WriteFluency email");
         confirmationEmail.ShouldNotBeNull();
+        confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
 
-        var confirmationUrl = ExtractHref(confirmationEmail!.HtmlBody);
+        var confirmationUrl = ExtractHref(confirmationEmail.HtmlBody);
         var confirmationUri = new Uri(WebUtility.HtmlDecode(confirmationUrl));
 
         var confirm = await client.GetAsync(confirmationUri.PathAndQuery);
@@ -212,6 +213,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         var otpEmail = _fixture.EmailSender.FindLastBySubjectContains("sign-in code");
         otpEmail.ShouldNotBeNull();
+        otpEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
 
         var wrongVerify = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/verify", new
         {
@@ -220,7 +222,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         });
         wrongVerify.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
 
-        var otpCode = ExtractCode(otpEmail!.HtmlBody);
+        var otpCode = ExtractCode(otpEmail.HtmlBody);
         var verify = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/verify", new
         {
             Email = email,
@@ -452,8 +454,9 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         var confirmationEmail = _fixture.EmailSender.FindLastBySubjectContains("Confirm your WriteFluency email");
         confirmationEmail.ShouldNotBeNull();
+        confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
 
-        var confirmationUrl = ExtractHref(confirmationEmail!.HtmlBody);
+        var confirmationUrl = ExtractHref(confirmationEmail.HtmlBody);
         var confirmationUri = new Uri(WebUtility.HtmlDecode(confirmationUrl));
 
         var confirm = await client.GetAsync(confirmationUri.PathAndQuery);

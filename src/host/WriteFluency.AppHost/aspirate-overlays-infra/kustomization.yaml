@@ -16,3 +16,7 @@ patches:
     target:
       kind: StatefulSet
       name: wf-infra-redis
+  - path: wf-infra-smtp/deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: wf-infra-smtp

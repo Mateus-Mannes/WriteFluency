@@ -31,7 +31,8 @@ var redis = builder.AddRedis("wf-infra-redis", port: 6379)
 
 var smtp = builder.AddContainer("wf-infra-smtp", "boky/postfix", "latest")
     .WithEnvironment("ALLOWED_SENDER_DOMAINS", "writefluency.com")
-    .WithEnvironment("POSTFIX_myhostname", "wf-infra-smtp.writefluency.svc.cluster.local")
+    .WithEnvironment("POSTFIX_myhostname", "mail.writefluency.com")
+    .WithEnvironment("POSTFIX_mynetworks", "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16")
     .WithEnvironment("POSTFIX_smtp_tls_security_level", "may")
     .WithEndpoint(2525, 25, name: "smtp", isProxied: false);
 
@@ -77,7 +78,10 @@ var usersApi = builder.AddProject<Projects.WriteFluency_Users_WebApi>("wf-users-
     .WithHttpEndpoint(port: 5100, name: "usershttp", isProxied: false)
     .WithHttpsEndpoint(port: 5101, name: "usershttps", isProxied: false)
     .WithEnvironment("Smtp__FromEmail", "noreply@writefluency.com")
-    .WithEnvironment("Smtp__FromName", "WriteFluency");
+    .WithEnvironment("Smtp__FromName", "WriteFluency")
+    .WithEnvironment("Smtp__ReplyToEmail", "support@writefluency.com")
+    .WithEnvironment("Smtp__EnvelopeFrom", "noreply@writefluency.com")
+    .WithEnvironment("Smtp__MessageIdDomain", "writefluency.com");
 
 if (builder.ExecutionContext.IsRunMode)
 {

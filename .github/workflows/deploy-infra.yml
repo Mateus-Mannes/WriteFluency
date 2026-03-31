@@ -9,6 +9,7 @@ on:
       - 'src/host/WriteFluency.AppHost/aspirate-overlays-infra/**'
       - 'src/host/WriteFluency.AppHost/deploy-k8s.sh'
       - 'src/host/WriteFluency.AppHost/generate-k8s-secret.sh'
+      - 'src/host/WriteFluency.AppHost/validate-required-env.sh'
 
 concurrency:
   group: deploy-infra-prod
@@ -36,6 +37,8 @@ jobs:
     env:
       KUBE_CONTEXT: github-context
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      DKIM_PRIVATE_KEY_PEM: ${{ secrets.DKIM_PRIVATE_KEY_PEM }}
+      DKIM_DOMAIN: writefluency.com
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -51,7 +54,8 @@ jobs:
           POSTGRES_PASSWORD \
           MINIO_ROOT_PASSWORD \
           REDIS_PASSWORD \
-          CLOUDFLARE_API_TOKEN
+          CLOUDFLARE_API_TOKEN \
+          DKIM_PRIVATE_KEY_PEM
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4

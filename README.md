@@ -245,6 +245,10 @@ The application includes:
 - **Aspire Dashboard** for local development
 - **Application Insights** support for production
 
+### Email Deliverability (Users Service)
+- Deliverability runbook for self-hosted SMTP (SPF/DKIM/DMARC, complaint and bounce thresholds, and incident playbook):
+  - `src/users-service/WriteFluency.Users.WebApi/Email/DELIVERABILITY_RUNBOOK.md`
+
 ## 🔧 Development Tools
 
 - **Swagger/OpenAPI**: API documentation at `/swagger` (development only)

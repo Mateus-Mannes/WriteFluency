@@ -14,22 +14,22 @@ public class IdentityEmailSender : IEmailSender<ApplicationUser>
 
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
-        var body = EmailTemplateBuilder.BuildConfirmationEmail(confirmationLink);
+        var content = EmailTemplateBuilder.BuildConfirmationEmail(confirmationLink);
 
-        return _emailSender.SendAsync(email, "Confirm your WriteFluency email", body);
+        return _emailSender.SendAsync(email, "Confirm your WriteFluency email", content.HtmlBody, content.TextBody);
     }
 
     public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
     {
-        var body = EmailTemplateBuilder.BuildPasswordResetLinkEmail(resetLink);
+        var content = EmailTemplateBuilder.BuildPasswordResetLinkEmail(resetLink);
 
-        return _emailSender.SendAsync(email, "Reset your WriteFluency password", body);
+        return _emailSender.SendAsync(email, "Reset your WriteFluency password", content.HtmlBody, content.TextBody);
     }
 
     public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
     {
-        var body = EmailTemplateBuilder.BuildPasswordResetCodeEmail(resetCode);
+        var content = EmailTemplateBuilder.BuildPasswordResetCodeEmail(resetCode);
 
-        return _emailSender.SendAsync(email, "Your WriteFluency reset code", body);
+        return _emailSender.SendAsync(email, "Your WriteFluency reset code", content.HtmlBody, content.TextBody);
     }
 }

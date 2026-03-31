@@ -45,6 +45,7 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Host), "SMTP host is required")
             .Validate(options => options.Port > 0, "SMTP port must be greater than zero")
             .Validate(options => !string.IsNullOrWhiteSpace(options.FromEmail), "SMTP from email is required")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.MessageIdDomain), "SMTP message ID domain is required")
             .ValidateOnStart();
 
         services.AddOptions<PasswordlessOtpOptions>()

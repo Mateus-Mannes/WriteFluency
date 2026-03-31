@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wf-infra-smtp
+spec:
+  template:
+    spec:
+      containers:
+      - name: wf-infra-smtp
+        env:
+        - name: DKIM_DOMAIN
+          value: writefluency.com
+        - name: DKIM_SELECTOR
+          value: wf1
+        volumeMounts:
+        - name: wf-infra-smtp-dkim
+          mountPath: /etc/opendkim/keys
+          readOnly: true
+      volumes:
+      - name: wf-infra-smtp-dkim
+        secret:
+          secretName: wf-infra-smtp-dkim

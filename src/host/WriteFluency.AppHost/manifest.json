@@ -158,7 +158,8 @@
       "image": "boky/postfix:latest",
       "env": {
         "ALLOWED_SENDER_DOMAINS": "writefluency.com",
-        "POSTFIX_myhostname": "wf-infra-smtp.writefluency.svc.cluster.local",
+        "POSTFIX_myhostname": "mail.writefluency.com",
+        "POSTFIX_mynetworks": "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
         "POSTFIX_smtp_tls_security_level": "may"
       },
       "bindings": {
@@ -306,6 +307,9 @@
         "WF_INFRA_REDIS_URI": "redis://:{wf-infra-redis-password-uri-encoded.value}@{wf-infra-redis.bindings.tcp.host}:{wf-infra-redis.bindings.tcp.port}",
         "Smtp__FromEmail": "noreply@writefluency.com",
         "Smtp__FromName": "WriteFluency",
+        "Smtp__ReplyToEmail": "support@writefluency.com",
+        "Smtp__EnvelopeFrom": "noreply@writefluency.com",
+        "Smtp__MessageIdDomain": "writefluency.com",
         "Smtp__Host": "wf-infra-smtp",
         "Smtp__Port": "2525",
         "RESOURCE_NAME": "wf-users-api"

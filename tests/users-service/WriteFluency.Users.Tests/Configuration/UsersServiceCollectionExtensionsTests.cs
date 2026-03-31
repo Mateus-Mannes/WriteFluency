@@ -79,6 +79,9 @@ public class UsersServiceCollectionExtensionsTests
         var smtpOptions = scope.ServiceProvider.GetRequiredService<IOptions<SmtpOptions>>().Value;
         smtpOptions.Host.ShouldBe("smtp.local");
         smtpOptions.Port.ShouldBe(2525);
+        smtpOptions.ReplyToEmail.ShouldBe("support@writefluency.local");
+        smtpOptions.EnvelopeFrom.ShouldBe("bounce@writefluency.local");
+        smtpOptions.MessageIdDomain.ShouldBe("writefluency.local");
     }
 
     [Fact]
@@ -126,6 +129,9 @@ public class UsersServiceCollectionExtensionsTests
             ["Smtp:Port"] = "2525",
             ["Smtp:FromEmail"] = "noreply@writefluency.local",
             ["Smtp:FromName"] = "WriteFluency",
+            ["Smtp:ReplyToEmail"] = "support@writefluency.local",
+            ["Smtp:EnvelopeFrom"] = "bounce@writefluency.local",
+            ["Smtp:MessageIdDomain"] = "writefluency.local",
             ["PasswordlessOtp:CodeLength"] = "6",
             ["PasswordlessOtp:TtlMinutes"] = "10",
             ["PasswordlessOtp:MaxVerifyAttempts"] = "5",

@@ -29,6 +29,9 @@ configMapGenerator:
     - WF_INFRA_REDIS_URI=redis://:{wf-infra-redis-password-uri-encoded.value}@wf-infra-redis:6379
     - Smtp__FromEmail=noreply@writefluency.com
     - Smtp__FromName=WriteFluency
+    - Smtp__ReplyToEmail=support@writefluency.com
+    - Smtp__EnvelopeFrom=noreply@writefluency.com
+    - Smtp__MessageIdDomain=writefluency.com
     - Smtp__Host=wf-infra-smtp
     - Smtp__Port=2525
     - RESOURCE_NAME=wf-users-api

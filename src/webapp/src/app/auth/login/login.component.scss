@@ -198,6 +198,7 @@ mat-form-field {
 
 .error {
   color: vars.$color-accent-warning;
+  white-space: pre-line;
 }
 
 .info {

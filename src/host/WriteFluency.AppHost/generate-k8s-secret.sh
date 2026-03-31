@@ -36,6 +36,8 @@ minio_password="${MINIO_ROOT_PASSWORD:-}"
 redis_password="${REDIS_PASSWORD:-}"
 cloud_flare_token="${CLOUDFLARE_API_TOKEN:-}"
 cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-${CLOUDFLARE_API_TOKEN:-}}"
+dkim_private_key_pem="${DKIM_PRIVATE_KEY_PEM:-}"
+dkim_domain="${DKIM_DOMAIN:-writefluency.com}"
 
 propositions_daily_requests_limit="${Propositions__DailyRequestsLimit:-}"
 propositions_limit_per_topic="${Propositions__LimitPerTopic:-}"
@@ -83,6 +85,23 @@ EOF2
   else
     echo "Skipping cloudflare-api-token-secret because CLOUDFLARE_API_TOKEN is not available."
   fi
+
+  if [ -z "${dkim_private_key_pem//[[:space:]]/}" ]; then
+    echo "Missing DKIM_PRIVATE_KEY_PEM. Set it in CI secrets before infra deploy." >&2
+    exit 1
+  fi
+
+  dkim_tmp_dir="$(mktemp -d)"
+  dkim_private_key_path="${dkim_tmp_dir}/${dkim_domain}.private"
+  printf '%s\n' "$dkim_private_key_pem" > "$dkim_private_key_path"
+  chmod 600 "$dkim_private_key_path"
+
+  kubectl create secret generic wf-infra-smtp-dkim \
+    --namespace=writefluency \
+    --from-file="${dkim_domain}.private=${dkim_private_key_path}" \
+    --dry-run=client -o yaml | apply_stdin_with_retry
+
+  rm -rf "$dkim_tmp_dir"
 
   exit 0
 fi
@@ -142,6 +161,9 @@ stringData:
   Smtp__Port: "2525"
   Smtp__FromEmail: "noreply@writefluency.com"
   Smtp__FromName: "WriteFluency"
+  Smtp__ReplyToEmail: "support@writefluency.com"
+  Smtp__EnvelopeFrom: "noreply@writefluency.com"
+  Smtp__MessageIdDomain: "writefluency.com"
   POSTGRES_PASSWORD: "$postgres_password"
   ConnectionStrings__wf-infra-redis: "wf-infra-redis:6379,password=$redis_password"
   ConnectionStrings__wf-users-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-users-postgresdb

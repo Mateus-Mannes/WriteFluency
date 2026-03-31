@@ -10,5 +10,8 @@ public class SmtpOptions
     public string? Password { get; init; }
     public string FromEmail { get; init; } = "noreply@writefluency.com";
     public string FromName { get; init; } = "WriteFluency";
+    public string? ReplyToEmail { get; init; }
+    public string? EnvelopeFrom { get; init; }
+    public string MessageIdDomain { get; init; } = "writefluency.com";
     public bool EnableSsl { get; init; }
 }

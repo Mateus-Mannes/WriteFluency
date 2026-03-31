@@ -52,9 +52,9 @@ public class PasswordlessOtpService
 
         var code = await _otpStore.IssueCodeAsync(normalizedEmail);
 
-        var body = EmailTemplateBuilder.BuildPasswordlessOtpEmail(code);
+        var content = EmailTemplateBuilder.BuildPasswordlessOtpEmail(code);
 
-        await _emailSender.SendAsync(email, "Your WriteFluency sign-in code", body, cancellationToken);
+        await _emailSender.SendAsync(email, "Your WriteFluency sign-in code", content.HtmlBody, content.TextBody, cancellationToken);
         _logger.LogInformation("Passwordless OTP issued for {NormalizedEmail}", normalizedEmail);
     }
 

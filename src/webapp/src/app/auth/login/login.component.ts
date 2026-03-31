@@ -25,6 +25,12 @@ const otpUiLimits = {
   minimumSecondsBetweenRequestsPerEmail: 30,
 } as const;
 
+type ValidationErrors = Record<string, string[] | string>;
+
+type ValidationProblemDetails = {
+  errors?: ValidationErrors;
+};
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -101,14 +107,20 @@ export class LoginComponent implements OnInit, OnDestroy {
       await firstValueFrom(this.authApiService.loginPassword(email, password));
       await this.authSessionStore.refreshSession();
       await this.router.navigate(['/']);
-    } catch {
+    } catch (error: unknown) {
+      const loginStatus = this.getErrorStatus(error);
+      if (loginStatus !== 401) {
+        this.passwordError.set('Could not sign in right now. Please try again.');
+        return;
+      }
+
       try {
         await firstValueFrom(this.authApiService.register(email, password));
         this.passwordSuccessMessage.set('Account created. Confirm your email from inbox, then continue.');
         this.otpForm.controls.email.setValue(email);
         this.passwordForm.controls.password.setValue('');
-      } catch {
-        this.passwordError.set('Could not sign in. If the account already exists, confirm your email and try again.');
+      } catch (registrationError: unknown) {
+        this.passwordError.set(this.buildRegistrationErrorMessage(registrationError));
       }
     } finally {
       this.isBusy.set(false);
@@ -379,5 +391,73 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     const ttlMs = otpUiLimits.ttlMinutes * 60 * 1000;
     return Date.now() - this.otpIssuedAtMs > ttlMs;
+  }
+
+  private getErrorStatus(error: unknown): number | null {
+    if (error instanceof HttpErrorResponse) {
+      return error.status;
+    }
+
+    if (typeof error === 'object' && error !== null && 'status' in error) {
+      const status = (error as { status?: unknown }).status;
+      if (typeof status === 'number') {
+        return status;
+      }
+    }
+
+    return null;
+  }
+
+  private buildRegistrationErrorMessage(error: unknown): string {
+    const genericMessage = 'Could not sign in. If the account already exists, confirm your email and try again.';
+    const validationMessages = this.extractValidationMessages(error);
+
+    if (validationMessages.length > 0) {
+      return validationMessages.join('\n');
+    }
+
+    return genericMessage;
+  }
+
+  private extractValidationMessages(error: unknown): string[] {
+    const payload = this.getErrorPayload(error);
+    if (!payload || typeof payload !== 'object' || !('errors' in payload)) {
+      return [];
+    }
+
+    const errors = (payload as ValidationProblemDetails).errors;
+    if (!errors || typeof errors !== 'object') {
+      return [];
+    }
+
+    const messages: string[] = [];
+    for (const value of Object.values(errors)) {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === 'string' && item.trim().length > 0) {
+            messages.push(item.trim());
+          }
+        }
+        continue;
+      }
+
+      if (typeof value === 'string' && value.trim().length > 0) {
+        messages.push(value.trim());
+      }
+    }
+
+    return Array.from(new Set(messages));
+  }
+
+  private getErrorPayload(error: unknown): unknown {
+    if (error instanceof HttpErrorResponse) {
+      return error.error;
+    }
+
+    if (typeof error === 'object' && error !== null && 'error' in error) {
+      return (error as { error?: unknown }).error;
+    }
+
+    return null;
   }
 }

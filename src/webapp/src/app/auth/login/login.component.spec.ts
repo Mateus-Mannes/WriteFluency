@@ -116,4 +116,44 @@ describe('LoginComponent', () => {
     expect(authApiServiceSpy.register).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
     expect(component.passwordSuccessMessage()).toContain('Account created');
   });
+
+  it('should show password policy validation errors when auto-registration fails', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.loginPassword.and.returnValue(throwError(() => ({ status: 401 })));
+    authApiServiceSpy.register.and.returnValue(throwError(() => ({
+      status: 400,
+      error: {
+        errors: {
+          PasswordRequiresNonAlphanumeric: ['Passwords must have at least one non alphanumeric character.'],
+          PasswordRequiresLower: ["Passwords must have at least one lowercase ('a'-'z')."],
+          PasswordRequiresUpper: ["Passwords must have at least one uppercase ('A'-'Z')."],
+        },
+      },
+    })));
+    component.passwordForm.setValue({
+      email: 'new@test.com',
+      password: 'password',
+    });
+
+    await component.submitPasswordLogin();
+
+    expect(component.passwordError()).toContain('non alphanumeric');
+    expect(component.passwordError()).toContain("lowercase ('a'-'z')");
+    expect(component.passwordError()).toContain("uppercase ('A'-'Z')");
+    expect(component.passwordError()).toContain('\n');
+  });
+
+  it('should not auto-register when password login fails with non-401 error', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.loginPassword.and.returnValue(throwError(() => ({ status: 500 })));
+    component.passwordForm.setValue({
+      email: 'user@test.com',
+      password: 'Passw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+
+    expect(authApiServiceSpy.register).not.toHaveBeenCalled();
+    expect(component.passwordError()).toBe('Could not sign in right now. Please try again.');
+  });
 });

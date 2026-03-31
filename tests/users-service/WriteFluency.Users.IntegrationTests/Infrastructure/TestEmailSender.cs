@@ -7,9 +7,9 @@ public sealed class TestEmailSender : IAppEmailSender
 {
     private readonly ConcurrentQueue<TestEmailMessage> _messages = new();
 
-    public Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    public Task SendAsync(string toEmail, string subject, string htmlBody, string textBody, CancellationToken cancellationToken = default)
     {
-        _messages.Enqueue(new TestEmailMessage(toEmail, subject, htmlBody));
+        _messages.Enqueue(new TestEmailMessage(toEmail, subject, htmlBody, textBody));
         return Task.CompletedTask;
     }
 
@@ -29,4 +29,4 @@ public sealed class TestEmailSender : IAppEmailSender
     }
 }
 
-public sealed record TestEmailMessage(string ToEmail, string Subject, string HtmlBody);
+public sealed record TestEmailMessage(string ToEmail, string Subject, string HtmlBody, string TextBody);
