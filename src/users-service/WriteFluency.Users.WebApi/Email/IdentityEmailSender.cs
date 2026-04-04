@@ -63,7 +63,9 @@ public class IdentityEmailSender : IEmailSender<ApplicationUser>
 
     private static string? ExtractQueryString(string link)
     {
-        if (Uri.TryCreate(link, UriKind.Absolute, out var absoluteUri))
+        if (Uri.TryCreate(link, UriKind.Absolute, out var absoluteUri)
+            && (string.Equals(absoluteUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(absoluteUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
         {
             return absoluteUri.Query;
         }

@@ -1,9 +1,7 @@
 using System.Net.Http.Headers;
 using System.Diagnostics;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
-using WriteFluency.Authentication;
 using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
@@ -20,21 +18,15 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddAppSwagger();
 
-builder.AddAppAuthentication();
-
 // Options configuration
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
-builder.Services.AddOptions<JwtOptions>().Bind(builder.Configuration.GetSection(JwtOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
 
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
-// Adds the database context and identity configuration
+// Adds the database context
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
-builder.Services.AddIdentityCore<IdentityUser>()
-    .AddApiEndpoints()
-    .AddEntityFrameworkStores<AppDbContext>();
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>
@@ -51,7 +43,6 @@ builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
-builder.Services.AddTransient<JwtTokenService>();
 builder.Services.AddTransient<PropositionService>();
 
 // Adding http clients
@@ -136,18 +127,8 @@ app.Use(async (context, next) =>
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        // Configures the swagger ui to use the google login
-        c.OAuthClientId(builder.Configuration["Authentication:Google:ClientId"]);
-        c.OAuthClientSecret(builder.Configuration["Authentication:Google:ClientSecret"]);
-        c.OAuthUsePkce();
-        c.OAuthScopes("openid", "profile", "email");
-    });
+    app.UseSwaggerUI();
 }
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseRequestTimeouts();
 app.UseOutputCache();

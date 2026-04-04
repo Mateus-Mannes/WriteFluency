@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
+    <ProjectReference Include="../../../src/propositions-service/WriteFluency.WebApi/WriteFluency.WebApi.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

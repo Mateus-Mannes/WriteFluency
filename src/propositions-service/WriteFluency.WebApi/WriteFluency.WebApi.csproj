@@ -6,7 +6,6 @@
     <UserSecretsId>58584eae-ca83-4318-9cb9-76ac1239e00a</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.Auth.AspNetCore3" Version="1.69.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
   <ItemGroup>

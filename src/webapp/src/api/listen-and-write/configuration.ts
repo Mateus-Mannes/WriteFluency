@@ -90,24 +90,6 @@ constructor({ accessToken, apiKeys, basePath, credentials, encodeParam, encoder,
         }
         this.encodeParam = encodeParam ?? (param => this.defaultEncodeParam(param));
         this.credentials = credentials ?? {};
-
-        // init default google credential
-        if (!this.credentials['google']) {
-            this.credentials['google'] = () => {
-                return typeof this.accessToken === 'function'
-                    ? this.accessToken()
-                    : this.accessToken;
-            };
-        }
-
-        // init default jwt_auth credential
-        if (!this.credentials['jwt_auth']) {
-            this.credentials['jwt_auth'] = () => {
-                return typeof this.accessToken === 'function'
-                    ? this.accessToken()
-                    : this.accessToken;
-            };
-        }
     }
 
     /**

@@ -54,12 +54,6 @@ export class TextComparisonsService extends BaseService {
 
         let localVarHeaders = this.defaultHeaders;
 
-        // authentication (google) required
-        localVarHeaders = this.configuration.addCredentialToHeaders('google', 'Authorization', localVarHeaders, 'Bearer ');
-
-        // authentication (jwt_auth) required
-        localVarHeaders = this.configuration.addCredentialToHeaders('jwt_auth', 'Authorization', localVarHeaders, 'Bearer ');
-
         const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
             'application/json'
         ]);
