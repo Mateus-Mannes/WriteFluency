@@ -3,13 +3,17 @@
     <h1 class="text-title">Confirm Email</h1>
 
     @if (isBusy()) {
-      <p class="text-body">Verifying...</p>
+      <p class="text-body">Confirming your email...</p>
     } @else {
       <p class="text-body" [class.success]="isSuccess()" [class.error]="!isSuccess()">{{ message() }}</p>
+
+      @if (helperMessage(); as helper) {
+        <p class="text-body subtitle">{{ helper }}</p>
+      }
     }
 
     <div class="actions">
-      <a mat-flat-button color="primary" routerLink="/auth/login">Go to Login</a>
+      <a mat-flat-button color="primary" routerLink="/auth/login">Go to Sign In</a>
     </div>
   </mat-card>
 </section>

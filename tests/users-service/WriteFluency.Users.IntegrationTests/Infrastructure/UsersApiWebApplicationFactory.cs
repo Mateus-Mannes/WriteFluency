@@ -55,6 +55,7 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
                 ["PasswordlessOtp:RequestWindowMinutes"] = "15",
                 ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "1",
+                ["Authentication:ConfirmationRedirectUrl"] = "http://localhost:4200/auth/confirm-email",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback"
             });

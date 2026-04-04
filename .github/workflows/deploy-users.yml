@@ -37,6 +37,7 @@ jobs:
       Authentication__Google__ClientSecret: ${{ secrets.Authentication__Google__ClientSecret }}
       Authentication__Microsoft__ClientId: ${{ secrets.Authentication__Microsoft__ClientId }}
       Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
+      Authentication__ConfirmationRedirectUrl: https://writefluency.com/auth/confirm-email
       Authentication__ExternalRedirect__AllowedReturnUrls__0: ${{ vars.Authentication__ExternalRedirect__AllowedReturnUrls__0 }}
     steps:
     - name: Checkout

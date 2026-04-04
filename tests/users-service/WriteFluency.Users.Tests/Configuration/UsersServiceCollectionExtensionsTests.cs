@@ -82,6 +82,9 @@ public class UsersServiceCollectionExtensionsTests
         smtpOptions.ReplyToEmail.ShouldBe("support@writefluency.local");
         smtpOptions.EnvelopeFrom.ShouldBe("bounce@writefluency.local");
         smtpOptions.MessageIdDomain.ShouldBe("writefluency.local");
+
+        var externalAuthOptions = scope.ServiceProvider.GetRequiredService<IOptions<ExternalAuthenticationOptions>>().Value;
+        externalAuthOptions.ConfirmationRedirectUrl.ShouldBe("https://writefluency.local/auth/confirm-email");
     }
 
     [Fact]
@@ -139,6 +142,7 @@ public class UsersServiceCollectionExtensionsTests
             ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
             ["PasswordlessOtp:RequestWindowMinutes"] = "15",
             ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30",
+            ["Authentication:ConfirmationRedirectUrl"] = "https://writefluency.local/auth/confirm-email",
             ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html"
         };
 

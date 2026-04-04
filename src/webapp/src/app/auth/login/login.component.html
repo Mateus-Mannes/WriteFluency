@@ -114,7 +114,13 @@
           <p class="success text-body">{{ success }}</p>
         }
 
-        <button mat-flat-button class="primary-cta" type="submit" [disabled]="isBusy()">Continue</button>
+        @if (isAwaitingEmailConfirmationForCurrentEmail()) {
+          <button mat-flat-button class="primary-cta" type="button" (click)="continueAfterConfirmation()" [disabled]="isBusy()">
+            Continue after confirmation
+          </button>
+        } @else {
+          <button mat-flat-button class="primary-cta" type="submit" [disabled]="isBusy()">Continue</button>
+        }
       </form>
     }
 

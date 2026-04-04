@@ -19,7 +19,8 @@ export class ConfirmEmailComponent implements OnInit {
 
   readonly isBusy = signal(true);
   readonly isSuccess = signal(false);
-  readonly message = signal('Verifying confirmation link...');
+  readonly message = signal('Confirming your email...');
+  readonly helperMessage = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
     const userId = this.route.snapshot.queryParamMap.get('userId');
@@ -28,17 +29,19 @@ export class ConfirmEmailComponent implements OnInit {
     if (!userId || !code) {
       this.isBusy.set(false);
       this.isSuccess.set(false);
-      this.message.set('Invalid confirmation link. Please request a new confirmation email.');
+      this.message.set('This confirmation link is invalid or incomplete. Please request a new confirmation email.');
       return;
     }
 
     try {
       await firstValueFrom(this.authApiService.confirmEmail(userId, code));
       this.isSuccess.set(true);
-      this.message.set('Email confirmed. You can now log in.');
+      this.message.set('Your email is confirmed. You can now sign in.');
+      this.helperMessage.set('If you started sign-up on another device, go back there and continue.');
     } catch {
       this.isSuccess.set(false);
-      this.message.set('Email confirmation failed. The link may be invalid or expired.');
+      this.message.set('This confirmation link is invalid or expired. Please request a new confirmation email.');
+      this.helperMessage.set(null);
     } finally {
       this.isBusy.set(false);
     }

@@ -60,6 +60,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   readonly externalProviders = signal<ExternalProvider[]>([]);
   readonly passwordError = signal<string | null>(null);
   readonly passwordSuccessMessage = signal<string | null>(null);
+  readonly awaitingEmailConfirmation = signal<string | null>(null);
   readonly otpRequestMessage = signal<string | null>(null);
   readonly otpError = signal<string | null>(null);
   readonly otpVerifyAttemptsRemaining = signal<number>(otpUiLimits.maxVerifyAttempts);
@@ -89,6 +90,21 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   async submitPasswordLogin(): Promise<void> {
+    await this.handlePasswordLoginAttempt(true);
+  }
+
+  async continueAfterConfirmation(): Promise<void> {
+    await this.handlePasswordLoginAttempt(false);
+  }
+
+  isAwaitingEmailConfirmationForCurrentEmail(): boolean {
+    const awaitingEmail = this.awaitingEmailConfirmation();
+    const currentEmail = this.normalizeEmail(this.passwordForm.controls.email.getRawValue());
+
+    return awaitingEmail !== null && currentEmail === awaitingEmail;
+  }
+
+  private async handlePasswordLoginAttempt(allowAutoRegistration: boolean): Promise<void> {
     const emailControl = this.passwordForm.controls.email;
     const passwordControl = this.passwordForm.controls.password;
 
@@ -97,14 +113,20 @@ export class LoginComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const { email, password } = this.passwordForm.getRawValue();
+    const email = emailControl.getRawValue().trim();
+    const password = passwordControl.getRawValue();
+    emailControl.setValue(email);
 
     this.isBusy.set(true);
     this.passwordError.set(null);
-    this.passwordSuccessMessage.set(null);
+    if (allowAutoRegistration) {
+      this.passwordSuccessMessage.set(null);
+    }
 
     try {
       await firstValueFrom(this.authApiService.loginPassword(email, password));
+      this.awaitingEmailConfirmation.set(null);
+      this.passwordSuccessMessage.set(null);
       await this.authSessionStore.refreshSession();
       await this.router.navigate(['/']);
     } catch (error: unknown) {
@@ -114,11 +136,16 @@ export class LoginComponent implements OnInit, OnDestroy {
         return;
       }
 
+      if (!allowAutoRegistration || this.isAwaitingEmailConfirmationForEmail(email)) {
+        this.passwordError.set('Not confirmed yet. Confirm your email and click "Continue after confirmation".');
+        return;
+      }
+
       try {
         await firstValueFrom(this.authApiService.register(email, password));
-        this.passwordSuccessMessage.set('Account created. Confirm your email from inbox, then continue.');
+        this.setAwaitingEmailConfirmation(email);
+        this.passwordSuccessMessage.set('Account created. We sent a confirmation link to your email. After confirming, return here and click "Continue after confirmation".');
         this.otpForm.controls.email.setValue(email);
-        this.passwordForm.controls.password.setValue('');
       } catch (registrationError: unknown) {
         this.passwordError.set(this.buildRegistrationErrorMessage(registrationError));
       }
@@ -312,6 +339,16 @@ export class LoginComponent implements OnInit, OnDestroy {
   private normalizeEmail(email: string): string | null {
     const normalized = email.trim().toLowerCase();
     return normalized || null;
+  }
+
+  private setAwaitingEmailConfirmation(email: string): void {
+    const normalizedEmail = this.normalizeEmail(email);
+    this.awaitingEmailConfirmation.set(normalizedEmail);
+  }
+
+  private isAwaitingEmailConfirmationForEmail(email: string): boolean {
+    const normalizedEmail = this.normalizeEmail(email);
+    return normalizedEmail !== null && this.awaitingEmailConfirmation() === normalizedEmail;
   }
 
   private getRecentOtpRequestCount(normalizedEmail: string): number {

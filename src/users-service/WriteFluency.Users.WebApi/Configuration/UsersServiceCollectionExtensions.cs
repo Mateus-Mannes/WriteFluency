@@ -58,6 +58,7 @@ public static class UsersServiceCollectionExtensions
         services.AddOptions<ExternalAuthenticationOptions>()
             .Bind(configuration.GetSection(ExternalAuthenticationOptions.SectionName))
             .ValidateDataAnnotations()
+            .Validate(options => IsValidConfirmationRedirectUrl(options.ConfirmationRedirectUrl), "Authentication confirmation redirect URL must be an absolute HTTP(S) URL ending in /auth/confirm-email and without a fragment")
             .ValidateOnStart();
 
         var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
@@ -207,6 +208,31 @@ public static class UsersServiceCollectionExtensions
         }
 
         return "callback_error";
+    }
+
+    private static bool IsValidConfirmationRedirectUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        if (!(uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(uri.Fragment))
+        {
+            return false;
+        }
+
+        return string.Equals(uri.AbsolutePath, "/auth/confirm-email", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsApiRequest(HttpRequest request)

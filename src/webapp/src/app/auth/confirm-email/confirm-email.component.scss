@@ -1,7 +1,9 @@
 @use '../../../styles/variables' as vars;
 
 .auth-page {
-  min-height: calc(100vh - #{vars.$nav-bar-height});
+  min-height: calc(100vh - (#{vars.$nav-bar-height} * 2));
+  min-height: calc(100dvh - (#{vars.$nav-bar-height} * 2));
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -92,10 +92,8 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         confirmationEmail.ShouldNotBeNull();
         confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
 
-        var confirmationUrl = ExtractHref(confirmationEmail.HtmlBody);
-        var confirmationUri = new Uri(WebUtility.HtmlDecode(confirmationUrl));
-
-        var confirm = await client.GetAsync(confirmationUri.PathAndQuery);
+        var confirmUrl = BuildUsersConfirmEmailUrlFromWebappLink(confirmationEmail.HtmlBody);
+        var confirm = await client.GetAsync(confirmUrl);
         confirm.IsSuccessStatusCode.ShouldBeTrue();
 
         var login = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new
@@ -456,10 +454,8 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         confirmationEmail.ShouldNotBeNull();
         confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
 
-        var confirmationUrl = ExtractHref(confirmationEmail.HtmlBody);
-        var confirmationUri = new Uri(WebUtility.HtmlDecode(confirmationUrl));
-
-        var confirm = await client.GetAsync(confirmationUri.PathAndQuery);
+        var confirmUrl = BuildUsersConfirmEmailUrlFromWebappLink(confirmationEmail.HtmlBody);
+        var confirm = await client.GetAsync(confirmUrl);
         confirm.IsSuccessStatusCode.ShouldBeTrue();
 
         var login = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/login?useCookies=true", new
@@ -487,6 +483,27 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         var url = Regex.Match(html, @"https?://[^\s<""]+", RegexOptions.IgnoreCase);
         url.Success.ShouldBeTrue("Expected to find confirmation link in email body");
         return url.Value;
+    }
+
+    private static string BuildUsersConfirmEmailUrlFromWebappLink(string html)
+    {
+        var confirmationUrl = ExtractHref(html);
+        var decodedUrl = WebUtility.HtmlDecode(confirmationUrl);
+        var confirmationUri = new Uri(decodedUrl, UriKind.Absolute);
+
+        confirmationUri.AbsolutePath.ShouldBe("/auth/confirm-email");
+
+        var query = QueryHelpers.ParseQuery(confirmationUri.Query);
+        query.TryGetValue("userId", out var userId).ShouldBeTrue();
+        query.TryGetValue("code", out var code).ShouldBeTrue();
+        userId.ToString().ShouldNotBeNullOrWhiteSpace();
+        code.ToString().ShouldNotBeNullOrWhiteSpace();
+
+        return QueryHelpers.AddQueryString("/users/auth/confirmEmail", new Dictionary<string, string?>
+        {
+            ["userId"] = userId.ToString(),
+            ["code"] = code.ToString()
+        });
     }
 
     private static string ExtractCode(string html)

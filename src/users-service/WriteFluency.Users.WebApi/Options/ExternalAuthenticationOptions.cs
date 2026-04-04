@@ -6,6 +6,7 @@ public sealed class ExternalAuthenticationOptions
 
     public required ProviderOptions Google { get; set; }
     public required ProviderOptions Microsoft { get; set; }
+    public required string ConfirmationRedirectUrl { get; set; }
 
     public required RedirectOptions ExternalRedirect { get; set; }
 }

@@ -115,6 +115,46 @@ describe('LoginComponent', () => {
     expect(authApiServiceSpy.loginPassword).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
     expect(authApiServiceSpy.register).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
     expect(component.passwordSuccessMessage()).toContain('Account created');
+    expect(component.awaitingEmailConfirmation()).toBe('new@test.com');
+    expect(component.passwordForm.controls.password.getRawValue()).toBe('Passw0rd!');
+  });
+
+  it('should retry login without re-registering when continuing after confirmation', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.loginPassword.and.returnValues(
+      throwError(() => ({ status: 401 })),
+      throwError(() => ({ status: 401 })),
+    );
+    component.passwordForm.setValue({
+      email: 'new@test.com',
+      password: 'Passw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+    await component.continueAfterConfirmation();
+
+    expect(authApiServiceSpy.register).toHaveBeenCalledTimes(1);
+    expect(component.passwordError()).toBe('Not confirmed yet. Confirm your email and click "Continue after confirmation".');
+  });
+
+  it('should complete login after confirmation and navigate home', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.loginPassword.and.returnValues(
+      throwError(() => ({ status: 401 })),
+      of({}),
+    );
+    component.passwordForm.setValue({
+      email: 'new@test.com',
+      password: 'Passw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+    await component.continueAfterConfirmation();
+
+    expect(authApiServiceSpy.register).toHaveBeenCalledTimes(1);
+    expect(authSessionStoreSpy.refreshSession).toHaveBeenCalledTimes(1);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(component.awaitingEmailConfirmation()).toBeNull();
   });
 
   it('should show password policy validation errors when auto-registration fails', async () => {
