@@ -27,12 +27,12 @@
 .custom-audio-controls {
     width: 100%;
     min-height: 50px;
-    border: 1px solid #dadce0;
+    border: 1px solid #E5E7EB;
     border-radius: var(--audio-radius);
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 1px 2px rgba(60, 64, 67, 0.18);
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
     box-sizing: border-box;
     padding: var(--audio-padding) 0.6rem;
     display: flex;
@@ -48,16 +48,16 @@
     border-color: rgba(66, 133, 244, 0.82);
     box-shadow:
         0 0 0 2px rgba(66, 133, 244, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 1px 2px rgba(60, 64, 67, 0.18);
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .custom-audio-controls:focus-within {
     border-color: rgba(66, 133, 244, 0.7);
     box-shadow:
         0 0 0 2px rgba(66, 133, 244, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        0 1px 2px rgba(60, 64, 67, 0.18);
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .icon-btn {
@@ -129,7 +129,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #f8f9fa;
+    background: #ffffff;
     border: 1px solid #c3c7cd;
     margin-top: -6px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
@@ -151,7 +151,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #f8f9fa;
+    background: #ffffff;
     border: 1px solid #c3c7cd;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
 }
@@ -186,7 +186,7 @@
     width: 218px;
     border-radius: 10px;
     border: 1px solid #dadce0;
-    background: #f8f9fa;
+    background: #ffffff;
     box-shadow: 0 8px 24px rgba(60, 64, 67, 0.26);
     padding: 0.35rem 0;
     z-index: 4;
