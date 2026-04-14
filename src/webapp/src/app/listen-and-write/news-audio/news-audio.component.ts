@@ -10,6 +10,8 @@ import { environment } from 'src/enviroments/enviroment';
   styleUrl: './news-audio.component.scss',
 })
 export class NewsAudioComponent implements OnDestroy {
+  private static readonly END_SNAP_EPSILON_SECONDS = 0.2;
+
   private platformId = inject(PLATFORM_ID);
   private isBrowser = isPlatformBrowser(this.platformId);
 
@@ -27,10 +29,19 @@ export class NewsAudioComponent implements OnDestroy {
   isMenuOpen = signal(false);
   isSpeedMenuOpen = signal(false);
   playbackRate = signal(1);
+  sliderValue = computed(() => {
+    const totalDuration = this.duration();
+    const current = this.currentTime();
+    if (!totalDuration || totalDuration <= 0) return 0;
+    if (totalDuration - current <= NewsAudioComponent.END_SNAP_EPSILON_SECONDS) return totalDuration;
+    return Math.max(0, Math.min(totalDuration, current));
+  });
   progressPercent = computed(() => {
     const totalDuration = this.duration();
     if (!totalDuration || totalDuration <= 0) return 0;
-    return Math.max(0, Math.min(100, (this.currentTime() / totalDuration) * 100));
+    const current = this.sliderValue();
+    if (totalDuration - current <= NewsAudioComponent.END_SNAP_EPSILON_SECONDS) return 100;
+    return Math.max(0, Math.min(100, (current / totalDuration) * 100));
   });
   playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -88,7 +99,15 @@ export class NewsAudioComponent implements OnDestroy {
 
   onTimeUpdate() {
     const audio = this.audioRef?.nativeElement;
-    this.currentTime.set(audio?.currentTime || 0);
+    const totalDuration = audio?.duration || this.duration();
+    const current = audio?.currentTime || 0;
+
+    if (totalDuration > 0 && totalDuration - current <= NewsAudioComponent.END_SNAP_EPSILON_SECONDS) {
+      this.currentTime.set(totalDuration);
+      return;
+    }
+
+    this.currentTime.set(current);
   }
 
   onCanPlay() {

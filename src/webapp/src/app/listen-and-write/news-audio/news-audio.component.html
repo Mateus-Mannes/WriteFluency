@@ -43,7 +43,7 @@
       type="range"
       min="0"
       [max]="duration() || 0"
-      [value]="currentTime()"
+      [value]="sliderValue()"
       [style.--progress]="progressPercent() + '%'"
       (input)="onSeek($event)"
       [disabled]="!duration()"

@@ -101,8 +101,10 @@
 
 .timeline {
     --progress: 0%;
+    --thumb-size: 16px;
     appearance: none;
     -webkit-appearance: none;
+    padding: 0;
     flex: 1;
     min-width: 70px;
     height: 4px;
@@ -115,6 +117,9 @@
             #9aa0a6 var(--progress),
             #9aa0a6 100%
         );
+    background-repeat: no-repeat;
+    background-size: calc(100% - var(--thumb-size)) 4px;
+    background-position: calc(var(--thumb-size) / 2) center;
     cursor: pointer;
 }
 
@@ -126,8 +131,8 @@
 
 .timeline::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
+    width: var(--thumb-size);
+    height: var(--thumb-size);
     border-radius: 50%;
     background: #ffffff;
     border: 1px solid #c3c7cd;
@@ -148,8 +153,8 @@
 }
 
 .timeline::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: var(--thumb-size);
+    height: var(--thumb-size);
     border-radius: 50%;
     background: #ffffff;
     border: 1px solid #c3c7cd;
