@@ -22,6 +22,18 @@ env:
   POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
   APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+  USERS_API_AZURE_CLIENT_ID: ${{ secrets.USERS_API_AZURE_CLIENT_ID }}
+  USERS_API_AZURE_TENANT_ID: ${{ secrets.USERS_API_AZURE_TENANT_ID }}
+  USERS_API_AZURE_CLIENT_SECRET: ${{ secrets.USERS_API_AZURE_CLIENT_SECRET }}
+  AZURE_CLIENT_ID: ${{ secrets.USERS_API_AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ secrets.USERS_API_AZURE_TENANT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.USERS_API_AZURE_CLIENT_SECRET }}
+  SharedAuthCookie__Scheme: Identity.Application
+  SharedAuthCookie__CookieName: .AspNetCore.Identity.Application
+  SharedAuthCookie__CookieDomain: .writefluency.com
+  SharedDataProtection__ApplicationName: WriteFluency.SharedAuth
+  SharedDataProtection__BlobUri: https://wfusersdpprod01.blob.core.windows.net/keys/keyring.xml
+  SharedDataProtection__KeyIdentifier: https://wf-users-dp-kv-prod.vault.azure.net/keys/dataprotection
 
 jobs:
   deploy:
@@ -54,6 +66,11 @@ jobs:
           POSTGRES_PASSWORD \
           REDIS_PASSWORD \
           APPLICATIONINSIGHTS_CONNECTION_STRING \
+          USERS_API_AZURE_CLIENT_ID \
+          USERS_API_AZURE_TENANT_ID \
+          USERS_API_AZURE_CLIENT_SECRET \
+          SharedDataProtection__BlobUri \
+          SharedDataProtection__KeyIdentifier \
           Authentication__ExternalRedirect__AllowedReturnUrls__0
 
     - name: Install .NET

@@ -83,8 +83,12 @@ public class ArticleExtractor : IArticleExtractor
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Failed to download image from {ImageUrl}", imageUrl);
-            return Result.Fail(new Error("Failed to download image").CausedBy(ex));
+            _logger.LogWarning(
+                "Image download was rejected or unavailable. ImageUrl={ImageUrl}, StatusCode={StatusCode}.",
+                imageUrl,
+                ex.StatusCode);
+
+            return Result.Fail(new Error("Failed to download image"));
         }
     }
 }

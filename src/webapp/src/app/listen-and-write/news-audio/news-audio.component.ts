@@ -42,6 +42,8 @@ export class NewsAudioComponent implements OnDestroy {
 
   paused = output();
 
+  seeked = output();
+
   listenSuggestion = input<boolean>(true);
 
   onPlay() {
@@ -76,6 +78,10 @@ export class NewsAudioComponent implements OnDestroy {
   onEnded() {
     this.audioEnded = true;
     this.isAudioPlaying.set(false);
+  }
+
+  onSeeked() {
+    this.seeked.emit();
   }
 
   playAudio() {

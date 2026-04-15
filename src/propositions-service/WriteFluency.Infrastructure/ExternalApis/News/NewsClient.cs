@@ -26,7 +26,13 @@ public class NewsClient : BaseHttpClientService, INewsClient
         "anglotopia.net",
         "www.iphoneincanada.ca",
         "nypost.com",
-        "johnquiggin.com"
+        "johnquiggin.com",
+        "www.sportsnet.ca",
+        "spitalfieldslife.com",
+        "www.rte.ie",
+        "mumbrella.com.au",
+        "deadline.com",
+        "thedailyblog.co.nz"
     ];
 
     public NewsClient(HttpClient httpClient, ILogger<NewsClient> logger, IOptionsMonitor<NewsOptions> options)

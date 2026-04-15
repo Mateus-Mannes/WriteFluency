@@ -100,6 +100,13 @@ else
 
 usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
+if (builder.ExecutionContext.IsRunMode)
+{
+    builder.AddAzureFunctionsProject<Projects.WriteFluency_UsersProgressService>("wf-users-progress-api")
+        .WithHttpEndpoint(port: 7200, name: "usersprogresshttp", isProxied: false)
+        .WithHttpsEndpoint(port: 7201, name: "usersprogresshttps", isProxied: false);
+}
+
 builder.AddNpmApp("wf-webapp", "../../webapp")
     .WithReference(api)
     .WaitFor(api)

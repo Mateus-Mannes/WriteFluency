@@ -3,6 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CallbackComponent } from './callback.component';
 import { AuthSessionStore } from '../services/auth-session.store';
 
+const postLoginReturnUrlStorageKey = 'wf.auth.post-login-return-url.v1';
+
 describe('CallbackComponent', () => {
   let component: CallbackComponent;
   let fixture: ComponentFixture<CallbackComponent>;
@@ -11,9 +13,10 @@ describe('CallbackComponent', () => {
 
   async function setupWithQuery(query: Record<string, string>): Promise<void> {
     authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
-    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
-    routerSpy.navigate.and.returnValue(Promise.resolve(true));
+    routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
+    window.sessionStorage.removeItem(postLoginReturnUrlStorageKey);
 
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -44,8 +47,18 @@ describe('CallbackComponent', () => {
     await component.ngOnInit();
 
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
     expect(component.isSuccess()).toBeTrue();
+  });
+
+  it('should navigate to stored post-login return URL on success callback', async () => {
+    await setupWithQuery({ auth: 'success', provider: 'google' });
+    window.sessionStorage.setItem(postLoginReturnUrlStorageKey, '/english-writing-exercise/10');
+
+    await component.ngOnInit();
+
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/english-writing-exercise/10');
+    expect(window.sessionStorage.getItem(postLoginReturnUrlStorageKey)).toBeNull();
   });
 
   it('should render error message on callback failure', async () => {

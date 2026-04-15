@@ -74,6 +74,8 @@ public class UsersServiceCollectionExtensionsTests
         var cookieOptionsMonitor = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>();
         var cookieOptions = cookieOptionsMonitor.Get(IdentityConstants.ApplicationScheme);
         cookieOptions.Cookie.SameSite.ShouldBe(SameSiteMode.None);
+        cookieOptions.Cookie.Name.ShouldBe(".AspNetCore.Identity.Application");
+        cookieOptions.Cookie.Domain.ShouldBeNull();
         cookieOptions.Cookie.SecurePolicy.ShouldBe(CookieSecurePolicy.Always);
 
         var smtpOptions = scope.ServiceProvider.GetRequiredService<IOptions<SmtpOptions>>().Value;
@@ -101,6 +103,8 @@ public class UsersServiceCollectionExtensionsTests
         var cookieOptions = cookieOptionsMonitor.Get(IdentityConstants.ApplicationScheme);
 
         cookieOptions.Cookie.SameSite.ShouldBe(SameSiteMode.Lax);
+        cookieOptions.Cookie.Name.ShouldBe(".AspNetCore.Identity.Application");
+        cookieOptions.Cookie.Domain.ShouldBe(".writefluency.com");
         cookieOptions.Cookie.SecurePolicy.ShouldBe(CookieSecurePolicy.Always);
     }
 
@@ -142,6 +146,10 @@ public class UsersServiceCollectionExtensionsTests
             ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
             ["PasswordlessOtp:RequestWindowMinutes"] = "15",
             ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30",
+            ["SharedAuthCookie:Scheme"] = "Identity.Application",
+            ["SharedAuthCookie:CookieName"] = ".AspNetCore.Identity.Application",
+            ["SharedAuthCookie:CookieDomain"] = ".writefluency.com",
+            ["SharedDataProtection:ApplicationName"] = "WriteFluency.SharedAuth",
             ["Authentication:ConfirmationRedirectUrl"] = "https://writefluency.local/auth/confirm-email",
             ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html"
         };

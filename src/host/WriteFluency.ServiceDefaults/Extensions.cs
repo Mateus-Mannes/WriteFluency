@@ -86,6 +86,11 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
+
+                if (!string.IsNullOrWhiteSpace(aiConnectionString))
+                {
+                    metrics.AddAzureMonitorMetricExporter(options => options.ConnectionString = aiConnectionString);
+                }
             })
             .WithTracing(tracing =>
             {

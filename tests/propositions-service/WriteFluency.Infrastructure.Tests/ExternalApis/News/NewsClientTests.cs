@@ -179,4 +179,47 @@ public class NewsClientTests : InfrastructureTestBase
         result.Value.Count().ShouldBe(1);
         result.Value.First().Title.ShouldBe("Sample News");
     }
+
+    [Fact]
+    public async Task GetNewsAsync_ShouldIncludeBlockedDomainsInExcludeDomainsQueryParameter()
+    {
+        var validJson = """
+        {
+            "data": [
+                {
+                    "uuid": "123",
+                    "title": "Sample News",
+                    "description": "Description here",
+                    "url": "https://example.com/news",
+                    "image_url": "https://example.com/image.jpg"
+                }
+            ]
+        }
+        """;
+
+        string? capturedRequestUri = null;
+        _httpClient = CreateMockHttpClient((request, ct) =>
+        {
+            capturedRequestUri = request.RequestUri?.ToString();
+            return Task.FromResult(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(validJson)
+            });
+        });
+
+        var client = GetService<INewsClient>();
+
+        var result = await client.GetNewsAsync(SubjectEnum.Science, DateTime.UtcNow);
+
+        result.IsSuccess.ShouldBeTrue();
+        capturedRequestUri.ShouldNotBeNullOrWhiteSpace();
+        capturedRequestUri.ShouldContain("exclude_domains=");
+        capturedRequestUri.ShouldContain("www.sportsnet.ca");
+        capturedRequestUri.ShouldContain("spitalfieldslife.com");
+        capturedRequestUri.ShouldContain("www.rte.ie");
+        capturedRequestUri.ShouldContain("mumbrella.com.au");
+        capturedRequestUri.ShouldContain("deadline.com");
+        capturedRequestUri.ShouldContain("thedailyblog.co.nz");
+    }
 }

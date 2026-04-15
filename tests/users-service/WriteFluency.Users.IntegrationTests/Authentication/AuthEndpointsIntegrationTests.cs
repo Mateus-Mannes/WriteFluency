@@ -112,6 +112,10 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             sessionDoc.RootElement.GetProperty("isAuthenticated").GetBoolean().ShouldBeTrue();
             sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
             sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
+            sessionDoc.RootElement.TryGetProperty("issuedAtUtc", out var issuedAtUtc).ShouldBeTrue();
+            sessionDoc.RootElement.TryGetProperty("expiresAtUtc", out var expiresAtUtc).ShouldBeTrue();
+            DateTimeOffset.TryParse(issuedAtUtc.GetString(), out _).ShouldBeTrue();
+            DateTimeOffset.TryParse(expiresAtUtc.GetString(), out _).ShouldBeTrue();
         }
 
         var logout = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/logout", new { });

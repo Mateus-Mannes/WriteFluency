@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { listenAndWriteFeedbackGuard } from './listen-and-write/listen-and-write-feedback.guard';
+import { userPageAuthGuard } from './user/user-page-auth.guard';
 
 export const appRoutes: Routes = [
     {
@@ -16,6 +17,12 @@ export const appRoutes: Routes = [
         path: 'about',
         loadComponent: () =>
             import('./about/about.component').then((m) => m.AboutComponent),
+    },
+    {
+        path: 'user',
+        canActivate: [userPageAuthGuard],
+        loadComponent: () =>
+            import('./user/user.component').then((m) => m.UserComponent),
     },
     {
         path: 'auth/login',

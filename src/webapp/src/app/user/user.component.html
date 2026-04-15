@@ -1,0 +1,89 @@
+<section class="user-page">
+  <header class="page-header">
+    <h1>Your progress</h1>
+    <p>Track your exercise history and completion scores.</p>
+  </header>
+
+  <mat-card class="account-card">
+    <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
+    <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
+  </mat-card>
+
+  @if (isLoading()) {
+    <div class="loading-state" aria-live="polite">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading your progress...</p>
+    </div>
+  } @else if (error()) {
+    <mat-card class="error-card" aria-live="assertive">
+      <p>{{ error() }}</p>
+      <button mat-flat-button color="primary" type="button" (click)="reload()">Retry</button>
+    </mat-card>
+  } @else {
+    @if (summary(); as summary) {
+      <div class="kpi-grid">
+        <mat-card>
+          <p class="kpi-label">Tracked exercises</p>
+          <p class="kpi-value">{{ summary.totalItems }}</p>
+        </mat-card>
+        <mat-card>
+          <p class="kpi-label">In progress</p>
+          <p class="kpi-value">{{ summary.inProgressCount }}</p>
+        </mat-card>
+        <mat-card>
+          <p class="kpi-label">Completed</p>
+          <p class="kpi-value">{{ summary.completedCount }}</p>
+        </mat-card>
+        <mat-card>
+          <p class="kpi-label">Average score</p>
+          <p class="kpi-value">{{ formatPercent(summary.averageAccuracyPercentage) }}</p>
+        </mat-card>
+        <mat-card>
+          <p class="kpi-label">Total active time</p>
+          <p class="kpi-value">{{ formatDuration(summary.totalActiveSeconds) }}</p>
+        </mat-card>
+      </div>
+
+      @if (!summary.trackingEnabled) {
+        <mat-card class="info-card">
+          <p>Progress tracking is temporarily unavailable. Exercises remain fully usable.</p>
+        </mat-card>
+      }
+    }
+
+    <section class="tracker-section">
+      <h2>Exercise tracker</h2>
+
+      @if (!hasItems()) {
+        <mat-card class="empty-card">
+          <p>No tracked exercises yet. Start an exercise to begin your history.</p>
+        </mat-card>
+      } @else {
+        <div class="tracker-list" role="list">
+          @for (item of items(); track trackByExerciseId($index, item)) {
+            <mat-card class="tracker-item" role="listitem">
+              <div class="tracker-title-row">
+                <h3>{{ item.exerciseTitle || ('Exercise #' + item.exerciseId) }}</h3>
+                <span class="status-chip" [class.completed]="item.status === 'completed'" [class.in-progress]="item.status === 'in_progress'">
+                  {{ statusLabel(item.status) }}
+                </span>
+              </div>
+              <p class="meta">{{ item.subject || 'General' }} · {{ item.complexity || 'Unspecified level' }}</p>
+              <div class="scores">
+                <span>Latest: <strong>{{ formatPercent(item.latestAccuracyPercentage) }}</strong></span>
+                <span>Best: <strong>{{ formatPercent(item.bestAccuracyPercentage) }}</strong></span>
+                <span>Attempts: <strong>{{ item.attemptCount }}</strong></span>
+                @if (item.status === 'in_progress') {
+                  <span>Active so far: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
+                  <span>Words so far: <strong>{{ item.currentWordCount ?? 0 }}</strong></span>
+                } @else if (item.status === 'completed') {
+                  <span>Active time: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
+                }
+              </div>
+            </mat-card>
+          }
+        </div>
+      }
+    </section>
+  }
+</section>

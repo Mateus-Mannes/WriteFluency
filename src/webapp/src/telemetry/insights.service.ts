@@ -7,6 +7,11 @@ import { shouldUseAppInsights } from './insights.check';
 
 export type InsightsProperties = Record<string, string>;
 export type InsightsMeasurements = Record<string, number>;
+export interface InsightsExceptionOptions {
+    properties?: InsightsProperties;
+    measurements?: InsightsMeasurements;
+    severityLevel?: number;
+}
 
 @Injectable()
 export class Insights {
@@ -102,6 +107,38 @@ export class Insights {
         }
 
         this.appInsights.trackTrace({ message, properties, measurements });
+    }
+
+    trackException(
+        error: unknown,
+        options: InsightsExceptionOptions = {}
+    ): void {
+        if (!this.canTrack()) {
+            return;
+        }
+
+        this.appInsights.trackException({
+            exception: this.toError(error),
+            severityLevel: options.severityLevel,
+            properties: options.properties,
+            measurements: options.measurements,
+        });
+    }
+
+    private toError(error: unknown): Error {
+        if (error instanceof Error) {
+            return error;
+        }
+
+        if (typeof error === 'string') {
+            return new Error(error);
+        }
+
+        try {
+            return new Error(JSON.stringify(error));
+        } catch {
+            return new Error('Unknown error');
+        }
     }
 
 }
