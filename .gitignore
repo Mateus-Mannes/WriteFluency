@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Generated ARM templates from local Bicep builds
+infra/**/main.json

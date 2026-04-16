@@ -281,7 +281,7 @@ resource throttlingAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = if (shou
           metricName: 'TotalRequests'
           operator: 'GreaterThan'
           threshold: throttledRequestThreshold
-          timeAggregation: 'Total'
+          timeAggregation: 'Count'
           dimensions: [
             {
               name: 'StatusCode'
@@ -362,7 +362,7 @@ resource failuresAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = if (should
           metricName: 'TotalRequests'
           operator: 'GreaterThan'
           threshold: serverErrorRequestThreshold
-          timeAggregation: 'Total'
+          timeAggregation: 'Count'
           dimensions: [
             {
               name: 'StatusCode'
