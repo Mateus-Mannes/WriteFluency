@@ -5,14 +5,16 @@
   @if (isAudioLoading()) {
     <div class="audio-placeholder wf-image-skeleton" aria-hidden="true"></div>
   }
-  <audio #audioRef
+  <audio
+    #audioRef
     class="audio"
     [class.audio-playing]="isAudioPlaying()"
     [class.audio-loading]="isAudioLoading()"
-    controls
     preload="auto"
     (loadstart)="onLoadStart()"
     (loadeddata)="onLoadedData()"
+    (loadedmetadata)="onLoadedMetadata()"
+    (timeupdate)="onTimeUpdate()"
     (canplay)="onCanPlay()"
     (error)="onAudioError()"
     (play)="onPlay()"
@@ -21,4 +23,64 @@
     (ended)="onEnded()"
     [src]="audioUrl()">
   </audio>
+
+  <div class="custom-audio-controls" [class.audio-loading]="isAudioLoading()" [class.audio-playing]="isAudioPlaying()">
+    <button type="button" class="icon-btn play-btn" (click)="togglePlayPause()" [attr.aria-label]="isAudioPlaying() ? 'Pause audio' : 'Play audio'">
+      @if (isAudioPlaying()) {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="7.5" y="5" width="3.4" height="14" rx="0.9" fill="currentColor" stroke="none"></rect>
+          <rect x="13.1" y="5" width="3.4" height="14" rx="0.9" fill="currentColor" stroke="none"></rect>
+        </svg>
+      } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5V19L19 12L8 5Z" fill="currentColor" stroke="none"></path>
+        </svg>
+      }
+    </button>
+    <span class="time-label">{{ formatTime(currentTime()) }} / {{ formatTime(duration()) }}</span>
+
+    <input
+      class="timeline"
+      type="range"
+      min="0"
+      [max]="duration() || 0"
+      [value]="sliderValue()"
+      [style.--progress]="progressPercent() + '%'"
+      (input)="onSeek($event)"
+      [disabled]="!duration()"
+      aria-label="Audio progress" />
+
+    <div class="menu-wrapper" #menuContainer>
+      <button type="button" class="icon-btn menu-btn" aria-label="Audio options" (click)="toggleMenu($event)">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.8"></circle>
+          <circle cx="12" cy="12" r="1.8"></circle>
+          <circle cx="12" cy="19" r="1.8"></circle>
+        </svg>
+      </button>
+
+      @if (isMenuOpen()) {
+        <div class="audio-menu" (click)="$event.stopPropagation()">
+          <button type="button" class="menu-item" (click)="toggleSpeedMenu()">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 14A8 8 0 1 1 7 19"></path>
+              <path d="M12 12L16 9"></path>
+            </svg>
+            <span>Playback speed</span>
+            <span class="menu-value">{{ formatPlaybackRate(playbackRate()) }}</span>
+          </button>
+
+          @if (isSpeedMenuOpen()) {
+            <div class="speed-options">
+              @for (rate of playbackRates; track rate) {
+                <button type="button" class="speed-option" [class.active]="playbackRate() === rate" (click)="setPlaybackSpeed(rate)">
+                  {{ formatPlaybackRate(rate) }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
 </div>
