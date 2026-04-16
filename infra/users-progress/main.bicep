@@ -39,7 +39,6 @@ param functionAppRuntime string = 'dotnet-isolated'
 param functionAppRuntimeVersion string = '10.0'
 
 @description('Maximum number of instances per Function App in Flex Consumption.')
-@minValue(40)
 @maxValue(1000)
 param maximumInstanceCount int = 100
 
