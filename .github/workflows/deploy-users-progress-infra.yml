@@ -21,7 +21,7 @@ env:
   AZURE_DEPLOY_CLIENT_ID: ${{ secrets.AZURE_DEPLOY_CLIENT_ID }}
   AZURE_DEPLOY_TENANT_ID: ${{ secrets.AZURE_DEPLOY_TENANT_ID }}
   AZURE_DEPLOY_SUBSCRIPTION_ID: ${{ secrets.AZURE_DEPLOY_SUBSCRIPTION_ID }}
-  USERS_API_AZURE_CLIENT_ID: ${{ secrets.USERS_API_AZURE_CLIENT_ID }}
+  USERS_API_RUNTIME_PRINCIPAL_OBJECT_ID: ${{ secrets.USERS_API_RUNTIME_PRINCIPAL_OBJECT_ID }}
 
   USERS_PROGRESS_RESOURCE_GROUP: wf
   USERS_PROGRESS_NAME_PREFIX: wf-users-progress
@@ -85,7 +85,7 @@ jobs:
           AZURE_DEPLOY_CLIENT_ID \
           AZURE_DEPLOY_TENANT_ID \
           AZURE_DEPLOY_SUBSCRIPTION_ID \
-          USERS_API_AZURE_CLIENT_ID \
+          USERS_API_RUNTIME_PRINCIPAL_OBJECT_ID \
           Cosmos__Endpoint \
           APPLICATIONINSIGHTS_CONNECTION_STRING \
           SHARED_DP_STORAGE_ACCOUNT_NAME \
@@ -140,10 +140,10 @@ jobs:
         storage_seasia="${USERS_PROGRESS_STORAGE_SEASIA_NAME:-wfusersprogsea01}"
         tm_profile="${USERS_PROGRESS_TM_PROFILE_NAME:-wf-users-progress-tm}"
         tm_dns_label="${USERS_PROGRESS_TM_DNS_LABEL:-wf-users-progress}"
-        users_api_runtime_principal_object_id="$(az ad sp show --id "$USERS_API_AZURE_CLIENT_ID" --query id --output tsv)"
+        users_api_runtime_principal_object_id="${USERS_API_RUNTIME_PRINCIPAL_OBJECT_ID}"
 
         if [ -z "$users_api_runtime_principal_object_id" ]; then
-          echo "Unable to resolve users-api runtime service principal object id from USERS_API_AZURE_CLIENT_ID." >&2
+          echo "Missing USERS_API_RUNTIME_PRINCIPAL_OBJECT_ID environment variable." >&2
           exit 1
         fi
 
