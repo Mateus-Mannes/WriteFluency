@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { LoginComponent } from './login.component';
 import { AuthApiService } from '../services/auth-api.service';
@@ -21,7 +21,7 @@ describe('LoginComponent', () => {
       'externalProviders',
     ]);
     authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
-    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
 
     authApiServiceSpy.externalProviders.and.returnValue(of([]));
     authApiServiceSpy.loginPassword.and.returnValue(of({}));
@@ -29,7 +29,8 @@ describe('LoginComponent', () => {
     authApiServiceSpy.requestOtp.and.returnValue(of({ message: 'Code sent.' }));
     authApiServiceSpy.verifyOtp.and.returnValue(of({}));
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
-    routerSpy.navigate.and.returnValue(Promise.resolve(true));
+    routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
+    window.sessionStorage.removeItem('wf.auth.post-login-return-url.v1');
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -37,6 +38,16 @@ describe('LoginComponent', () => {
         { provide: AuthApiService, useValue: authApiServiceSpy },
         { provide: AuthSessionStore, useValue: authSessionStoreSpy },
         { provide: Router, useValue: routerSpy },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: () => null,
+              },
+            },
+          },
+        },
       ],
     }).compileComponents();
 
@@ -55,7 +66,7 @@ describe('LoginComponent', () => {
 
     expect(authApiServiceSpy.loginPassword).toHaveBeenCalledWith('user@test.com', 'Passw0rd!');
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
   });
 
   it('should render OTP request message', async () => {
@@ -153,7 +164,7 @@ describe('LoginComponent', () => {
 
     expect(authApiServiceSpy.register).toHaveBeenCalledTimes(1);
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalledTimes(1);
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
     expect(component.awaitingEmailConfirmation()).toBeNull();
   });
 

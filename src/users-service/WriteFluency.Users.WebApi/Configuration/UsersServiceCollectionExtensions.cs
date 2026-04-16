@@ -1,3 +1,6 @@
+using Azure.Core;
+using Azure.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -61,8 +64,27 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => IsValidConfirmationRedirectUrl(options.ConfirmationRedirectUrl), "Authentication confirmation redirect URL must be an absolute HTTP(S) URL ending in /auth/confirm-email and without a fragment")
             .ValidateOnStart();
 
+        services.AddOptions<SharedAuthCookieOptions>()
+            .Bind(configuration.GetSection(SharedAuthCookieOptions.SectionName))
+            .Validate(options => string.Equals(options.Scheme, IdentityConstants.ApplicationScheme, StringComparison.Ordinal), $"Shared auth cookie scheme must be {IdentityConstants.ApplicationScheme}")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Scheme), "Shared auth cookie scheme is required")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.CookieName), "Shared auth cookie name is required")
+            .ValidateOnStart();
+
+        services.AddOptions<SharedDataProtectionOptions>()
+            .Bind(configuration.GetSection(SharedDataProtectionOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ApplicationName), "Shared data protection application name is required")
+            .Validate(options => !isProduction || options.IsConfigured, "SharedDataProtection BlobUri and KeyIdentifier are required in production")
+            .ValidateOnStart();
+
         var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
             ?? throw new InvalidOperationException("Authentication configuration section is required.");
+        var sharedAuthCookieOptions = configuration.GetSection(SharedAuthCookieOptions.SectionName).Get<SharedAuthCookieOptions>()
+            ?? new SharedAuthCookieOptions();
+        var tokenCredential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+        {
+            ExcludeInteractiveBrowserCredential = true
+        });
 
         var authenticationBuilder = services.AddAuthentication(IdentityConstants.ApplicationScheme);
         authenticationBuilder.AddIdentityCookies();
@@ -75,6 +97,8 @@ public static class UsersServiceCollectionExtensions
         services.ConfigureApplicationCookie(options =>
         {
             options.Cookie.HttpOnly = true;
+            options.Cookie.Name = sharedAuthCookieOptions.CookieName;
+            options.Cookie.Domain = isProduction ? sharedAuthCookieOptions.CookieDomain : null;
             options.Cookie.SameSite = isProduction ? SameSiteMode.Lax : SameSiteMode.None;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
@@ -106,6 +130,8 @@ public static class UsersServiceCollectionExtensions
             };
         });
 
+        ConfigureSharedDataProtection(services, configuration, tokenCredential);
+
         services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
@@ -121,6 +147,7 @@ public static class UsersServiceCollectionExtensions
 
         services.AddSingleton<IAppEmailSender, SmtpAppEmailSender>();
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
+        services.AddSingleton<TokenCredential>(_ => tokenCredential);
 
         services.AddHealthChecks().AddDbContextCheck<UsersDbContext>("users_db");
 
@@ -240,4 +267,21 @@ public static class UsersServiceCollectionExtensions
         return request.Path.StartsWithSegments("/users", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static void ConfigureSharedDataProtection(
+        IServiceCollection services,
+        IConfiguration configuration,
+        TokenCredential tokenCredential)
+    {
+        var sharedDataProtectionOptions = configuration.GetSection(SharedDataProtectionOptions.SectionName).Get<SharedDataProtectionOptions>()
+            ?? new SharedDataProtectionOptions();
+
+        var dataProtectionBuilder = services.AddDataProtection()
+            .SetApplicationName(sharedDataProtectionOptions.ApplicationName);
+
+        if (sharedDataProtectionOptions.IsConfigured)
+        {
+            dataProtectionBuilder.PersistKeysToAzureBlobStorage(new Uri(sharedDataProtectionOptions.BlobUri), tokenCredential)
+                .ProtectKeysWithAzureKeyVault(new Uri(sharedDataProtectionOptions.KeyIdentifier), tokenCredential);
+        }
+    }
 }

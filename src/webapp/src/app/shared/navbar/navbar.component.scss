@@ -214,3 +214,81 @@
     height: 1.75rem;
   }
 }
+
+.logout-confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.logout-confirmation-modal {
+  width: min(420px, calc(100vw - 2rem));
+  background: vars.$color-surface;
+  border-radius: 14px;
+  box-shadow:
+    0 22px 44px rgba(15, 23, 42, 0.24),
+    0 4px 14px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(58, 125, 255, 0.14);
+  padding: 1.1rem 1.1rem 1rem;
+}
+
+.logout-confirmation-modal h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: vars.$color-primary-dark;
+}
+
+.logout-confirmation-description {
+  margin: 0.65rem 0 1rem;
+  color: rgba(26, 26, 26, 0.82);
+  line-height: 1.45;
+}
+
+.logout-confirmation-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.logout-primary-button,
+.logout-secondary-button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 0.95rem;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-secondary-button {
+  background: rgba(58, 125, 255, 0.1);
+  color: vars.$color-primary-dark;
+}
+
+.logout-primary-button {
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+  color: #fff;
+}
+
+.logout-primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .logout-confirmation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .logout-primary-button,
+  .logout-secondary-button {
+    width: 100%;
+  }
+}

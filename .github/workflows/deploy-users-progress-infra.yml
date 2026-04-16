@@ -1,0 +1,203 @@
+name: Deploy Users Progress Infra
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'infra/users-progress/**'
+      - '.github/workflows/deploy-users-progress-infra.yml'
+
+concurrency:
+  group: deploy-users-progress-infra-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_DEPLOY_CLIENT_ID: ${{ secrets.AZURE_DEPLOY_CLIENT_ID }}
+  AZURE_DEPLOY_TENANT_ID: ${{ secrets.AZURE_DEPLOY_TENANT_ID }}
+  AZURE_DEPLOY_SUBSCRIPTION_ID: ${{ secrets.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+  USERS_API_AZURE_CLIENT_ID: ${{ secrets.USERS_API_AZURE_CLIENT_ID }}
+
+  USERS_PROGRESS_RESOURCE_GROUP: wf
+  USERS_PROGRESS_NAME_PREFIX: wf-users-progress
+  USERS_PROGRESS_FUNCTION_APP_EASTUS_NAME: wf-users-progress-eus-prod
+  USERS_PROGRESS_FUNCTION_APP_SEASIA_NAME: wf-users-progress-sea-prod
+  USERS_PROGRESS_FUNCTION_RUNTIME: dotnet-isolated
+  USERS_PROGRESS_FUNCTION_RUNTIME_VERSION: '10.0'
+  USERS_PROGRESS_FLEX_MAXIMUM_INSTANCE_COUNT: '2'
+  USERS_PROGRESS_FLEX_INSTANCE_MEMORY_MB: '512'
+  USERS_PROGRESS_DEPLOYMENT_STORAGE_CONTAINER: app-package
+  USERS_PROGRESS_STORAGE_EASTUS_NAME: wfusersprogeus01
+  USERS_PROGRESS_STORAGE_SEASIA_NAME: wfusersprogsea01
+  USERS_PROGRESS_TM_PROFILE_NAME: wf-users-progress-tm
+  USERS_PROGRESS_TM_DNS_LABEL: wf-users-progress
+  USERS_PROGRESS_CORS_ALLOWED_ORIGINS: "['https://writefluency.com']"
+  USERS_PROGRESS_EASTUS_VNET_NAME: wf-users-progress-vnet-eus
+  USERS_PROGRESS_EASTUS_VNET_CIDR: 10.60.0.0/16
+  USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_NAME: functions-integration
+  USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_CIDR: 10.60.1.0/24
+  USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_NAME: cosmos-private-endpoint
+  USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_CIDR: 10.60.2.0/24
+  USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP: wf-users-progress-dns-eus
+  USERS_PROGRESS_SEASIA_VNET_NAME: wf-users-progress-vnet-sea
+  USERS_PROGRESS_SEASIA_VNET_CIDR: 10.61.0.0/16
+  USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_NAME: functions-integration
+  USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_CIDR: 10.61.1.0/24
+  USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_NAME: cosmos-private-endpoint
+  USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_CIDR: 10.61.2.0/24
+  USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP: wf-users-progress-dns-sea
+  APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
+
+  Cosmos__Endpoint: https://writefluencyusersprodcosmos.documents.azure.com:443/
+  Cosmos__DatabaseName: wf-users-progress
+  Cosmos__ProgressContainer: user_progress
+  Cosmos__AttemptsContainer: user_attempts
+  Cosmos__Namespace: prod
+  COSMOS_ACCOUNT_NAME: writefluencyusersprodcosmos
+
+  SharedAuthCookie__Scheme: Identity.Application
+  SharedAuthCookie__CookieName: .AspNetCore.Identity.Application
+
+  SharedDataProtection__ApplicationName: WriteFluency.SharedAuth
+  SHARED_DP_STORAGE_ACCOUNT_NAME: wfusersdpprod01
+  SHARED_DP_BLOB_CONTAINER_NAME: keys
+  SHARED_DP_BLOB_NAME: keyring.xml
+  SHARED_DP_KEY_VAULT_NAME: wf-users-dp-kv-prod
+  SHARED_DP_KEY_NAME: dataprotection
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: users-prod
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Validate required secrets and variables
+      run: |
+        bash ./src/host/WriteFluency.AppHost/validate-required-env.sh \
+          AZURE_DEPLOY_CLIENT_ID \
+          AZURE_DEPLOY_TENANT_ID \
+          AZURE_DEPLOY_SUBSCRIPTION_ID \
+          USERS_API_AZURE_CLIENT_ID \
+          Cosmos__Endpoint \
+          APPLICATIONINSIGHTS_CONNECTION_STRING \
+          SHARED_DP_STORAGE_ACCOUNT_NAME \
+          SHARED_DP_KEY_VAULT_NAME \
+          USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP \
+          USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP
+
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_DEPLOY_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_DEPLOY_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+
+    - name: Register required resource providers
+      run: |
+        az provider register --namespace Microsoft.App --wait --output none
+
+    - name: Ensure resource groups exist
+      run: |
+        if [ "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" = "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" ]; then
+          echo "Strict-local DNS requires different resource groups for East US and Southeast Asia private DNS zones." >&2
+          echo "Set USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP and USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP to different values." >&2
+          exit 1
+        fi
+
+        az group create \
+          --name "$USERS_PROGRESS_RESOURCE_GROUP" \
+          --location eastus \
+          --output none
+
+        if [ "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" != "$USERS_PROGRESS_RESOURCE_GROUP" ]; then
+          az group create \
+            --name "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" \
+            --location eastus \
+            --output none
+        fi
+
+        if [ "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" != "$USERS_PROGRESS_RESOURCE_GROUP" ] \
+          && [ "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" != "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" ]; then
+          az group create \
+            --name "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" \
+            --location southeastasia \
+            --output none
+        fi
+
+    - name: Deploy users-progress infrastructure
+      run: |
+        function_app_eastus="${USERS_PROGRESS_FUNCTION_APP_EASTUS_NAME:-wf-users-progress-eus-prod}"
+        function_app_seasia="${USERS_PROGRESS_FUNCTION_APP_SEASIA_NAME:-wf-users-progress-sea-prod}"
+        storage_eastus="${USERS_PROGRESS_STORAGE_EASTUS_NAME:-wfusersprogeus01}"
+        storage_seasia="${USERS_PROGRESS_STORAGE_SEASIA_NAME:-wfusersprogsea01}"
+        tm_profile="${USERS_PROGRESS_TM_PROFILE_NAME:-wf-users-progress-tm}"
+        tm_dns_label="${USERS_PROGRESS_TM_DNS_LABEL:-wf-users-progress}"
+        users_api_runtime_principal_object_id="$(az ad sp show --id "$USERS_API_AZURE_CLIENT_ID" --query id --output tsv)"
+
+        if [ -z "$users_api_runtime_principal_object_id" ]; then
+          echo "Unable to resolve users-api runtime service principal object id from USERS_API_AZURE_CLIENT_ID." >&2
+          exit 1
+        fi
+
+        deployment_name="users-progress-infra-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+
+        az deployment group create \
+          --name "$deployment_name" \
+          --resource-group "$USERS_PROGRESS_RESOURCE_GROUP" \
+          --template-file infra/users-progress/main.bicep \
+          --parameters \
+            namePrefix="${USERS_PROGRESS_NAME_PREFIX:-wf-users-progress}" \
+            functionAppEastUsName="$function_app_eastus" \
+            functionAppSoutheastAsiaName="$function_app_seasia" \
+            functionAppRuntime="${USERS_PROGRESS_FUNCTION_RUNTIME:-dotnet-isolated}" \
+            functionAppRuntimeVersion="${USERS_PROGRESS_FUNCTION_RUNTIME_VERSION:-10.0}" \
+            maximumInstanceCount="${USERS_PROGRESS_FLEX_MAXIMUM_INSTANCE_COUNT:-100}" \
+            instanceMemoryMB="${USERS_PROGRESS_FLEX_INSTANCE_MEMORY_MB:-2048}" \
+            deploymentStorageContainerName="${USERS_PROGRESS_DEPLOYMENT_STORAGE_CONTAINER:-app-package}" \
+            storageAccountEastUsName="$storage_eastus" \
+            storageAccountSoutheastAsiaName="$storage_seasia" \
+            appInsightsConnectionString="${APPLICATIONINSIGHTS_CONNECTION_STRING}" \
+            trafficManagerProfileName="$tm_profile" \
+            trafficManagerDnsRelativeName="$tm_dns_label" \
+            eastUsVnetName="${USERS_PROGRESS_EASTUS_VNET_NAME:-wf-users-progress-vnet-eus}" \
+            eastUsVnetAddressPrefix="${USERS_PROGRESS_EASTUS_VNET_CIDR:-10.60.0.0/16}" \
+            eastUsFunctionSubnetName="${USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_NAME:-functions-integration}" \
+            eastUsFunctionSubnetPrefix="${USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_CIDR:-10.60.1.0/24}" \
+            eastUsCosmosPrivateEndpointSubnetName="${USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_NAME:-cosmos-private-endpoint}" \
+            eastUsCosmosPrivateEndpointSubnetPrefix="${USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_CIDR:-10.60.2.0/24}" \
+            eastUsPrivateDnsResourceGroupName="${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" \
+            southeastAsiaVnetName="${USERS_PROGRESS_SEASIA_VNET_NAME:-wf-users-progress-vnet-sea}" \
+            southeastAsiaVnetAddressPrefix="${USERS_PROGRESS_SEASIA_VNET_CIDR:-10.61.0.0/16}" \
+            southeastAsiaFunctionSubnetName="${USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_NAME:-functions-integration}" \
+            southeastAsiaFunctionSubnetPrefix="${USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_CIDR:-10.61.1.0/24}" \
+            southeastAsiaCosmosPrivateEndpointSubnetName="${USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_NAME:-cosmos-private-endpoint}" \
+            southeastAsiaCosmosPrivateEndpointSubnetPrefix="${USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_CIDR:-10.61.2.0/24}" \
+            southeastAsiaPrivateDnsResourceGroupName="${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" \
+            cosmosAccountName="${COSMOS_ACCOUNT_NAME:-writefluencyusersprodcosmos}" \
+            cosmosEndpoint="${Cosmos__Endpoint}" \
+            cosmosDatabaseName="${Cosmos__DatabaseName:-wf-users-progress}" \
+            cosmosProgressContainer="${Cosmos__ProgressContainer:-user_progress}" \
+            cosmosAttemptsContainer="${Cosmos__AttemptsContainer:-user_attempts}" \
+            cosmosNamespace="${Cosmos__Namespace:-prod}" \
+            sharedCookieScheme="${SharedAuthCookie__Scheme}" \
+            sharedCookieName="${SharedAuthCookie__CookieName}" \
+            sharedDataProtectionApplicationName="${SharedDataProtection__ApplicationName:-WriteFluency.SharedAuth}" \
+            usersApiRuntimePrincipalObjectId="$users_api_runtime_principal_object_id" \
+            sharedDataProtectionStorageAccountName="${SHARED_DP_STORAGE_ACCOUNT_NAME:-wfusersdpprod01}" \
+            sharedDataProtectionBlobContainerName="${SHARED_DP_BLOB_CONTAINER_NAME:-keys}" \
+            sharedDataProtectionBlobName="${SHARED_DP_BLOB_NAME:-keyring.xml}" \
+            sharedDataProtectionKeyVaultName="${SHARED_DP_KEY_VAULT_NAME:-wf-users-dp-kv-prod}" \
+            sharedDataProtectionKeyName="${SHARED_DP_KEY_NAME:-dataprotection}" \
+            corsAllowedOrigins="${USERS_PROGRESS_CORS_ALLOWED_ORIGINS}" \
+          --query properties.outputs \
+          --output json > deployment-outputs.json
+
+        cat deployment-outputs.json

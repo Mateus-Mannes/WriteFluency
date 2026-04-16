@@ -64,16 +64,24 @@ public static class AuthEndpointExtensions
         return Results.Ok();
     }
 
-    private static async Task<IResult> GetSession(ClaimsPrincipal principal, UserManager<ApplicationUser> userManager)
+    private static async Task<IResult> GetSession(
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        HttpContext httpContext)
     {
         var user = await userManager.GetUserAsync(principal);
+        var authenticateResult = await httpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        var issuedAtUtc = authenticateResult.Properties?.IssuedUtc;
+        var expiresAtUtc = authenticateResult.Properties?.ExpiresUtc;
 
         return Results.Ok(new
         {
             IsAuthenticated = principal.Identity?.IsAuthenticated ?? false,
             UserId = user?.Id ?? principal.FindFirstValue(ClaimTypes.NameIdentifier),
             Email = user?.Email ?? principal.FindFirstValue(ClaimTypes.Email),
-            EmailConfirmed = user?.EmailConfirmed ?? false
+            EmailConfirmed = user?.EmailConfirmed ?? false,
+            IssuedAtUtc = issuedAtUtc,
+            ExpiresAtUtc = expiresAtUtc
         });
     }
 

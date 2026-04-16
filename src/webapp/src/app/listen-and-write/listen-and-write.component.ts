@@ -19,6 +19,8 @@ import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
+import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
+import { AuthSessionStore } from '../auth/services/auth-session.store';
 import {
   FeedbackModalComponent,
   FeedbackModalInteractionEvent,
@@ -29,8 +31,28 @@ export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
 const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
+const restoreServerStateTimeoutMs = 3000;
+const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
+const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
+const guestBeginLoginModalAttemptThreshold = 2;
+const guestBeginLoginModalCooldownMs = 24 * 60 * 60 * 1000;
+const submitTelemetryTextMaxLength = 4000;
 type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
 type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
+type GuestLoginModalDismissReason = 'continue_as_guest' | 'backdrop';
+
+interface BeginExerciseContext {
+  isFirstTimeUser: boolean;
+  audioEndedBeforeBegin: boolean;
+  guestBeginAttemptCount: number | null;
+  guestLoginModalShownBeforeStart: boolean;
+}
+
+interface GuestLoginModalDecision {
+  shouldShow: boolean;
+  reason: 'authenticated' | 'below_threshold' | 'cooldown_active' | 'eligible';
+  cooldownRemainingMs: number;
+}
 
 @Component({
   selector: 'app-listen-and-write',
@@ -51,7 +73,19 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
-  @ViewChild(NewsAudioComponent) newsAudioComponent!: NewsAudioComponent;
+  private newsAudioComponentRef: NewsAudioComponent | null = null;
+  private pendingPausedTimeSeconds: number | null = null;
+  private restoreRequestToken = 0;
+
+  @ViewChild(NewsAudioComponent)
+  set newsAudioComponent(component: NewsAudioComponent | undefined) {
+    this.newsAudioComponentRef = component ?? null;
+    this.applyPendingPausedTimeIfNeeded();
+  }
+
+  get newsAudioComponent(): NewsAudioComponent {
+    return this.newsAudioComponentRef as NewsAudioComponent;
+  }
 
   private autoPauseTimer: any = null;
   private pendingAudioPlaySource: AudioPlaySource | null = null;
@@ -67,6 +101,8 @@ export class ListenAndWriteComponent implements OnDestroy {
   result = signal<TextComparisonResult | null>(null);
 
   isSubmitting = signal<boolean>(false);
+  isRestoringExercise = signal<boolean>(false);
+  isGuestLoginModalOpen = signal<boolean>(false);
 
   initialText = signal<string | null>(null);
   
@@ -77,9 +113,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   isFeedbackModalOpen = signal<boolean>(false);
 
   exerciseId: number | null = null;
+  readonly beginExerciseLoadingTooltip = 'Finishing exercise loading...';
 
   private pendingLeaveAction: (() => void) | null = null;
   private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
+  private pendingBeginExerciseContext: BeginExerciseContext | null = null;
+  private hasTrackedResultsLoginCtaView = false;
+  private exerciseStartedAtMs: number | null = null;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -92,7 +132,9 @@ export class ListenAndWriteComponent implements OnDestroy {
     private browserService: BrowserService,
     private seoService: SeoService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
-    private feedbackService: FeedbackService
+    private feedbackService: FeedbackService,
+    private exerciseProgressTracking: ExerciseProgressTrackingService,
+    private authSessionStore: AuthSessionStore,
   ) {
     let lastState: ExerciseState | null = null;
     // Get the exercise ID from route parameters
@@ -108,10 +150,14 @@ export class ListenAndWriteComponent implements OnDestroy {
 
         this.exerciseSessionTracking.endSession('route_changed');
         this.exerciseId = parsedId;
+        this.isGuestLoginModalOpen.set(false);
+        this.pendingBeginExerciseContext = null;
         this.exerciseSessionTracking.startSession({
           exerciseId: this.exerciseId,
           source: 'route_navigation'
         });
+        this.hasTrackedResultsLoginCtaView = false;
+        this.exerciseStartedAtMs = null;
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -124,6 +170,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           }
         }
         this.loadProposition(this.exerciseId);
+        void this.restoreExerciseState();
       }
     });
 
@@ -146,7 +193,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
 
     afterNextRender(() => {
-      this.restoreExerciseState();
+      this.applyPendingPausedTimeIfNeeded();
       queueMicrotask(() => this.stateAnimEnabled.set(true));
     });
   }
@@ -163,14 +210,14 @@ export class ListenAndWriteComponent implements OnDestroy {
     return proposition;
   }
 
-  private getExerciseStateKey(): string | null {
-    if (!this.exerciseId) return null;
-    return `exercise-section-state-${this.exerciseId}`;
+  private getExerciseStateKey(exerciseId: number | null = this.exerciseId): string | null {
+    if (!exerciseId) return null;
+    return `exercise-section-state-${exerciseId}`;
   }
 
-  private getStateKey(): string | null {
-    if (!this.exerciseId) return null;
-    return `listen-write-state-${this.exerciseId}`;
+  private getStateKey(exerciseId: number | null = this.exerciseId): string | null {
+    if (!exerciseId) return null;
+    return `listen-write-state-${exerciseId}`;
   }
 
   loadProposition(id: number): void {
@@ -248,32 +295,157 @@ export class ListenAndWriteComponent implements OnDestroy {
     return `${environment.minioUrl}/images/${imageFileId}`;
   }
 
-  restoreExerciseState() 
-  {
-    const stateKey = this.getStateKey();
-    if (stateKey) {
-      const storedState = this.browserService.getItem(stateKey);
-      if (storedState) {
-        this.exerciseState.set(storedState as ExerciseState);
+  async restoreExerciseState(): Promise<void> {
+    const exerciseId = this.exerciseId;
+    if (!exerciseId) {
+      return;
+    }
+
+    const restoreToken = ++this.restoreRequestToken;
+    this.pendingPausedTimeSeconds = null;
+
+    if (!this.authSessionStore.isAuthenticated()) {
+      this.isRestoringExercise.set(false);
+      this.restoreStateFromLocalStorage(exerciseId, restoreToken);
+      return;
+    }
+
+    this.isRestoringExercise.set(true);
+
+    try {
+      const serverState = await this.loadServerStateWithTimeout(exerciseId);
+      if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
+        return;
+      }
+
+      if (serverState) {
+        this.applyServerState(serverState.pausedTimeSeconds, serverState.exerciseState, serverState.userText, serverState.autoPauseSeconds);
+        return;
+      }
+
+      this.restoreStateFromLocalStorage(exerciseId, restoreToken);
+    } finally {
+      if (this.isRestoreTokenActive(restoreToken, exerciseId)) {
+        this.isRestoringExercise.set(false);
+      }
+    }
+  }
+
+  private async loadServerStateWithTimeout(exerciseId: number) {
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<null>((resolve) => {
+      timeoutHandle = setTimeout(() => resolve(null), restoreServerStateTimeoutMs);
+    });
+
+    try {
+      return await Promise.race([
+        this.exerciseProgressTracking.loadState(exerciseId),
+        timeoutPromise,
+      ]);
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
+  }
+
+  private applyServerState(
+    pausedTimeSeconds: number | null,
+    serverExerciseState: 'intro' | 'exercise' | 'results' | null,
+    userText: string | null,
+    autoPauseSeconds: number | null
+  ): void {
+    const restoredExerciseState = this.normalizeExerciseState(serverExerciseState);
+    if (restoredExerciseState) {
+      this.exerciseState.set(restoredExerciseState);
+      if (restoredExerciseState === 'exercise' && this.exerciseStartedAtMs === null) {
+        this.exerciseStartedAtMs = Date.now();
       }
     }
 
-    const exerciseStateKey = this.getExerciseStateKey();
-    if (!exerciseStateKey) return;
-    
+    this.initialText.set(userText ?? null);
+    this.initialAutoPause.set(autoPauseSeconds ?? 2);
+    this.result.set(null);
+    this.setPendingPausedTime(pausedTimeSeconds);
+  }
+
+  private restoreStateFromLocalStorage(exerciseId: number, restoreToken: number): void {
+    if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
+      return;
+    }
+
+    const stateKey = this.getStateKey(exerciseId);
+    if (stateKey) {
+      const storedState = this.normalizeExerciseState(this.browserService.getItem(stateKey));
+      if (storedState) {
+        this.exerciseState.set(storedState);
+        if (storedState === 'exercise' && this.exerciseStartedAtMs === null) {
+          this.exerciseStartedAtMs = Date.now();
+        }
+      }
+    }
+
+    const exerciseStateKey = this.getExerciseStateKey(exerciseId);
+    if (!exerciseStateKey) {
+      return;
+    }
+
     const state = this.browserService.getItem(exerciseStateKey);
-    if (state) {
-      const parsed = JSON.parse(state);
+    if (!state) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(state) as {
+        userText?: string | null;
+        autoPause?: number | null;
+        pausedTime?: number | null;
+        result?: TextComparisonResult | null;
+      };
 
       this.initialText.set(parsed.userText || null);
       this.initialAutoPause.set(parsed.autoPause ?? 2);
-
-      if (this.newsAudioComponent && parsed.pausedTime) {
-        this.newsAudioComponent.forwardAudio(parsed.pausedTime);
-      }
+      this.setPendingPausedTime(parsed.pausedTime ?? null);
 
       this.result.set(parsed.result || null);
+    } catch {
+      this.browserService.removeItem(exerciseStateKey);
     }
+  }
+
+  private setPendingPausedTime(pausedTimeSeconds: number | null): void {
+    if (!pausedTimeSeconds || pausedTimeSeconds <= 0) {
+      this.pendingPausedTimeSeconds = null;
+      return;
+    }
+
+    this.pendingPausedTimeSeconds = pausedTimeSeconds;
+    this.applyPendingPausedTimeIfNeeded();
+  }
+
+  private applyPendingPausedTimeIfNeeded(): void {
+    if (!this.pendingPausedTimeSeconds || !this.newsAudioComponentRef) {
+      return;
+    }
+
+    this.newsAudioComponentRef.forwardAudio(this.pendingPausedTimeSeconds);
+    this.pendingPausedTimeSeconds = null;
+  }
+
+  private isRestoreTokenActive(restoreToken: number, exerciseId: number): boolean {
+    return this.restoreRequestToken === restoreToken && this.exerciseId === exerciseId;
+  }
+
+  private normalizeExerciseState(value: string | null | undefined): ExerciseState | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value === 'intro' || value === 'exercise' || value === 'results') {
+      return value;
+    }
+
+    return null;
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -347,26 +519,174 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   beginExercise() {
-    const isFirstTimeUser = this.isFirstTime();
+    const beginContext = this.buildBeginExerciseContext();
+    const modalDecision = this.evaluateGuestLoginModalDecision(beginContext);
+
     this.exerciseSessionTracking.trackEvent('begin_exercise_clicked', {
-      is_first_time: isFirstTimeUser,
-      audio_ended_before_begin: this.newsAudioComponent.audioEnded
+      is_first_time: beginContext.isFirstTimeUser,
+      audio_ended_before_begin: beginContext.audioEndedBeforeBegin,
+      is_authenticated: this.authSessionStore.isAuthenticated(),
+      guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
+      guest_login_modal_decision: modalDecision.reason,
+    }, {
+      guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
+      guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
     });
+
+    if (modalDecision.shouldShow) {
+      this.openGuestLoginModal(beginContext);
+      return;
+    }
+
+    if (!this.authSessionStore.isAuthenticated() && modalDecision.reason !== 'authenticated') {
+      this.exerciseSessionTracking.trackEvent('guest_login_modal_not_shown', {
+        reason: modalDecision.reason,
+        guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
+      }, {
+        guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
+        guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
+      });
+    }
+
+    this.startExerciseFromContext(beginContext);
+  }
+
+  onGuestLoginModalSignIn(): void {
+    const beginContext = this.pendingBeginExerciseContext;
+    const returnUrl = this.getPostLoginReturnUrl();
+
+    this.exerciseSessionTracking.trackEvent('guest_login_modal_login_clicked', {
+      source: 'begin_exercise',
+      return_url: returnUrl,
+      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
+    }, {
+      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
+    });
+
+    this.isGuestLoginModalOpen.set(false);
+    this.pendingBeginExerciseContext = null;
+
+    void this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl,
+        source: 'begin_exercise_modal',
+      }
+    });
+  }
+
+  onGuestLoginModalContinueAsGuest(): void {
+    this.dismissGuestLoginModal('continue_as_guest');
+  }
+
+  onGuestLoginModalBackdropClick(): void {
+    this.dismissGuestLoginModal('backdrop');
+  }
+
+  private dismissGuestLoginModal(reason: GuestLoginModalDismissReason): void {
+    const beginContext = this.pendingBeginExerciseContext;
+
+    this.exerciseSessionTracking.trackEvent('guest_login_modal_dismissed', {
+      reason,
+      source: 'begin_exercise',
+      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
+    }, {
+      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
+    });
+
+    this.isGuestLoginModalOpen.set(false);
+    this.pendingBeginExerciseContext = null;
+
+    if (beginContext) {
+      this.startExerciseFromContext({
+        ...beginContext,
+        guestLoginModalShownBeforeStart: true,
+      });
+    }
+  }
+
+  private buildBeginExerciseContext(): BeginExerciseContext {
+    return {
+      isFirstTimeUser: this.isFirstTime(),
+      audioEndedBeforeBegin: this.newsAudioComponent.audioEnded,
+      guestBeginAttemptCount: this.incrementGuestBeginAttemptCountIfGuest(),
+      guestLoginModalShownBeforeStart: false,
+    };
+  }
+
+  private evaluateGuestLoginModalDecision(context: BeginExerciseContext): GuestLoginModalDecision {
+    if (this.authSessionStore.isAuthenticated()) {
+      return {
+        shouldShow: false,
+        reason: 'authenticated',
+        cooldownRemainingMs: 0,
+      };
+    }
+
+    const guestAttempt = context.guestBeginAttemptCount ?? 0;
+    if (guestAttempt < guestBeginLoginModalAttemptThreshold) {
+      return {
+        shouldShow: false,
+        reason: 'below_threshold',
+        cooldownRemainingMs: 0,
+      };
+    }
+
+    const cooldownRemainingMs = this.getGuestLoginModalCooldownRemainingMs(Date.now());
+    if (cooldownRemainingMs > 0) {
+      return {
+        shouldShow: false,
+        reason: 'cooldown_active',
+        cooldownRemainingMs,
+      };
+    }
+
+    return {
+      shouldShow: true,
+      reason: 'eligible',
+      cooldownRemainingMs: 0,
+    };
+  }
+
+  private openGuestLoginModal(context: BeginExerciseContext): void {
+    this.pendingBeginExerciseContext = context;
+    this.isGuestLoginModalOpen.set(true);
+    this.browserService.setItem(guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
+
+    this.exerciseSessionTracking.trackEvent('guest_login_modal_shown', {
+      source: 'begin_exercise',
+      guest_begin_attempt_count: context.guestBeginAttemptCount,
+      is_first_time: context.isFirstTimeUser,
+      audio_ended_before_begin: context.audioEndedBeforeBegin,
+    }, {
+      guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
+      guest_login_modal_cooldown_hours: guestBeginLoginModalCooldownMs / (60 * 60 * 1000),
+    });
+  }
+
+  private startExerciseFromContext(context: BeginExerciseContext): void {
     this.newsAudioComponent.pauseAudio();
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.clearAutoPauseTimer();
 
-    if (this.newsAudioComponent.audioEnded) {
+    if (context.audioEndedBeforeBegin) {
       this.exerciseSessionTracking.trackEvent('exercise_started', {
-        start_mode: 'audio_already_completed'
+        start_mode: 'audio_already_completed',
+        guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+      }, {
+        guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
       });
+      this.exerciseProgressTracking.trackStart(this.proposition());
       this.setNewState('exercise');
       this.browserService.scrollToTop();
       return;
     }
 
-    if (isFirstTimeUser) {
-      this.exerciseSessionTracking.trackEvent('listen_first_prompt_shown');
+    if (context.isFirstTimeUser) {
+      this.exerciseSessionTracking.trackEvent('listen_first_prompt_shown', {
+        guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+      }, {
+        guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
+      });
       this.listenFirstTourService.prompt(
         '#newsAudio',
         () => {
@@ -375,19 +695,68 @@ export class ListenAndWriteComponent implements OnDestroy {
         },
         () => {
           this.exerciseSessionTracking.trackEvent('exercise_started', {
-            start_mode: 'skip_listen_first_prompt'
+            start_mode: 'skip_listen_first_prompt',
+            guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+          }, {
+            guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
           });
+          this.exerciseProgressTracking.trackStart(this.proposition());
           this.setNewState('exercise');
           this.browserService.scrollToTop();
         }
       );
-    } else {
-      this.exerciseSessionTracking.trackEvent('exercise_started', {
-        start_mode: 'direct_start'
-      });
-      this.setNewState('exercise');
-      this.browserService.scrollToTop();
+      return;
     }
+
+    this.exerciseSessionTracking.trackEvent('exercise_started', {
+      start_mode: 'direct_start',
+      guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+    }, {
+      guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
+    });
+    this.exerciseProgressTracking.trackStart(this.proposition());
+    this.setNewState('exercise');
+    this.browserService.scrollToTop();
+  }
+
+  private incrementGuestBeginAttemptCountIfGuest(): number | null {
+    if (this.authSessionStore.isAuthenticated()) {
+      return null;
+    }
+
+    const currentAttempt = this.readPositiveIntFromStorage(guestBeginAttemptCountStorageKey);
+    const nextAttempt = currentAttempt + 1;
+    this.browserService.setItem(guestBeginAttemptCountStorageKey, String(nextAttempt));
+    return nextAttempt;
+  }
+
+  private getGuestLoginModalCooldownRemainingMs(nowMs: number): number {
+    const rawLastShown = this.browserService.getItem(guestBeginLoginModalLastShownStorageKey);
+    if (!rawLastShown) {
+      return 0;
+    }
+
+    const lastShownMs = Date.parse(rawLastShown);
+    if (!Number.isFinite(lastShownMs)) {
+      return 0;
+    }
+
+    const elapsedMs = Math.max(0, nowMs - lastShownMs);
+    return Math.max(0, guestBeginLoginModalCooldownMs - elapsedMs);
+  }
+
+  private readPositiveIntFromStorage(key: string): number {
+    const raw = this.browserService.getItem(key);
+    if (!raw) {
+      return 0;
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return parsed;
   }
 
   onAudioPlayClicked() {
@@ -401,6 +770,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     // Apply auto-pause logic if in exercise state
     if (this.exerciseState() === 'exercise') {
       this.applyAutoPause();
+      this.onSaveExerciseState();
     }
   }
 
@@ -448,35 +818,69 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private submitExercise() {
-    const userText = this.exerciseSectionComponent.text();
+    const proposition = this.proposition();
+    if (!proposition) {
+      this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
+        reason: 'missing_proposition'
+      });
+      alert('Error processing your exercise. Please try again.');
+      return;
+    }
+
+    const submittedUserText = this.exerciseSectionComponent.text();
+    const submittedOriginalText = proposition.text ?? '';
     this.newsAudioComponent.pauseAudio();
     this.isSubmitting.set(true);
     this.exerciseSessionTracking.markSubmitted();
-    this.exerciseSessionTracking.trackTextChanged(userText);
+    this.exerciseSessionTracking.trackTextChanged(submittedUserText);
+
+    const submitConfirmedMetadata = this.buildSubmitTelemetryMetadata(
+      submittedUserText,
+      submittedOriginalText,
+      null
+    );
     this.exerciseSessionTracking.trackEvent('exercise_submit_confirmed', {
-      text_snapshot: userText.slice(0, 1200),
-      text_truncated: userText.length > 1200
+      ...submitConfirmedMetadata.properties,
+      text_snapshot: submittedUserText.slice(0, 1200),
+      text_truncated: submittedUserText.length > 1200
     }, {
-      text_char_count: userText.length,
-      text_word_count: this.countWords(userText)
+      ...submitConfirmedMetadata.measurements,
+      text_char_count: submittedUserText.length,
+      text_word_count: this.countWords(submittedUserText)
     });
-    const startTime = Date.now();
+    const submitRequestedAtMs = Date.now();
     const minLoadingTime = 2000; // 2 seconds minimum
 
     this.textComparisonsService.apiTextComparisonCompareTextsPost({
-      originalText: this.proposition()!.text,
-      userText: this.exerciseSectionComponent.text(),
-      propositionId: this.proposition()?.id ?? null
+      originalText: submittedOriginalText,
+      userText: submittedUserText,
+      propositionId: proposition.id ?? null
     }).subscribe({
       next: (result: TextComparisonResult) => {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, minLoadingTime - elapsed);
+        const apiElapsedMs = Date.now() - submitRequestedAtMs;
+        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
         
         setTimeout(() => {
+          const finalUserText = result.userText ?? submittedUserText;
+          const finalOriginalText = result.originalText ?? submittedOriginalText;
+          const submitSuccessMetadata = this.buildSubmitTelemetryMetadata(
+            finalUserText,
+            finalOriginalText,
+            result.accuracyPercentage
+          );
+
           this.trackExerciseSubmitConversion(result.accuracyPercentage);
-          this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded');
-          this.userText.set(this.exerciseSectionComponent.text());
+          this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded', {
+            ...submitSuccessMetadata.properties,
+            comparison_count: result.comparisons?.length ?? 0,
+          }, {
+            ...submitSuccessMetadata.measurements,
+            submit_api_latency_ms: apiElapsedMs,
+            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
+          });
+          this.userText.set(submittedUserText);
           this.result.set(result);
+          this.exerciseProgressTracking.trackComplete(proposition, result);
           this.onSaveExerciseState();
           this.setNewState('results');
           this.browserService.scrollToTop();
@@ -484,12 +888,23 @@ export class ListenAndWriteComponent implements OnDestroy {
         }, remainingTime);
       },
       error: (error) => {
-        const elapsed = Date.now() - startTime;
-        const remainingTime = Math.max(0, minLoadingTime - elapsed);
+        const apiElapsedMs = Date.now() - submitRequestedAtMs;
+        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
         
         setTimeout(() => {
+          const submitFailureMetadata = this.buildSubmitTelemetryMetadata(
+            submittedUserText,
+            submittedOriginalText,
+            null
+          );
+
           this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
+            ...submitFailureMetadata.properties,
             error: error?.message ?? 'unknown_error'
+          }, {
+            ...submitFailureMetadata.measurements,
+            submit_api_latency_ms: apiElapsedMs,
+            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
           });
           this.isSubmitting.set(false);
           alert('Error processing your exercise. Please try again.');
@@ -572,6 +987,71 @@ export class ListenAndWriteComponent implements OnDestroy {
     return (text || '').trim().split(/\s+/).filter(Boolean).length;
   }
 
+  private buildSubmitTelemetryMetadata(
+    userText: string | null | undefined,
+    originalText: string | null | undefined,
+    accuracyPercentage: number | null | undefined
+  ): {
+    properties: Record<string, string | number | boolean>;
+    measurements: Record<string, number>;
+  } {
+    const normalizedUserText = userText ?? '';
+    const normalizedOriginalText = originalText ?? '';
+    const userTextTelemetry = this.toTelemetryText(normalizedUserText);
+    const originalTextTelemetry = this.toTelemetryText(normalizedOriginalText);
+    const exerciseTimeUsedMs = this.getExerciseTimeUsedMs();
+
+    const properties: Record<string, string | number | boolean> = {
+      exercise_id: this.exerciseId ?? this.proposition()?.id ?? '',
+      proposition_id: this.proposition()?.id ?? '',
+      user_text: userTextTelemetry.text,
+      user_text_truncated: userTextTelemetry.truncated,
+      original_text: originalTextTelemetry.text,
+      original_text_truncated: originalTextTelemetry.truncated,
+      has_exercise_time_used: exerciseTimeUsedMs !== null,
+    };
+
+    const measurements: Record<string, number> = {
+      user_text_char_count: normalizedUserText.length,
+      user_text_word_count: this.countWords(normalizedUserText),
+      original_text_char_count: normalizedOriginalText.length,
+      original_text_word_count: this.countWords(normalizedOriginalText),
+    };
+
+    if (exerciseTimeUsedMs !== null) {
+      measurements['exercise_time_used_ms'] = exerciseTimeUsedMs;
+      measurements['exercise_time_used_seconds'] = Number((exerciseTimeUsedMs / 1000).toFixed(2));
+    }
+
+    if (typeof accuracyPercentage === 'number' && Number.isFinite(accuracyPercentage)) {
+      measurements['accuracy_percentage'] = accuracyPercentage;
+    }
+
+    return {
+      properties,
+      measurements
+    };
+  }
+
+  private toTelemetryText(text: string): { text: string; truncated: boolean } {
+    if (text.length <= submitTelemetryTextMaxLength) {
+      return { text, truncated: false };
+    }
+
+    return {
+      text: text.slice(0, submitTelemetryTextMaxLength),
+      truncated: true
+    };
+  }
+
+  private getExerciseTimeUsedMs(): number | null {
+    if (this.exerciseStartedAtMs === null) {
+      return null;
+    }
+
+    return Math.max(0, Date.now() - this.exerciseStartedAtMs);
+  }
+
   ngOnDestroy(): void {
     if (this.pendingRouteLeaveResolver) {
       this.pendingRouteLeaveResolver(true);
@@ -613,11 +1093,40 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.attemptLeaveResults(() => this.navigateToExercises());
   }
 
+  shouldShowResultsLoginCta(): boolean {
+    return this.exerciseState() === 'results'
+      && !this.authSessionStore.isAuthenticated();
+  }
+
+  onSignInToSaveProgress(): void {
+    const returnUrl = this.getPostLoginReturnUrl();
+    this.exerciseSessionTracking.trackEvent('results_login_cta_clicked', {
+      return_url: returnUrl,
+      exercise_id: String(this.exerciseId ?? ''),
+      source: 'results_inline_cta',
+    });
+
+    void this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl,
+        source: 'results_save_cta',
+      }
+    });
+  }
+
   onAudioPaused() {
     this.onSaveExerciseState();
     if (this.exerciseState() !== 'exercise') return;
     // When the user pauses via native controls, restore focus so shortcuts keep working.
     this.exerciseSectionComponent?.focusTextArea();
+  }
+
+  onAudioSeeked() {
+    if (this.exerciseState() !== 'exercise') {
+      return;
+    }
+
+    this.onSaveExerciseState();
   }
 
   onSaveExerciseState() {
@@ -632,6 +1141,23 @@ export class ListenAndWriteComponent implements OnDestroy {
     };
 
     this.browserService.setItem(stateKey, JSON.stringify(state));
+
+    if (this.exerciseState() === 'exercise' && this.result() === null) {
+      this.exerciseProgressTracking.saveState(this.proposition(), {
+        exerciseState: 'exercise',
+        userText: state.userText ?? null,
+        autoPauseSeconds: state.autoPause ?? null,
+        pausedTimeSeconds: state.pausedTime ?? null,
+      });
+    }
+  }
+
+  getProgressSyncNotification(): ProgressSyncNotification | null {
+    return this.exerciseProgressTracking.syncNotification();
+  }
+
+  dismissProgressSyncNotification(): void {
+    this.exerciseProgressTracking.dismissSyncNotification();
   }
 
   onExerciseTextChanged(text: string) {
@@ -639,11 +1165,33 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   setNewState(state: ExerciseState) {
+    const previousState = this.exerciseState();
+
+    if (state === 'intro') {
+      this.exerciseStartedAtMs = null;
+    }
+
+    if (state === 'exercise' && previousState !== 'exercise') {
+      this.exerciseStartedAtMs = Date.now();
+    }
+
+    if (state !== 'results') {
+      this.hasTrackedResultsLoginCtaView = false;
+    }
+
     this.exerciseState.set(state);
     // set local storage state
     const stateKey = this.getStateKey();
     if (stateKey) {
       this.browserService.setItem(stateKey, state);
+    }
+
+    if (state === 'results' && this.shouldShowResultsLoginCta() && !this.hasTrackedResultsLoginCtaView) {
+      this.exerciseSessionTracking.trackEvent('results_login_cta_viewed', {
+        exercise_id: String(this.exerciseId ?? ''),
+        source: 'results_inline_cta',
+      });
+      this.hasTrackedResultsLoginCtaView = true;
     }
 
     if(this.isFirstTime() && state === 'exercise') {
@@ -822,5 +1370,18 @@ export class ListenAndWriteComponent implements OnDestroy {
   private navigateToExercises(): void {
     this.exerciseSessionTracking.endSession('navigate_to_exercises');
     this.router.navigate(['/exercises']);
+  }
+
+  private getPostLoginReturnUrl(): string {
+    if (this.exerciseId) {
+      return `/english-writing-exercise/${this.exerciseId}`;
+    }
+
+    const currentUrl = this.router.url;
+    if (currentUrl.startsWith('/') && !currentUrl.startsWith('//')) {
+      return currentUrl;
+    }
+
+    return '/exercises';
   }
 }

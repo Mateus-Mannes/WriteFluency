@@ -7,6 +7,54 @@
     </div>
 }
 
+@if (getProgressSyncNotification(); as progressSyncNotification) {
+    <div
+        class="progress-sync-toast"
+        [class.progress-sync-toast-warning]="progressSyncNotification.kind === 'warning'"
+        [class.progress-sync-toast-expired]="progressSyncNotification.kind === 'session_expired'"
+        role="status"
+        [attr.aria-live]="progressSyncNotification.kind === 'session_expired' ? 'assertive' : 'polite'">
+        <p>{{ progressSyncNotification.message }}</p>
+        <button type="button" (click)="dismissProgressSyncNotification()">Dismiss</button>
+    </div>
+}
+
+@if (isGuestLoginModalOpen()) {
+    <div class="guest-login-modal-backdrop" (click)="onGuestLoginModalBackdropClick()">
+        <section
+            class="guest-login-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guest-login-modal-title"
+            (click)="$event.stopPropagation()">
+            <p class="guest-login-modal-kicker">Track your evolution</p>
+            <h2 id="guest-login-modal-title">Save every attempt and keep improving</h2>
+            <p class="guest-login-modal-description">
+                Sign in to keep your exercise history, monitor your accuracy trend, and continue from any device.
+            </p>
+            <div class="guest-login-modal-benefits">
+                <span>Progress history</span>
+                <span>Accuracy insights</span>
+                <span>Cross-device sync</span>
+            </div>
+            <div class="guest-login-modal-actions">
+                <button
+                    type="button"
+                    class="guest-login-modal-primary text-body"
+                    (click)="onGuestLoginModalSignIn()">
+                    Sign in to save progress
+                </button>
+                <button
+                    type="button"
+                    class="guest-login-modal-secondary text-body"
+                    (click)="onGuestLoginModalContinueAsGuest()">
+                    Continue as guest
+                </button>
+            </div>
+        </section>
+    </div>
+}
+
 <div [class]="{
     'container': true,
     'exercise-intro-container': exerciseState() == 'intro',
@@ -25,12 +73,17 @@
             [proposition]="proposition()"
             (playClicked)="onAudioPlayClicked()"
             [listenSuggestion]="exerciseState() == 'intro'"
+            (seeked)="onAudioSeeked()"
             (paused)="onAudioPaused()"></app-news-audio>
     </div>
 
     @if(exerciseState() === 'intro') {
         <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
-        <app-exercise-intro-section class="exercise-intro-section" (beginExerciseClick)="beginExercise()">
+        <app-exercise-intro-section
+            class="exercise-intro-section"
+            [isLoading]="isRestoringExercise()"
+            [loadingTooltip]="beginExerciseLoadingTooltip"
+            (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
 
@@ -54,7 +107,16 @@
         
         <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
 
-        <div class="exercise-results-actions">
+        <div
+            class="exercise-results-actions"
+            [class.exercise-results-actions--no-cta]="!shouldShowResultsLoginCta()">
+            @if (shouldShowResultsLoginCta()) {
+                <section class="exercise-login-cta" aria-label="Save progress">
+                    <p class="exercise-login-cta-description">Save this result and your progress across devices.</p>
+                    <button class="exercise-login-cta-primary text-body" type="button" (click)="onSignInToSaveProgress()">Sign in to save</button>
+                </section>
+            }
+
             <button class="final-action-btn text-body" type="button" id="exercise-try-again" (click)="onTryAgain()">Try Again</button>
             <button class="final-action-btn text-body" type="button" id="exercise-find-another" (click)="onFindAnotherExercise()">Find Another Exercise</button>
         </div>

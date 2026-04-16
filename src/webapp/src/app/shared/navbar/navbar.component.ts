@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Optional } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Optional, signal } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,6 +23,9 @@ import { AuthSessionStore } from '../../auth/services/auth-session.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
+  private static readonly loginRedirectUrl = 'http://localhost:4200/auth/login';
+  readonly isLogoutConfirmationOpen = signal(false);
+
   constructor(
     @Optional() private insights: Insights | null,
     protected authSessionStore: AuthSessionStore
@@ -35,8 +38,30 @@ export class NavbarComponent {
     });
   }
 
-  async onLogout(): Promise<void> {
+  onLogout(): void {
+    if (this.authSessionStore.state().isLoading) {
+      return;
+    }
+
+    this.isLogoutConfirmationOpen.set(true);
+  }
+
+  dismissLogoutConfirmation(): void {
+    this.isLogoutConfirmationOpen.set(false);
+  }
+
+  async confirmLogout(): Promise<void> {
+    this.isLogoutConfirmationOpen.set(false);
+
     await this.authSessionStore.logout();
-    this.onNavClick('logout', '/auth/login');
+
+    if (!this.authSessionStore.state().isAuthenticated) {
+      this.onNavClick('logout', '/auth/login');
+      this.redirectToLoginPage();
+    }
+  }
+
+  protected redirectToLoginPage(): void {
+    window.location.assign(NavbarComponent.loginRedirectUrl);
   }
 }

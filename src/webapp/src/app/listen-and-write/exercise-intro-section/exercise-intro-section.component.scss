@@ -1,5 +1,11 @@
 @use '../../../styles/variables' as vars;
 
+.cta-button-tooltip-anchor {
+    display: block;
+    width: 100%;
+    max-width: 600px;
+}
+
 .cta-button {
     width: 100%; 
     max-width: 600px;
@@ -42,6 +48,20 @@
     transform: translateY(-1px) !important;
 }
 
+.cta-button-loading {
+    animation: cta-button-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.cta-button[disabled],
+.cta-button.mat-mdc-button-disabled {
+    opacity: 1 !important;
+    cursor: progress !important;
+    background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%) !important;
+    box-shadow: 
+        0 8px 24px rgba(58, 125, 255, 0.35),
+        0 4px 8px rgba(58, 125, 255, 0.2) !important;
+}
+
 .cta-button__text {
     color: white;
 }
@@ -51,4 +71,22 @@ mat-icon {
     font-size: 1.75rem !important;
     width: 1.75rem !important;
     height: 1.75rem !important;
+}
+
+@keyframes cta-button-loading-pulse {
+    0% {
+        box-shadow:
+            0 8px 24px rgba(58, 125, 255, 0.35),
+            0 4px 8px rgba(58, 125, 255, 0.2);
+    }
+    50% {
+        box-shadow:
+            0 10px 30px rgba(58, 125, 255, 0.5),
+            0 6px 12px rgba(58, 125, 255, 0.3);
+    }
+    100% {
+        box-shadow:
+            0 8px 24px rgba(58, 125, 255, 0.35),
+            0 4px 8px rgba(58, 125, 255, 0.2);
+    }
 }

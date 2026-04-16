@@ -252,6 +252,12 @@ public class CreatePropositionService
 
             return Result.Ok(image);
         }
+        catch (UnknownImageFormatException)
+        {
+            image?.Dispose();
+            _logger.LogWarning("Skipping image processing because the source image format is unsupported.");
+            return Result.Fail(new Error("Unsupported image format"));
+        }
         catch (Exception ex)
         {
             image?.Dispose();

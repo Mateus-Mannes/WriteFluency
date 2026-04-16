@@ -1,0 +1,95 @@
+name: Deploy Cosmos DB
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'infra/cosmos/**'
+      - '.github/workflows/deploy-cosmos.yml'
+
+concurrency:
+  group: deploy-cosmos-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_DEPLOY_CLIENT_ID: ${{ secrets.AZURE_DEPLOY_CLIENT_ID }}
+  AZURE_DEPLOY_TENANT_ID: ${{ secrets.AZURE_DEPLOY_TENANT_ID }}
+  AZURE_DEPLOY_SUBSCRIPTION_ID: ${{ secrets.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+
+  # Cosmos deployment defaults (edit once here if needed)
+  COSMOS_RESOURCE_GROUP: wf
+  COSMOS_RESOURCE_GROUP_LOCATION: eastus
+  COSMOS_ACCOUNT_NAME: writefluencyusersprodcosmos
+  COSMOS_DATABASE_NAME: wf-users-progress
+  COSMOS_DATABASE_THROUGHPUT: '500'
+  COSMOS_TOTAL_THROUGHPUT_LIMIT: '1000'
+  COSMOS_ENABLE_FREE_TIER: 'true'
+
+  # Optional: leave empty to skip diagnostics/alerts/budget wiring
+  COSMOS_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID: '/subscriptions/342169c4-924a-4687-a02e-9252b307da27/resourceGroups/wf/providers/Microsoft.OperationalInsights/workspaces/wf-logs-analytics-work-space'
+  COSMOS_ALERT_EMAIL: 'mateus-mannes@hotmail.com'
+  COSMOS_BUDGET_EMAIL: 'mateus-mannes@hotmail.com'
+  COSMOS_BUDGET_NAME: wf-cosmos-monthly-budget
+  COSMOS_MONTHLY_BUDGET_AMOUNT: '1'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: users-prod
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Validate required secrets and variables
+      run: |
+        bash ./src/host/WriteFluency.AppHost/validate-required-env.sh \
+          AZURE_DEPLOY_CLIENT_ID \
+          AZURE_DEPLOY_TENANT_ID \
+          AZURE_DEPLOY_SUBSCRIPTION_ID \
+          COSMOS_RESOURCE_GROUP \
+          COSMOS_ACCOUNT_NAME
+
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_DEPLOY_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_DEPLOY_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+
+    - name: Ensure resource group exists
+      run: |
+        az group create \
+          --name "$COSMOS_RESOURCE_GROUP" \
+          --location "${COSMOS_RESOURCE_GROUP_LOCATION:-eastus}" \
+          --output none
+
+    - name: Deploy Cosmos infrastructure
+      run: |
+        deployment_name="cosmos-progress-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+
+        az deployment group create \
+          --name "$deployment_name" \
+          --resource-group "$COSMOS_RESOURCE_GROUP" \
+          --template-file infra/cosmos/main.bicep \
+          --parameters \
+            accountName="$COSMOS_ACCOUNT_NAME" \
+            databaseName="${COSMOS_DATABASE_NAME:-wf-users-progress}" \
+            databaseThroughput="${COSMOS_DATABASE_THROUGHPUT:-500}" \
+            totalThroughputLimit="${COSMOS_TOTAL_THROUGHPUT_LIMIT:-1000}" \
+            enableFreeTier="${COSMOS_ENABLE_FREE_TIER:-true}" \
+            logAnalyticsWorkspaceResourceId="$COSMOS_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID" \
+            alertEmailAddress="$COSMOS_ALERT_EMAIL" \
+            budgetNotificationEmail="$COSMOS_BUDGET_EMAIL" \
+            budgetName="${COSMOS_BUDGET_NAME:-wf-cosmos-monthly-budget}" \
+            monthlyBudgetAmount="${COSMOS_MONTHLY_BUDGET_AMOUNT:-50}" \
+          --query properties.outputs \
+          --output json > deployment-outputs.json
+
+        cat deployment-outputs.json

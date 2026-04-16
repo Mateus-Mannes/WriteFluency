@@ -27,6 +27,11 @@ public class NewsClient : BaseHttpClientService, INewsClient
         "www.iphoneincanada.ca",
         "nypost.com",
         "johnquiggin.com",
+        "www.sportsnet.ca",
+        "spitalfieldslife.com",
+        "www.rte.ie",
+        "mumbrella.com.au",
+        "deadline.com",
         "thedailyblog.co.nz"
     ];
 

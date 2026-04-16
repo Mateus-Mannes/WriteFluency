@@ -1,0 +1,78 @@
+name: Deploy Users Progress Service
+
+on:
+  push:
+    tags:
+      - 'users-progress-v*'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-users-progress-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_DEPLOY_CLIENT_ID: ${{ secrets.AZURE_DEPLOY_CLIENT_ID }}
+  AZURE_DEPLOY_TENANT_ID: ${{ secrets.AZURE_DEPLOY_TENANT_ID }}
+  AZURE_DEPLOY_SUBSCRIPTION_ID: ${{ secrets.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+  USERS_PROGRESS_FUNCTION_APP_EASTUS_NAME: wf-users-progress-eus-prod
+  USERS_PROGRESS_FUNCTION_APP_SEASIA_NAME: wf-users-progress-sea-prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: users-prod
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Validate required secrets and variables
+      run: |
+        bash ./src/host/WriteFluency.AppHost/validate-required-env.sh \
+          AZURE_DEPLOY_CLIENT_ID \
+          AZURE_DEPLOY_TENANT_ID \
+          AZURE_DEPLOY_SUBSCRIPTION_ID
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish users-progress-service
+      run: |
+        dotnet publish src/users-progress-service/WriteFluency.UsersProgressService/WriteFluency.UsersProgressService.csproj \
+          -c Release \
+          -o ./publish/users-progress-service
+
+        cd ./publish/users-progress-service
+        zip -r ../users-progress-service.zip .
+
+    - name: Azure login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ env.AZURE_DEPLOY_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_DEPLOY_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_DEPLOY_SUBSCRIPTION_ID }}
+
+    - name: Resolve target Function App names
+      run: |
+        echo "FUNCTION_APP_EASTUS=${USERS_PROGRESS_FUNCTION_APP_EASTUS_NAME:-wf-users-progress-eus-prod}" >> $GITHUB_ENV
+        echo "FUNCTION_APP_SEASIA=${USERS_PROGRESS_FUNCTION_APP_SEASIA_NAME:-wf-users-progress-sea-prod}" >> $GITHUB_ENV
+
+    - name: Deploy to East US Function App
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.FUNCTION_APP_EASTUS }}
+        package: ./publish/users-progress-service.zip
+        sku: flexconsumption
+
+    - name: Deploy to Southeast Asia Function App
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.FUNCTION_APP_SEASIA }}
+        package: ./publish/users-progress-service.zip
+        sku: flexconsumption

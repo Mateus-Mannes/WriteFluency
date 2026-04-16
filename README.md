@@ -144,6 +144,9 @@ The verification system uses a sophisticated algorithm combining:
 
    The Aspire dashboard will open automatically showing all services, logs, and metrics.
 
+   `users-progress-service` (Azure Functions isolated) is wired into AppHost for local run mode only.
+   Its configuration should be defined in the function app itself (`appsettings`, environment variables, or user secrets), not in AppHost.
+
 4. **Access the application**
    - **Frontend**: http://localhost:4200
    - **API**: http://localhost:5000
@@ -231,6 +234,9 @@ Parameters passed with `-pa`:
 - `wf-infra-minio-password`: MinIO root password.
 - `wf-infra-postgres-password`: Postgres password.
 - `wf-infra-redis-password`: Redis password.
+
+Notes:
+- `users-progress-service` is intentionally excluded from Aspirate-generated manifests because it is deployed independently to Azure Functions (`deploy-users-progress*.yml` workflows).
 
 ### Deploy to Kubernetes
 ```bash

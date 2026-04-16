@@ -27,6 +27,10 @@
       </a>
 
       @if (authSessionStore.isAuthenticated()) {
+        <a class="nav-link" routerLink="/user" routerLinkActive="active" aria-label="My Progress" (click)="onNavClick('user', '/user')">
+          <mat-icon aria-hidden="true">person</mat-icon>
+          <span>My Progress</span>
+        </a>
         <button class="nav-link nav-button" type="button" (click)="onLogout()" [disabled]="authSessionStore.state().isLoading">
           <mat-icon aria-hidden="true">logout</mat-icon>
           <span>Logout</span>
@@ -40,3 +44,31 @@
     </nav>
   </div>
 </mat-toolbar>
+
+@if (isLogoutConfirmationOpen()) {
+  <div class="logout-confirmation-backdrop" (click)="dismissLogoutConfirmation()">
+    <div
+      class="logout-confirmation-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logout-confirmation-title"
+      (click)="$event.stopPropagation()">
+      <h2 id="logout-confirmation-title">Log Out?</h2>
+      <p class="logout-confirmation-description">
+        You can keep using the app as a guest, and sign in again anytime.
+      </p>
+      <div class="logout-confirmation-actions">
+        <button type="button" class="logout-secondary-button" (click)="dismissLogoutConfirmation()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="logout-primary-button"
+          [disabled]="authSessionStore.state().isLoading"
+          (click)="confirmLogout()">
+          Log out
+        </button>
+      </div>
+    </div>
+  </div>
+}

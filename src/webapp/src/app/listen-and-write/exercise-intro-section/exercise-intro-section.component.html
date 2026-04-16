@@ -1,6 +1,17 @@
 <div class="centered-container">
-    <button (click)="beginExercise()" matFab extended class="cta-button">
-        <mat-icon>play_arrow</mat-icon>
-        <span class="cta-button__text text-body">Begin Exercise</span>
-    </button>
+    <span
+        class="cta-button-tooltip-anchor"
+        [matTooltip]="isLoading() ? loadingTooltip() : ''"
+        [matTooltipDisabled]="!isLoading()">
+        <button
+            (click)="beginExercise()"
+            matFab
+            extended
+            class="cta-button"
+            [class.cta-button-loading]="isLoading()"
+            [disabled]="isLoading()">
+            <mat-icon>play_arrow</mat-icon>
+            <span class="cta-button__text text-body">Begin Exercise</span>
+        </button>
+    </span>
 </div>
