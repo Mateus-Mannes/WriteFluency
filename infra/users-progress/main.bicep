@@ -696,6 +696,9 @@ resource cosmosPrivateEndpointEastUs 'Microsoft.Network/privateEndpoints@2024-05
   name: '${namePrefix}-cosmos-pe-eus'
   location: eastUsLocation
   tags: tags
+  dependsOn: [
+    vnetEastUs
+  ]
   properties: {
     subnet: {
       id: eastUsCosmosPrivateEndpointSubnetResourceId
@@ -718,6 +721,9 @@ resource cosmosPrivateEndpointSoutheastAsia 'Microsoft.Network/privateEndpoints@
   name: '${namePrefix}-cosmos-pe-sea'
   location: southeastAsiaLocation
   tags: tags
+  dependsOn: [
+    vnetSoutheastAsia
+  ]
   properties: {
     subnet: {
       id: southeastAsiaCosmosPrivateEndpointSubnetResourceId
