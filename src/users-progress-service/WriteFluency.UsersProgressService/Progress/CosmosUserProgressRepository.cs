@@ -8,6 +8,7 @@ namespace WriteFluency.UsersProgressService.Progress;
 
 public sealed class CosmosUserProgressRepository : IUserProgressRepository
 {
+    private const int MaxProgressItems = 100;
     private readonly CosmosProgressOptions _options;
     private readonly TokenCredential _credential;
     private readonly ILogger<CosmosUserProgressRepository> _logger;
@@ -227,7 +228,7 @@ public sealed class CosmosUserProgressRepository : IUserProgressRepository
     {
         await EnsureInitializedAsync(cancellationToken);
 
-        const string query = "SELECT * FROM c WHERE c.userId = @userId ORDER BY c.updatedAtUtc DESC";
+        var query = $"SELECT TOP {MaxProgressItems} * FROM c WHERE c.userId = @userId ORDER BY c.updatedAtUtc DESC";
         var queryDefinition = new QueryDefinition(query)
             .WithParameter("@userId", userId);
 

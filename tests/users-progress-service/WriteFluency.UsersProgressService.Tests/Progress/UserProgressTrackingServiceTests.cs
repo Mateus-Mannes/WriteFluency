@@ -236,6 +236,39 @@ public class UserProgressTrackingServiceTests
         state.WordCount.ShouldBe(7);
     }
 
+    [Fact]
+    public async Task GetItemsAndSummary_ShouldReturnAtMost100MostRecentExercises()
+    {
+        var repository = new InMemoryUserProgressRepository();
+        var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
+        var userId = "user-6";
+        var now = DateTimeOffset.UtcNow;
+
+        for (var exerciseId = 1; exerciseId <= 120; exerciseId++)
+        {
+            await repository.UpsertProgressAsync(
+                new UserProgressRecord
+                {
+                    Id = CosmosUserProgressRepository.CreateProgressDocumentId(exerciseId),
+                    UserId = userId,
+                    ExerciseId = exerciseId,
+                    Status = exerciseId % 2 == 0 ? ProgressStatus.Completed : ProgressStatus.InProgress,
+                    StartedAtUtc = now.AddMinutes(-exerciseId),
+                    UpdatedAtUtc = now.AddMinutes(-exerciseId),
+                    TotalActiveSeconds = exerciseId
+                },
+                CancellationToken.None);
+        }
+
+        var items = await service.GetItemsAsync(userId, CancellationToken.None);
+        items.Count.ShouldBe(100);
+        items[0].ExerciseId.ShouldBe(1);
+        items[^1].ExerciseId.ShouldBe(100);
+
+        var summary = await service.GetSummaryAsync(userId, CancellationToken.None);
+        summary.TotalItems.ShouldBe(100);
+    }
+
     private sealed class InMemoryUserProgressRepository : IUserProgressRepository
     {
         private readonly Dictionary<string, UserProgressRecord> _progress = new(StringComparer.Ordinal);
@@ -272,6 +305,7 @@ public class UserProgressTrackingServiceTests
             var items = _progress.Values
                 .Where(item => string.Equals(item.UserId, userId, StringComparison.Ordinal))
                 .OrderByDescending(item => item.UpdatedAtUtc)
+                .Take(100)
                 .ToArray();
 
             return Task.FromResult<IReadOnlyList<UserProgressRecord>>(items);
