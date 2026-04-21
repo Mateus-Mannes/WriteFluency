@@ -14,6 +14,24 @@ $color-accent-warning: #FF6B6B;
 // Surfaces
 $color-background: #F7FAFC;
 $color-surface: #FFFFFF;
+$color-surface-subtle: #F3F7FC;
+
+// Semantic neutrals
+$color-text-muted: #4D5A6B;
+$color-border-subtle: #D9E2EC;
+$color-focus-ring: rgba(58, 125, 255, 0.36);
+
+// Elevation
+$shadow-elevation-low: 0 1px 2px rgba(26, 26, 26, 0.04), 0 8px 20px rgba(26, 26, 26, 0.06);
+$shadow-elevation-medium: 0 4px 12px rgba(26, 26, 26, 0.08), 0 14px 30px rgba(26, 26, 26, 0.1);
+
+// Status surfaces
+$color-status-neutral-bg: #E8EEF6;
+$color-status-neutral-text: #31465F;
+$color-status-success-bg: #E4F4ED;
+$color-status-success-text: #1C5A3E;
+$color-status-warning-bg: #FFF3DF;
+$color-status-warning-text: #7F5314;
 
 // Text
 $color-text: #1A1A1A;

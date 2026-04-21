@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -14,7 +14,7 @@ import { Insights } from '../../telemetry/insights.service';
 @Component({
   selector: 'app-user',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatCardModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, MatProgressSpinnerModule],
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.scss'],
 })
@@ -170,5 +170,13 @@ export class UserComponent implements OnInit {
 
   trackByExerciseId(_index: number, item: ProgressItemResponse): number {
     return item.exerciseId;
+  }
+
+  canOpenExercise(item: ProgressItemResponse): boolean {
+    return Number.isFinite(item.exerciseId) && item.exerciseId > 0;
+  }
+
+  exerciseLink(item: ProgressItemResponse): (string | number)[] {
+    return ['/english-writing-exercise', item.exerciseId];
   }
 }

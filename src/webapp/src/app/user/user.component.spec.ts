@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { UserProgressApiService } from './services/user-progress-api.service';
@@ -13,14 +13,12 @@ describe('UserComponent', () => {
   let fixture: ComponentFixture<UserComponent>;
   let userProgressApiSpy: jasmine.SpyObj<UserProgressApiService>;
   let insightsSpy: jasmine.SpyObj<Insights>;
-  let routerSpy: jasmine.SpyObj<Router>;
+  let router: Router;
   let authSessionStoreMock: Pick<AuthSessionStore, 'state' | 'invalidateSession'>;
 
   beforeEach(async () => {
     userProgressApiSpy = jasmine.createSpyObj<UserProgressApiService>('UserProgressApiService', ['summary', 'items']);
     insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException']);
-    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
-    routerSpy.navigate.and.resolveTo(true);
     authSessionStoreMock = {
       state: signal({
         isAuthenticated: true,
@@ -91,9 +89,12 @@ describe('UserComponent', () => {
         },
         { provide: UserProgressApiService, useValue: userProgressApiSpy },
         { provide: Insights, useValue: insightsSpy },
-        { provide: Router, useValue: routerSpy },
+        provideRouter([]),
       ],
     }).compileComponents();
+
+    router = TestBed.inject(Router);
+    spyOn(router, 'navigate').and.resolveTo(true);
 
     fixture = TestBed.createComponent(UserComponent);
     component = fixture.componentInstance;
@@ -121,6 +122,44 @@ describe('UserComponent', () => {
     expect(root.textContent).toContain('24/120');
     expect(userProgressApiSpy.summary).toHaveBeenCalled();
     expect(userProgressApiSpy.items).toHaveBeenCalled();
+  });
+
+  it('should render tracker card links for valid exercise ids', () => {
+    const root: HTMLElement = fixture.nativeElement;
+    const links = Array.from(root.querySelectorAll<HTMLAnchorElement>('.tracker-item-link'));
+
+    expect(links.length).toBe(2);
+    expect(links[0].getAttribute('href')).toContain('/english-writing-exercise/10');
+    expect(links[1].getAttribute('href')).toContain('/english-writing-exercise/11');
+  });
+
+  it('should render non-link tracker card body when exercise id is invalid', async () => {
+    userProgressApiSpy.items.and.returnValue(of([
+      {
+        exerciseId: 0,
+        status: 'in_progress',
+        exerciseTitle: 'Broken Exercise',
+        subject: 'General',
+        complexity: 'Easy',
+        attemptCount: 1,
+        latestAccuracyPercentage: 0.7,
+        bestAccuracyPercentage: 0.8,
+        activeSeconds: 20,
+        startedAtUtc: new Date().toISOString(),
+        completedAtUtc: null,
+        updatedAtUtc: new Date().toISOString(),
+        currentWordCount: 10,
+        originalWordCount: 20,
+      },
+    ]));
+
+    await component.reload();
+    fixture.detectChanges();
+
+    const root: HTMLElement = fixture.nativeElement;
+
+    expect(root.querySelector('.tracker-item-link')).toBeNull();
+    expect(root.querySelector('.tracker-item-body[aria-disabled="true"]')).not.toBeNull();
   });
 
   it('should track exception when progress load fails', async () => {
@@ -151,7 +190,7 @@ describe('UserComponent', () => {
     await component.reload();
 
     expect(authSessionStoreMock.invalidateSession).toHaveBeenCalled();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], {
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/login'], {
       queryParams: {
         returnUrl: '/user',
         source: 'user_progress_session_expired',

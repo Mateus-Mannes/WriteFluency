@@ -22,23 +22,23 @@
   } @else {
     @if (summary(); as summary) {
       <div class="kpi-grid">
-        <mat-card>
+        <mat-card class="kpi-card kpi-card-tracked">
           <p class="kpi-label">Tracked exercises</p>
           <p class="kpi-value">{{ summary.totalItems }}</p>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card kpi-card-in-progress">
           <p class="kpi-label">In progress</p>
           <p class="kpi-value">{{ summary.inProgressCount }}</p>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card kpi-card-completed">
           <p class="kpi-label">Completed</p>
           <p class="kpi-value">{{ summary.completedCount }}</p>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card kpi-card-score">
           <p class="kpi-label">Average score</p>
           <p class="kpi-value">{{ formatPercent(summary.averageAccuracyPercentage) }}</p>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card kpi-card-time">
           <p class="kpi-label">Total active time</p>
           <p class="kpi-value">{{ formatDuration(summary.totalActiveSeconds) }}</p>
         </mat-card>
@@ -61,24 +61,44 @@
       } @else {
         <div class="tracker-list" role="list">
           @for (item of items(); track trackByExerciseId($index, item)) {
-            <mat-card class="tracker-item" role="listitem">
-              <div class="tracker-title-row">
-                <h3>{{ item.exerciseTitle || ('Exercise #' + item.exerciseId) }}</h3>
-                <span class="status-chip" [class.completed]="item.status === 'completed'" [class.in-progress]="item.status === 'in_progress'">
-                  {{ statusLabel(item.status) }}
-                </span>
-              </div>
-              <p class="meta">{{ item.subject || 'General' }} · {{ item.complexity || 'Unspecified level' }}</p>
-              <div class="scores">
-                <span>Score: <strong>{{ formatPercent(item.latestAccuracyPercentage) }}</strong></span>
-                <span>Attempts: <strong>{{ item.attemptCount }}</strong></span>
-                <span>Words: <strong>{{ formatWordProgress(item.currentWordCount, item.originalWordCount) }}</strong></span>
-                @if (item.status === 'in_progress') {
-                  <span>Active so far: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
-                } @else if (item.status === 'completed') {
-                  <span>Active time: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
-                }
-              </div>
+            <mat-card
+              class="tracker-item"
+              role="listitem"
+              [class.unavailable]="!canOpenExercise(item)"
+              [class.status-completed]="item.status === 'completed'"
+              [class.status-in-progress]="item.status === 'in_progress'">
+              <ng-template #trackerContent>
+                <div class="tracker-title-row">
+                  <h3>{{ item.exerciseTitle || ('Exercise #' + item.exerciseId) }}</h3>
+                  <span class="status-chip" [class.completed]="item.status === 'completed'" [class.in-progress]="item.status === 'in_progress'">
+                    {{ statusLabel(item.status) }}
+                  </span>
+                </div>
+                <p class="meta">{{ item.subject || 'General' }} · {{ item.complexity || 'Unspecified level' }}</p>
+                <div class="scores">
+                  <span>Score: <strong>{{ formatPercent(item.latestAccuracyPercentage) }}</strong></span>
+                  <span>Attempts: <strong>{{ item.attemptCount }}</strong></span>
+                  <span>Words: <strong>{{ formatWordProgress(item.currentWordCount, item.originalWordCount) }}</strong></span>
+                  @if (item.status === 'in_progress') {
+                    <span>Active so far: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
+                  } @else if (item.status === 'completed') {
+                    <span>Active time: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
+                  }
+                </div>
+              </ng-template>
+
+              @if (canOpenExercise(item)) {
+                <a
+                  class="tracker-item-link"
+                  [routerLink]="exerciseLink(item)"
+                  [attr.aria-label]="'Open ' + (item.exerciseTitle || ('Exercise #' + item.exerciseId))">
+                  <ng-container [ngTemplateOutlet]="trackerContent"></ng-container>
+                </a>
+              } @else {
+                <div class="tracker-item-body" aria-disabled="true">
+                  <ng-container [ngTemplateOutlet]="trackerContent"></ng-container>
+                </div>
+              }
             </mat-card>
           }
         </div>
