@@ -1,6 +1,6 @@
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AuthApiService } from './auth-api.service';
 import { AuthSessionStore } from './auth-session.store';
 
@@ -142,5 +142,63 @@ describe('AuthSessionStore', () => {
     } finally {
       jasmine.clock().uninstall();
     }
+  });
+
+  it('should ignore stale refresh response when a newer refresh already completed', async () => {
+    const staleSessionResponse = new Subject<{
+      isAuthenticated: boolean;
+      userId: string;
+      email: string;
+      emailConfirmed: boolean;
+      issuedAtUtc: string;
+      expiresAtUtc: string;
+    }>();
+    const latestSessionResponse = new Subject<{
+      isAuthenticated: boolean;
+      userId: string;
+      email: string;
+      emailConfirmed: boolean;
+      issuedAtUtc: string;
+      expiresAtUtc: string;
+    }>();
+
+    authApiServiceSpy.session.and.returnValues(
+      staleSessionResponse.asObservable(),
+      latestSessionResponse.asObservable(),
+    );
+
+    store.refreshSessionInBackground();
+    const latestRefresh = store.refreshSession();
+
+    latestSessionResponse.next({
+      isAuthenticated: true,
+      userId: 'new-user',
+      email: 'new@test.com',
+      emailConfirmed: true,
+      issuedAtUtc: new Date('2026-01-01T02:00:00.000Z').toISOString(),
+      expiresAtUtc: new Date('2026-01-01T03:00:00.000Z').toISOString(),
+    });
+    latestSessionResponse.complete();
+
+    await latestRefresh;
+
+    staleSessionResponse.next({
+      isAuthenticated: true,
+      userId: 'old-user',
+      email: 'old@test.com',
+      emailConfirmed: true,
+      issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+      expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+    });
+    staleSessionResponse.complete();
+
+    expect(store.state().userId).toBe('new-user');
+    expect(store.state().email).toBe('new@test.com');
+
+    const snapshotRaw = window.localStorage.getItem('wf.auth.session.snapshot.v1');
+    expect(snapshotRaw).not.toBeNull();
+    const snapshot = JSON.parse(snapshotRaw as string) as { userId?: string; email?: string };
+    expect(snapshot.userId).toBe('new-user');
+    expect(snapshot.email).toBe('new@test.com');
   });
 });

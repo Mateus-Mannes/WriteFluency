@@ -38,6 +38,7 @@ export class AuthSessionStore {
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private validationInterval: ReturnType<typeof setInterval> | null = null;
   private hasRegisteredLifecycleListeners = false;
+  private refreshRequestCounter = 0;
 
   readonly state = this.stateSignal.asReadonly();
   readonly isAuthenticated = computed(() => this.stateSignal().isAuthenticated);
@@ -89,6 +90,8 @@ export class AuthSessionStore {
   }
 
   private async refreshSessionCore(options: { showLoading: boolean; persistErrors: boolean }): Promise<void> {
+    const requestId = ++this.refreshRequestCounter;
+
     if (options.showLoading) {
       this.patchState({ isLoading: true, error: null });
     } else {
@@ -97,6 +100,10 @@ export class AuthSessionStore {
 
     try {
       const session = await firstValueFrom(this.authApiService.session());
+      if (!this.isLatestRefreshRequest(requestId)) {
+        return;
+      }
+
       this.patchState({
         isAuthenticated: session.isAuthenticated,
         userId: session.userId,
@@ -111,6 +118,10 @@ export class AuthSessionStore {
       this.persistSnapshot();
       this.scheduleRefreshFromState();
     } catch (error) {
+      if (!this.isLatestRefreshRequest(requestId)) {
+        return;
+      }
+
       const response = error as HttpErrorResponse;
       if (response.status === 401 || response.status === 403 || response.status === 302) {
         this.clearSession();
@@ -128,6 +139,10 @@ export class AuthSessionStore {
         this.patchState({ isLoading: false });
       }
     }
+  }
+
+  private isLatestRefreshRequest(requestId: number): boolean {
+    return requestId === this.refreshRequestCounter;
   }
 
   private restoreSnapshot(): void {
