@@ -23,7 +23,6 @@ import { AuthSessionStore } from '../../auth/services/auth-session.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
-  private static readonly loginRedirectUrl = 'http://localhost:4200/auth/login';
   readonly isLogoutConfirmationOpen = signal(false);
 
   constructor(
@@ -62,6 +61,10 @@ export class NavbarComponent {
   }
 
   protected redirectToLoginPage(): void {
-    window.location.assign(NavbarComponent.loginRedirectUrl);
+    window.location.assign(this.getLoginRedirectPath());
+  }
+
+  protected getLoginRedirectPath(): string {
+    return '/auth/login';
   }
 }

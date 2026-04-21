@@ -119,4 +119,10 @@ describe('NavbarComponent', () => {
     expect(logoutSpy).toHaveBeenCalled();
     expect(redirectSpy).not.toHaveBeenCalled();
   });
+
+  it('should use relative login redirect path', () => {
+    const loginRedirectPath = (component as unknown as { getLoginRedirectPath: () => string }).getLoginRedirectPath();
+
+    expect(loginRedirectPath).toBe('/auth/login');
+  });
 });
