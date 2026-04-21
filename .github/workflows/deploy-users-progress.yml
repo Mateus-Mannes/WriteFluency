@@ -3,7 +3,7 @@ name: Deploy Users Progress Service
 on:
   push:
     tags:
-      - 'users-progress-v*'
+      - 'users-v*'
   workflow_dispatch:
 
 concurrency:
