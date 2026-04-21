@@ -244,13 +244,13 @@
           "scheme": "http",
           "protocol": "tcp",
           "transport": "http",
-          "targetPort": 5000
+          "targetPort": 5050
         },
         "apihttps": {
           "scheme": "https",
           "protocol": "tcp",
           "transport": "http",
-          "targetPort": 5001
+          "targetPort": 5051
         }
       }
     },

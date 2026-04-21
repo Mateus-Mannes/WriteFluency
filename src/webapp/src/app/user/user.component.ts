@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -7,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { ProgressItemResponse, ProgressSummaryResponse } from './models/user-progress.model';
 import { UserProgressApiService } from './services/user-progress-api.service';
+import { Insights } from '../../telemetry/insights.service';
 
 @Component({
   selector: 'app-user',
@@ -18,6 +21,8 @@ import { UserProgressApiService } from './services/user-progress-api.service';
 export class UserComponent implements OnInit {
   private readonly authSessionStore = inject(AuthSessionStore);
   private readonly userProgressApi = inject(UserProgressApiService);
+  private readonly router = inject(Router);
+  private readonly insights = inject(Insights, { optional: true });
 
   readonly authState = this.authSessionStore.state;
 
@@ -43,17 +48,79 @@ export class UserComponent implements OnInit {
 
       this.summary.set(summary);
       this.items.set(items);
-    } catch {
+    } catch (error) {
       this.summary.set(null);
       this.items.set([]);
+      const statusCode = this.getStatusCode(error);
+      const errorKind = this.getErrorKind(error, statusCode);
+
+      if (statusCode === 401) {
+        this.authSessionStore.invalidateSession();
+        this.insights?.trackException(error, {
+          properties: {
+            area: 'user_progress',
+            operation: 'load_user_progress',
+            error_kind: errorKind,
+            http_status: String(statusCode),
+          },
+          measurements: {
+            http_status: statusCode,
+          },
+        });
+
+        const redirected = await this.router.navigate(['/auth/login'], {
+          queryParams: {
+            returnUrl: '/user',
+            source: 'user_progress_session_expired',
+          },
+        });
+
+        if (!redirected) {
+          this.error.set('Your session expired. Please log in again.');
+        }
+
+        return;
+      }
+
       this.error.set('Could not load progress right now. Please try again.');
+      this.insights?.trackException(error, {
+        properties: {
+          area: 'user_progress',
+          operation: 'load_user_progress',
+          error_kind: errorKind,
+          http_status: statusCode === null ? 'unknown' : String(statusCode),
+        },
+        measurements: {
+          http_status: statusCode ?? 0,
+        },
+      });
     } finally {
       this.isLoading.set(false);
     }
   }
 
-  formatPercent(value: number | null): string {
-    if (value === null || Number.isNaN(value)) {
+  private getStatusCode(error: unknown): number | null {
+    if (error instanceof HttpErrorResponse && Number.isFinite(error.status)) {
+      return error.status;
+    }
+
+    return null;
+  }
+
+  private getErrorKind(error: unknown, statusCode: number | null): string {
+    if (statusCode === 401) {
+      return 'unauthorized';
+    }
+
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      return 'timeout';
+    }
+
+    return 'request_failure';
+  }
+
+  formatPercent(value: number | null | undefined): string {
+    if (value === null || value === undefined || Number.isNaN(value)) {
       return '—';
     }
 
@@ -75,6 +142,18 @@ export class UserComponent implements OnInit {
     }
 
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  formatWordProgress(currentWordCount: number | null | undefined, originalWordCount: number | null | undefined): string {
+    const written = currentWordCount === null || currentWordCount === undefined || Number.isNaN(currentWordCount)
+      ? 0
+      : Math.max(0, Math.floor(currentWordCount));
+
+    const total = originalWordCount === null || originalWordCount === undefined || Number.isNaN(originalWordCount)
+      ? '—'
+      : String(Math.max(0, Math.floor(originalWordCount)));
+
+    return `${written}/${total}`;
   }
 
   statusLabel(status: string): string {

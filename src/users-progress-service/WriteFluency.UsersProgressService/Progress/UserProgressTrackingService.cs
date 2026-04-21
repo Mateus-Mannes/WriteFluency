@@ -61,6 +61,7 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
 
         AccrueActiveSeconds(progress, now);
         ApplyExerciseMetadata(progress, request.ExerciseTitle, request.Subject, request.Complexity);
+        progress.OriginalWordCount = NormalizeWordCount(request.OriginalWordCount) ?? progress.OriginalWordCount;
         progress.UpdatedAtUtc = now;
 
         await _repository.UpsertProgressAsync(progress, cancellationToken);
@@ -126,6 +127,7 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         progress.LatestAccuracyPercentage = accuracy;
         progress.BestAccuracyPercentage = MergeBestAccuracy(progress.BestAccuracyPercentage, accuracy);
         progress.CurrentWordCount = NormalizeWordCount(request.WordCount) ?? progress.CurrentWordCount;
+        progress.OriginalWordCount = NormalizeWordCount(request.OriginalWordCount) ?? progress.OriginalWordCount;
         progress.LastAttemptId = attempt.Id;
         progress.DraftExerciseState = null;
         progress.DraftUserText = null;
@@ -179,6 +181,7 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
 
         AccrueActiveSeconds(progress, now);
         progress.CurrentWordCount = NormalizeWordCount(request.WordCount) ?? progress.CurrentWordCount;
+        progress.OriginalWordCount = NormalizeWordCount(request.OriginalWordCount) ?? progress.OriginalWordCount;
         progress.DraftExerciseState = NormalizeExerciseState(request.ExerciseState);
         progress.DraftUserText = NormalizeDraftText(request.UserText);
         progress.DraftAutoPauseSeconds = NormalizeAutoPauseSeconds(request.AutoPauseSeconds);
@@ -224,9 +227,10 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         var normalizedAutoPause = NormalizeAutoPauseSeconds(current.DraftAutoPauseSeconds);
         var normalizedPausedTime = NormalizePausedTimeSeconds(current.DraftPausedTimeSeconds);
 
+        // "Server state" should mean there is restorable editor/session state.
+        // Word count alone is metadata and should not suppress local-storage fallback.
         var hasServerState = normalizedState is not null
             || !string.IsNullOrWhiteSpace(normalizedText)
-            || normalizedWordCount.HasValue
             || normalizedAutoPause.HasValue
             || normalizedPausedTime.HasValue;
 
@@ -336,7 +340,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
                 item.StartedAtUtc,
                 item.CompletedAtUtc,
                 item.UpdatedAtUtc,
-                NormalizeWordCount(item.CurrentWordCount)))
+                NormalizeWordCount(item.CurrentWordCount),
+                NormalizeWordCount(item.OriginalWordCount)))
             .ToArray();
 
         _logger.LogInformation(

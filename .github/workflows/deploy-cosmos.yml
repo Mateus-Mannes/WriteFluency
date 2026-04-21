@@ -36,7 +36,7 @@ env:
   COSMOS_ALERT_EMAIL: 'mateus-mannes@hotmail.com'
   COSMOS_BUDGET_EMAIL: 'mateus-mannes@hotmail.com'
   COSMOS_BUDGET_NAME: wf-cosmos-monthly-budget
-  COSMOS_MONTHLY_BUDGET_AMOUNT: '1'
+  COSMOS_MONTHLY_BUDGET_AMOUNT: '10'
 
 jobs:
   deploy:

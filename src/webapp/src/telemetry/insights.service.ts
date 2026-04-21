@@ -29,7 +29,7 @@ export class Insights {
                 'writefluency.com',
                 'api.writefluency.com',
                 'writefluency.com:8080',
-                'localhost:5000',
+                'localhost:5050',
             ],
             extensions: [this.angularPlugin],
             extensionConfig: {

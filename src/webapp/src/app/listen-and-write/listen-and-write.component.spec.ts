@@ -170,6 +170,28 @@ describe('ListenAndWriteComponent', () => {
     expect(exerciseProgressTrackingMock.saveState).toHaveBeenCalled();
   });
 
+  it('should consider audio completed for submit warning when user reached last 10 seconds', () => {
+    component.newsAudioComponent = {
+      audioEnded: false,
+      audioRef: { nativeElement: { duration: 50, currentTime: 40 } },
+    } as any;
+
+    const hasCompletedPlayback = (component as any).hasCompletedAudioPlayback();
+
+    expect(hasCompletedPlayback).toBeTrue();
+  });
+
+  it('should not consider audio completed for submit warning when more than 10 seconds remain', () => {
+    component.newsAudioComponent = {
+      audioEnded: false,
+      audioRef: { nativeElement: { duration: 50, currentTime: 39.9 } },
+    } as any;
+
+    const hasCompletedPlayback = (component as any).hasCompletedAudioPlayback();
+
+    expect(hasCompletedPlayback).toBeFalse();
+  });
+
   it('should render inline progress sync toast when tracking service exposes one', () => {
     progressSyncNotificationSignal.set({
       id: 1,
@@ -218,7 +240,7 @@ describe('ListenAndWriteComponent', () => {
     await component.restoreExerciseState();
 
     expect(exerciseProgressTrackingMock.loadState).toHaveBeenCalledWith(42);
-    expect(getItemSpy).not.toHaveBeenCalled();
+    expect(getItemSpy).toHaveBeenCalled();
     expect(component.exerciseState()).toBe('exercise');
     expect(component.initialText()).toBe('server text');
     expect(component.initialAutoPause()).toBe(4);
@@ -372,6 +394,99 @@ describe('ListenAndWriteComponent', () => {
     expect(component.exerciseState()).toBe('exercise');
     expect(component.initialText()).toBe('newer restore');
     expect(component.initialAutoPause()).toBe(2);
+  });
+
+  it('should prefer fresher local completed snapshot over stale server draft state', async () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    component.exerciseId = 16;
+
+    exerciseProgressTrackingMock.loadState.and.resolveTo({
+      trackingEnabled: true,
+      exerciseId: 16,
+      hasServerState: true,
+      exerciseState: 'exercise',
+      userText: 'older server draft',
+      wordCount: 3,
+      autoPauseSeconds: 2,
+      pausedTimeSeconds: 7,
+      updatedAtUtc: '2026-04-20T17:00:00.000Z',
+    });
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'getItem').and.callFake((key: string) => {
+      if (key === 'listen-write-state-16') {
+        return 'results';
+      }
+
+      if (key === 'exercise-section-state-16') {
+        return JSON.stringify({
+          userText: 'final local submission',
+          autoPause: 2,
+          pausedTime: 15,
+          result: {
+            accuracyPercentage: 0.42,
+            userText: 'final local submission',
+            originalText: 'final original text',
+          },
+          savedAtUtc: '2026-04-20T17:05:00.000Z',
+        });
+      }
+
+      return null;
+    });
+
+    await component.restoreExerciseState();
+
+    expect(exerciseProgressTrackingMock.loadState).toHaveBeenCalledWith(16);
+    expect(component.exerciseState()).toBe('results');
+    expect(component.initialText()).toBe('final local submission');
+    expect(exerciseProgressTrackingMock.trackComplete).not.toHaveBeenCalled();
+    expect(component.result()).toEqual(jasmine.objectContaining({
+      accuracyPercentage: 0.42,
+    }));
+  });
+
+  it('should sync completed result once after login when pending save intent exists', async () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    component.exerciseId = 17;
+    component.proposition.set({ id: 17, title: 'Exercise 17' } as any);
+    exerciseProgressTrackingMock.loadState.and.resolveTo(null);
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'getItem').and.callFake((key: string) => {
+      if (key === 'listen-write-state-17') {
+        return 'results';
+      }
+
+      if (key === 'exercise-section-state-17') {
+        return JSON.stringify({
+          userText: 'typed answer',
+          autoPause: 2,
+          pausedTime: 11,
+          result: {
+            accuracyPercentage: 0.6,
+            userText: 'typed answer',
+            originalText: 'original',
+          },
+          savedAtUtc: '2026-04-20T20:00:00.000Z',
+        });
+      }
+
+      return null;
+    });
+
+    window.sessionStorage.setItem(
+      'wf.auth.post-login-complete-sync.v1',
+      JSON.stringify({ exerciseId: 17, createdAtUtc: '2026-04-20T20:01:00.000Z' }),
+    );
+
+    await component.restoreExerciseState();
+
+    expect(exerciseProgressTrackingMock.trackComplete).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 17 }),
+      jasmine.objectContaining({ accuracyPercentage: 0.6 }),
+    );
+    expect(window.sessionStorage.getItem('wf.auth.post-login-complete-sync.v1')).toBeNull();
   });
 
   it('should restore only once on route load', async () => {

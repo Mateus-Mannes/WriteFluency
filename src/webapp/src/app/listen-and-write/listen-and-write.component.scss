@@ -224,9 +224,16 @@
     width: 100%;
 }
 
-@media (min-height: 820px) {
+@media (min-height: 820px) and (min-width: 1200px) {
     .container {
         margin-top: calc(vars.$nav-bar-height * -1);
+    }
+}
+
+@media (min-width: 901px) and (max-width: 1199px) {
+    .container {
+        margin-top: 0;
+        padding-top: calc(vars.$nav-bar-height + 0.5rem);
     }
 }
 

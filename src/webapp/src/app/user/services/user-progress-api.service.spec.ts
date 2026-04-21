@@ -1,8 +1,10 @@
+import { fakeAsync, tick } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../enviroments/enviroment';
 import { UserProgressApiService } from './user-progress-api.service';
 import { ProgressAttemptResponse, ProgressItemResponse, ProgressSummaryResponse } from '../models/user-progress.model';
+import { TimeoutError } from 'rxjs';
 
 describe('UserProgressApiService', () => {
   let service: UserProgressApiService;
@@ -22,7 +24,7 @@ describe('UserProgressApiService', () => {
   });
 
   afterEach(() => {
-    httpMock.verify();
+    httpMock.verify({ ignoreCancelled: true });
   });
 
   it('should call start endpoint with cookies enabled', () => {
@@ -116,10 +118,12 @@ describe('UserProgressApiService', () => {
         completedAtUtc: null,
         updatedAtUtc: new Date().toISOString(),
         currentWordCount: 12,
+        originalWordCount: 44,
       },
     ]);
 
     expect(response?.[0]?.activeSeconds).toBe(45);
+    expect(response?.[0]?.originalWordCount).toBe(44);
   });
 
   it('should deserialize attempts with activeSeconds', () => {
@@ -150,4 +154,23 @@ describe('UserProgressApiService', () => {
 
     expect(response?.[0]?.activeSeconds).toBe(180);
   });
+
+  it('should timeout requests that do not complete', fakeAsync(() => {
+    let requestError: unknown;
+
+    service.summary().subscribe({
+      next: () => fail('Expected timeout error'),
+      error: (error) => {
+        requestError = error;
+      },
+    });
+
+    const request = httpMock.expectOne(`${progressBaseUrl}/summary`);
+    expect(request.request.method).toBe('GET');
+
+    tick(15_001);
+
+    expect(request.cancelled).toBeTrue();
+    expect(requestError instanceof TimeoutError).toBeTrue();
+  }));
 });

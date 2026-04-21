@@ -46,6 +46,7 @@ public class UserProgressTrackingServiceTests
         items[0].AttemptCount.ShouldBe(1);
         items[0].LatestAccuracyPercentage.ShouldBe(0.82);
         items[0].BestAccuracyPercentage.ShouldBe(0.82);
+        items[0].OriginalWordCount.ShouldBe(135);
         items[0].ActiveSeconds.ShouldBeGreaterThanOrEqualTo(0);
 
         var progressAfterRestart = await repository.GetProgressAsync(userId, 12, CancellationToken.None);
@@ -82,6 +83,7 @@ public class UserProgressTrackingServiceTests
                 ExerciseState: "exercise",
                 UserText: "one two three",
                 WordCount: 3,
+                OriginalWordCount: 111,
                 AutoPauseSeconds: 2,
                 PausedTimeSeconds: 5,
                 ExerciseTitle: "Exercise 21",
@@ -99,6 +101,7 @@ public class UserProgressTrackingServiceTests
         items.Count.ShouldBe(1);
         items[0].ActiveSeconds.ShouldBe(70);
         items[0].CurrentWordCount.ShouldBe(3);
+        items[0].OriginalWordCount.ShouldBe(111);
     }
 
     [Fact]
@@ -135,6 +138,7 @@ public class UserProgressTrackingServiceTests
         items.Count.ShouldBe(1);
         items[0].Status.ShouldBe(ProgressStatus.Completed);
         items[0].ActiveSeconds.ShouldBe(100);
+        items[0].OriginalWordCount.ShouldBe(150);
 
         var attempts = await service.GetAttemptsAsync(userId, exerciseId: 22, CancellationToken.None);
         attempts.Count.ShouldBe(1);
@@ -162,6 +166,7 @@ public class UserProgressTrackingServiceTests
                 ExerciseState: "exercise",
                 UserText: "one two three four",
                 WordCount: 4,
+                OriginalWordCount: 120,
                 AutoPauseSeconds: 3,
                 PausedTimeSeconds: 12.5,
                 ExerciseTitle: "Exercise 30",
@@ -185,7 +190,50 @@ public class UserProgressTrackingServiceTests
         items.Count.ShouldBe(1);
         items[0].Status.ShouldBe(ProgressStatus.InProgress);
         items[0].CurrentWordCount.ShouldBe(4);
+        items[0].OriginalWordCount.ShouldBe(120);
         items[0].ActiveSeconds.ShouldBeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task GetState_AfterCompleteWithoutDraft_ShouldNotReportServerState()
+    {
+        var repository = new InMemoryUserProgressRepository();
+        var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
+        var userId = "user-5";
+
+        await service.SaveStateAsync(
+            userId,
+            new SaveProgressStateRequest(
+                ExerciseId: 39,
+                ExerciseState: "exercise",
+                UserText: "rewq dsaf ads fewq radsf as 4",
+                WordCount: 7,
+                AutoPauseSeconds: 0,
+                PausedTimeSeconds: 0,
+                ExerciseTitle: "Exercise 39",
+                Subject: null,
+                Complexity: null),
+            CancellationToken.None);
+
+        await service.CompleteAsync(
+            userId,
+            new CompleteProgressRequest(
+                ExerciseId: 39,
+                AccuracyPercentage: 0,
+                WordCount: 7,
+                OriginalWordCount: 113,
+                ExerciseTitle: "Exercise 39",
+                Subject: null,
+                Complexity: null),
+            CancellationToken.None);
+
+        var state = await service.GetStateAsync(userId, 39, CancellationToken.None);
+
+        state.TrackingEnabled.ShouldBeTrue();
+        state.HasServerState.ShouldBeFalse();
+        state.ExerciseState.ShouldBeNull();
+        state.UserText.ShouldBeNull();
+        state.WordCount.ShouldBe(7);
     }
 
     private sealed class InMemoryUserProgressRepository : IUserProgressRepository

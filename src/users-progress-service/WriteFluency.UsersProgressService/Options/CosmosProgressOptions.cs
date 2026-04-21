@@ -4,7 +4,7 @@ public sealed class CosmosProgressOptions
 {
     public const string SectionName = "Cosmos";
 
-    public string Endpoint { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = "https://writefluencyusersprodcosmos.documents.azure.com/";
 
     public string DatabaseName { get; set; } = "wf-users-progress";
 

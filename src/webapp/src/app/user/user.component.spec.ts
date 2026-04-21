@@ -1,17 +1,39 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { of, throwError } from 'rxjs';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { UserProgressApiService } from './services/user-progress-api.service';
 import { UserComponent } from './user.component';
+import { Insights } from '../../telemetry/insights.service';
 
 describe('UserComponent', () => {
   let component: UserComponent;
   let fixture: ComponentFixture<UserComponent>;
   let userProgressApiSpy: jasmine.SpyObj<UserProgressApiService>;
+  let insightsSpy: jasmine.SpyObj<Insights>;
+  let routerSpy: jasmine.SpyObj<Router>;
+  let authSessionStoreMock: Pick<AuthSessionStore, 'state' | 'invalidateSession'>;
 
   beforeEach(async () => {
     userProgressApiSpy = jasmine.createSpyObj<UserProgressApiService>('UserProgressApiService', ['summary', 'items']);
+    insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException']);
+    routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    routerSpy.navigate.and.resolveTo(true);
+    authSessionStoreMock = {
+      state: signal({
+        isAuthenticated: true,
+        userId: 'user-123',
+        email: 'user@test.com',
+        emailConfirmed: true,
+        issuedAtUtc: new Date().toISOString(),
+        expiresAtUtc: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        isLoading: false,
+        error: null,
+      }),
+      invalidateSession: jasmine.createSpy('invalidateSession'),
+    };
 
     userProgressApiSpy.summary.and.returnValue(of({
       trackingEnabled: true,
@@ -39,6 +61,8 @@ describe('UserComponent', () => {
         startedAtUtc: new Date().toISOString(),
         completedAtUtc: new Date().toISOString(),
         updatedAtUtc: new Date().toISOString(),
+        currentWordCount: 140,
+        originalWordCount: 150,
       },
       {
         exerciseId: 11,
@@ -53,6 +77,8 @@ describe('UserComponent', () => {
         startedAtUtc: new Date().toISOString(),
         completedAtUtc: null,
         updatedAtUtc: new Date().toISOString(),
+        currentWordCount: 24,
+        originalWordCount: 120,
       },
     ]));
 
@@ -61,20 +87,11 @@ describe('UserComponent', () => {
       providers: [
         {
           provide: AuthSessionStore,
-          useValue: {
-            state: signal({
-              isAuthenticated: true,
-              userId: 'user-123',
-              email: 'user@test.com',
-              emailConfirmed: true,
-              issuedAtUtc: new Date().toISOString(),
-              expiresAtUtc: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-              isLoading: false,
-              error: null,
-            }),
-          } as Pick<AuthSessionStore, 'state'>,
+          useValue: authSessionStoreMock,
         },
         { provide: UserProgressApiService, useValue: userProgressApiSpy },
+        { provide: Insights, useValue: insightsSpy },
+        { provide: Router, useValue: routerSpy },
       ],
     }).compileComponents();
 
@@ -99,7 +116,58 @@ describe('UserComponent', () => {
     expect(root.textContent).toContain('01:01:05');
     expect(root.textContent).toContain('Active so far');
     expect(root.textContent).toContain('Active time');
+    expect(root.textContent).toContain('Words');
+    expect(root.textContent).toContain('140/150');
+    expect(root.textContent).toContain('24/120');
     expect(userProgressApiSpy.summary).toHaveBeenCalled();
     expect(userProgressApiSpy.items).toHaveBeenCalled();
+  });
+
+  it('should track exception when progress load fails', async () => {
+    const timeoutError = new Error('Timed out');
+    timeoutError.name = 'TimeoutError';
+    userProgressApiSpy.summary.and.returnValue(throwError(() => timeoutError));
+
+    await component.reload();
+
+    expect(component.error()).toBe('Could not load progress right now. Please try again.');
+    expect(insightsSpy.trackException).toHaveBeenCalledWith(timeoutError, {
+      properties: jasmine.objectContaining({
+        area: 'user_progress',
+        operation: 'load_user_progress',
+        error_kind: 'timeout',
+        http_status: 'unknown',
+      }),
+      measurements: jasmine.objectContaining({
+        http_status: 0,
+      }),
+    });
+  });
+
+  it('should invalidate session and redirect to login on 401', async () => {
+    const unauthorized = new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' });
+    userProgressApiSpy.summary.and.returnValue(throwError(() => unauthorized));
+
+    await component.reload();
+
+    expect(authSessionStoreMock.invalidateSession).toHaveBeenCalled();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: {
+        returnUrl: '/user',
+        source: 'user_progress_session_expired',
+      },
+    });
+    expect(component.error()).toBeNull();
+    expect(insightsSpy.trackException).toHaveBeenCalledWith(unauthorized, {
+      properties: jasmine.objectContaining({
+        area: 'user_progress',
+        operation: 'load_user_progress',
+        error_kind: 'unauthorized',
+        http_status: '401',
+      }),
+      measurements: jasmine.objectContaining({
+        http_status: 401,
+      }),
+    });
   });
 });

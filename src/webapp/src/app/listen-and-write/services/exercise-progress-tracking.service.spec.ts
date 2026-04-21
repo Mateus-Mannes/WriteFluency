@@ -141,6 +141,21 @@ describe('ExerciseProgressTrackingService', () => {
     );
   });
 
+  it('should keep session-expired notification visible until user dismisses it', fakeAsync(() => {
+    userProgressApiMock.start.and.returnValue(throwError(() =>
+      new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' })));
+
+    service.trackStart({ id: 5, title: 'Exercise 5' } as any);
+    tick(11000);
+
+    expect(service.syncNotification()).toEqual(jasmine.objectContaining({
+      kind: 'session_expired',
+    }));
+
+    service.dismissSyncNotification();
+    expect(service.syncNotification()).toBeNull();
+  }));
+
   it('should handle non-401 errors with warning notification and telemetry', () => {
     userProgressApiMock.complete.and.returnValue(throwError(() =>
       new HttpErrorResponse({ status: 500, statusText: 'Server Error' })));
@@ -266,6 +281,7 @@ describe('ExerciseProgressTrackingService', () => {
       exerciseState: 'exercise',
       userText: 'one two three',
       wordCount: 3,
+      originalWordCount: 0,
       autoPauseSeconds: 3,
       pausedTimeSeconds: 4,
       exerciseTitle: 'Exercise 5',
@@ -273,4 +289,23 @@ describe('ExerciseProgressTrackingService', () => {
       complexity: null,
     });
   }));
+
+  it('should fallback to subjectId and complexityId when description metadata is missing', () => {
+    service.trackStart({
+      id: 12,
+      title: 'Exercise 12',
+      subjectId: 'Sports',
+      complexityId: 'Advanced',
+      subject: null,
+      complexity: null,
+    } as any);
+
+    expect(userProgressApiMock.start).toHaveBeenCalledWith({
+      exerciseId: 12,
+      exerciseTitle: 'Exercise 12',
+      subject: 'Sports',
+      complexity: 'Advanced',
+      originalWordCount: 0,
+    });
+  });
 });

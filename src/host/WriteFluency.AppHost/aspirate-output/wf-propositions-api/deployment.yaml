@@ -28,9 +28,9 @@ spec:
         - name: https
           containerPort: 8443
         - name: apihttp
-          containerPort: 5000
+          containerPort: 5050
         - name: apihttps
-          containerPort: 5001
+          containerPort: 5051
         envFrom:
         - configMapRef:
             name: wf-propositions-api-env

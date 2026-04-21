@@ -57,8 +57,8 @@ var api = builder.AddProject<Projects.WriteFluency_WebApi>("wf-propositions-api"
     .WithReference(minio).WaitFor(minio)
     .WaitForCompletion(dbMigrator)
     .WithHttpHealthCheck("health")
-    .WithHttpEndpoint(port: 5000, name: "apihttp", isProxied: false)
-    .WithHttpsEndpoint(port: 5001, name: "apihttps", isProxied: false);
+    .WithHttpEndpoint(port: 5050, name: "apihttp", isProxied: false)
+    .WithHttpsEndpoint(port: 5051, name: "apihttps", isProxied: false);
 api.WithEnvironment("RESOURCE_NAME", api.Resource.Name);
 
 var newsWorker = builder.AddProject<Projects.WriteFluency_NewsWorker>("wf-propositions-news-worker")
@@ -102,9 +102,14 @@ usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
 if (builder.ExecutionContext.IsRunMode)
 {
+    // Mutate the default Functions HTTP endpoint so Aspire uses a stable local port.
     builder.AddAzureFunctionsProject<Projects.WriteFluency_UsersProgressService>("wf-users-progress-api")
-        .WithHttpEndpoint(port: 7200, name: "usersprogresshttp", isProxied: false)
-        .WithHttpsEndpoint(port: 7201, name: "usersprogresshttps", isProxied: false);
+        .WithEndpoint("http", endpoint =>
+        {
+            endpoint.Port = 7200;
+            endpoint.TargetPort = 7200;
+            endpoint.IsProxied = false;
+        }, createIfNotExists: false);
 }
 
 builder.AddNpmApp("wf-webapp", "../../webapp")

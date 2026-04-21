@@ -24,6 +24,8 @@ public sealed class UserProgressRecord
 
     public int? CurrentWordCount { get; set; }
 
+    public int? OriginalWordCount { get; set; }
+
     public int TotalActiveSeconds { get; set; }
 
     public int CurrentAttemptActiveSeconds { get; set; }

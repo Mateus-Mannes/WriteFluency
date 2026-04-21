@@ -21,6 +21,7 @@ import { ExerciseSessionTrackingService } from './services/exercise-session-trac
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
+import { ProgressStateResponse } from '../user/models/user-progress.model';
 import {
   FeedbackModalComponent,
   FeedbackModalInteractionEvent,
@@ -37,6 +38,8 @@ const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown
 const guestBeginLoginModalAttemptThreshold = 2;
 const guestBeginLoginModalCooldownMs = 24 * 60 * 60 * 1000;
 const submitTelemetryTextMaxLength = 4000;
+const submitAudioRemainingToleranceSeconds = 10;
+const postLoginCompleteSyncStorageKey = 'wf.auth.post-login-complete-sync.v1';
 type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
 type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
 type GuestLoginModalDismissReason = 'continue_as_guest' | 'backdrop';
@@ -52,6 +55,15 @@ interface GuestLoginModalDecision {
   shouldShow: boolean;
   reason: 'authenticated' | 'below_threshold' | 'cooldown_active' | 'eligible';
   cooldownRemainingMs: number;
+}
+
+interface LocalExerciseSnapshot {
+  state: ExerciseState | null;
+  userText: string | null;
+  autoPauseSeconds: number | null;
+  pausedTimeSeconds: number | null;
+  result: TextComparisonResult | null;
+  savedAtUtc: string | null;
 }
 
 @Component({
@@ -120,6 +132,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private pendingBeginExerciseContext: BeginExerciseContext | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
+  private shouldSyncCompletedResultAfterRestore = false;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -158,6 +171,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         });
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
+        this.shouldSyncCompletedResultAfterRestore = false;
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -277,6 +291,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           '@graph': [exerciseData, breadcrumbData]
         };
         this.seoService.addStructuredData(structuredData);
+        this.syncCompletedResultAfterRestoreIfNeeded(data);
       },
       error: (error) => {
         console.error('Error loading proposition:', error);
@@ -318,12 +333,37 @@ export class ListenAndWriteComponent implements OnDestroy {
         return;
       }
 
+      const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
+      const shouldSyncCompletedAfterLogin = this.consumePendingCompletedSyncRequest(exerciseId, localSnapshot);
+      if (shouldSyncCompletedAfterLogin) {
+        this.applyLocalExerciseSnapshot(localSnapshot!);
+        this.shouldSyncCompletedResultAfterRestore = true;
+        const proposition = this.proposition();
+        if (proposition) {
+          this.syncCompletedResultAfterRestoreIfNeeded(proposition);
+        }
+        return;
+      }
+
+      if (this.shouldPreferLocalCompletedState(serverState, localSnapshot)) {
+        this.applyLocalExerciseSnapshot(localSnapshot!);
+        this.shouldSyncCompletedResultAfterRestore = false;
+        return;
+      }
+
       if (serverState) {
+        this.shouldSyncCompletedResultAfterRestore = false;
         this.applyServerState(serverState.pausedTimeSeconds, serverState.exerciseState, serverState.userText, serverState.autoPauseSeconds);
         return;
       }
 
-      this.restoreStateFromLocalStorage(exerciseId, restoreToken);
+      if (localSnapshot) {
+        this.shouldSyncCompletedResultAfterRestore = false;
+        this.applyLocalExerciseSnapshot(localSnapshot);
+      } else {
+        this.shouldSyncCompletedResultAfterRestore = false;
+        this.restoreStateFromLocalStorage(exerciseId, restoreToken);
+      }
     } finally {
       if (this.isRestoreTokenActive(restoreToken, exerciseId)) {
         this.isRestoringExercise.set(false);
@@ -374,43 +414,197 @@ export class ListenAndWriteComponent implements OnDestroy {
       return;
     }
 
-    const stateKey = this.getStateKey(exerciseId);
-    if (stateKey) {
-      const storedState = this.normalizeExerciseState(this.browserService.getItem(stateKey));
-      if (storedState) {
-        this.exerciseState.set(storedState);
-        if (storedState === 'exercise' && this.exerciseStartedAtMs === null) {
-          this.exerciseStartedAtMs = Date.now();
-        }
+    const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
+    if (!localSnapshot) {
+      return;
+    }
+
+    this.applyLocalExerciseSnapshot(localSnapshot);
+  }
+
+  private applyLocalExerciseSnapshot(localSnapshot: LocalExerciseSnapshot): void {
+    if (localSnapshot.state) {
+      this.exerciseState.set(localSnapshot.state);
+      if (localSnapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
+        this.exerciseStartedAtMs = Date.now();
       }
     }
 
+    this.initialText.set(localSnapshot.userText);
+    this.initialAutoPause.set(localSnapshot.autoPauseSeconds ?? 2);
+    this.setPendingPausedTime(localSnapshot.pausedTimeSeconds);
+    this.result.set(localSnapshot.result);
+  }
+
+  private readLocalExerciseSnapshot(exerciseId: number): LocalExerciseSnapshot | null {
+    const stateKey = this.getStateKey(exerciseId);
+    const exerciseState = stateKey
+      ? this.normalizeExerciseState(this.browserService.getItem(stateKey))
+      : null;
+
     const exerciseStateKey = this.getExerciseStateKey(exerciseId);
     if (!exerciseStateKey) {
-      return;
+      return null;
     }
 
-    const state = this.browserService.getItem(exerciseStateKey);
-    if (!state) {
-      return;
+    const serializedState = this.browserService.getItem(exerciseStateKey);
+    if (!serializedState) {
+      return exerciseState
+        ? {
+            state: exerciseState,
+            userText: null,
+            autoPauseSeconds: null,
+            pausedTimeSeconds: null,
+            result: null,
+            savedAtUtc: null,
+          }
+        : null;
     }
 
     try {
-      const parsed = JSON.parse(state) as {
+      const parsed = JSON.parse(serializedState) as {
         userText?: string | null;
         autoPause?: number | null;
         pausedTime?: number | null;
         result?: TextComparisonResult | null;
+        savedAtUtc?: string | null;
       };
 
-      this.initialText.set(parsed.userText || null);
-      this.initialAutoPause.set(parsed.autoPause ?? 2);
-      this.setPendingPausedTime(parsed.pausedTime ?? null);
-
-      this.result.set(parsed.result || null);
+      return {
+        state: exerciseState,
+        userText: parsed.userText || null,
+        autoPauseSeconds: parsed.autoPause ?? null,
+        pausedTimeSeconds: parsed.pausedTime ?? null,
+        result: parsed.result ?? null,
+        savedAtUtc: parsed.savedAtUtc ?? null,
+      };
     } catch {
       this.browserService.removeItem(exerciseStateKey);
+      return exerciseState
+        ? {
+            state: exerciseState,
+            userText: null,
+            autoPauseSeconds: null,
+            pausedTimeSeconds: null,
+            result: null,
+            savedAtUtc: null,
+          }
+        : null;
     }
+  }
+
+  private shouldPreferLocalCompletedState(
+    serverState: ProgressStateResponse | null,
+    localSnapshot: LocalExerciseSnapshot | null,
+  ): boolean {
+    if (!serverState || !localSnapshot) {
+      return false;
+    }
+
+    if (localSnapshot.state !== 'results' || !localSnapshot.result) {
+      return false;
+    }
+
+    const localSavedAtMs = this.parseTimestamp(localSnapshot.savedAtUtc);
+    const serverUpdatedAtMs = this.parseTimestamp(serverState.updatedAtUtc);
+    if (localSavedAtMs !== null && serverUpdatedAtMs !== null) {
+      return localSavedAtMs > serverUpdatedAtMs;
+    }
+
+    if (localSavedAtMs !== null && serverUpdatedAtMs === null) {
+      return true;
+    }
+
+    const normalizedServerState = this.normalizeExerciseState(serverState.exerciseState);
+    const serverHasDraftText = Boolean(serverState.userText?.trim());
+    const serverHasRestorableDraft =
+      normalizedServerState === 'exercise'
+      || serverHasDraftText
+      || serverState.autoPauseSeconds !== null
+      || serverState.pausedTimeSeconds !== null;
+
+    return !serverHasRestorableDraft;
+  }
+
+  private parseTimestamp(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
+    }
+
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  private setPendingCompletedSyncRequest(exerciseId: number | null): void {
+    if (!exerciseId || !this.browserService.isBrowserEnvironment()) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(
+        postLoginCompleteSyncStorageKey,
+        JSON.stringify({
+          exerciseId,
+          createdAtUtc: new Date().toISOString(),
+        }));
+    } catch {
+      // noop
+    }
+  }
+
+  private consumePendingCompletedSyncRequest(
+    exerciseId: number,
+    localSnapshot: LocalExerciseSnapshot | null,
+  ): boolean {
+    if (!this.browserService.isBrowserEnvironment()) {
+      return false;
+    }
+
+    let pendingExerciseId: number | null = null;
+    try {
+      const rawValue = window.sessionStorage.getItem(postLoginCompleteSyncStorageKey);
+      if (!rawValue) {
+        return false;
+      }
+
+      const parsed = JSON.parse(rawValue) as { exerciseId?: unknown };
+      if (typeof parsed.exerciseId === 'number' && Number.isFinite(parsed.exerciseId)) {
+        pendingExerciseId = parsed.exerciseId;
+      }
+    } catch {
+      // noop
+    }
+
+    if (pendingExerciseId !== exerciseId) {
+      return false;
+    }
+
+    try {
+      window.sessionStorage.removeItem(postLoginCompleteSyncStorageKey);
+    } catch {
+      // noop
+    }
+
+    return localSnapshot?.state === 'results' && localSnapshot.result !== null;
+  }
+
+  private syncCompletedResultAfterRestoreIfNeeded(proposition: Proposition): void {
+    if (!this.shouldSyncCompletedResultAfterRestore || !this.authSessionStore.isAuthenticated()) {
+      return;
+    }
+
+    this.shouldSyncCompletedResultAfterRestore = false;
+
+    const restoredResult = this.result();
+    if (this.exerciseState() !== 'results' || !restoredResult) {
+      return;
+    }
+
+    this.exerciseProgressTracking.trackComplete(proposition, restoredResult);
   }
 
   private setPendingPausedTime(pausedTimeSeconds: number | null): void {
@@ -971,7 +1165,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       return false;
     }
 
-    return audio.currentTime >= Math.max(0, duration - 0.25);
+    return audio.currentTime >= Math.max(0, duration - submitAudioRemainingToleranceSeconds);
   }
 
   private getMinimumWordsForSubmit(): number {
@@ -1100,6 +1294,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onSignInToSaveProgress(): void {
     const returnUrl = this.getPostLoginReturnUrl();
+    this.setPendingCompletedSyncRequest(this.exerciseId);
     this.exerciseSessionTracking.trackEvent('results_login_cta_clicked', {
       return_url: returnUrl,
       exercise_id: String(this.exerciseId ?? ''),
@@ -1137,7 +1332,8 @@ export class ListenAndWriteComponent implements OnDestroy {
       userText: this.exerciseSectionComponent?.text(),
       autoPause: this.exerciseSectionComponent?.selectedAutoPause(),
       pausedTime: this.newsAudioComponent?.audioRef?.nativeElement?.currentTime || 0,
-      result: this.result()
+      result: this.result(),
+      savedAtUtc: new Date().toISOString(),
     };
 
     this.browserService.setItem(stateKey, JSON.stringify(state));

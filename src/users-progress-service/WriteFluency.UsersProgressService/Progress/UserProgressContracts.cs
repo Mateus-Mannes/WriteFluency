@@ -4,7 +4,8 @@ public sealed record StartProgressRequest(
     int ExerciseId,
     string? ExerciseTitle,
     string? Subject,
-    string? Complexity);
+    string? Complexity,
+    int? OriginalWordCount = null);
 
 public sealed record CompleteProgressRequest(
     int ExerciseId,
@@ -30,7 +31,8 @@ public sealed record SaveProgressStateRequest(
     double? PausedTimeSeconds,
     string? ExerciseTitle,
     string? Subject,
-    string? Complexity);
+    string? Complexity,
+    int? OriginalWordCount = null);
 
 public sealed record ProgressStateResponse(
     bool TrackingEnabled,
@@ -67,7 +69,8 @@ public sealed record ProgressItemResponse(
     DateTimeOffset StartedAtUtc,
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    int? CurrentWordCount = null);
+    int? CurrentWordCount = null,
+    int? OriginalWordCount = null);
 
 public sealed record ProgressAttemptResponse(
     string AttemptId,

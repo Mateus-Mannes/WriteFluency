@@ -3,5 +3,10 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
+  },
+  "Host": {
+    "LocalHttpPort": 7200,
+    "CORS": "http://localhost:4200,https://localhost:4200",
+    "CORSCredentials": true
   }
 }

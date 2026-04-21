@@ -44,7 +44,7 @@
         </mat-card>
       </div>
 
-      @if (!summary.trackingEnabled) {
+      @if (summary.trackingEnabled === false) {
         <mat-card class="info-card">
           <p>Progress tracking is temporarily unavailable. Exercises remain fully usable.</p>
         </mat-card>
@@ -70,12 +70,11 @@
               </div>
               <p class="meta">{{ item.subject || 'General' }} · {{ item.complexity || 'Unspecified level' }}</p>
               <div class="scores">
-                <span>Latest: <strong>{{ formatPercent(item.latestAccuracyPercentage) }}</strong></span>
-                <span>Best: <strong>{{ formatPercent(item.bestAccuracyPercentage) }}</strong></span>
+                <span>Score: <strong>{{ formatPercent(item.latestAccuracyPercentage) }}</strong></span>
                 <span>Attempts: <strong>{{ item.attemptCount }}</strong></span>
+                <span>Words: <strong>{{ formatWordProgress(item.currentWordCount, item.originalWordCount) }}</strong></span>
                 @if (item.status === 'in_progress') {
                   <span>Active so far: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
-                  <span>Words so far: <strong>{{ item.currentWordCount ?? 0 }}</strong></span>
                 } @else if (item.status === 'completed') {
                   <span>Active time: <strong>{{ formatDuration(item.activeSeconds) }}</strong></span>
                 }

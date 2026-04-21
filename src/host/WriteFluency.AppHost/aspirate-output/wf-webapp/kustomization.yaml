@@ -11,9 +11,9 @@ configMapGenerator:
     - NODE_ENV=development
     - WF_PROPOSITIONS_API_HTTP=http://wf-propositions-api:8080
     - services__wf-propositions-api__http__0=http://wf-propositions-api:8080
-    - WF_PROPOSITIONS_API_APIHTTP=wf-propositions-api:5000
-    - services__wf-propositions-api__apihttp__0=wf-propositions-api:5000
-    - WF_PROPOSITIONS_API_APIHTTPS=wf-propositions-api:5001
-    - services__wf-propositions-api__apihttps__0=wf-propositions-api:5001
+    - WF_PROPOSITIONS_API_APIHTTP=wf-propositions-api:5050
+    - services__wf-propositions-api__apihttp__0=wf-propositions-api:5050
+    - WF_PROPOSITIONS_API_APIHTTPS=wf-propositions-api:5051
+    - services__wf-propositions-api__apihttps__0=wf-propositions-api:5051
     - PORT=4200
 

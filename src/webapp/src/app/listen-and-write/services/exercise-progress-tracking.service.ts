@@ -62,12 +62,12 @@ export class ExerciseProgressTrackingService {
     }
 
     this.markTryStarted(exerciseId);
+    const metadata = this.buildExerciseMetadata(proposition);
 
     this.userProgressApi.start({
       exerciseId,
-      exerciseTitle: proposition?.title ?? null,
-      subject: proposition?.subject?.description ?? null,
-      complexity: proposition?.complexity?.description ?? null,
+      ...metadata,
+      originalWordCount: this.countWords(proposition?.text),
     })
       .pipe(catchError((error) => this.handleProgressApiError('start', exerciseId, error)))
       .subscribe();
@@ -81,15 +81,14 @@ export class ExerciseProgressTrackingService {
 
     this.ensureTryContext(exerciseId);
     this.clearPendingStateSave();
+    const metadata = this.buildExerciseMetadata(proposition);
 
     this.userProgressApi.complete({
       exerciseId,
       accuracyPercentage: result?.accuracyPercentage ?? null,
       wordCount: this.countWords(result?.userText),
-      originalWordCount: this.countWords(result?.originalText),
-      exerciseTitle: proposition?.title ?? null,
-      subject: proposition?.subject?.description ?? null,
-      complexity: proposition?.complexity?.description ?? null,
+      originalWordCount: this.resolveOriginalWordCount(proposition, result),
+      ...metadata,
     })
       .pipe(catchError((error) => this.handleProgressApiError('complete', exerciseId, error)))
       .subscribe();
@@ -102,17 +101,17 @@ export class ExerciseProgressTrackingService {
     }
 
     this.ensureTryContext(exerciseId);
+    const metadata = this.buildExerciseMetadata(proposition);
 
     this.pendingStateSaveRequest = {
       exerciseId,
       exerciseState: snapshot.exerciseState,
       userText: snapshot.userText ?? null,
       wordCount: this.countWords(snapshot.userText),
+      originalWordCount: this.countWords(proposition?.text),
       autoPauseSeconds: this.normalizeAutoPause(snapshot.autoPauseSeconds),
       pausedTimeSeconds: this.normalizePausedTime(snapshot.pausedTimeSeconds),
-      exerciseTitle: proposition?.title ?? null,
-      subject: proposition?.subject?.description ?? null,
-      complexity: proposition?.complexity?.description ?? null,
+      ...metadata,
     };
 
     if (this.pendingStateSaveTimer) {
@@ -260,6 +259,10 @@ export class ExerciseProgressTrackingService {
       ...notification,
     });
 
+    if (notification.kind === 'session_expired') {
+      return;
+    }
+
     this.notificationDismissTimer = setTimeout(() => {
       this.syncNotificationSignal.set(null);
       this.notificationDismissTimer = null;
@@ -306,6 +309,41 @@ export class ExerciseProgressTrackingService {
 
   private countWords(text: string | null | undefined): number {
     return (text || '').trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  private resolveOriginalWordCount(
+    proposition: Proposition | null,
+    result: TextComparisonResult | null,
+  ): number {
+    const resultWordCount = this.countWords(result?.originalText);
+    if (resultWordCount > 0) {
+      return resultWordCount;
+    }
+
+    return this.countWords(proposition?.text);
+  }
+
+  private buildExerciseMetadata(proposition: Proposition | null): {
+    exerciseTitle: string | null;
+    subject: string | null;
+    complexity: string | null;
+  } {
+    return {
+      exerciseTitle: this.normalizeMetadataValue(proposition?.title),
+      subject: this.normalizeMetadataValue(proposition?.subject?.description)
+        ?? this.normalizeMetadataValue(proposition?.subjectId),
+      complexity: this.normalizeMetadataValue(proposition?.complexity?.description)
+        ?? this.normalizeMetadataValue(proposition?.complexityId),
+    };
+  }
+
+  private normalizeMetadataValue(value: string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   }
 
   private normalizeAutoPause(value: number | null | undefined): number | null {

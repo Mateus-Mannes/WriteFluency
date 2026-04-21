@@ -149,7 +149,7 @@ The verification system uses a sophisticated algorithm combining:
 
 4. **Access the application**
    - **Frontend**: http://localhost:4200
-   - **API**: http://localhost:5000
+   - **API**: http://localhost:5050
    - **Aspire Dashboard**: Shown in terminal output
 
 ### Running with Docker Compose

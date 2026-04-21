@@ -12,8 +12,8 @@ configMapGenerator:
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
     - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
     - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-    - HTTP_PORTS=8080;5000
-    - HTTPS_PORTS=5001
+    - HTTP_PORTS=8080;5050
+    - HTTPS_PORTS=5051
     - ConnectionStrings__wf-propositions-postgresdb=Host=wf-infra-postgres;Port=5432;Username=postgres;Password=postgres;Database=wf-propositions-postgresdb
     - WF_PROPOSITIONS_POSTGRESDB_HOST=wf-infra-postgres
     - WF_PROPOSITIONS_POSTGRESDB_PORT=5432

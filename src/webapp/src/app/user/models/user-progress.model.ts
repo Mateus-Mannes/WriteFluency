@@ -5,6 +5,7 @@ export interface StartProgressRequest {
   exerciseTitle?: string | null;
   subject?: string | null;
   complexity?: string | null;
+  originalWordCount?: number | null;
 }
 
 export interface CompleteProgressRequest {
@@ -22,6 +23,7 @@ export interface SaveProgressStateRequest {
   exerciseState?: 'intro' | 'exercise' | 'results' | null;
   userText?: string | null;
   wordCount?: number | null;
+  originalWordCount?: number | null;
   autoPauseSeconds?: number | null;
   pausedTimeSeconds?: number | null;
   exerciseTitle?: string | null;
@@ -74,6 +76,7 @@ export interface ProgressItemResponse {
   completedAtUtc: string | null;
   updatedAtUtc: string;
   currentWordCount?: number | null;
+  originalWordCount?: number | null;
 }
 
 export interface ProgressAttemptResponse {

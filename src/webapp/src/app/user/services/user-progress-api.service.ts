@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, timeout } from 'rxjs';
 import { environment } from '../../../enviroments/enviroment';
 import {
   CompleteProgressRequest,
@@ -15,47 +15,48 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class UserProgressApiService {
+  private static readonly requestTimeoutMs = 15_000;
   private readonly usersProgressApiUrl = environment.usersProgressApiUrl.replace(/\/$/, '');
   private readonly basePath = `${this.usersProgressApiUrl}/users/progress`;
 
   constructor(private readonly http: HttpClient) {}
 
   start(request: StartProgressRequest): Observable<ProgressOperationResponse> {
-    return this.http.post<ProgressOperationResponse>(`${this.basePath}/start`, request, {
+    return this.withTimeout(this.http.post<ProgressOperationResponse>(`${this.basePath}/start`, request, {
       withCredentials: true,
-    });
+    }));
   }
 
   complete(request: CompleteProgressRequest): Observable<ProgressOperationResponse> {
-    return this.http.post<ProgressOperationResponse>(`${this.basePath}/complete`, request, {
+    return this.withTimeout(this.http.post<ProgressOperationResponse>(`${this.basePath}/complete`, request, {
       withCredentials: true,
-    });
+    }));
   }
 
   saveState(request: SaveProgressStateRequest): Observable<ProgressOperationResponse> {
-    return this.http.post<ProgressOperationResponse>(`${this.basePath}/state`, request, {
+    return this.withTimeout(this.http.post<ProgressOperationResponse>(`${this.basePath}/state`, request, {
       withCredentials: true,
-    });
+    }));
   }
 
   state(exerciseId: number): Observable<ProgressStateResponse> {
     const params = new HttpParams().set('exerciseId', String(exerciseId));
-    return this.http.get<ProgressStateResponse>(`${this.basePath}/state`, {
+    return this.withTimeout(this.http.get<ProgressStateResponse>(`${this.basePath}/state`, {
       params,
       withCredentials: true,
-    });
+    }));
   }
 
   summary(): Observable<ProgressSummaryResponse> {
-    return this.http.get<ProgressSummaryResponse>(`${this.basePath}/summary`, {
+    return this.withTimeout(this.http.get<ProgressSummaryResponse>(`${this.basePath}/summary`, {
       withCredentials: true,
-    });
+    }));
   }
 
   items(): Observable<ProgressItemResponse[]> {
-    return this.http.get<ProgressItemResponse[]>(`${this.basePath}/items`, {
+    return this.withTimeout(this.http.get<ProgressItemResponse[]>(`${this.basePath}/items`, {
       withCredentials: true,
-    });
+    }));
   }
 
   attempts(exerciseId?: number): Observable<ProgressAttemptResponse[]> {
@@ -63,9 +64,13 @@ export class UserProgressApiService {
       ? undefined
       : new HttpParams().set('exerciseId', String(exerciseId));
 
-    return this.http.get<ProgressAttemptResponse[]>(`${this.basePath}/attempts`, {
+    return this.withTimeout(this.http.get<ProgressAttemptResponse[]>(`${this.basePath}/attempts`, {
       params,
       withCredentials: true,
-    });
+    }));
+  }
+
+  private withTimeout<T>(request: Observable<T>): Observable<T> {
+    return request.pipe(timeout({ first: UserProgressApiService.requestTimeoutMs }));
   }
 }
