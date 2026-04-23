@@ -131,6 +131,59 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
     }
 
     [Fact]
+    public async Task Login_WithForwardedForHeader_ShouldPersistOriginalClientIp()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+
+        using var client = _fixture.CreateClient();
+
+        var email = $"forwarded-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+
+        var register = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/register", new
+        {
+            Email = email,
+            Password = password
+        });
+        register.IsSuccessStatusCode.ShouldBeTrue();
+
+        var confirmationEmail = _fixture.EmailSender.FindLastBySubjectContains("Confirm your WriteFluency email");
+        confirmationEmail.ShouldNotBeNull();
+        confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
+
+        var confirmUrl = BuildUsersConfirmEmailUrlFromWebappLink(confirmationEmail.HtmlBody);
+        var confirm = await client.GetAsync(confirmUrl);
+        confirm.IsSuccessStatusCode.ShouldBeTrue();
+
+        const string forwardedClientIp = "203.0.113.24";
+        using var loginRequest = new HttpRequestMessage(HttpMethod.Post, "/users/auth/login?useCookies=true")
+        {
+            Content = JsonContent.Create(new
+            {
+                Email = email,
+                Password = password
+            })
+        };
+        loginRequest.Headers.TryAddWithoutValidation("Origin", "http://localhost:4200");
+        loginRequest.Headers.TryAddWithoutValidation("X-Forwarded-For", $"{forwardedClientIp}, 172.69.138.69");
+
+        var login = await client.SendAsync(loginRequest);
+        login.IsSuccessStatusCode.ShouldBeTrue();
+
+        await AssertSingleLoginActivityAsync(
+            email,
+            expectedMethod: "password",
+            expectedProvider: null,
+            expectedGeoLookupStatus: "success",
+            expectedIpAddress: forwardedClientIp);
+    }
+
+    [Fact]
     public async Task Logout_WithCrossSiteOriginHeader_ShouldBeRejectedWithForbidden()
     {
         if (!CanRunIntegration())
@@ -587,7 +640,8 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         string email,
         string expectedMethod,
         string? expectedProvider,
-        string expectedGeoLookupStatus = "success")
+        string expectedGeoLookupStatus = "success",
+        string? expectedIpAddress = null)
     {
         var activity = await GetSingleLoginActivityByEmailAsync(email);
 
@@ -602,6 +656,10 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         }
 
         activity.GeoLookupStatus.ShouldBe(expectedGeoLookupStatus);
+        if (expectedIpAddress is not null)
+        {
+            activity.IpAddress.ShouldBe(expectedIpAddress);
+        }
 
         if (expectedGeoLookupStatus == "success")
         {

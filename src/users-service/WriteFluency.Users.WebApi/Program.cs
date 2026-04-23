@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Configuration;
 
@@ -17,6 +18,14 @@ builder.AddRedisClient(
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddUsersPersistence(builder.Configuration, builder.Environment.IsProduction());
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Kubernetes ingress proxy addresses are dynamic, so trust the forwarded chain and limit exposure at network/ingress level.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    options.ForwardLimit = null;
+});
 
 var configuredCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 var corsOrigins = configuredCorsOrigins
@@ -38,6 +47,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 var usersApi = app.MapGroup("/users");
 
