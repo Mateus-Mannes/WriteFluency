@@ -6,6 +6,12 @@
     }
   },
   "logging": {
+    "logLevel": {
+      "default": "Information",
+      "Function.UsersProgressHealth": "Warning",
+      "Microsoft.Azure.WebJobs.Hosting.OptionsLoggingService": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": false

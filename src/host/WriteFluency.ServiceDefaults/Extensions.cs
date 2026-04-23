@@ -50,6 +50,7 @@ public static class Extensions
     {
         // Keep Information+; suppress Verbose/Debug everywhere.
         builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
         var aiConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
         var resourceAttributes = new Dictionary<string, object>();
@@ -78,6 +79,7 @@ public static class Extensions
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics =>
             {
+                metrics.SetResourceBuilder(resourceBuilder);
                 metrics.AddView("http.client.open_connections", MetricStreamConfiguration.Drop);
                 metrics.AddView("http.client.active_requests", MetricStreamConfiguration.Drop);
                 metrics.AddView("dotnet.gc.last_collection.heap.fragmentation.size", MetricStreamConfiguration.Drop);

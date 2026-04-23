@@ -2,6 +2,7 @@ using System.Text.Json;
 using Azure.Core.Serialization;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
+using WriteFluency.UsersProgressService.Telemetry;
 using WriteFluency.UsersProgressService.Configuration;
 using WriteFluency.UsersProgressService.Progress;
 
@@ -15,6 +16,10 @@ var host = new HostBuilder()
     })
     .ConfigureServices((context, services) =>
     {
+        services.AddApplicationInsightsTelemetryWorkerService();
+        services.ConfigureFunctionsApplicationInsights();
+        services.AddApplicationInsightsTelemetryProcessor<HealthSuccessTelemetryProcessor>();
+
         services.Configure<WorkerOptions>(workerOptions =>
         {
             workerOptions.Serializer = new JsonObjectSerializer(new JsonSerializerOptions(JsonSerializerDefaults.Web));
