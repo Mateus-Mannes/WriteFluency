@@ -127,6 +127,10 @@ export class ExerciseProgressTrackingService {
         return;
       }
 
+      if (!this.authSessionStore.isAuthenticated()) {
+        return;
+      }
+
       this.userProgressApi.saveState(request)
         .pipe(catchError((error) => this.handleProgressApiError('save_state', request.exerciseId, error)))
         .subscribe();
@@ -162,9 +166,14 @@ export class ExerciseProgressTrackingService {
     const statusCode = this.extractStatusCode(error);
 
     if (statusCode === 401) {
+      const shouldShowSessionExpiredNotification =
+        this.authSessionStore.isAuthenticated()
+        && !this.authSessionStore.isLogoutInProgress();
+
+      this.clearPendingStateSave();
       this.authSessionStore.invalidateSession();
 
-      if (!this.hasShownSessionExpiredNotificationForCurrentTry) {
+      if (shouldShowSessionExpiredNotification && !this.hasShownSessionExpiredNotificationForCurrentTry) {
         this.hasShownSessionExpiredNotificationForCurrentTry = true;
         const notification = {
           kind: 'session_expired',
@@ -258,10 +267,6 @@ export class ExerciseProgressTrackingService {
       id: this.notificationCounter,
       ...notification,
     });
-
-    if (notification.kind === 'session_expired') {
-      return;
-    }
 
     this.notificationDismissTimer = setTimeout(() => {
       this.syncNotificationSignal.set(null);

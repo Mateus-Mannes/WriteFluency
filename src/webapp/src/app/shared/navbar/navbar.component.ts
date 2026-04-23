@@ -1,9 +1,9 @@
-import { Component, ChangeDetectionStrategy, Optional, signal } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Component, ChangeDetectionStrategy, Optional, PLATFORM_ID, inject, signal } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Insights } from '../../../telemetry/insights.service';
 import { AuthSessionStore } from '../../auth/services/auth-session.store';
 
@@ -23,6 +23,9 @@ import { AuthSessionStore } from '../../auth/services/auth-session.store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
+  private readonly router = inject(Router);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
   readonly isLogoutConfirmationOpen = signal(false);
 
   constructor(
@@ -56,12 +59,25 @@ export class NavbarComponent {
 
     if (!this.authSessionStore.state().isAuthenticated) {
       this.onNavClick('logout', '/auth/login');
-      this.redirectToLoginPage();
+      await this.redirectToLoginPage();
     }
   }
 
-  protected redirectToLoginPage(): void {
-    window.location.assign(this.getLoginRedirectPath());
+  protected async redirectToLoginPage(): Promise<void> {
+    const loginRedirectPath = this.getLoginRedirectPath();
+
+    try {
+      const navigationCompleted = await this.router.navigateByUrl(loginRedirectPath);
+      if (navigationCompleted || !this.isBrowser) {
+        return;
+      }
+    } catch {
+      if (!this.isBrowser) {
+        return;
+      }
+    }
+
+    window.location.assign(loginRedirectPath);
   }
 
   protected getLoginRedirectPath(): string {

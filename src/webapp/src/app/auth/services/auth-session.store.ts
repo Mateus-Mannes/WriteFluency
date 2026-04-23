@@ -39,10 +39,15 @@ export class AuthSessionStore {
   private validationInterval: ReturnType<typeof setInterval> | null = null;
   private hasRegisteredLifecycleListeners = false;
   private refreshRequestCounter = 0;
+  private logoutRequestInFlight = false;
 
   readonly state = this.stateSignal.asReadonly();
   readonly isAuthenticated = computed(() => this.stateSignal().isAuthenticated);
   readonly email = computed(() => this.stateSignal().email);
+
+  isLogoutInProgress(): boolean {
+    return this.logoutRequestInFlight;
+  }
 
   async initialize(): Promise<void> {
     if (!this.isBrowser) {
@@ -68,6 +73,7 @@ export class AuthSessionStore {
   }
 
   async logout(): Promise<void> {
+    this.logoutRequestInFlight = true;
     this.patchState({ isLoading: true, error: null });
 
     try {
@@ -78,6 +84,8 @@ export class AuthSessionStore {
         isLoading: false,
         error: 'Unable to sign out right now. Please try again.',
       });
+    } finally {
+      this.logoutRequestInFlight = false;
     }
   }
 

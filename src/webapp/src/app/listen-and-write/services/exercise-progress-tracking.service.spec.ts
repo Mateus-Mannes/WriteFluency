@@ -17,7 +17,7 @@ describe('ExerciseProgressTrackingService', () => {
   beforeEach(() => {
     authSessionStoreMock = jasmine.createSpyObj<AuthSessionStore>(
       'AuthSessionStore',
-      ['isAuthenticated', 'invalidateSession'],
+      ['isAuthenticated', 'invalidateSession', 'isLogoutInProgress'],
     );
     userProgressApiMock = jasmine.createSpyObj<UserProgressApiService>(
       'UserProgressApiService',
@@ -30,6 +30,7 @@ describe('ExerciseProgressTrackingService', () => {
     insightsMock = jasmine.createSpyObj<Insights>('Insights', ['trackEvent', 'trackException']);
 
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.isLogoutInProgress.and.returnValue(false);
     exerciseSessionTrackingMock.hasActiveSession.and.returnValue(true);
     exerciseSessionTrackingMock.getCurrentSessionId.and.returnValue('session-123');
     exerciseSessionTrackingMock.getCurrentOperationId.and.returnValue('operation-456');
@@ -141,20 +142,40 @@ describe('ExerciseProgressTrackingService', () => {
     );
   });
 
-  it('should keep session-expired notification visible until user dismisses it', fakeAsync(() => {
+  it('should auto-dismiss session-expired notification after 10 seconds', fakeAsync(() => {
     userProgressApiMock.start.and.returnValue(throwError(() =>
       new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' })));
 
     service.trackStart({ id: 5, title: 'Exercise 5' } as any);
     tick(11000);
 
-    expect(service.syncNotification()).toEqual(jasmine.objectContaining({
-      kind: 'session_expired',
-    }));
-
-    service.dismissSyncNotification();
     expect(service.syncNotification()).toBeNull();
   }));
+
+  it('should not show session-expired notification when user was already logged out', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValues(true, false);
+    userProgressApiMock.start.and.returnValue(throwError(() =>
+      new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' })));
+
+    service.trackStart({ id: 5, title: 'Exercise 5' } as any);
+
+    expect(authSessionStoreMock.invalidateSession).toHaveBeenCalled();
+    expect(service.syncNotification()).toBeNull();
+    expect(insightsMock.trackException).not.toHaveBeenCalled();
+  });
+
+  it('should not show session-expired notification while logout is in progress', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.isLogoutInProgress.and.returnValue(true);
+    userProgressApiMock.start.and.returnValue(throwError(() =>
+      new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' })));
+
+    service.trackStart({ id: 5, title: 'Exercise 5' } as any);
+
+    expect(authSessionStoreMock.invalidateSession).toHaveBeenCalled();
+    expect(service.syncNotification()).toBeNull();
+    expect(insightsMock.trackException).not.toHaveBeenCalled();
+  });
 
   it('should handle non-401 errors with warning notification and telemetry', () => {
     userProgressApiMock.complete.and.returnValue(throwError(() =>

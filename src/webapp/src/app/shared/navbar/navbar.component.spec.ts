@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthSessionState } from '../../auth/models/auth-session.model';
 
@@ -12,6 +14,7 @@ describe('NavbarComponent', () => {
   let fixture: ComponentFixture<NavbarComponent>;
   let authSessionStoreMock: AuthSessionStore;
   let logoutSpy: jasmine.Spy;
+  let router: Router;
   let authState: ReturnType<typeof signal<AuthSessionState>>;
   let isAuthenticatedSignal: ReturnType<typeof signal<boolean>>;
 
@@ -47,6 +50,7 @@ describe('NavbarComponent', () => {
     await TestBed.configureTestingModule({
       imports: [NavbarComponent],
       providers: [
+        provideRouter([]),
         { provide: AuthSessionStore, useValue: authSessionStoreMock },
         {
           provide: ActivatedRoute,
@@ -60,6 +64,7 @@ describe('NavbarComponent', () => {
 
     fixture = TestBed.createComponent(NavbarComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
@@ -87,15 +92,12 @@ describe('NavbarComponent', () => {
   it('should call logout and redirect when confirmation is accepted', async () => {
     component.onLogout();
 
-    const redirectSpy = spyOn(
-      component as unknown as { redirectToLoginPage: () => void },
-      'redirectToLoginPage'
-    );
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
 
     await component.confirmLogout();
 
     expect(logoutSpy).toHaveBeenCalled();
-    expect(redirectSpy).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith('/auth/login');
     expect(component.isLogoutConfirmationOpen()).toBeFalse();
   });
 
@@ -109,15 +111,12 @@ describe('NavbarComponent', () => {
 
     component.onLogout();
 
-    const redirectSpy = spyOn(
-      component as unknown as { redirectToLoginPage: () => void },
-      'redirectToLoginPage'
-    );
+    const navigateSpy = spyOn(router, 'navigateByUrl').and.resolveTo(true);
 
     await component.confirmLogout();
 
     expect(logoutSpy).toHaveBeenCalled();
-    expect(redirectSpy).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   it('should use relative login redirect path', () => {
