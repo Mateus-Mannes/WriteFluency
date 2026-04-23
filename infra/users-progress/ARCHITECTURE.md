@@ -14,9 +14,7 @@ This document explains how the `users-progress` infrastructure works in Azure, i
 
 - `Function App (East US)` and `Function App (Southeast Asia)`
 - `Flex Consumption plan` per region
-- `VNet` per region with:
-  - Function integration subnet (`Microsoft.AzureCosmosDB` service endpoint)
-  - Reserved `cosmos-private-endpoint` subnet kept for migration compatibility (no new PE dependencies)
+- `VNet` per region with Function integration subnet (`Microsoft.AzureCosmosDB` service endpoint)
 - Cosmos network ACL (`Selected networks`) allowing only the Function integration subnets
 - `Traffic Manager profile` with health probe on `/health`
 - `Cosmos DB account` with multi-region + automatic failover + multiple write locations

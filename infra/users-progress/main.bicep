@@ -77,18 +77,6 @@ param eastUsFunctionSubnetPrefix string = '10.60.1.0/24'
 @description('Southeast Asia Flex Function integration subnet CIDR.')
 param southeastAsiaFunctionSubnetPrefix string = '10.61.1.0/24'
 
-@description('East US reserved subnet name previously used by Cosmos private endpoints.')
-param eastUsCosmosPrivateEndpointSubnetName string = 'cosmos-private-endpoint'
-
-@description('Southeast Asia reserved subnet name previously used by Cosmos private endpoints.')
-param southeastAsiaCosmosPrivateEndpointSubnetName string = 'cosmos-private-endpoint'
-
-@description('East US reserved subnet CIDR previously used by Cosmos private endpoints.')
-param eastUsCosmosPrivateEndpointSubnetPrefix string = '10.60.2.0/24'
-
-@description('Southeast Asia reserved subnet CIDR previously used by Cosmos private endpoints.')
-param southeastAsiaCosmosPrivateEndpointSubnetPrefix string = '10.61.2.0/24'
-
 @description('Cosmos DB account name used by users-progress-service.')
 param cosmosAccountName string
 
@@ -223,13 +211,6 @@ resource vnetEastUs 'Microsoft.Network/virtualNetworks@2024-05-01' = {
           ]
         }
       }
-      {
-        name: eastUsCosmosPrivateEndpointSubnetName
-        properties: {
-          addressPrefix: eastUsCosmosPrivateEndpointSubnetPrefix
-          privateEndpointNetworkPolicies: 'Disabled'
-        }
-      }
     ]
   }
 }
@@ -262,13 +243,6 @@ resource vnetSoutheastAsia 'Microsoft.Network/virtualNetworks@2024-05-01' = {
               }
             }
           ]
-        }
-      }
-      {
-        name: southeastAsiaCosmosPrivateEndpointSubnetName
-        properties: {
-          addressPrefix: southeastAsiaCosmosPrivateEndpointSubnetPrefix
-          privateEndpointNetworkPolicies: 'Disabled'
         }
       }
     ]
