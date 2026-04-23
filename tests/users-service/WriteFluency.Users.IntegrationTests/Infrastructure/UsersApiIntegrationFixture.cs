@@ -16,6 +16,8 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
 
     public TestEmailSender EmailSender { get; } = new();
 
+    public TestingLoginGeoLookupService LoginGeoLookupService { get; } = new();
+
     public bool IsAvailable => Factory is not null;
 
     public string? UnavailableReason { get; private set; }
@@ -43,7 +45,8 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
             Factory = new UsersApiWebApplicationFactory(
                 _postgres.GetConnectionString(),
                 _redis.GetConnectionString(),
-                EmailSender);
+                EmailSender,
+                LoginGeoLookupService);
 
             await Factory.ResetStateAsync();
         }
@@ -61,6 +64,7 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
         }
 
         EmailSender.Clear();
+        LoginGeoLookupService.Reset();
         await _redisConnection!.GetDatabase().ExecuteAsync("FLUSHDB");
     }
 

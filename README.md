@@ -343,3 +343,31 @@ Configure these redirect/callback URLs in provider consoles:
 ### Future frontend integration contract
 
 Frontend can reuse the same start endpoint by passing an allowlisted frontend callback URL in `returnUrl` (for example `http://localhost:4200/auth/callback`).
+
+## Users Service (US5) Login Location Tracking
+
+Successful logins are audited in `users-service` and persisted to `UserLoginActivities` with:
+
+- auth method/provider
+- client IP address
+- geo lookup status
+- country/city (best effort from IP)
+
+### Configuration
+
+`src/users-service/WriteFluency.Users.WebApi/appsettings.json` includes:
+
+```json
+"LoginLocation": {
+  "Enabled": true,
+  "GeoLite2CityBlobUri": "https://wfusersdpprod01.blob.core.windows.net/geolite/GeoLite2-City.mmdb",
+  "BlobMetadataRefreshMinutes": 60,
+  "GeoLite2CityDbPath": "/app/data/GeoLite2-City.mmdb"
+}
+```
+
+### Deployment requirement
+
+- Assign the users API identity `Storage Blob Data Reader` on the `geolite` container.
+- Keep the latest `GeoLite2-City.mmdb` uploaded at the configured blob URI.
+- The API checks blob metadata periodically and reloads the in-memory reader when the blob ETag changes.

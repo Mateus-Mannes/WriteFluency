@@ -2,9 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.WebUtilities;
 using Shouldly;
 using WriteFluency.Users.IntegrationTests.Infrastructure;
+using WriteFluency.Users.WebApi.Data;
 
 namespace WriteFluency.Users.IntegrationTests.Authentication;
 
@@ -117,6 +120,8 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             DateTimeOffset.TryParse(issuedAtUtc.GetString(), out _).ShouldBeTrue();
             DateTimeOffset.TryParse(expiresAtUtc.GetString(), out _).ShouldBeTrue();
         }
+
+        await AssertSingleLoginActivityAsync(email, expectedMethod: "password", expectedProvider: null);
 
         var logout = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/logout", new { });
         logout.IsSuccessStatusCode.ShouldBeTrue();
@@ -240,6 +245,8 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         sessionDoc.RootElement.GetProperty("isAuthenticated").GetBoolean().ShouldBeTrue();
         sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
         sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
+
+        await AssertSingleLoginActivityAsync(email, expectedMethod: "otp", expectedProvider: null);
     }
 
     [Fact]
@@ -333,6 +340,35 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         sessionDoc.RootElement.GetProperty("isAuthenticated").GetBoolean().ShouldBeTrue();
         sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
         sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
+
+        await AssertSingleLoginActivityAsync(email, expectedMethod: "external", expectedProvider: provider);
+    }
+
+    [Fact]
+    public async Task PasswordLogin_ShouldSucceed_WhenGeoLookupFails_AndPersistErrorStatus()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        _fixture.LoginGeoLookupService.ReturnError = true;
+
+        using var client = _fixture.CreateClient();
+        var email = $"geo-failure-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var session = await client.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+
+        await AssertSingleLoginActivityAsync(
+            email,
+            expectedMethod: "password",
+            expectedProvider: null,
+            expectedGeoLookupStatus: "error");
     }
 
     [Fact]
@@ -545,5 +581,55 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         request.Headers.TryAddWithoutValidation("Origin", "http://localhost:4200");
 
         return await client.SendAsync(request);
+    }
+
+    private async Task AssertSingleLoginActivityAsync(
+        string email,
+        string expectedMethod,
+        string? expectedProvider,
+        string expectedGeoLookupStatus = "success")
+    {
+        var activity = await GetSingleLoginActivityByEmailAsync(email);
+
+        activity.AuthMethod.ShouldBe(expectedMethod);
+        if (expectedProvider is null)
+        {
+            activity.AuthProvider.ShouldBeNull();
+        }
+        else
+        {
+            activity.AuthProvider.ShouldBe(expectedProvider);
+        }
+
+        activity.GeoLookupStatus.ShouldBe(expectedGeoLookupStatus);
+
+        if (expectedGeoLookupStatus == "success")
+        {
+            activity.CountryIsoCode.ShouldBe("US");
+            activity.CountryName.ShouldBe("United States");
+            activity.City.ShouldBe("Seattle");
+            return;
+        }
+
+        activity.CountryIsoCode.ShouldBeNull();
+        activity.CountryName.ShouldBeNull();
+        activity.City.ShouldBeNull();
+    }
+
+    private async Task<UserLoginActivity> GetSingleLoginActivityByEmailAsync(string email)
+    {
+        _fixture.Factory.ShouldNotBeNull();
+
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+
+        var user = await db.Users.SingleAsync(u => u.Email == email);
+        var activities = await db.UserLoginActivities
+            .Where(a => a.UserId == user.Id)
+            .OrderBy(a => a.OccurredAtUtc)
+            .ToListAsync();
+
+        activities.Count.ShouldBe(1);
+        return activities[0];
     }
 }

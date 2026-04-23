@@ -16,15 +16,18 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
     private readonly string _postgresConnectionString;
     private readonly string _redisConnectionString;
     private readonly TestEmailSender _testEmailSender;
+    private readonly TestingLoginGeoLookupService _loginGeoLookupService;
 
     public UsersApiWebApplicationFactory(
         string postgresConnectionString,
         string redisConnectionString,
-        TestEmailSender testEmailSender)
+        TestEmailSender testEmailSender,
+        TestingLoginGeoLookupService loginGeoLookupService)
     {
         _postgresConnectionString = postgresConnectionString;
         _redisConnectionString = redisConnectionString;
         _testEmailSender = testEmailSender;
+        _loginGeoLookupService = loginGeoLookupService;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -74,6 +77,9 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
 
             services.RemoveAll<IExternalLoginInfoResolver>();
             services.AddScoped<IExternalLoginInfoResolver, TestingExternalLoginInfoResolver>();
+
+            services.RemoveAll<ILoginGeoLookupService>();
+            services.AddSingleton<ILoginGeoLookupService>(_loginGeoLookupService);
         });
     }
 

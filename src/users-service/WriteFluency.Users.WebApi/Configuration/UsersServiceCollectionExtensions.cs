@@ -77,6 +77,20 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => !isProduction || options.IsConfigured, "SharedDataProtection BlobUri and KeyIdentifier are required in production")
             .ValidateOnStart();
 
+        services.AddOptions<LoginLocationOptions>()
+            .Bind(configuration.GetSection(LoginLocationOptions.SectionName))
+            .Validate(options =>
+                    !options.Enabled
+                    || !string.IsNullOrWhiteSpace(options.GeoLite2CityDbPath)
+                    || !string.IsNullOrWhiteSpace(options.GeoLite2CityBlobUri),
+                "Either LoginLocation:GeoLite2CityDbPath or LoginLocation:GeoLite2CityBlobUri must be configured when login location tracking is enabled")
+            .Validate(options =>
+                    string.IsNullOrWhiteSpace(options.GeoLite2CityBlobUri)
+                    || IsValidGeoLite2BlobUri(options.GeoLite2CityBlobUri),
+                "LoginLocation:GeoLite2CityBlobUri must be an absolute HTTPS URI when provided")
+            .Validate(options => options.BlobMetadataRefreshMinutes > 0, "LoginLocation:BlobMetadataRefreshMinutes must be greater than zero")
+            .ValidateOnStart();
+
         var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
             ?? throw new InvalidOperationException("Authentication configuration section is required.");
         var sharedAuthCookieOptions = configuration.GetSection(SharedAuthCookieOptions.SectionName).Get<SharedAuthCookieOptions>()
@@ -126,6 +140,19 @@ public static class UsersServiceCollectionExtensions
 
                     context.Response.Redirect(context.RedirectUri);
                     return Task.CompletedTask;
+                },
+                OnSignedIn = async context =>
+                {
+                    var recorder = context.HttpContext.RequestServices.GetService<ILoginActivityRecorder>();
+                    if (recorder is null)
+                    {
+                        return;
+                    }
+
+                    await recorder.RecordIfApplicableAsync(
+                        context.HttpContext,
+                        context.Principal,
+                        context.HttpContext.RequestAborted);
                 }
             };
         });
@@ -144,6 +171,10 @@ public static class UsersServiceCollectionExtensions
         services.AddScoped<PasswordlessOtpStore>();
         services.AddScoped<PasswordlessOtpService>();
         services.AddScoped<IExternalLoginInfoResolver, DefaultExternalLoginInfoResolver>();
+        services.AddScoped<ILoginActivityRecorder, LoginActivityRecorder>();
+
+        services.AddSingleton<ILoginGeoLocationDataSource, MaxMindGeoLocationDataSource>();
+        services.AddSingleton<ILoginGeoLookupService, LoginGeoLookupService>();
 
         services.AddSingleton<IAppEmailSender, SmtpAppEmailSender>();
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
@@ -265,6 +296,16 @@ public static class UsersServiceCollectionExtensions
     private static bool IsApiRequest(HttpRequest request)
     {
         return request.Path.StartsWithSegments("/users", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsValidGeoLite2BlobUri(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        return uri.Scheme == Uri.UriSchemeHttps;
     }
 
     private static void ConfigureSharedDataProtection(

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Shouldly;
+using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Configuration;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Options;
@@ -87,6 +88,12 @@ public class UsersServiceCollectionExtensionsTests
 
         var externalAuthOptions = scope.ServiceProvider.GetRequiredService<IOptions<ExternalAuthenticationOptions>>().Value;
         externalAuthOptions.ConfirmationRedirectUrl.ShouldBe("https://writefluency.local/auth/confirm-email");
+
+        var loginLocationOptions = scope.ServiceProvider.GetRequiredService<IOptions<LoginLocationOptions>>().Value;
+        loginLocationOptions.Enabled.ShouldBeTrue();
+        loginLocationOptions.GeoLite2CityBlobUri.ShouldBe("https://wfusersdpprod01.blob.core.windows.net/geolite/GeoLite2-City.mmdb");
+        loginLocationOptions.BlobMetadataRefreshMinutes.ShouldBe(60);
+        loginLocationOptions.GeoLite2CityDbPath.ShouldBe("/tmp/GeoLite2-City.mmdb");
     }
 
     [Fact]
@@ -123,6 +130,20 @@ public class UsersServiceCollectionExtensionsTests
         (await schemeProvider.GetSchemeAsync(MicrosoftAccountDefaults.AuthenticationScheme)).ShouldNotBeNull();
     }
 
+    [Fact]
+    public void AddUsersPersistence_ShouldRegisterLoginLocationServices()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(BuildConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        scope.ServiceProvider.GetRequiredService<ILoginGeoLookupService>().ShouldNotBeNull();
+        scope.ServiceProvider.GetRequiredService<ILoginActivityRecorder>().ShouldNotBeNull();
+    }
+
     private static IConfiguration BuildConfiguration(
         string? connectionString = null,
         bool enableExternalProviders = true)
@@ -146,6 +167,10 @@ public class UsersServiceCollectionExtensionsTests
             ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
             ["PasswordlessOtp:RequestWindowMinutes"] = "15",
             ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30",
+            ["LoginLocation:Enabled"] = "true",
+            ["LoginLocation:GeoLite2CityBlobUri"] = "https://wfusersdpprod01.blob.core.windows.net/geolite/GeoLite2-City.mmdb",
+            ["LoginLocation:BlobMetadataRefreshMinutes"] = "60",
+            ["LoginLocation:GeoLite2CityDbPath"] = "/tmp/GeoLite2-City.mmdb",
             ["SharedAuthCookie:Scheme"] = "Identity.Application",
             ["SharedAuthCookie:CookieName"] = ".AspNetCore.Identity.Application",
             ["SharedAuthCookie:CookieDomain"] = ".writefluency.com",
