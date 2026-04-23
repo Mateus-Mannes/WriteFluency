@@ -41,6 +41,20 @@ param backupRetentionIntervalInHours int = 8
 ])
 param backupStorageRedundancy string = 'Geo'
 
+@description('Public network access mode for Cosmos DB.')
+@allowed([
+  'Enabled'
+  'Disabled'
+  'SecuredByPerimeter'
+])
+param publicNetworkAccess string = 'Enabled'
+
+@description('Subnet resource IDs allowed to access Cosmos DB through virtual network service endpoints.')
+param allowedSubnetResourceIds array = []
+
+@description('Public IP ranges allowed to access Cosmos DB. Leave empty to block direct public IP access.')
+param allowedIpRanges array = []
+
 @description('Resource ID of the Log Analytics workspace receiving Cosmos diagnostic logs. Leave empty to skip diagnostics.')
 param logAnalyticsWorkspaceResourceId string = ''
 
@@ -137,8 +151,16 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-09-15' = {
     enableFreeTier: enableFreeTier
     disableLocalAuth: true
     disableKeyBasedMetadataWriteAccess: true
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: publicNetworkAccess
     networkAclBypass: 'None'
+    isVirtualNetworkFilterEnabled: length(allowedSubnetResourceIds) > 0
+    virtualNetworkRules: [for subnetId in allowedSubnetResourceIds: {
+      id: subnetId
+      ignoreMissingVNetServiceEndpoint: false
+    }]
+    ipRules: [for ipRange in allowedIpRanges: {
+      ipAddressOrRange: ipRange
+    }]
   }
 }
 

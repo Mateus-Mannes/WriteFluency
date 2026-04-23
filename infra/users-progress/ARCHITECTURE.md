@@ -1,6 +1,6 @@
 # Users Progress Infra Architecture
 
-This document explains how the `users-progress` infrastructure works in Azure, including multi-region routing, private Cosmos DB access, and shared cookie/data-protection dependencies.
+This document explains how the `users-progress` infrastructure works in Azure, including multi-region routing, Cosmos DB network isolation with service endpoints, and shared cookie/data-protection dependencies.
 
 ## Scope
 
@@ -8,17 +8,16 @@ This document explains how the `users-progress` infrastructure works in Azure, i
 - Regions: `East US` and `Southeast Asia`
 - Global entry point: Azure Traffic Manager (`Performance` routing)
 - Data plane: Azure Cosmos DB (SQL API, multi-region)
-- Network model: private Cosmos access through Private Endpoints + Private DNS
+- Network model: Cosmos restricted to selected VNet subnets through service endpoints
 
 ## High-level Components
 
 - `Function App (East US)` and `Function App (Southeast Asia)`
 - `Flex Consumption plan` per region
 - `VNet` per region with:
-  - Function integration subnet
-  - Cosmos private endpoint subnet
-- `Private Endpoint` per region for Cosmos SQL (`Sql` groupId)
-- `Private DNS zone` `privatelink.documents.azure.com` linked to VNets
+  - Function integration subnet (`Microsoft.AzureCosmosDB` service endpoint)
+  - Reserved `cosmos-private-endpoint` subnet kept for migration compatibility (no new PE dependencies)
+- Cosmos network ACL (`Selected networks`) allowing only the Function integration subnets
 - `Traffic Manager profile` with health probe on `/health`
 - `Cosmos DB account` with multi-region + automatic failover + multiple write locations
 - Shared Data Protection resources:
@@ -34,19 +33,13 @@ flowchart TB
 
   subgraph eus[East US]
     fe[Function App\nwf-users-progress-eus-prod]
-    veus[VNet\nwf-users-progress-vnet-eus]
-    peE[Cosmos Private Endpoint\nwf-users-progress-cosmos-pe-eus]
+    veus[VNet/Subnet\nwf-users-progress-vnet-eus/functions-integration]
   end
 
   subgraph sea[Southeast Asia]
     fs[Function App\nwf-users-progress-sea-prod]
-    vsea[VNet\nwf-users-progress-vnet-sea]
-    peS[Cosmos Private Endpoint\nwf-users-progress-cosmos-pe-sea]
+    vsea[VNet/Subnet\nwf-users-progress-vnet-sea/functions-integration]
   end
-
-  dnsE[Private DNS Zone RG\nwf-users-progress-dns-eus]
-  dnsS[Private DNS Zone RG\nwf-users-progress-dns-sea]
-  pzone[privatelink.documents.azure.com]
 
   cosmos[(Cosmos DB Account\nwritefluencyusersprodcosmos)]
   dpblob[(Shared DP Blob)]
@@ -56,13 +49,8 @@ flowchart TB
   tm --> fe
   tm --> fs
 
-  fe --> veus --> peE --> cosmos
-  fs --> vsea --> peS --> cosmos
-
-  dnsE --> pzone
-  dnsS --> pzone
-  veus --- dnsE
-  vsea --- dnsS
+  fe --> veus --> cosmos
+  fs --> vsea --> cosmos
 
   fe --> dpblob
   fe --> dpkv
@@ -78,16 +66,13 @@ sequenceDiagram
   participant C as Client
   participant TM as Traffic Manager
   participant F as Regional Function App
-  participant DNS as Private DNS (privatelink.documents.azure.com)
-  participant PE as Regional Cosmos Private Endpoint
+  participant VNET as Function integration subnet (service endpoint enabled)
   participant COS as Cosmos DB Account
 
   C->>TM: HTTPS request (users-progress endpoint)
   TM->>F: Route by Performance + health (/health)
-  F->>DNS: Resolve Cosmos endpoint (documents.azure.com)
-  DNS-->>F: Private IP for regional PE
-  F->>PE: Connect privately to Cosmos SQL API
-  PE->>COS: Forward to Cosmos backend
+  F->>VNET: Outbound via regional VNet integration
+  VNET->>COS: Access via Microsoft.AzureCosmosDB service endpoint + subnet ACL
   COS-->>F: Query/Upsert response
   F-->>C: API response
 ```
@@ -98,15 +83,17 @@ sequenceDiagram
 flowchart LR
   A[East US Function healthy?] -->|Yes| B[Traffic Manager routes to East US]
   A -->|No| C[Traffic Manager routes to Southeast Asia]
-  B --> D[Function accesses Cosmos via EUS private endpoint]
-  C --> E[Function accesses Cosmos via SEA private endpoint]
+  B --> D[Function accesses Cosmos via EUS integration subnet]
+  C --> E[Function accesses Cosmos via SEA integration subnet]
   D --> F[Cosmos multi-region account]
   E --> F
 ```
 
 ## Security and Identity Model
 
-- Cosmos public access is disabled (`publicNetworkAccess: Disabled` in Cosmos infra).
+- Cosmos keeps `publicNetworkAccess: Enabled`, but access is restricted by network ACL:
+  - Only selected integration subnets are allowed (`virtualNetworkRules` + `isVirtualNetworkFilterEnabled`).
+  - Optional explicit `ipRules` can be maintained for operator access.
 - Functions authenticate to Cosmos using `DefaultAzureCredential` + managed identity.
 - Cosmos data-plane access is granted using SQL role assignments for each Function identity.
 - Shared cookie decryption uses Data Protection:
@@ -231,7 +218,8 @@ Container names are namespaced at runtime (`_prod` or `_local`) by `Cosmos__Name
 - Client to Function:
   - Public HTTPS through Traffic Manager.
 - Function to Cosmos:
-  - Private network path only (VNet -> Private Endpoint -> Cosmos).
+  - VNet integration subnet with `Microsoft.AzureCosmosDB` service endpoint.
+  - Cosmos accepts only selected subnets (network ACL).
 - Function to Data Protection Blob/Key Vault:
   - Azure RBAC with managed identity.
 - Region selection:
@@ -239,9 +227,9 @@ Container names are namespaced at runtime (`_prod` or `_local`) by `Cosmos__Name
 
 ## Common Failure Modes
 
-- `InvalidResourceReference` on private endpoint subnet:
-  - Usually creation-order race between VNet/subnet and PE.
-  - Mitigated by explicit `dependsOn` from PE to VNet.
+- `403 Forbidden` from Cosmos after network changes:
+  - Usually missing subnet ACL in Cosmos, missing service endpoint on subnet, or propagation delay.
+  - Validate both subnets are in `virtualNetworkRules` and wait for network rule propagation.
 - `Insufficient privileges` in deployment pipeline:
   - Deploy principal missing RBAC (especially for role assignments).
 - Cookie auth mismatch:
@@ -250,5 +238,4 @@ Container names are namespaced at runtime (`_prod` or `_local`) by `Cosmos__Name
 ## IaC Files
 
 - Main infra template: `infra/users-progress/main.bicep`
-- Private DNS module: `infra/users-progress/modules/private-dns-zone.bicep`
 - Cosmos baseline infra: `infra/cosmos/main.bicep`

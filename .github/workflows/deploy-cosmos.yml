@@ -30,6 +30,13 @@ env:
   COSMOS_DATABASE_THROUGHPUT: '500'
   COSMOS_TOTAL_THROUGHPUT_LIMIT: '1000'
   COSMOS_ENABLE_FREE_TIER: 'true'
+  COSMOS_PUBLIC_NETWORK_ACCESS: Enabled
+  COSMOS_ALLOWED_SUBNET_IDS_JSON: ''
+  COSMOS_NETWORK_RESOURCE_GROUP: wf
+  COSMOS_EASTUS_VNET_NAME: wf-users-progress-vnet-eus
+  COSMOS_EASTUS_FUNCTION_SUBNET_NAME: functions-integration
+  COSMOS_SEASIA_VNET_NAME: wf-users-progress-vnet-sea
+  COSMOS_SEASIA_FUNCTION_SUBNET_NAME: functions-integration
 
   # Optional: leave empty to skip diagnostics/alerts/budget wiring
   COSMOS_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID: '/subscriptions/342169c4-924a-4687-a02e-9252b307da27/resourceGroups/wf/providers/Microsoft.OperationalInsights/workspaces/wf-logs-analytics-work-space'
@@ -73,6 +80,25 @@ jobs:
     - name: Deploy Cosmos infrastructure
       run: |
         deployment_name="cosmos-progress-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+        network_resource_group="${COSMOS_NETWORK_RESOURCE_GROUP:-$COSMOS_RESOURCE_GROUP}"
+        eastus_subnet_id="/subscriptions/${AZURE_DEPLOY_SUBSCRIPTION_ID}/resourceGroups/${network_resource_group}/providers/Microsoft.Network/virtualNetworks/${COSMOS_EASTUS_VNET_NAME:-wf-users-progress-vnet-eus}/subnets/${COSMOS_EASTUS_FUNCTION_SUBNET_NAME:-functions-integration}"
+        seasia_subnet_id="/subscriptions/${AZURE_DEPLOY_SUBSCRIPTION_ID}/resourceGroups/${network_resource_group}/providers/Microsoft.Network/virtualNetworks/${COSMOS_SEASIA_VNET_NAME:-wf-users-progress-vnet-sea}/subnets/${COSMOS_SEASIA_FUNCTION_SUBNET_NAME:-functions-integration}"
+
+        if [ -n "${COSMOS_ALLOWED_SUBNET_IDS_JSON:-}" ]; then
+          allowed_subnet_ids_json="$COSMOS_ALLOWED_SUBNET_IDS_JSON"
+        else
+          if ! az network vnet subnet show --ids "$eastus_subnet_id" --query id --output tsv >/dev/null 2>&1; then
+            echo "Missing subnet $eastus_subnet_id. Deploy users-progress infra first or set COSMOS_ALLOWED_SUBNET_IDS_JSON." >&2
+            exit 1
+          fi
+
+          if ! az network vnet subnet show --ids "$seasia_subnet_id" --query id --output tsv >/dev/null 2>&1; then
+            echo "Missing subnet $seasia_subnet_id. Deploy users-progress infra first or set COSMOS_ALLOWED_SUBNET_IDS_JSON." >&2
+            exit 1
+          fi
+
+          allowed_subnet_ids_json="[\"${eastus_subnet_id}\",\"${seasia_subnet_id}\"]"
+        fi
 
         az deployment group create \
           --name "$deployment_name" \
@@ -84,6 +110,9 @@ jobs:
             databaseThroughput="${COSMOS_DATABASE_THROUGHPUT:-500}" \
             totalThroughputLimit="${COSMOS_TOTAL_THROUGHPUT_LIMIT:-1000}" \
             enableFreeTier="${COSMOS_ENABLE_FREE_TIER:-true}" \
+            publicNetworkAccess="${COSMOS_PUBLIC_NETWORK_ACCESS:-Enabled}" \
+            allowedSubnetResourceIds="$allowed_subnet_ids_json" \
+            allowedIpRanges="[]" \
             logAnalyticsWorkspaceResourceId="$COSMOS_LOG_ANALYTICS_WORKSPACE_RESOURCE_ID" \
             alertEmailAddress="$COSMOS_ALERT_EMAIL" \
             budgetNotificationEmail="$COSMOS_BUDGET_EMAIL" \

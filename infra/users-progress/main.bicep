@@ -77,23 +77,17 @@ param eastUsFunctionSubnetPrefix string = '10.60.1.0/24'
 @description('Southeast Asia Flex Function integration subnet CIDR.')
 param southeastAsiaFunctionSubnetPrefix string = '10.61.1.0/24'
 
-@description('East US Cosmos private endpoint subnet name.')
+@description('East US reserved subnet name previously used by Cosmos private endpoints.')
 param eastUsCosmosPrivateEndpointSubnetName string = 'cosmos-private-endpoint'
 
-@description('Southeast Asia Cosmos private endpoint subnet name.')
+@description('Southeast Asia reserved subnet name previously used by Cosmos private endpoints.')
 param southeastAsiaCosmosPrivateEndpointSubnetName string = 'cosmos-private-endpoint'
 
-@description('East US Cosmos private endpoint subnet CIDR.')
+@description('East US reserved subnet CIDR previously used by Cosmos private endpoints.')
 param eastUsCosmosPrivateEndpointSubnetPrefix string = '10.60.2.0/24'
 
-@description('Southeast Asia Cosmos private endpoint subnet CIDR.')
+@description('Southeast Asia reserved subnet CIDR previously used by Cosmos private endpoints.')
 param southeastAsiaCosmosPrivateEndpointSubnetPrefix string = '10.61.2.0/24'
-
-@description('Resource group that hosts the East US private DNS zone for Cosmos private link.')
-param eastUsPrivateDnsResourceGroupName string = 'wf-users-progress-dns-eus'
-
-@description('Resource group that hosts the Southeast Asia private DNS zone for Cosmos private link.')
-param southeastAsiaPrivateDnsResourceGroupName string = 'wf-users-progress-dns-sea'
 
 @description('Cosmos DB account name used by users-progress-service.')
 param cosmosAccountName string
@@ -168,11 +162,8 @@ var storageBlobDataContributorRoleDefinitionResourceId = subscriptionResourceId(
 var storageQueueDataContributorRoleDefinitionResourceId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
 var storageTableDataContributorRoleDefinitionResourceId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
 var keyVaultCryptoUserRoleDefinitionResourceId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '12338af0-0e69-4776-bea7-57ae8d297424')
-var cosmosPrivateDnsZoneName = 'privatelink.documents.azure.com'
 var eastUsFunctionSubnetResourceId = resourceId('Microsoft.Network/virtualNetworks/subnets', eastUsVnetName, eastUsFunctionSubnetName)
 var southeastAsiaFunctionSubnetResourceId = resourceId('Microsoft.Network/virtualNetworks/subnets', southeastAsiaVnetName, southeastAsiaFunctionSubnetName)
-var eastUsCosmosPrivateEndpointSubnetResourceId = resourceId('Microsoft.Network/virtualNetworks/subnets', eastUsVnetName, eastUsCosmosPrivateEndpointSubnetName)
-var southeastAsiaCosmosPrivateEndpointSubnetResourceId = resourceId('Microsoft.Network/virtualNetworks/subnets', southeastAsiaVnetName, southeastAsiaCosmosPrivateEndpointSubnetName)
 
 resource flexPlanEastUs 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: '${namePrefix}-plan-eus'
@@ -217,6 +208,11 @@ resource vnetEastUs 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         name: eastUsFunctionSubnetName
         properties: {
           addressPrefix: eastUsFunctionSubnetPrefix
+          serviceEndpoints: [
+            {
+              service: 'Microsoft.AzureCosmosDB'
+            }
+          ]
           delegations: [
             {
               name: 'function-flex-delegation'
@@ -253,6 +249,11 @@ resource vnetSoutheastAsia 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         name: southeastAsiaFunctionSubnetName
         properties: {
           addressPrefix: southeastAsiaFunctionSubnetPrefix
+          serviceEndpoints: [
+            {
+              service: 'Microsoft.AzureCosmosDB'
+            }
+          ]
           delegations: [
             {
               name: 'function-flex-delegation'
@@ -271,28 +272,6 @@ resource vnetSoutheastAsia 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         }
       }
     ]
-  }
-}
-
-module cosmosPrivateDnsEastUs './modules/private-dns-zone.bicep' = {
-  name: '${namePrefix}-cosmos-dns-eus'
-  scope: resourceGroup(eastUsPrivateDnsResourceGroupName)
-  params: {
-    privateDnsZoneName: cosmosPrivateDnsZoneName
-    virtualNetworkResourceId: vnetEastUs.id
-    virtualNetworkLinkName: '${eastUsVnetName}-link'
-    tags: tags
-  }
-}
-
-module cosmosPrivateDnsSoutheastAsia './modules/private-dns-zone.bicep' = {
-  name: '${namePrefix}-cosmos-dns-sea'
-  scope: resourceGroup(southeastAsiaPrivateDnsResourceGroupName)
-  params: {
-    privateDnsZoneName: cosmosPrivateDnsZoneName
-    virtualNetworkResourceId: vnetSoutheastAsia.id
-    virtualNetworkLinkName: '${southeastAsiaVnetName}-link'
-    tags: tags
   }
 }
 
@@ -690,86 +669,6 @@ resource sharedDataProtectionKeyVaultAccessUsersApi 'Microsoft.Authorization/rol
 
 resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-09-15' existing = {
   name: cosmosAccountName
-}
-
-resource cosmosPrivateEndpointEastUs 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: '${namePrefix}-cosmos-pe-eus'
-  location: eastUsLocation
-  tags: tags
-  dependsOn: [
-    vnetEastUs
-  ]
-  properties: {
-    subnet: {
-      id: eastUsCosmosPrivateEndpointSubnetResourceId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'cosmos-sql'
-        properties: {
-          privateLinkServiceId: cosmosAccount.id
-          groupIds: [
-            'Sql'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-resource cosmosPrivateEndpointSoutheastAsia 'Microsoft.Network/privateEndpoints@2024-05-01' = {
-  name: '${namePrefix}-cosmos-pe-sea'
-  location: southeastAsiaLocation
-  tags: tags
-  dependsOn: [
-    vnetSoutheastAsia
-  ]
-  properties: {
-    subnet: {
-      id: southeastAsiaCosmosPrivateEndpointSubnetResourceId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'cosmos-sql'
-        properties: {
-          privateLinkServiceId: cosmosAccount.id
-          groupIds: [
-            'Sql'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-resource cosmosPrivateEndpointEastUsDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
-  parent: cosmosPrivateEndpointEastUs
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'cosmos-zone'
-        properties: {
-          privateDnsZoneId: cosmosPrivateDnsEastUs.outputs.privateDnsZoneId
-        }
-      }
-    ]
-  }
-}
-
-resource cosmosPrivateEndpointSoutheastAsiaDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
-  parent: cosmosPrivateEndpointSoutheastAsia
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'cosmos-zone'
-        properties: {
-          privateDnsZoneId: cosmosPrivateDnsSoutheastAsia.outputs.privateDnsZoneId
-        }
-      }
-    ]
-  }
 }
 
 resource cosmosRoleAssignmentEastUs 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-09-15' = {

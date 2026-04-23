@@ -41,16 +41,10 @@ env:
   USERS_PROGRESS_EASTUS_VNET_CIDR: 10.60.0.0/16
   USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_NAME: functions-integration
   USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_CIDR: 10.60.1.0/24
-  USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_NAME: cosmos-private-endpoint
-  USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_CIDR: 10.60.2.0/24
-  USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP: wf-users-progress-dns-eus
   USERS_PROGRESS_SEASIA_VNET_NAME: wf-users-progress-vnet-sea
   USERS_PROGRESS_SEASIA_VNET_CIDR: 10.61.0.0/16
   USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_NAME: functions-integration
   USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_CIDR: 10.61.1.0/24
-  USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_NAME: cosmos-private-endpoint
-  USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_CIDR: 10.61.2.0/24
-  USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP: wf-users-progress-dns-sea
   APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}
 
   Cosmos__Endpoint: https://writefluencyusersprodcosmos.documents.azure.com:443/
@@ -89,9 +83,7 @@ jobs:
           Cosmos__Endpoint \
           APPLICATIONINSIGHTS_CONNECTION_STRING \
           SHARED_DP_STORAGE_ACCOUNT_NAME \
-          SHARED_DP_KEY_VAULT_NAME \
-          USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP \
-          USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP
+          SHARED_DP_KEY_VAULT_NAME
 
     - name: Azure login (OIDC)
       uses: azure/login@v2
@@ -106,31 +98,10 @@ jobs:
 
     - name: Ensure resource groups exist
       run: |
-        if [ "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" = "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" ]; then
-          echo "Strict-local DNS requires different resource groups for East US and Southeast Asia private DNS zones." >&2
-          echo "Set USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP and USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP to different values." >&2
-          exit 1
-        fi
-
         az group create \
           --name "$USERS_PROGRESS_RESOURCE_GROUP" \
           --location eastus \
           --output none
-
-        if [ "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" != "$USERS_PROGRESS_RESOURCE_GROUP" ]; then
-          az group create \
-            --name "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" \
-            --location eastus \
-            --output none
-        fi
-
-        if [ "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" != "$USERS_PROGRESS_RESOURCE_GROUP" ] \
-          && [ "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" != "${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" ]; then
-          az group create \
-            --name "${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" \
-            --location southeastasia \
-            --output none
-        fi
 
     - name: Deploy users-progress infrastructure
       run: |
@@ -171,16 +142,10 @@ jobs:
             eastUsVnetAddressPrefix="${USERS_PROGRESS_EASTUS_VNET_CIDR:-10.60.0.0/16}" \
             eastUsFunctionSubnetName="${USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_NAME:-functions-integration}" \
             eastUsFunctionSubnetPrefix="${USERS_PROGRESS_EASTUS_FUNCTION_SUBNET_CIDR:-10.60.1.0/24}" \
-            eastUsCosmosPrivateEndpointSubnetName="${USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_NAME:-cosmos-private-endpoint}" \
-            eastUsCosmosPrivateEndpointSubnetPrefix="${USERS_PROGRESS_EASTUS_COSMOS_PE_SUBNET_CIDR:-10.60.2.0/24}" \
-            eastUsPrivateDnsResourceGroupName="${USERS_PROGRESS_EASTUS_DNS_RESOURCE_GROUP}" \
             southeastAsiaVnetName="${USERS_PROGRESS_SEASIA_VNET_NAME:-wf-users-progress-vnet-sea}" \
             southeastAsiaVnetAddressPrefix="${USERS_PROGRESS_SEASIA_VNET_CIDR:-10.61.0.0/16}" \
             southeastAsiaFunctionSubnetName="${USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_NAME:-functions-integration}" \
             southeastAsiaFunctionSubnetPrefix="${USERS_PROGRESS_SEASIA_FUNCTION_SUBNET_CIDR:-10.61.1.0/24}" \
-            southeastAsiaCosmosPrivateEndpointSubnetName="${USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_NAME:-cosmos-private-endpoint}" \
-            southeastAsiaCosmosPrivateEndpointSubnetPrefix="${USERS_PROGRESS_SEASIA_COSMOS_PE_SUBNET_CIDR:-10.61.2.0/24}" \
-            southeastAsiaPrivateDnsResourceGroupName="${USERS_PROGRESS_SEASIA_DNS_RESOURCE_GROUP}" \
             cosmosAccountName="${COSMOS_ACCOUNT_NAME:-writefluencyusersprodcosmos}" \
             cosmosEndpoint="${Cosmos__Endpoint}" \
             cosmosDatabaseName="${Cosmos__DatabaseName:-wf-users-progress}" \
