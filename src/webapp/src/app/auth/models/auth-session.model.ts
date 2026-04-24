@@ -3,6 +3,7 @@ export interface AuthSession {
   userId: string | null;
   email: string | null;
   emailConfirmed: boolean;
+  listenWriteTutorialCompleted?: boolean;
   issuedAtUtc: string | null;
   expiresAtUtc: string | null;
 }
@@ -12,6 +13,8 @@ export interface AuthSessionState {
   userId: string | null;
   email: string | null;
   emailConfirmed: boolean;
+  listenWriteTutorialCompleted: boolean | null;
+  hasReliableSessionState: boolean;
   issuedAtUtc: string | null;
   expiresAtUtc: string | null;
   isLoading: boolean;

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -32,6 +33,9 @@ public static class AuthEndpointExtensions
             .RequireAuthorization();
 
         authGroup.MapGet("/session", GetSession)
+            .RequireAuthorization();
+
+        authGroup.MapPost("/tutorial/listen-write/completed", MarkListenWriteTutorialCompletedAsync)
             .RequireAuthorization();
 
         authGroup.MapPost("/passwordless/request", RequestPasswordlessOtpAsync);
@@ -80,8 +84,37 @@ public static class AuthEndpointExtensions
             UserId = user?.Id ?? principal.FindFirstValue(ClaimTypes.NameIdentifier),
             Email = user?.Email ?? principal.FindFirstValue(ClaimTypes.Email),
             EmailConfirmed = user?.EmailConfirmed ?? false,
+            ListenWriteTutorialCompleted = user?.ListenWriteTutorialCompleted ?? false,
             IssuedAtUtc = issuedAtUtc,
             ExpiresAtUtc = expiresAtUtc
+        });
+    }
+
+    private static async Task<IResult> MarkListenWriteTutorialCompletedAsync(
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        if (!user.ListenWriteTutorialCompleted)
+        {
+            user.ListenWriteTutorialCompleted = true;
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return Results.Problem(
+                    detail: "Unable to persist tutorial completion.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        return Results.Ok(new
+        {
+            ListenWriteTutorialCompleted = true
         });
     }
 

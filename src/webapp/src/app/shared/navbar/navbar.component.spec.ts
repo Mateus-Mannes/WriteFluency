@@ -24,6 +24,8 @@ describe('NavbarComponent', () => {
       userId: 'user-1',
       email: 'user@test.com',
       emailConfirmed: true,
+      listenWriteTutorialCompleted: true,
+      hasReliableSessionState: true,
       issuedAtUtc: null,
       expiresAtUtc: null,
       isLoading: false,

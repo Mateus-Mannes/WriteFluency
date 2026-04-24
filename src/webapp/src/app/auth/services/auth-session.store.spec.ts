@@ -11,7 +11,11 @@ describe('AuthSessionStore', () => {
   beforeEach(() => {
     window.localStorage.removeItem('wf.auth.session.snapshot.v1');
 
-    authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', ['session', 'logout']);
+    authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', [
+      'session',
+      'logout',
+      'markListenWriteTutorialCompleted',
+    ]);
 
     TestBed.configureTestingModule({
       providers: [
@@ -38,6 +42,7 @@ describe('AuthSessionStore', () => {
         userId: 'abc',
         email: 'user@test.com',
         emailConfirmed: true,
+        listenWriteTutorialCompleted: false,
         issuedAtUtc,
         expiresAtUtc,
       }),
@@ -46,7 +51,9 @@ describe('AuthSessionStore', () => {
     await store.refreshSession();
 
     expect(store.state().isAuthenticated).toBeTrue();
+    expect(store.state().hasReliableSessionState).toBeTrue();
     expect(store.state().email).toBe('user@test.com');
+    expect(store.state().listenWriteTutorialCompleted).toBeFalse();
     expect(store.state().issuedAtUtc).toBe(issuedAtUtc);
     expect(store.state().expiresAtUtc).toBe(expiresAtUtc);
   });
@@ -58,6 +65,7 @@ describe('AuthSessionStore', () => {
         userId: 'abc',
         email: 'user@test.com',
         emailConfirmed: true,
+        listenWriteTutorialCompleted: false,
         issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
         expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
       }),
@@ -70,6 +78,29 @@ describe('AuthSessionStore', () => {
 
     expect(store.state().isAuthenticated).toBeFalse();
     expect(store.state().email).toBeNull();
+    expect(store.state().hasReliableSessionState).toBeTrue();
+    expect(store.state().listenWriteTutorialCompleted).toBeNull();
+  });
+
+  it('should mark session state as unreliable on non-auth refresh failure', async () => {
+    authApiServiceSpy.session.and.returnValues(
+      of({
+        isAuthenticated: true,
+        userId: 'abc',
+        email: 'user@test.com',
+        emailConfirmed: true,
+        listenWriteTutorialCompleted: false,
+        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+      }),
+      throwError(() => ({ status: 0 })),
+    );
+
+    await store.refreshSession();
+    await store.refreshSession();
+
+    expect(store.state().isAuthenticated).toBeTrue();
+    expect(store.state().hasReliableSessionState).toBeFalse();
   });
 
   it('should clear session on logout', async () => {
@@ -91,6 +122,7 @@ describe('AuthSessionStore', () => {
         userId: 'snapshot-user',
         email: 'snapshot@test.com',
         emailConfirmed: true,
+        listenWriteTutorialCompleted: true,
         issuedAtUtc,
         expiresAtUtc,
         cachedAtUtc: new Date('2026-01-01T00:10:00.000Z').toISOString(),
@@ -102,8 +134,28 @@ describe('AuthSessionStore', () => {
     expect(store.state().isAuthenticated).toBeTrue();
     expect(store.state().userId).toBe('snapshot-user');
     expect(store.state().email).toBe('snapshot@test.com');
+    expect(store.state().listenWriteTutorialCompleted).toBeTrue();
+    expect(store.state().hasReliableSessionState).toBeFalse();
     expect(store.state().issuedAtUtc).toBe(issuedAtUtc);
     expect(store.state().expiresAtUtc).toBe(expiresAtUtc);
+  });
+
+  it('should tolerate missing tutorial flag from older session responses', async () => {
+    authApiServiceSpy.session.and.returnValue(
+      of({
+        isAuthenticated: true,
+        userId: 'abc',
+        email: 'user@test.com',
+        emailConfirmed: true,
+        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+      }),
+    );
+
+    await store.refreshSession();
+
+    expect(store.state().listenWriteTutorialCompleted).toBeNull();
+    expect(store.state().hasReliableSessionState).toBeTrue();
   });
 
   it('should trigger background refresh shortly before session expiry', async () => {
@@ -118,6 +170,7 @@ describe('AuthSessionStore', () => {
           userId: 'abc',
           email: 'user@test.com',
           emailConfirmed: true,
+          listenWriteTutorialCompleted: false,
           issuedAtUtc: now.toISOString(),
           expiresAtUtc: new Date(now.getTime() + 6 * 60 * 1000).toISOString(),
         }),
@@ -126,6 +179,7 @@ describe('AuthSessionStore', () => {
           userId: 'abc',
           email: 'user@test.com',
           emailConfirmed: true,
+          listenWriteTutorialCompleted: false,
           issuedAtUtc: now.toISOString(),
           expiresAtUtc: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
         }),
@@ -150,6 +204,7 @@ describe('AuthSessionStore', () => {
       userId: string;
       email: string;
       emailConfirmed: boolean;
+      listenWriteTutorialCompleted?: boolean;
       issuedAtUtc: string;
       expiresAtUtc: string;
     }>();
@@ -158,6 +213,7 @@ describe('AuthSessionStore', () => {
       userId: string;
       email: string;
       emailConfirmed: boolean;
+      listenWriteTutorialCompleted?: boolean;
       issuedAtUtc: string;
       expiresAtUtc: string;
     }>();
@@ -175,6 +231,7 @@ describe('AuthSessionStore', () => {
       userId: 'new-user',
       email: 'new@test.com',
       emailConfirmed: true,
+      listenWriteTutorialCompleted: true,
       issuedAtUtc: new Date('2026-01-01T02:00:00.000Z').toISOString(),
       expiresAtUtc: new Date('2026-01-01T03:00:00.000Z').toISOString(),
     });
@@ -187,6 +244,7 @@ describe('AuthSessionStore', () => {
       userId: 'old-user',
       email: 'old@test.com',
       emailConfirmed: true,
+      listenWriteTutorialCompleted: false,
       issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
       expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
     });
@@ -200,5 +258,53 @@ describe('AuthSessionStore', () => {
     const snapshot = JSON.parse(snapshotRaw as string) as { userId?: string; email?: string };
     expect(snapshot.userId).toBe('new-user');
     expect(snapshot.email).toBe('new@test.com');
+  });
+
+  it('should patch tutorial flag locally after background mark-completed succeeds', async () => {
+    authApiServiceSpy.session.and.returnValue(
+      of({
+        isAuthenticated: true,
+        userId: 'abc',
+        email: 'user@test.com',
+        emailConfirmed: true,
+        listenWriteTutorialCompleted: false,
+        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+      }),
+    );
+    authApiServiceSpy.markListenWriteTutorialCompleted.and.returnValue(
+      of({ listenWriteTutorialCompleted: true }),
+    );
+
+    await store.refreshSession();
+    store.markListenWriteTutorialCompletedInBackground();
+    await Promise.resolve();
+
+    expect(authApiServiceSpy.markListenWriteTutorialCompleted).toHaveBeenCalledTimes(1);
+    expect(store.state().listenWriteTutorialCompleted).toBeTrue();
+  });
+
+  it('should swallow failures from background mark-completed calls', async () => {
+    authApiServiceSpy.session.and.returnValue(
+      of({
+        isAuthenticated: true,
+        userId: 'abc',
+        email: 'user@test.com',
+        emailConfirmed: true,
+        listenWriteTutorialCompleted: false,
+        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+      }),
+    );
+    authApiServiceSpy.markListenWriteTutorialCompleted.and.returnValue(
+      throwError(() => ({ status: 500 })),
+    );
+
+    await store.refreshSession();
+    expect(() => store.markListenWriteTutorialCompletedInBackground()).not.toThrow();
+    await Promise.resolve();
+
+    expect(authApiServiceSpy.markListenWriteTutorialCompleted).toHaveBeenCalledTimes(1);
+    expect(store.state().listenWriteTutorialCompleted).toBeFalse();
   });
 });

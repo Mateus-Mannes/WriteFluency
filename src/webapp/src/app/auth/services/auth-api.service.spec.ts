@@ -44,4 +44,13 @@ describe('AuthApiService', () => {
     expect(request.request.withCredentials).toBeTrue();
     request.flush([]);
   });
+
+  it('should call tutorial mark-completed endpoint', () => {
+    service.markListenWriteTutorialCompleted().subscribe();
+
+    const request = httpMock.expectOne(`${authBaseUrl}/tutorial/listen-write/completed`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    request.flush({ listenWriteTutorialCompleted: true });
+  });
 });

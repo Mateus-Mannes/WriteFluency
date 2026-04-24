@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { offset } from '@floating-ui/dom';
 import { ShepherdService } from 'angular-shepherd';
 import { BrowserService } from '../../core/services/browser.service';
+import { AuthSessionStore } from '../../auth/services/auth-session.store';
 import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
 import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
 
@@ -12,7 +13,8 @@ export class ExerciseTourService {
   constructor(
     private shepherd: ShepherdService,
     private browserService: BrowserService,
-    private exerciseSessionTracking: ExerciseSessionTrackingService
+    private exerciseSessionTracking: ExerciseSessionTrackingService,
+    private authSessionStore: AuthSessionStore,
   ) { }
 
   finishTour() {
@@ -247,6 +249,7 @@ export class ExerciseTourService {
           outcome: 'complete'
         });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
       this.shepherd.tourObject?.on('cancel', () => {
         this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
@@ -254,6 +257,7 @@ export class ExerciseTourService {
           outcome: 'cancel'
         });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
 
       this.shepherd.start();
@@ -407,6 +411,7 @@ export class ExerciseTourService {
           outcome: 'complete'
         });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
       this.shepherd.tourObject?.on('cancel', () => {
         this.exerciseSessionTracking.trackEvent('shepherd_tour_finished', {
@@ -414,6 +419,7 @@ export class ExerciseTourService {
           outcome: 'cancel'
         });
         this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
 
       this.shepherd.start();

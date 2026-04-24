@@ -115,6 +115,7 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             sessionDoc.RootElement.GetProperty("isAuthenticated").GetBoolean().ShouldBeTrue();
             sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
             sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
+            sessionDoc.RootElement.GetProperty("listenWriteTutorialCompleted").GetBoolean().ShouldBeFalse();
             sessionDoc.RootElement.TryGetProperty("issuedAtUtc", out var issuedAtUtc).ShouldBeTrue();
             sessionDoc.RootElement.TryGetProperty("expiresAtUtc", out var expiresAtUtc).ShouldBeTrue();
             DateTimeOffset.TryParse(issuedAtUtc.GetString(), out _).ShouldBeTrue();
@@ -181,6 +182,61 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             expectedProvider: null,
             expectedGeoLookupStatus: "success",
             expectedIpAddress: forwardedClientIp);
+    }
+
+    [Fact]
+    public async Task MarkListenWriteTutorialCompleted_ShouldSetFlagAndBeIdempotent()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"tutorial-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var firstCall = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/tutorial/listen-write/completed", new { });
+        firstCall.IsSuccessStatusCode.ShouldBeTrue();
+        using (var firstDoc = await JsonDocument.ParseAsync(await firstCall.Content.ReadAsStreamAsync()))
+        {
+            firstDoc.RootElement.GetProperty("listenWriteTutorialCompleted").GetBoolean().ShouldBeTrue();
+        }
+
+        var secondCall = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/tutorial/listen-write/completed", new { });
+        secondCall.IsSuccessStatusCode.ShouldBeTrue();
+        using (var secondDoc = await JsonDocument.ParseAsync(await secondCall.Content.ReadAsStreamAsync()))
+        {
+            secondDoc.RootElement.GetProperty("listenWriteTutorialCompleted").GetBoolean().ShouldBeTrue();
+        }
+
+        var session = await client.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+        using (var sessionDoc = await JsonDocument.ParseAsync(await session.Content.ReadAsStreamAsync()))
+        {
+            sessionDoc.RootElement.GetProperty("listenWriteTutorialCompleted").GetBoolean().ShouldBeTrue();
+        }
+
+        var user = await GetUserByEmailAsync(email);
+        user.ListenWriteTutorialCompleted.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task MarkListenWriteTutorialCompleted_WhenUnauthenticated_ShouldReturnUnauthorized()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/tutorial/listen-write/completed", new { });
+        IsUnauthenticatedStatus(response.StatusCode).ShouldBeTrue();
     }
 
     [Fact]
@@ -689,5 +745,14 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         activities.Count.ShouldBe(1);
         return activities[0];
+    }
+
+    private async Task<ApplicationUser> GetUserByEmailAsync(string email)
+    {
+        _fixture.Factory.ShouldNotBeNull();
+
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        return await db.Users.SingleAsync(x => x.Email == email);
     }
 }
