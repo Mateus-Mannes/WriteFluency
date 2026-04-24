@@ -172,6 +172,7 @@ public static class UsersServiceCollectionExtensions
         services.AddScoped<PasswordlessOtpService>();
         services.AddScoped<IExternalLoginInfoResolver, DefaultExternalLoginInfoResolver>();
         services.AddScoped<ILoginActivityRecorder, LoginActivityRecorder>();
+        services.AddSingleton<IClientIpResolver, ClientIpResolver>();
 
         services.AddSingleton<ILoginGeoLocationDataSource, MaxMindGeoLocationDataSource>();
         services.AddSingleton<ILoginGeoLookupService, LoginGeoLookupService>();

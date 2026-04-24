@@ -185,6 +185,61 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
     }
 
     [Fact]
+    public async Task Login_WithCloudflareConnectingIpHeader_ShouldPreferCloudflareClientIp()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+
+        using var client = _fixture.CreateClient();
+
+        var email = $"cloudflare-forwarded-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+
+        var register = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/register", new
+        {
+            Email = email,
+            Password = password
+        });
+        register.IsSuccessStatusCode.ShouldBeTrue();
+
+        var confirmationEmail = _fixture.EmailSender.FindLastBySubjectContains("Confirm your WriteFluency email");
+        confirmationEmail.ShouldNotBeNull();
+        confirmationEmail!.TextBody.ShouldNotBeNullOrWhiteSpace();
+
+        var confirmUrl = BuildUsersConfirmEmailUrlFromWebappLink(confirmationEmail.HtmlBody);
+        var confirm = await client.GetAsync(confirmUrl);
+        confirm.IsSuccessStatusCode.ShouldBeTrue();
+
+        const string cloudflareEdgeIp = "172.69.39.83";
+        const string cloudflareClientIp = "50.114.87.34";
+        using var loginRequest = new HttpRequestMessage(HttpMethod.Post, "/users/auth/login?useCookies=true")
+        {
+            Content = JsonContent.Create(new
+            {
+                Email = email,
+                Password = password
+            })
+        };
+        loginRequest.Headers.TryAddWithoutValidation("Origin", "http://localhost:4200");
+        loginRequest.Headers.TryAddWithoutValidation("X-Forwarded-For", cloudflareEdgeIp);
+        loginRequest.Headers.TryAddWithoutValidation("CF-Connecting-IP", cloudflareClientIp);
+
+        var login = await client.SendAsync(loginRequest);
+        login.IsSuccessStatusCode.ShouldBeTrue();
+
+        await AssertSingleLoginActivityAsync(
+            email,
+            expectedMethod: "password",
+            expectedProvider: null,
+            expectedGeoLookupStatus: "success",
+            expectedIpAddress: cloudflareClientIp);
+    }
+
+    [Fact]
     public async Task MarkListenWriteTutorialCompleted_ShouldSetFlagAndBeIdempotent()
     {
         if (!CanRunIntegration())

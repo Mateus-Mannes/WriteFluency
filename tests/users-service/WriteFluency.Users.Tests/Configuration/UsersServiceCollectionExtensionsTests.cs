@@ -142,6 +142,7 @@ public class UsersServiceCollectionExtensionsTests
 
         scope.ServiceProvider.GetRequiredService<ILoginGeoLookupService>().ShouldNotBeNull();
         scope.ServiceProvider.GetRequiredService<ILoginActivityRecorder>().ShouldNotBeNull();
+        scope.ServiceProvider.GetRequiredService<IClientIpResolver>().ShouldNotBeNull();
     }
 
     private static IConfiguration BuildConfiguration(

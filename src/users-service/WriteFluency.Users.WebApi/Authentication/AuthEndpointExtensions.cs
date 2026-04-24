@@ -121,10 +121,11 @@ public static class AuthEndpointExtensions
     private static async Task<IResult> RequestPasswordlessOtpAsync(
         PasswordlessRequest request,
         HttpContext httpContext,
+        IClientIpResolver clientIpResolver,
         PasswordlessOtpService passwordlessOtpService,
         CancellationToken cancellationToken)
     {
-        var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var ipAddress = clientIpResolver.Resolve(httpContext)?.ToString() ?? "unknown";
         await passwordlessOtpService.RequestOtpAsync(request.Email, ipAddress, cancellationToken);
 
         return Results.Ok(new

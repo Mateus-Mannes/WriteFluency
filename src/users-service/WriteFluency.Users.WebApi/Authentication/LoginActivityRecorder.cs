@@ -6,15 +6,18 @@ namespace WriteFluency.Users.WebApi.Authentication;
 internal sealed class LoginActivityRecorder : ILoginActivityRecorder
 {
     private readonly UsersDbContext _dbContext;
+    private readonly IClientIpResolver _clientIpResolver;
     private readonly ILoginGeoLookupService _geoLookupService;
     private readonly ILogger<LoginActivityRecorder> _logger;
 
     public LoginActivityRecorder(
         UsersDbContext dbContext,
+        IClientIpResolver clientIpResolver,
         ILoginGeoLookupService geoLookupService,
         ILogger<LoginActivityRecorder> logger)
     {
         _dbContext = dbContext;
+        _clientIpResolver = clientIpResolver;
         _geoLookupService = geoLookupService;
         _logger = logger;
     }
@@ -42,7 +45,7 @@ internal sealed class LoginActivityRecorder : ILoginActivityRecorder
             return;
         }
 
-        var ipAddress = httpContext.Connection.RemoteIpAddress;
+        var ipAddress = _clientIpResolver.Resolve(httpContext);
         var geoLookup = _geoLookupService.Lookup(ipAddress);
         var activity = new UserLoginActivity
         {
