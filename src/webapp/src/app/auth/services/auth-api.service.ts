@@ -28,6 +28,14 @@ export class AuthApiService {
     return this.http.get<AuthSession>(`${this.basePath}/session`, { withCredentials: true });
   }
 
+  markListenWriteTutorialCompleted(): Observable<{ listenWriteTutorialCompleted: true }> {
+    return this.http.post<{ listenWriteTutorialCompleted: true }>(
+      `${this.basePath}/tutorial/listen-write/completed`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
   requestOtp(email: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.basePath}/passwordless/request`, { email }, { withCredentials: true });
   }

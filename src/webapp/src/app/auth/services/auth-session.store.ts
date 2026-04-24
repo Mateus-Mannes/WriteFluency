@@ -15,6 +15,8 @@ const initialState: AuthSessionState = {
   userId: null,
   email: null,
   emailConfirmed: false,
+  listenWriteTutorialCompleted: null,
+  hasReliableSessionState: false,
   issuedAtUtc: null,
   expiresAtUtc: null,
   isLoading: false,
@@ -23,7 +25,13 @@ const initialState: AuthSessionState = {
 
 type AuthSessionSnapshot = Pick<
   AuthSessionState,
-  'isAuthenticated' | 'userId' | 'email' | 'emailConfirmed' | 'issuedAtUtc' | 'expiresAtUtc'
+  | 'isAuthenticated'
+  | 'userId'
+  | 'email'
+  | 'emailConfirmed'
+  | 'listenWriteTutorialCompleted'
+  | 'issuedAtUtc'
+  | 'expiresAtUtc'
 > & {
   cachedAtUtc: string;
 };
@@ -40,10 +48,14 @@ export class AuthSessionStore {
   private hasRegisteredLifecycleListeners = false;
   private refreshRequestCounter = 0;
   private logoutRequestInFlight = false;
+  private markTutorialRequestInFlight = false;
 
   readonly state = this.stateSignal.asReadonly();
   readonly isAuthenticated = computed(() => this.stateSignal().isAuthenticated);
   readonly email = computed(() => this.stateSignal().email);
+  readonly userId = computed(() => this.stateSignal().userId);
+  readonly hasReliableSessionState = computed(() => this.stateSignal().hasReliableSessionState);
+  readonly listenWriteTutorialCompleted = computed(() => this.stateSignal().listenWriteTutorialCompleted);
 
   isLogoutInProgress(): boolean {
     return this.logoutRequestInFlight;
@@ -97,6 +109,30 @@ export class AuthSessionStore {
     this.clearSession();
   }
 
+  markListenWriteTutorialCompletedInBackground(): void {
+    if (!this.isBrowser || this.markTutorialRequestInFlight) {
+      return;
+    }
+
+    const state = this.stateSignal();
+    if (!state.hasReliableSessionState || !state.isAuthenticated || state.listenWriteTutorialCompleted === true) {
+      return;
+    }
+
+    this.markTutorialRequestInFlight = true;
+    void firstValueFrom(this.authApiService.markListenWriteTutorialCompleted())
+      .then(() => {
+        this.patchState({ listenWriteTutorialCompleted: true });
+        this.persistSnapshot();
+      })
+      .catch(() => {
+        // Intentionally swallowed to avoid blocking user flow.
+      })
+      .finally(() => {
+        this.markTutorialRequestInFlight = false;
+      });
+  }
+
   private async refreshSessionCore(options: { showLoading: boolean; persistErrors: boolean }): Promise<void> {
     const requestId = ++this.refreshRequestCounter;
 
@@ -117,6 +153,8 @@ export class AuthSessionStore {
         userId: session.userId,
         email: session.email,
         emailConfirmed: session.emailConfirmed,
+        listenWriteTutorialCompleted: this.resolveTutorialCompletionFlag(session.listenWriteTutorialCompleted),
+        hasReliableSessionState: true,
         issuedAtUtc: session.issuedAtUtc,
         expiresAtUtc: session.expiresAtUtc,
         isLoading: false,
@@ -140,11 +178,15 @@ export class AuthSessionStore {
 
       if (options.persistErrors) {
         this.patchState({
+          hasReliableSessionState: false,
           isLoading: false,
           error: 'Unable to load session right now. Please try again.',
         });
       } else {
-        this.patchState({ isLoading: false });
+        this.patchState({
+          hasReliableSessionState: false,
+          isLoading: false,
+        });
       }
     }
   }
@@ -174,6 +216,8 @@ export class AuthSessionStore {
         userId: snapshot.userId ?? null,
         email: snapshot.email ?? null,
         emailConfirmed: snapshot.emailConfirmed === true,
+        listenWriteTutorialCompleted: this.resolveTutorialCompletionFlag(snapshot.listenWriteTutorialCompleted),
+        hasReliableSessionState: false,
         issuedAtUtc: snapshot.issuedAtUtc ?? null,
         expiresAtUtc: snapshot.expiresAtUtc ?? null,
         isLoading: false,
@@ -197,6 +241,7 @@ export class AuthSessionStore {
       userId: state.userId,
       email: state.email,
       emailConfirmed: state.emailConfirmed,
+      listenWriteTutorialCompleted: state.listenWriteTutorialCompleted,
       issuedAtUtc: state.issuedAtUtc,
       expiresAtUtc: state.expiresAtUtc,
       cachedAtUtc: new Date().toISOString(),
@@ -283,12 +328,18 @@ export class AuthSessionStore {
       userId: null,
       email: null,
       emailConfirmed: false,
+      listenWriteTutorialCompleted: null,
+      hasReliableSessionState: true,
       issuedAtUtc: null,
       expiresAtUtc: null,
       isLoading: false,
       error: null,
     });
     this.persistSnapshot();
+  }
+
+  private resolveTutorialCompletionFlag(value: unknown): boolean | null {
+    return typeof value === 'boolean' ? value : null;
   }
 
   private patchState(patch: Partial<AuthSessionState>): void {

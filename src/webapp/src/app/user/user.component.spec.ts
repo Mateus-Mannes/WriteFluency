@@ -25,6 +25,8 @@ describe('UserComponent', () => {
         userId: 'user-123',
         email: 'user@test.com',
         emailConfirmed: true,
+        listenWriteTutorialCompleted: true,
+        hasReliableSessionState: true,
         issuedAtUtc: new Date().toISOString(),
         expiresAtUtc: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         isLoading: false,

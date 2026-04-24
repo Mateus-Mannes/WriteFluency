@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { ListenAndWriteComponent, LISTEN_WRITE_FIRST_TIME_KEY } from './listen-and-write.component';
 import { ExerciseProgressTrackingService } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
+import { Insights } from '../../telemetry/insights.service';
 
 const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
@@ -16,6 +17,7 @@ describe('ListenAndWriteComponent', () => {
   let routeParams$: Subject<Record<string, unknown>>;
   let progressSyncNotificationSignal: ReturnType<typeof signal>;
   let authSessionStoreMock: jasmine.SpyObj<AuthSessionStore>;
+  let insightsMock: jasmine.SpyObj<Insights>;
   let exerciseProgressTrackingMock: {
     trackStart: jasmine.Spy;
     trackComplete: jasmine.Spy;
@@ -32,11 +34,21 @@ describe('ListenAndWriteComponent', () => {
 
     routeParams$ = new Subject<Record<string, unknown>>();
     progressSyncNotificationSignal = signal<any>(null);
+    insightsMock = jasmine.createSpyObj<Insights>('Insights', ['trackException', 'trackEvent']);
     authSessionStoreMock = jasmine.createSpyObj<AuthSessionStore>(
       'AuthSessionStore',
-      ['isAuthenticated'],
+      [
+        'isAuthenticated',
+        'hasReliableSessionState',
+        'listenWriteTutorialCompleted',
+        'userId',
+        'markListenWriteTutorialCompletedInBackground',
+      ],
     );
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    authSessionStoreMock.userId.and.returnValue(null);
     exerciseProgressTrackingMock = {
       trackStart: jasmine.createSpy('trackStart'),
       trackComplete: jasmine.createSpy('trackComplete'),
@@ -63,7 +75,11 @@ describe('ListenAndWriteComponent', () => {
         {
           provide: AuthSessionStore,
           useValue: authSessionStoreMock,
-        }
+        },
+        {
+          provide: Insights,
+          useValue: insightsMock,
+        },
       ]
     })
     .compileComponents();
@@ -75,6 +91,56 @@ describe('ListenAndWriteComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should treat tutorial as first-time when local key is missing and session is reliably unauthenticated', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+
+    expect(component.isFirstTime()).toBeTrue();
+  });
+
+  it('should not treat tutorial as first-time when authenticated user already completed on server', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
+    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+
+    expect(component.isFirstTime()).toBeFalse();
+  });
+
+  it('should treat tutorial as first-time when authenticated user has not completed on server', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(false);
+    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+
+    expect(component.isFirstTime()).toBeTrue();
+  });
+
+  it('should suppress tutorial and log one Insights exception when session reliability is unknown', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(false);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+
+    expect(component.isFirstTime()).toBeFalse();
+    expect(component.isFirstTime()).toBeFalse();
+    expect(insightsMock.trackException).toHaveBeenCalledTimes(1);
+  });
+
+  it('should backfill tutorial completion once per authenticated user when local key is already done', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    authSessionStoreMock.userId.and.returnValue('user-123');
+    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+
+    expect(component.isFirstTime()).toBeFalse();
+    expect(component.isFirstTime()).toBeFalse();
+    expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalledTimes(1);
   });
 
   it('should use auto-pause value for rewind shortcut when enabled', () => {

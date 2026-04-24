@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect, OnDestroy, afterNextRender } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
@@ -22,6 +22,7 @@ import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.serv
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { ProgressStateResponse } from '../user/models/user-progress.model';
+import { Insights } from '../../telemetry/insights.service';
 import {
   FeedbackModalComponent,
   FeedbackModalInteractionEvent,
@@ -133,6 +134,8 @@ export class ListenAndWriteComponent implements OnDestroy {
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldSyncCompletedResultAfterRestore = false;
+  private hasLoggedTutorialSuppressedException = false;
+  private readonly tutorialBackfillRequestedUsers = new Set<string>();
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -148,6 +151,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     private feedbackService: FeedbackService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
     private authSessionStore: AuthSessionStore,
+    @Optional() private readonly insights: Insights | null = null,
   ) {
     let lastState: ExerciseState | null = null;
     // Get the exercise ID from route parameters
@@ -1399,12 +1403,73 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
   }
 
-  isFirstTime() : boolean {
-    const firstTime = this.browserService.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
-    if (firstTime === null) {
+  isFirstTime(): boolean {
+    const localTutorialKey = this.browserService.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    const hasLocalDone = localTutorialKey !== null;
+    const isAuthenticated = this.authSessionStore.isAuthenticated();
+    const hasReliableSessionState = this.authSessionStore.hasReliableSessionState();
+    const serverTutorialCompleted = this.authSessionStore.listenWriteTutorialCompleted();
+    const userId = this.authSessionStore.userId();
+
+    if (hasLocalDone) {
+      this.tryBackfillTutorialCompletionIfNeeded(
+        isAuthenticated,
+        hasReliableSessionState,
+        serverTutorialCompleted,
+        userId,
+      );
+      return false;
+    }
+
+    if (!hasReliableSessionState) {
+      this.trackTutorialSuppressedForUnreliableSessionState(isAuthenticated);
+      return false;
+    }
+
+    if (!isAuthenticated) {
       return true;
     }
-    return false;
+
+    return serverTutorialCompleted !== true;
+  }
+
+  private tryBackfillTutorialCompletionIfNeeded(
+    isAuthenticated: boolean,
+    hasReliableSessionState: boolean,
+    serverTutorialCompleted: boolean | null,
+    userId: string | null,
+  ): void {
+    if (!isAuthenticated || !hasReliableSessionState || serverTutorialCompleted === true) {
+      return;
+    }
+
+    const backfillKey = userId ?? '__authenticated_unknown_user__';
+    if (this.tutorialBackfillRequestedUsers.has(backfillKey)) {
+      return;
+    }
+
+    this.tutorialBackfillRequestedUsers.add(backfillKey);
+    this.authSessionStore.markListenWriteTutorialCompletedInBackground();
+  }
+
+  private trackTutorialSuppressedForUnreliableSessionState(isAuthenticated: boolean): void {
+    if (this.hasLoggedTutorialSuppressedException) {
+      return;
+    }
+
+    this.hasLoggedTutorialSuppressedException = true;
+    this.insights?.trackException(
+      new Error('Tutorial suppressed because auth session state is unresolved.'),
+      {
+        properties: {
+          component: 'ListenAndWriteComponent',
+          tutorial_key_present: 'false',
+          has_reliable_session_state: 'false',
+          is_authenticated: String(isAuthenticated),
+        },
+        severityLevel: 1,
+      },
+    );
   }
 
   private isMobileLayout(): boolean {
