@@ -36,7 +36,7 @@ param trafficManagerDnsRelativeName string
 param functionAppRuntime string = 'dotnet-isolated'
 
 @description('Flex Consumption runtime version.')
-param functionAppRuntimeVersion string = '10.0'
+param functionAppRuntimeVersion string = '10'
 
 @description('Maximum number of instances per Function App in Flex Consumption.')
 @maxValue(1000)
@@ -399,6 +399,65 @@ var corsAppSettings = [for (origin, index) in corsAllowedOrigins: {
   value: origin
 }]
 
+var telemetryTuningAppSettings = [
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__default'
+    value: 'Warning'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Host'
+    value: 'Warning'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Host.Aggregator'
+    value: 'Error'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Host.Results'
+    value: 'Information'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Function'
+    value: 'Information'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Function.UsersProgressHealth'
+    value: 'Error'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Function.UsersProgressHealth.User'
+    value: 'Error'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Microsoft.AspNetCore.Mvc.StatusCodeResult'
+    value: 'Warning'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Microsoft.Azure.WebJobs.Hosting.OptionsLoggingService'
+    value: 'Warning'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__logLevel__Microsoft.EntityFrameworkCore.Database.Command'
+    value: 'Warning'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__applicationInsights__enableDependencyTracking'
+    value: 'true'
+  }
+  {
+    name: 'AzureFunctionsJobHost__logging__applicationInsights__enablePerformanceCountersCollection'
+    value: 'true'
+  }
+  {
+    name: 'ApplicationInsights__EnableDependencyTrackingTelemetryModule'
+    value: 'true'
+  }
+  {
+    name: 'ApplicationInsights__EnablePerformanceCounterCollectionModule'
+    value: 'true'
+  }
+]
+
 resource functionAppEastUs 'Microsoft.Web/sites@2024-04-01' = {
   name: functionAppEastUsName
   location: eastUsLocation
@@ -436,13 +495,12 @@ resource functionAppEastUs 'Microsoft.Web/sites@2024-04-01' = {
       }
     }
     siteConfig: {
-      healthCheckPath: '/health'
       vnetRouteAllEnabled: true
       cors: {
         allowedOrigins: corsAllowedOrigins
         supportCredentials: true
       }
-      appSettings: concat(appSettingsBase, corsAppSettings, [
+      appSettings: concat(appSettingsBase, corsAppSettings, telemetryTuningAppSettings, [
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageEastUs.name
@@ -497,13 +555,12 @@ resource functionAppSoutheastAsia 'Microsoft.Web/sites@2024-04-01' = {
       }
     }
     siteConfig: {
-      healthCheckPath: '/health'
       vnetRouteAllEnabled: true
       cors: {
         allowedOrigins: corsAllowedOrigins
         supportCredentials: true
       }
-      appSettings: concat(appSettingsBase, corsAppSettings, [
+      appSettings: concat(appSettingsBase, corsAppSettings, telemetryTuningAppSettings, [
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageSoutheastAsia.name
@@ -677,9 +734,9 @@ resource trafficManagerProfile 'Microsoft.Network/trafficManagerProfiles@2022-04
       ttl: 30
     }
     monitorConfig: {
-      protocol: 'HTTPS'
+      protocol: 'TCP'
       port: 443
-      path: '/health'
+      path: ''
       intervalInSeconds: 30
       timeoutInSeconds: 10
       toleratedNumberOfFailures: 3

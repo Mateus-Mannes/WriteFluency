@@ -1,5 +1,9 @@
 {
   "version": "2.0",
+  "aggregator": {
+    "batchSize": 1000,
+    "flushTimeout": "00:05:00"
+  },
   "extensions": {
     "http": {
       "routePrefix": ""
@@ -7,12 +11,20 @@
   },
   "logging": {
     "logLevel": {
-      "default": "Information",
-      "Function.UsersProgressHealth": "Warning",
+      "default": "Warning",
+      "Host": "Warning",
+      "Host.Aggregator": "Error",
+      "Host.Results": "Information",
+      "Function": "Information",
+      "Function.UsersProgressHealth": "Error",
+      "Function.UsersProgressHealth.User": "Error",
+      "Microsoft.AspNetCore.Mvc.StatusCodeResult": "Warning",
       "Microsoft.Azure.WebJobs.Hosting.OptionsLoggingService": "Warning",
       "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
     },
     "applicationInsights": {
+      "enableDependencyTracking": true,
+      "enablePerformanceCountersCollection": true,
       "samplingSettings": {
         "isEnabled": false
       }

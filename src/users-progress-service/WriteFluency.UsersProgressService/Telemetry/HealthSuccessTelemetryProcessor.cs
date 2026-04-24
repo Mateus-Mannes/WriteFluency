@@ -33,6 +33,7 @@ public sealed class HealthSuccessTelemetryProcessor : ITelemetryProcessor
             RequestTelemetry request => IsSuccessfulHealthRequest(request),
             TraceTelemetry trace => IsLowSeverityHealthTrace(trace),
             MetricTelemetry metric => IsHealthMetric(metric),
+            DependencyTelemetry dependency => IsNoisyInvokeDependency(dependency),
             _ => false
         };
     }
@@ -72,5 +73,11 @@ public sealed class HealthSuccessTelemetryProcessor : ITelemetryProcessor
     {
         return metric.Name.Contains("health_check", StringComparison.OrdinalIgnoreCase)
             || metric.Name.Contains(HealthOperationName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsNoisyInvokeDependency(DependencyTelemetry dependency)
+    {
+        return string.Equals(dependency.Type, "InProc", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(dependency.Name, "Invoke", StringComparison.OrdinalIgnoreCase);
     }
 }

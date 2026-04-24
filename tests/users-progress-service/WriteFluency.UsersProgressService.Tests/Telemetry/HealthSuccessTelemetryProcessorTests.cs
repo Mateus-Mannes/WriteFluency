@@ -97,6 +97,52 @@ public class HealthSuccessTelemetryProcessorTests
         sink.Items.Count.ShouldBe(0);
     }
 
+    [Fact]
+    public void Process_ShouldDropInProcInvokeDependency()
+    {
+        var sink = new CollectingTelemetryProcessor();
+        var processor = new HealthSuccessTelemetryProcessor(sink);
+        var telemetry = new DependencyTelemetry
+        {
+            Type = "InProc",
+            Name = "Invoke"
+        };
+
+        processor.Process(telemetry);
+
+        sink.Items.Count.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Process_ShouldKeepNonInvokeDependency()
+    {
+        var sink = new CollectingTelemetryProcessor();
+        var processor = new HealthSuccessTelemetryProcessor(sink);
+        var telemetry = new DependencyTelemetry
+        {
+            Type = "Azure DocumentDB",
+            Name = "Query documents"
+        };
+
+        processor.Process(telemetry);
+
+        sink.Items.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public void Process_ShouldKeepPerformanceCounterTelemetry()
+    {
+        var sink = new CollectingTelemetryProcessor();
+        var processor = new HealthSuccessTelemetryProcessor(sink);
+#pragma warning disable CS0618 // PerformanceCounterTelemetry is still emitted by AI SDK for AppPerformanceCounters.
+        var telemetry = new PerformanceCounterTelemetry("% Processor Time", "total", "1", 10);
+#pragma warning restore CS0618
+
+        processor.Process(telemetry);
+
+        sink.Items.Count.ShouldBe(1);
+    }
+
     private sealed class CollectingTelemetryProcessor : ITelemetryProcessor
     {
         public List<ITelemetry> Items { get; } = [];

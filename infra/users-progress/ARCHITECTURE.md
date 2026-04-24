@@ -16,7 +16,8 @@ This document explains how the `users-progress` infrastructure works in Azure, i
 - `Flex Consumption plan` per region
 - `VNet` per region with Function integration subnet (`Microsoft.AzureCosmosDB` service endpoint)
 - Cosmos network ACL (`Selected networks`) allowing only the Function integration subnets
-- `Traffic Manager profile` with health probe on `/health`
+- `Traffic Manager profile` with TCP endpoint monitoring on `:443`
+- App Service `healthCheckPath` disabled on Function Apps (Flex Consumption) to avoid internal `/health` probe amplification
 - `Cosmos DB account` with multi-region + automatic failover + multiple write locations
 - Shared Data Protection resources:
   - Blob Storage (key ring persistence)
@@ -68,7 +69,7 @@ sequenceDiagram
   participant COS as Cosmos DB Account
 
   C->>TM: HTTPS request (users-progress endpoint)
-  TM->>F: Route by Performance + health (/health)
+  TM->>F: Route by Performance + TCP monitor (:443)
   F->>VNET: Outbound via regional VNet integration
   VNET->>COS: Access via Microsoft.AzureCosmosDB service endpoint + subnet ACL
   COS-->>F: Query/Upsert response
