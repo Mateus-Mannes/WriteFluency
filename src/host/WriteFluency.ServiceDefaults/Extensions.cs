@@ -19,6 +19,14 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private static readonly string[] CriticalAppMetricNames =
+    [
+        "http.server.request.duration",
+        "http.server.active_requests",
+        "http.client.request.duration",
+        "db.client.operation.duration",
+        "azure.functions.health_check.reports"
+    ];
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -80,14 +88,16 @@ public static class Extensions
             .WithMetrics(metrics =>
             {
                 metrics.SetResourceBuilder(resourceBuilder);
-                metrics.AddView("http.client.open_connections", MetricStreamConfiguration.Drop);
-                metrics.AddView("http.client.active_requests", MetricStreamConfiguration.Drop);
-                metrics.AddView("dotnet.gc.last_collection.heap.fragmentation.size", MetricStreamConfiguration.Drop);
-                metrics.AddView("dotnet.gc.last_collection.heap.size", MetricStreamConfiguration.Drop);
+
+                // Keep AppMetrics minimal: drop everything by default and explicitly opt in only critical streams.
+                metrics.AddView("*", MetricStreamConfiguration.Drop);
+                foreach (var metricName in CriticalAppMetricNames)
+                {
+                    metrics.AddView(metricName, new MetricStreamConfiguration { Name = metricName });
+                }
 
                 metrics.AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddHttpClientInstrumentation();
 
                 if (!string.IsNullOrWhiteSpace(aiConnectionString))
                 {
