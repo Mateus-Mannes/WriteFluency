@@ -95,7 +95,8 @@
             [initialAutoPause]="initialAutoPause()" 
             (submitConfirmed)="onExerciseSubmit()" 
             (textChanged)="onExerciseTextChanged($event)"
-            (saveExerciseState)="onSaveExerciseState()">
+            (saveExerciseState)="onSaveExerciseState()"
+            (tutorialVideoRequested)="onExerciseTutorialVideoRequested()">
         </app-exercise-section>
     }
 
@@ -132,3 +133,12 @@
     (closedAfterSubmit)="onFeedbackClosedAfterSubmit()"
     (findAnotherExercise)="onFeedbackFindAnotherExercise()">
 </app-feedback-modal>
+
+<app-tutorial-video-modal
+    [isOpen]="isTutorialVideoModalOpen()"
+    [embedUrl]="tutorialVideoEmbedUrl"
+    [watchUrl]="tutorialVideoWatchUrl"
+    [title]="tutorialVideoTitle"
+    (opened)="onTutorialVideoModalOpened()"
+    (closed)="onTutorialVideoModalClosed()">
+</app-tutorial-video-modal>

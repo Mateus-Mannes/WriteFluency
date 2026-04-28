@@ -1,0 +1,45 @@
+@if (isOpen()) {
+  <div
+    class="tutorial-video-modal-backdrop"
+    role="presentation"
+    (click)="onBackdropClick()">
+    <section
+      class="tutorial-video-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tutorial-video-modal-title"
+      (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Close tutorial video"
+        (click)="onCloseClick()">
+        &times;
+      </button>
+
+      <h2 id="tutorial-video-modal-title">{{ title() }}</h2>
+
+      <div class="video-shell">
+        @if (safeEmbedUrl(); as safeEmbedUrl) {
+          <iframe
+            title="WriteFluency tutorial video"
+            [src]="safeEmbedUrl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin">
+          </iframe>
+        }
+      </div>
+
+      <p class="fallback-link">
+        If playback fails, open on
+        <a
+          [href]="watchUrl()"
+          target="_blank"
+          rel="noopener noreferrer">
+          YouTube
+        </a>.
+      </p>
+    </section>
+  </div>
+}

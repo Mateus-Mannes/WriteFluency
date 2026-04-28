@@ -28,6 +28,11 @@ import {
   FeedbackModalInteractionEvent,
   FeedbackModalSubmission
 } from '../shared/feedback-modal/feedback-modal.component';
+import { TutorialVideoModalComponent } from '../shared/tutorial-video-modal/tutorial-video-modal.component';
+import {
+  TutorialVideoSource,
+  tutorialVideoConfig,
+} from '../core/config/tutorial-video.config';
 
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
@@ -77,7 +82,8 @@ interface LocalExerciseSnapshot {
     ExerciseSectionComponent,
     ExerciseResultsSectionComponent,
     NewsHighlightedTextComponent,
-    FeedbackModalComponent
+    FeedbackModalComponent,
+    TutorialVideoModalComponent
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
@@ -124,9 +130,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   userText = signal<string>('');
 
   isFeedbackModalOpen = signal<boolean>(false);
+  isTutorialVideoModalOpen = signal<boolean>(false);
 
   exerciseId: number | null = null;
   readonly beginExerciseLoadingTooltip = 'Finishing exercise loading...';
+  readonly tutorialVideoEmbedUrl = tutorialVideoConfig.embedUrl;
+  readonly tutorialVideoWatchUrl = tutorialVideoConfig.watchUrl;
+  readonly tutorialVideoTitle = tutorialVideoConfig.title;
 
   private pendingLeaveAction: (() => void) | null = null;
   private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
@@ -136,6 +146,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private shouldSyncCompletedResultAfterRestore = false;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
+  private tutorialVideoSource: TutorialVideoSource | null = null;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -1151,6 +1162,8 @@ export class ListenAndWriteComponent implements OnDestroy {
       return null;
     }
 
+    warnings.unshift('Goal: write as much of the full audio text as you can.');
+
     return `Quick reminder before submitting:\n\n- ${warnings.join('\n\n- ')}`;
   }
 
@@ -1364,6 +1377,31 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.exerciseSessionTracking.trackTextChanged(text);
   }
 
+  onExerciseTutorialVideoRequested(): void {
+    this.openTutorialVideoFromSource('exercise_help_icon');
+  }
+
+  onTutorialVideoModalOpened(): void {
+    if (!this.tutorialVideoSource) {
+      return;
+    }
+
+    this.exerciseSessionTracking.trackEvent('tutorial_video_opened', {
+      source: this.tutorialVideoSource,
+    });
+  }
+
+  onTutorialVideoModalClosed(): void {
+    if (this.tutorialVideoSource) {
+      this.exerciseSessionTracking.trackEvent('tutorial_video_closed', {
+        source: this.tutorialVideoSource,
+      });
+    }
+
+    this.tutorialVideoSource = null;
+    this.isTutorialVideoModalOpen.set(false);
+  }
+
   setNewState(state: ExerciseState) {
     const previousState = this.exerciseState();
 
@@ -1395,10 +1433,11 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     if(this.isFirstTime() && state === 'exercise') {
+      const openTutorialVideoFromTour = () => this.openTutorialVideoFromSource('exercise_tour_final_step');
       if (this.isMobileLayout()) {
-        this.exerciseTourService.startMobileTour();
+        this.exerciseTourService.startMobileTour({ onWatchTutorialVideo: openTutorialVideoFromTour });
       } else {
-        this.exerciseTourService.startTour();
+        this.exerciseTourService.startTour({ onWatchTutorialVideo: openTutorialVideoFromTour });
       }
     }
   }
@@ -1644,5 +1683,13 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     return '/exercises';
+  }
+
+  private openTutorialVideoFromSource(source: TutorialVideoSource): void {
+    this.tutorialVideoSource = source;
+    this.exerciseSessionTracking.trackEvent('tutorial_video_cta_clicked', {
+      source,
+    });
+    this.isTutorialVideoModalOpen.set(true);
   }
 }

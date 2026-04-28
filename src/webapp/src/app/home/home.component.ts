@@ -4,8 +4,11 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ExerciseGridComponent } from '../shared/exercise-grid/exercise-grid.component';
 import { SeoService } from '../core/services/seo.service';
+import { Insights } from '../../telemetry/insights.service';
+import { tutorialVideoConfig } from '../core/config/tutorial-video.config';
 
 @Component({
   selector: 'app-home',
@@ -23,7 +26,13 @@ import { SeoService } from '../core/services/seo.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit {
-  private seoService = inject(SeoService);
+  private readonly seoService = inject(SeoService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly insights = inject(Insights, { optional: true });
+  readonly safeTutorialVideoEmbedUrl: SafeResourceUrl =
+    this.sanitizer.bypassSecurityTrustResourceUrl(tutorialVideoConfig.embedUrl);
+  readonly tutorialVideoWatchUrl = tutorialVideoConfig.watchUrl;
+  private hasTrackedTutorialVideoLoaded = false;
   
   ngOnInit(): void {
     // Set SEO meta tags for homepage
@@ -47,4 +56,12 @@ export class HomeComponent implements OnInit {
 
   }
 
+  onTutorialVideoFrameLoaded(): void {
+    if (this.hasTrackedTutorialVideoLoaded) {
+      return;
+    }
+
+    this.hasTrackedTutorialVideoLoaded = true;
+    this.insights?.trackEvent('tutorial_video_opened', { source: 'home' });
+  }
 }

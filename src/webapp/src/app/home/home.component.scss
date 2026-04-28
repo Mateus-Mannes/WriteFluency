@@ -379,6 +379,118 @@
   line-height: 1.6;
 }
 
+.tutorial-video-panel {
+  margin-top: 2rem;
+  padding: 1.2rem 1.3rem;
+  border-radius: 14px;
+  border: 1px solid rgba(58, 125, 255, 0.2);
+  background: linear-gradient(135deg, rgba(58, 125, 255, 0.06) 0%, rgba(58, 125, 255, 0.12) 100%);
+  display: grid;
+  grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 1rem;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.tutorial-video-copy-wrap {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  justify-content: center;
+  height: 100%;
+  padding-right: 0.25rem;
+}
+
+.tutorial-video-copy-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.tutorial-video-copy-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tutorial-video-copy-icon mat-icon {
+  color: #fff;
+  width: 1.3rem;
+  height: 1.3rem;
+  font-size: 1.3rem;
+}
+
+.tutorial-video-copy-header h3 {
+  margin: 0;
+  color: vars.$color-text;
+  font-size: clamp(1.6rem, 2vw, 2rem);
+  line-height: 1.15;
+}
+
+.tutorial-video-copy-description {
+  margin: 0;
+  color: vars.$color-text;
+  opacity: 0.8;
+  font-size: 1.22rem;
+  line-height: 1.5;
+  max-width: 36ch;
+}
+
+.tutorial-video-start-btn {
+  align-self: flex-start;
+  border-radius: 11px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.45rem;
+  padding-inline: 1.1rem !important;
+  min-height: 2.7rem;
+}
+
+.tutorial-video-start-btn mat-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1.2rem;
+}
+
+.tutorial-video-shell {
+  grid-column: 2;
+  margin: 0;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(58, 125, 255, 0.22);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  background: #000;
+}
+
+.tutorial-video-shell iframe {
+  width: 100%;
+  display: block;
+  border: 0;
+  aspect-ratio: 16 / 9;
+}
+
+.tutorial-video-fallback {
+  margin: 0;
+  padding-top: 0.1rem;
+  color: vars.$color-text;
+  opacity: 0.82;
+}
+
+.tutorial-video-fallback a {
+  color: vars.$color-primary;
+  font-weight: 600;
+}
+
 // ========================
 // 🎓 Latest Exercises Section
 // ========================
@@ -725,6 +837,34 @@ mat-paginator {
     gap: 1.5rem;
   }
 
+  .tutorial-video-panel {
+    grid-template-columns: 1fr;
+    padding: 1.1rem;
+  }
+
+  .tutorial-video-copy-wrap,
+  .tutorial-video-shell,
+  .tutorial-video-fallback {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .tutorial-video-copy-wrap {
+    gap: 0.7rem;
+    height: auto;
+    padding-right: 0;
+  }
+
+  .tutorial-video-copy-description {
+    max-width: 100%;
+    font-size: 1.08rem;
+  }
+
+  .tutorial-video-shell {
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
   .exercises-header {
     flex-direction: column;
     align-items: stretch;
@@ -785,6 +925,19 @@ mat-paginator {
   .section-title {
     font-size: 1.5rem;
     margin-bottom: 2rem;
+  }
+
+  .tutorial-video-panel {
+    padding: 1rem;
+  }
+
+  .tutorial-video-copy-header h3 {
+    font-size: 1.45rem;
+  }
+
+  .tutorial-video-start-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .stat-card {

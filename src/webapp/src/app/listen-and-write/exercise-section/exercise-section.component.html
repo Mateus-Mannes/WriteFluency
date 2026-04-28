@@ -9,10 +9,24 @@
         }
     </div>
 
-    <div id="exercise-word-count">
-        <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
+    <div class="exercise-header-actions">
+        <div id="exercise-word-count">
+            <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
+        </div>
+
+        <button
+            type="button"
+            class="tutorial-help-btn"
+            id="exercise-tutorial-video-help"
+            [matTooltip]="'In doubt? Watch the quick tutorial video'"
+            matTooltipPosition="above"
+            aria-label="Watch quick tutorial video"
+            (click)="onTutorialVideoHelpClick()">
+            <mat-icon>info</mat-icon>
+        </button>
     </div>
 </div>
+
 <textarea #exerciseTextArea id="exercise-text-area" class="exercise-text-area" [value]="text()"
     (input)="onTextChange($event)" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
     data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"></textarea>

@@ -9,6 +9,12 @@
   flex-wrap: wrap;
 }
 
+.exercise-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .exercise-footer-row {
   display: flex;
   justify-content: space-between;
@@ -130,6 +136,33 @@
   align-items: center;
 }
 
+.tutorial-help-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(58, 125, 255, 0.28);
+  background: rgba(58, 125, 255, 0.08);
+  color: vars.$color-primary;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tutorial-help-btn:hover {
+  background: rgba(58, 125, 255, 0.14);
+  border-color: rgba(58, 125, 255, 0.45);
+}
+
+.tutorial-help-btn mat-icon {
+  font-size: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .auto-pause-btn {
   background: #fff;
   border: 2px solid #E5E7EB;
@@ -237,7 +270,12 @@
   }
 
   #exercise-word-count {
+    width: auto;
+  }
+
+  .exercise-header-actions {
     width: 100%;
+    justify-content: space-between;
   }
 
   .exercise-footer-row {

@@ -1,0 +1,75 @@
+@use '../../../styles/variables' as vars;
+
+.tutorial-video-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.tutorial-video-modal {
+  position: relative;
+  width: min(920px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: vars.$color-surface;
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.24);
+}
+
+h2 {
+  margin: 0 0 0.85rem;
+  color: vars.$color-text;
+}
+
+.video-shell {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+}
+
+.fallback-link {
+  margin: 0.9rem 0 0;
+  color: vars.$color-text;
+  opacity: 0.82;
+}
+
+.fallback-link a {
+  color: vars.$color-primary;
+  font-weight: 600;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 1.8rem;
+  line-height: 1;
+  padding: 0.15rem 0.35rem;
+}
+
+@media (max-width: 700px) {
+  .tutorial-video-modal {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    padding: 1rem;
+  }
+}

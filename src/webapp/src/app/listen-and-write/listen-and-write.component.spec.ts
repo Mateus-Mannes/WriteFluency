@@ -258,6 +258,17 @@ describe('ListenAndWriteComponent', () => {
     expect(hasCompletedPlayback).toBeFalse();
   });
 
+  it('should include exercise goal as a bullet in submit warning message', () => {
+    component.newsAudioComponent = {
+      audioEnded: false,
+      audioRef: { nativeElement: { duration: 50, currentTime: 0 } },
+    } as any;
+
+    const warningMessage = (component as any).getSubmitWarningMessage();
+
+    expect(warningMessage).toContain('Quick reminder before submitting:\n\n- Goal: write as much of the full audio text as you can.');
+  });
+
   it('should render inline progress sync toast when tracking service exposes one', () => {
     progressSyncNotificationSignal.set({
       id: 1,
@@ -284,6 +295,50 @@ describe('ListenAndWriteComponent', () => {
 
     dismissButton.click();
     expect(exerciseProgressTrackingMock.dismissSyncNotification).toHaveBeenCalled();
+  });
+
+  it('should open tutorial video modal from exercise help icon and track telemetry', () => {
+    const sessionTracking = (component as any).exerciseSessionTracking;
+    const trackEventSpy = spyOn(sessionTracking, 'trackEvent');
+
+    component.onExerciseTutorialVideoRequested();
+    component.onTutorialVideoModalOpened();
+    component.onTutorialVideoModalClosed();
+
+    expect(component.isTutorialVideoModalOpen()).toBeFalse();
+    expect(trackEventSpy).toHaveBeenCalledWith('tutorial_video_cta_clicked', jasmine.objectContaining({
+      source: 'exercise_help_icon',
+    }));
+    expect(trackEventSpy).toHaveBeenCalledWith('tutorial_video_opened', jasmine.objectContaining({
+      source: 'exercise_help_icon',
+    }));
+    expect(trackEventSpy).toHaveBeenCalledWith('tutorial_video_closed', jasmine.objectContaining({
+      source: 'exercise_help_icon',
+    }));
+  });
+
+  it('should open tutorial video modal when exercise tour watch callback is triggered', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'getWindowWidth').and.returnValue(1200);
+    const sessionTracking = (component as any).exerciseSessionTracking;
+    const trackEventSpy = spyOn(sessionTracking, 'trackEvent');
+    const tourService = (component as any).exerciseTourService;
+    const startTourSpy = spyOn(tourService, 'startTour').and.callFake((options?: { onWatchTutorialVideo?: () => void }) => {
+      options?.onWatchTutorialVideo?.();
+    });
+
+    component.setNewState('exercise');
+
+    expect(startTourSpy).toHaveBeenCalled();
+    expect(component.isTutorialVideoModalOpen()).toBeTrue();
+    expect(trackEventSpy).toHaveBeenCalledWith('tutorial_video_cta_clicked', jasmine.objectContaining({
+      source: 'exercise_tour_final_step',
+    }));
   });
 
   it('should restore from server first when authenticated and skip local fallback', async () => {

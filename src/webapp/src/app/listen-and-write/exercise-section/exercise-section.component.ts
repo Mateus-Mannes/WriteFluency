@@ -3,13 +3,14 @@ import { Component, input, signal, ViewChild, ElementRef, output, computed, OnIn
 import { SubmitTourService } from '../services/submit-tour.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Proposition } from 'src/api/listen-and-write';
 import { BrowserService } from '../../core/services/browser.service';
 import { ExerciseSessionTrackingService } from '../services/exercise-session-tracking.service';
 
 @Component({
   selector: 'app-exercise-section',
-  imports: [ CommonModule, MatIconModule, MatButtonModule ],
+  imports: [ CommonModule, MatIconModule, MatButtonModule, MatTooltipModule ],
   templateUrl: './exercise-section.component.html',
   styleUrl: './exercise-section.component.scss',
 })
@@ -22,6 +23,8 @@ export class ExerciseSectionComponent implements OnInit {
   textChanged = output<string>();
 
   saveExerciseState = output<void>();
+
+  tutorialVideoRequested = output<void>();
 
   proposition = input<Proposition | null>();
 
@@ -131,6 +134,10 @@ export class ExerciseSectionComponent implements OnInit {
 
   saveState() {
     this.saveExerciseState.emit();
+  }
+
+  onTutorialVideoHelpClick(): void {
+    this.tutorialVideoRequested.emit();
   }
 
   private isMobileLayout(): boolean {

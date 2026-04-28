@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatTooltip } from '@angular/material/tooltip';
+import { By } from '@angular/platform-browser';
 
 import { ExerciseSectionComponent } from './exercise-section.component';
 
@@ -43,4 +45,25 @@ describe('ExerciseSectionComponent', () => {
 
     expect(component.shortcutSeekSeconds()).toBe(3);
   });
+
+  it('should emit tutorialVideoRequested when help icon is clicked', () => {
+    fixture.detectChanges();
+    const emitSpy = spyOn(component.tutorialVideoRequested, 'emit');
+    const helpButton = fixture.nativeElement.querySelector('#exercise-tutorial-video-help');
+
+    helpButton.click();
+
+    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('should render tutorial help icon with expected tooltip message', () => {
+    fixture.detectChanges();
+
+    const helpButton = fixture.nativeElement.querySelector('#exercise-tutorial-video-help');
+    const tooltipDirective = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+
+    expect(helpButton).toBeTruthy();
+    expect(tooltipDirective.message).toBe('In doubt? Watch the quick tutorial video');
+  });
+
 });

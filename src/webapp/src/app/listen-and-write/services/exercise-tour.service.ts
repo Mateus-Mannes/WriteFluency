@@ -6,6 +6,10 @@ import { AuthSessionStore } from '../../auth/services/auth-session.store';
 import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
 import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
 
+interface ExerciseTourOptions {
+  onWatchTutorialVideo?: () => void;
+}
+
 @Injectable({ providedIn: 'root' })
 
 export class ExerciseTourService {
@@ -32,7 +36,8 @@ export class ExerciseTourService {
   /**
    * Starts the guided exercise tour using hardcoded selectors for each step.
    */
-  startTour() {
+  startTour(options: ExerciseTourOptions = {}) {
+    const onWatchTutorialVideo = options.onWatchTutorialVideo;
     setTimeout(() => {
       if (this.shepherd.isActive) {
         this.shepherd.cancel();
@@ -214,12 +219,20 @@ export class ExerciseTourService {
         },
         {
           id: 'final',
-          title: 'Ready to Start!',
-          text: 'You’re ready. Press <b>Ctrl/⌘ + Enter</b> to start your first listening.',
+          title: 'Need a quick walkthrough?',
+          text: 'Still in doubt? Watch the quick tutorial video, or finish now and start your first listening with <b>Ctrl/⌘ + Enter</b>.',
           attachTo: undefined, // Center of screen
           buttons: [
             {
-              text: 'Next',
+              text: 'Watch video',
+              classes: 'wf-primary',
+              action: () => {
+                onWatchTutorialVideo?.();
+                this.shepherd.complete();
+              },
+            },
+            {
+              text: 'Finish',
               classes: 'wf-primary',
               action: () => this.shepherd.complete(),
             },
@@ -267,7 +280,8 @@ export class ExerciseTourService {
   /**
    * Mobile-friendly guided tour with fewer steps and touch-first guidance.
    */
-  startMobileTour() {
+  startMobileTour(options: ExerciseTourOptions = {}) {
+    const onWatchTutorialVideo = options.onWatchTutorialVideo;
     setTimeout(() => {
       if (this.shepherd.isActive) {
         this.shepherd.cancel();
@@ -375,14 +389,22 @@ export class ExerciseTourService {
           ],
         },
         {
-          id: 'submit-mobile',
-          title: 'Submit',
-          text: 'When you’re done, submit for feedback. Progress over perfection.',
+          id: 'video-mobile',
+          title: 'Need a quick walkthrough?',
+          text: 'Still in doubt? Watch the quick tutorial video, or finish and start practicing now.',
           attachTo: { element: '#exercise-submit', on: 'top' },
           floatingUIOptions: { middleware: [offset(16)] },
           buttons: [
             {
-              text: 'Next',
+              text: 'Watch video',
+              classes: 'wf-primary',
+              action: () => {
+                onWatchTutorialVideo?.();
+                this.shepherd.complete();
+              },
+            },
+            {
+              text: 'Finish',
               classes: 'wf-primary',
               action: () => this.shepherd.complete(),
             },

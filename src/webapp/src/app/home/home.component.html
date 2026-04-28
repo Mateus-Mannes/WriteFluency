@@ -140,6 +140,48 @@
           </mat-card-content>
         </mat-card>
       </div>
+
+      <div class="tutorial-video-panel">
+        <div class="tutorial-video-copy-wrap">
+          <div class="tutorial-video-copy-header">
+            <span class="tutorial-video-copy-icon" aria-hidden="true">
+              <mat-icon>play_circle</mat-icon>
+            </span>
+            <h3 class="text-heading">Still not sure how to start?</h3>
+          </div>
+
+          <p class="tutorial-video-copy-description text-body">
+            Watch a quick walkthrough showing the full exercise flow and the audio controls that help you type faster.
+          </p>
+
+          <a
+            id="home-start-first-exercise"
+            class="tutorial-video-start-btn text-body"
+            [routerLink]="['/exercises']"
+            mat-raised-button
+            color="primary">
+            <mat-icon>play_arrow</mat-icon>
+            <span>Start first exercise</span>
+          </a>
+
+          <p class="tutorial-video-fallback text-body">
+            If playback fails, open on
+            <a [href]="tutorialVideoWatchUrl" target="_blank" rel="noopener noreferrer">YouTube</a>.
+          </p>
+        </div>
+
+        <div class="tutorial-video-shell">
+          <iframe
+            id="home-tutorial-video-frame"
+            title="WriteFluency tutorial video"
+            [src]="safeTutorialVideoEmbedUrl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"
+            (load)="onTutorialVideoFrameLoaded()">
+          </iframe>
+        </div>
+      </div>
     </div>
   </section>
   

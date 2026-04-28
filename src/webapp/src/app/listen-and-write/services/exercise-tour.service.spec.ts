@@ -83,4 +83,32 @@ describe('ExerciseTourService', () => {
     expect(browserServiceMock.setItem).toHaveBeenCalledWith(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
     expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalled();
   }));
+
+  it('should invoke desktop watch video callback from final tour step', fakeAsync(() => {
+    const watchVideoSpy = jasmine.createSpy('watchVideoSpy');
+    service.startTour({ onWatchTutorialVideo: watchVideoSpy });
+    tick(51);
+
+    const addedSteps = shepherdMock.addSteps.calls.mostRecent().args[0] as Array<any>;
+    const finalStep = addedSteps.find((step) => step.id === 'final');
+    const watchVideoButton = finalStep.buttons.find((button: any) => button.text === 'Watch video');
+    watchVideoButton.action();
+
+    expect(watchVideoSpy).toHaveBeenCalled();
+    expect(shepherdMock.complete).toHaveBeenCalled();
+  }));
+
+  it('should invoke mobile watch video callback from final tour step', fakeAsync(() => {
+    const watchVideoSpy = jasmine.createSpy('watchVideoSpy');
+    service.startMobileTour({ onWatchTutorialVideo: watchVideoSpy });
+    tick(51);
+
+    const addedSteps = shepherdMock.addSteps.calls.mostRecent().args[0] as Array<any>;
+    const finalStep = addedSteps.find((step) => step.id === 'video-mobile');
+    const watchVideoButton = finalStep.buttons.find((button: any) => button.text === 'Watch video');
+    watchVideoButton.action();
+
+    expect(watchVideoSpy).toHaveBeenCalled();
+    expect(shepherdMock.complete).toHaveBeenCalled();
+  }));
 });
