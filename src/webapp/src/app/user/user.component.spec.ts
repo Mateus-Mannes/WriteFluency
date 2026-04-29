@@ -18,7 +18,7 @@ describe('UserComponent', () => {
 
   beforeEach(async () => {
     userProgressApiSpy = jasmine.createSpyObj<UserProgressApiService>('UserProgressApiService', ['summary', 'items']);
-    insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException']);
+    insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException', 'trackEvent']);
     authSessionStoreMock = {
       state: signal({
         isAuthenticated: true,
@@ -199,16 +199,52 @@ describe('UserComponent', () => {
       },
     });
     expect(component.error()).toBeNull();
-    expect(insightsSpy.trackException).toHaveBeenCalledWith(unauthorized, {
-      properties: jasmine.objectContaining({
+    expect(insightsSpy.trackEvent).toHaveBeenCalledWith(
+      'user_progress_session_expired',
+      jasmine.objectContaining({
         area: 'user_progress',
         operation: 'load_user_progress',
-        error_kind: 'unauthorized',
+        error_kind: 'session_expired',
         http_status: '401',
       }),
-      measurements: jasmine.objectContaining({
+      jasmine.objectContaining({
         http_status: 401,
       }),
+    );
+    expect(insightsSpy.trackException).not.toHaveBeenCalledWith(unauthorized, jasmine.anything());
+  });
+
+  it('should redirect to login without session-expired telemetry when 401 happens without a local session', async () => {
+    (authSessionStoreMock.state as any).set({
+      ...authSessionStoreMock.state(),
+      isAuthenticated: false,
+      userId: null,
+      email: null,
     });
+    const unauthorized = new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' });
+    userProgressApiSpy.summary.and.returnValue(throwError(() => unauthorized));
+
+    await component.reload();
+
+    expect(authSessionStoreMock.invalidateSession).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: {
+        returnUrl: '/user',
+        source: 'user_progress_unauthorized',
+      },
+    });
+    expect(insightsSpy.trackEvent).toHaveBeenCalledWith(
+      'user_progress_unauthorized',
+      jasmine.objectContaining({
+        area: 'user_progress',
+        operation: 'load_user_progress',
+        error_kind: 'missing_session',
+        http_status: '401',
+      }),
+      jasmine.objectContaining({
+        http_status: 401,
+      }),
+    );
+    expect(insightsSpy.trackException).not.toHaveBeenCalledWith(unauthorized, jasmine.anything());
   });
 });

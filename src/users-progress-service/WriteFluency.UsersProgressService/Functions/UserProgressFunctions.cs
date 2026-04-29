@@ -72,7 +72,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.BadRequest, new { Error = "exercise_id_invalid" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.StartAsync(auth.UserId, body, cancellationToken);
+        ProgressOperationResponse response;
+        try
+        {
+            response = await _progressTrackingService.StartAsync(auth.UserId, body, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressStart", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress start request processed. UserId={UserId}, ExerciseId={ExerciseId}, Status={Status}, TrackingEnabled={TrackingEnabled}.",
@@ -128,7 +136,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.BadRequest, new { Error = "exercise_id_invalid" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.CompleteAsync(auth.UserId, body, cancellationToken);
+        ProgressOperationResponse response;
+        try
+        {
+            response = await _progressTrackingService.CompleteAsync(auth.UserId, body, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressComplete", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress complete request processed. UserId={UserId}, ExerciseId={ExerciseId}, Status={Status}, TrackingEnabled={TrackingEnabled}.",
@@ -161,7 +177,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.Unauthorized, new { Error = "unauthorized" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.GetSummaryAsync(auth.UserId, cancellationToken);
+        ProgressSummaryResponse response;
+        try
+        {
+            response = await _progressTrackingService.GetSummaryAsync(auth.UserId, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressSummary", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress summary request processed. UserId={UserId}, TotalItems={TotalItems}, InProgressCount={InProgressCount}, CompletedCount={CompletedCount}, TotalAttempts={TotalAttempts}.",
@@ -208,7 +232,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.BadRequest, new { Error = "exercise_id_invalid" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.GetStateAsync(auth.UserId, exerciseId, cancellationToken);
+        ProgressStateResponse response;
+        try
+        {
+            response = await _progressTrackingService.GetStateAsync(auth.UserId, exerciseId, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressState", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress state request processed. UserId={UserId}, ExerciseId={ExerciseId}, HasServerState={HasServerState}, TrackingEnabled={TrackingEnabled}.",
@@ -241,7 +273,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.Unauthorized, new { Error = "unauthorized" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.GetItemsAsync(auth.UserId, cancellationToken);
+        IReadOnlyList<ProgressItemResponse> response;
+        try
+        {
+            response = await _progressTrackingService.GetItemsAsync(auth.UserId, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressItems", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress items request processed. UserId={UserId}, ItemCount={ItemCount}.",
@@ -280,7 +320,15 @@ public sealed class UserProgressFunctions
             exerciseId = parsedExerciseId;
         }
 
-        var response = await _progressTrackingService.GetAttemptsAsync(auth.UserId, exerciseId, cancellationToken);
+        IReadOnlyList<ProgressAttemptResponse> response;
+        try
+        {
+            response = await _progressTrackingService.GetAttemptsAsync(auth.UserId, exerciseId, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressAttempts", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress attempts request processed. UserId={UserId}, ExerciseId={ExerciseId}, AttemptCount={AttemptCount}.",
@@ -335,7 +383,15 @@ public sealed class UserProgressFunctions
             return await CreateJsonAsync(request, HttpStatusCode.BadRequest, new { Error = "exercise_id_invalid" }, cancellationToken);
         }
 
-        var response = await _progressTrackingService.SaveStateAsync(auth.UserId, body, cancellationToken);
+        ProgressOperationResponse response;
+        try
+        {
+            response = await _progressTrackingService.SaveStateAsync(auth.UserId, body, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateClientClosedRequestResponse(request, "ProgressStateSave", auth.UserId);
+        }
 
         _logger.LogInformation(
             "Progress save-state request processed. UserId={UserId}, ExerciseId={ExerciseId}, Status={Status}, TrackingEnabled={TrackingEnabled}.",
@@ -407,6 +463,20 @@ public sealed class UserProgressFunctions
         }
 
         return values.FirstOrDefault();
+    }
+
+    private HttpResponseData CreateClientClosedRequestResponse(
+        HttpRequestData request,
+        string operationName,
+        string userId)
+    {
+        _logger.LogInformation(
+            "Progress request was canceled by the client. Operation={OperationName}, UserId={UserId}, Path={Path}.",
+            operationName,
+            userId,
+            request.Url.AbsolutePath);
+
+        return request.CreateResponse((HttpStatusCode)499);
     }
 
     private static async Task<HttpResponseData> CreateJsonAsync(

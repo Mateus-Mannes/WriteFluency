@@ -1,0 +1,7 @@
+interface:
+  display_name: "WriteFluency Deploy"
+  short_description: "Commit and tag WriteFluency deploys."
+  default_prompt: "Use $writefluency-deploy to commit staged WriteFluency changes, push master, and create the correct production deploy tags."
+
+policy:
+  allow_implicit_invocation: true

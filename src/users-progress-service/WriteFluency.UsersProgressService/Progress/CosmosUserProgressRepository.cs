@@ -68,6 +68,12 @@ public sealed class CosmosUserProgressRepository : IUserProgressRepository
                     }
                 };
 
+                var preferredRegions = _options.NormalizedPreferredRegions;
+                if (preferredRegions.Count > 0)
+                {
+                    clientOptions.ApplicationPreferredRegions = preferredRegions;
+                }
+
                 _client = new CosmosClient(_options.Endpoint, _credential, clientOptions);
 
                 var database = _client.GetDatabase(_options.DatabaseName);

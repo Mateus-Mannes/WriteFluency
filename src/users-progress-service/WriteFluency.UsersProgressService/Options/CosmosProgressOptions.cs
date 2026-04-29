@@ -14,6 +14,8 @@ public sealed class CosmosProgressOptions
 
     public string Namespace { get; set; } = "local";
 
+    public string[] PreferredRegions { get; set; } = [];
+
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Endpoint)
         && !string.IsNullOrWhiteSpace(DatabaseName)
@@ -26,6 +28,13 @@ public sealed class CosmosProgressOptions
         || string.Equals(NormalizedNamespace, "local", StringComparison.Ordinal);
 
     public string NormalizedNamespace => (Namespace ?? string.Empty).Trim().ToLowerInvariant();
+
+    public IReadOnlyList<string> NormalizedPreferredRegions =>
+        (PreferredRegions ?? [])
+            .Where(region => !string.IsNullOrWhiteSpace(region))
+            .Select(region => region.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     public string ResolveProgressContainerName()
     {

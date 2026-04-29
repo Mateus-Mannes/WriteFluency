@@ -124,20 +124,18 @@ describe('ExerciseProgressTrackingService', () => {
         http_status: 401,
       }),
     );
-    expect(insightsMock.trackException).toHaveBeenCalledWith(
-      jasmine.any(Error),
+    expect(insightsMock.trackEvent).toHaveBeenCalledWith(
+      'exercise_progress_sync_notification',
       jasmine.objectContaining({
-        properties: jasmine.objectContaining({
           operation: 'start',
           failure_kind: 'unauthorized',
           notification_kind: 'session_expired',
           exercise_id: '5',
           wf_session_id: 'session-123',
           wf_operation_id: 'operation-456',
-        }),
-        measurements: jasmine.objectContaining({
-          http_status: 401,
-        }),
+      }),
+      jasmine.objectContaining({
+        http_status: 401,
       }),
     );
   });
@@ -203,18 +201,16 @@ describe('ExerciseProgressTrackingService', () => {
         http_status: 500,
       }),
     );
-    expect(insightsMock.trackException).toHaveBeenCalledWith(
-      jasmine.any(Error),
+    expect(insightsMock.trackEvent).toHaveBeenCalledWith(
+      'exercise_progress_sync_notification',
       jasmine.objectContaining({
-        properties: jasmine.objectContaining({
           operation: 'complete',
           failure_kind: 'api_error',
           notification_kind: 'warning',
           exercise_id: '5',
-        }),
-        measurements: jasmine.objectContaining({
-          http_status: 500,
-        }),
+      }),
+      jasmine.objectContaining({
+        http_status: 500,
       }),
     );
   });
@@ -227,14 +223,14 @@ describe('ExerciseProgressTrackingService', () => {
 
     service.trackComplete({ id: 5, title: 'Exercise 5' } as any, null as any);
     expect(service.syncNotification()).toEqual(jasmine.objectContaining({ kind: 'warning' }));
-    expect(insightsMock.trackException).toHaveBeenCalledTimes(1);
+    expect(insightsMock.trackEvent).toHaveBeenCalledTimes(1);
 
     service.dismissSyncNotification();
     expect(service.syncNotification()).toBeNull();
 
     service.trackComplete({ id: 5, title: 'Exercise 5' } as any, null as any);
     expect(service.syncNotification()).toBeNull();
-    expect(insightsMock.trackException).toHaveBeenCalledTimes(1);
+    expect(insightsMock.trackEvent).toHaveBeenCalledTimes(1);
 
     userProgressApiMock.start.and.returnValue(of({
       trackingEnabled: true,
@@ -246,7 +242,7 @@ describe('ExerciseProgressTrackingService', () => {
     service.trackComplete({ id: 5, title: 'Exercise 5' } as any, null as any);
 
     expect(service.syncNotification()).toEqual(jasmine.objectContaining({ kind: 'warning' }));
-    expect(insightsMock.trackException).toHaveBeenCalledTimes(2);
+    expect(insightsMock.trackEvent).toHaveBeenCalledTimes(2);
   });
 
   it('should log to Insights directly when there is no active exercise session', () => {

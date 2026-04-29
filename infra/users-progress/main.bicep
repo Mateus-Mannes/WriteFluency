@@ -83,6 +83,18 @@ param cosmosAccountName string
 @description('Cosmos DB endpoint URL.')
 param cosmosEndpoint string
 
+@description('Cosmos DB preferred regions for the East US Function App, in priority order.')
+param eastUsCosmosPreferredRegions array = [
+  'East US'
+  'Southeast Asia'
+]
+
+@description('Cosmos DB preferred regions for the Southeast Asia Function App, in priority order.')
+param southeastAsiaCosmosPreferredRegions array = [
+  'Southeast Asia'
+  'East US'
+]
+
 @description('Cosmos database name.')
 param cosmosDatabaseName string = 'wf-users-progress'
 
@@ -399,6 +411,16 @@ var corsAppSettings = [for (origin, index) in corsAllowedOrigins: {
   value: origin
 }]
 
+var eastUsCosmosPreferredRegionAppSettings = [for (region, index) in eastUsCosmosPreferredRegions: {
+  name: 'Cosmos__PreferredRegions__${index}'
+  value: region
+}]
+
+var southeastAsiaCosmosPreferredRegionAppSettings = [for (region, index) in southeastAsiaCosmosPreferredRegions: {
+  name: 'Cosmos__PreferredRegions__${index}'
+  value: region
+}]
+
 var telemetryTuningAppSettings = [
   {
     name: 'AzureFunctionsJobHost__logging__logLevel__default'
@@ -493,6 +515,10 @@ resource functionAppEastUs 'Microsoft.Web/sites@2024-04-01' = {
         maximumInstanceCount: maximumInstanceCount
         instanceMemoryMB: instanceMemoryMB
       }
+      #disable-next-line BCP037
+      siteUpdateStrategy: {
+        type: 'RollingUpdate'
+      }
     }
     siteConfig: {
       vnetRouteAllEnabled: true
@@ -500,7 +526,7 @@ resource functionAppEastUs 'Microsoft.Web/sites@2024-04-01' = {
         allowedOrigins: corsAllowedOrigins
         supportCredentials: true
       }
-      appSettings: concat(appSettingsBase, corsAppSettings, telemetryTuningAppSettings, [
+      appSettings: concat(appSettingsBase, eastUsCosmosPreferredRegionAppSettings, corsAppSettings, telemetryTuningAppSettings, [
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageEastUs.name
@@ -553,6 +579,10 @@ resource functionAppSoutheastAsia 'Microsoft.Web/sites@2024-04-01' = {
         maximumInstanceCount: maximumInstanceCount
         instanceMemoryMB: instanceMemoryMB
       }
+      #disable-next-line BCP037
+      siteUpdateStrategy: {
+        type: 'RollingUpdate'
+      }
     }
     siteConfig: {
       vnetRouteAllEnabled: true
@@ -560,7 +590,7 @@ resource functionAppSoutheastAsia 'Microsoft.Web/sites@2024-04-01' = {
         allowedOrigins: corsAllowedOrigins
         supportCredentials: true
       }
-      appSettings: concat(appSettingsBase, corsAppSettings, telemetryTuningAppSettings, [
+      appSettings: concat(appSettingsBase, southeastAsiaCosmosPreferredRegionAppSettings, corsAppSettings, telemetryTuningAppSettings, [
         {
           name: 'AzureWebJobsStorage__accountName'
           value: storageSoutheastAsia.name

@@ -55,23 +55,33 @@ export class UserComponent implements OnInit {
       const errorKind = this.getErrorKind(error, statusCode);
 
       if (statusCode === 401) {
-        this.authSessionStore.invalidateSession();
-        this.insights?.trackException(error, {
-          properties: {
+        const hadAuthenticatedSession = this.authState().isAuthenticated;
+        const unauthorizedReason = hadAuthenticatedSession ? 'session_expired' : 'missing_session';
+        const redirectSource = hadAuthenticatedSession
+          ? 'user_progress_session_expired'
+          : 'user_progress_unauthorized';
+
+        if (hadAuthenticatedSession) {
+          this.authSessionStore.invalidateSession();
+        }
+
+        this.insights?.trackEvent(
+          redirectSource,
+          {
             area: 'user_progress',
             operation: 'load_user_progress',
-            error_kind: errorKind,
+            error_kind: unauthorizedReason,
             http_status: String(statusCode),
           },
-          measurements: {
+          {
             http_status: statusCode,
           },
-        });
+        );
 
         const redirected = await this.router.navigate(['/auth/login'], {
           queryParams: {
             returnUrl: '/user',
-            source: 'user_progress_session_expired',
+            source: redirectSource,
           },
         });
 

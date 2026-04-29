@@ -74,4 +74,15 @@ public class CosmosProgressOptionsTests
         options.IsNamespaceSupported.ShouldBeFalse();
         options.IsConfigured.ShouldBeFalse();
     }
+
+    [Fact]
+    public void NormalizedPreferredRegions_ShouldTrimAndRemoveDuplicates()
+    {
+        var options = new CosmosProgressOptions
+        {
+            PreferredRegions = [" Southeast Asia ", "East US", "southeast asia", ""]
+        };
+
+        options.NormalizedPreferredRegions.ShouldBe(["Southeast Asia", "East US"]);
+    }
 }

@@ -180,7 +180,7 @@ export class ExerciseProgressTrackingService {
           message: 'Your session expired. Please log in again to keep saving your exercise progress.',
         } as const;
         this.showNotification(notification);
-        this.trackProgressSyncToastException(operation, exerciseId, statusCode, 'unauthorized', notification, error);
+        this.trackProgressSyncNotification(operation, exerciseId, statusCode, 'unauthorized', notification, error);
       }
 
       this.trackProgressSyncFailure(operation, exerciseId, statusCode, 'unauthorized');
@@ -194,7 +194,7 @@ export class ExerciseProgressTrackingService {
         message: 'We had a problem saving your progress. You can continue the exercise, but your latest state may not be fully saved.',
       } as const;
       this.showNotification(notification);
-      this.trackProgressSyncToastException(operation, exerciseId, statusCode, 'api_error', notification, error);
+      this.trackProgressSyncNotification(operation, exerciseId, statusCode, 'api_error', notification, error);
     }
 
     this.trackProgressSyncFailure(operation, exerciseId, statusCode, 'api_error');
@@ -225,7 +225,7 @@ export class ExerciseProgressTrackingService {
     this.insights?.trackEvent('exercise_progress_sync_failure', properties, measurements);
   }
 
-  private trackProgressSyncToastException(
+  private trackProgressSyncNotification(
     operation: ProgressOperation,
     exerciseId: number,
     statusCode: number | null,
@@ -244,19 +244,13 @@ export class ExerciseProgressTrackingService {
       exercise_id: String(exerciseId),
       wf_session_id: sessionId ?? '',
       wf_operation_id: operationId ?? '',
+      error_name: error instanceof Error ? error.name : '',
     };
     const measurements = {
       http_status: statusCode ?? 0,
     };
-    const exception = error instanceof Error
-      ? error
-      : new Error(`Progress sync notification shown: ${notification.kind}`);
 
-    this.insights?.trackException(exception, {
-      properties,
-      measurements,
-      severityLevel: 2,
-    });
+    this.insights?.trackEvent('exercise_progress_sync_notification', properties, measurements);
   }
 
   private showNotification(notification: Omit<ProgressSyncNotification, 'id'>): void {
