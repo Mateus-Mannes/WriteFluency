@@ -592,20 +592,20 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
                 ])
             };
 
-            var response = await _chatClient.GetResponseAsync<string>(
+            var response = await _chatClient.GetResponseAsync(
                 messages,
                 CreateChatOptions(maxTokens: 150, temperature: 0.3f),
                 cancellationToken: cancellationToken);
 
             // Parse the response - expecting "valid" or "invalid"
-            var result = response.Result.Trim().ToLowerInvariant();
+            var result = response.Text.Trim().ToLowerInvariant();
             
-            if (result.Contains("valid"))
+            if (string.Equals(result, "valid", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation("Image validation: Valid image detected for article '{Title}'", articleTitle);
                 return Result.Ok(true);
             }
-            else if (result.Contains("invalid"))
+            else if (string.Equals(result, "invalid", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning("Image validation: Invalid image detected for article '{Title}'", articleTitle);
                 return Result.Ok(false);

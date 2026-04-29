@@ -7,6 +7,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.PixelFormats;
 using WriteFluency.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,10 @@ public class CreatePropositionService
     private const int JpegCompressionQuality = 60;
     private const int WebpCompressionQuality = 50;
     private const int MaxOriginalJpegBytes = 153600; // 150 KB
+    private const int ImageAnalysisStep = 8;
+    private const double MinimumLuminanceStdDev = 8.0;
+    private const int MinimumQuantizedColorBuckets = 8;
+    private const double MaximumDominantColorRatio = 0.92;
 
     private static readonly ImageVariant BaseVariant = OptimizedImageVariants
         .OrderByDescending(variant => variant.Width)
@@ -136,6 +141,12 @@ public class CreatePropositionService
             }
 
             using var processedImage = processedImageResult.Value;
+            var imageContentValidation = ValidateImageContent(processedImage);
+            if (imageContentValidation.IsFailed)
+            {
+                return Result.Fail(new Error("Image failed deterministic content validation").CausedBy(imageContentValidation.Errors));
+            }
+
             var processedJpegResult = await EncodeJpegAsync(processedImage, cancellationToken);
             if (processedJpegResult.IsFailed)
             {
@@ -264,6 +275,75 @@ public class CreatePropositionService
             _logger.LogWarning(ex, "Failed to process image");
             return Result.Fail(new Error("Failed to process image").CausedBy(ex));
         }
+    }
+
+    private Result ValidateImageContent(Image image)
+    {
+        try
+        {
+            using var rgbaImage = image.CloneAs<Rgba32>();
+            var sampleCount = 0;
+            var luminanceSum = 0.0;
+            var luminanceSquaredSum = 0.0;
+            var colorBuckets = new Dictionary<int, int>();
+
+            rgbaImage.ProcessPixelRows(accessor =>
+            {
+                for (var y = 0; y < accessor.Height; y += ImageAnalysisStep)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x += ImageAnalysisStep)
+                    {
+                        var pixel = row[x];
+                        var luminance = GetLuminance(pixel);
+                        luminanceSum += luminance;
+                        luminanceSquaredSum += luminance * luminance;
+                        sampleCount++;
+
+                        var bucket = QuantizeColor(pixel);
+                        colorBuckets[bucket] = colorBuckets.GetValueOrDefault(bucket) + 1;
+                    }
+                }
+            });
+
+            if (sampleCount == 0)
+            {
+                return Result.Fail(new Error("Image has no analyzable pixels"));
+            }
+
+            var mean = luminanceSum / sampleCount;
+            var variance = Math.Max(0, (luminanceSquaredSum / sampleCount) - (mean * mean));
+            var stdDev = Math.Sqrt(variance);
+            var dominantColorRatio = colorBuckets.Values.Max() / (double)sampleCount;
+
+            if (stdDev < MinimumLuminanceStdDev)
+            {
+                return Result.Fail(new Error($"Image appears blank or nearly uniform. LuminanceStdDev={stdDev:F2}"));
+            }
+
+            if (colorBuckets.Count < MinimumQuantizedColorBuckets && dominantColorRatio > MaximumDominantColorRatio)
+            {
+                return Result.Fail(new Error($"Image appears to be a logo, placeholder, or low-content graphic. ColorBuckets={colorBuckets.Count}, DominantColorRatio={dominantColorRatio:F2}"));
+            }
+
+            return Result.Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to run deterministic image content validation");
+            return Result.Fail(new Error("Failed to validate image content").CausedBy(ex));
+        }
+    }
+
+    private static double GetLuminance(Rgba32 pixel)
+        => (0.2126 * pixel.R) + (0.7152 * pixel.G) + (0.0722 * pixel.B);
+
+    private static int QuantizeColor(Rgba32 pixel)
+    {
+        var r = pixel.R >> 5;
+        var g = pixel.G >> 5;
+        var b = pixel.B >> 5;
+        return (r << 6) | (g << 3) | b;
     }
 
     private async Task<Result<byte[]>> EncodeJpegAsync(Image image, CancellationToken cancellationToken = default)

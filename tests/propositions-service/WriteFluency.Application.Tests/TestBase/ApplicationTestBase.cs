@@ -138,7 +138,22 @@ public class ApplicationTestBase : IDisposable
 
     private static byte[] CreateSampleImageBytes()
     {
-        using var image = new Image<Rgba32>(1280, 720, new Rgba32(40, 80, 120));
+        using var image = new Image<Rgba32>(1280, 720);
+        image.ProcessPixelRows(accessor =>
+        {
+            for (var y = 0; y < accessor.Height; y++)
+            {
+                var row = accessor.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba32(
+                        (byte)((x * 255) / accessor.Width),
+                        (byte)((y * 255) / accessor.Height),
+                        (byte)(((x + y) * 255) / (accessor.Width + accessor.Height)));
+                }
+            }
+        });
+
         using var outputStream = new MemoryStream();
         image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = 80 });
         return outputStream.ToArray();

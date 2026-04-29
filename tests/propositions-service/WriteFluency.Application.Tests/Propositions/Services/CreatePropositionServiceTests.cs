@@ -18,6 +18,8 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 {
     private readonly CreatePropositionService _service;
     private IFileService _fileServiceMock = null!;
+    private IArticleExtractor _articleExtractorMock = null!;
+    private IGenerativeAIClient _generativeAIClientMock = null!;
     private static readonly byte[] SampleImageBytes = CreateSampleImageBytes();
 
     public CreatePropositionServiceTests()
@@ -70,6 +72,21 @@ public class CreatePropositionServiceTests : ApplicationTestBase
         result.ShouldBeEmpty();
     }
 
+    [Fact]
+    public async Task ShouldRejectBlankImageBeforeAiValidation()
+    {
+        _articleExtractorMock.DownloadImageAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Ok(CreateBlankImageBytes()));
+
+        var dto = new CreatePropositionDto(DateTime.UtcNow.Date, ComplexityEnum.Beginner, SubjectEnum.Business);
+
+        var result = await _service.CreatePropositionsAsync(dto, 1);
+
+        result.ShouldBeEmpty();
+        await _generativeAIClientMock.DidNotReceive()
+            .ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
     protected override void ConfigureMocks(IServiceCollection services, SubjectEnum? subjectWithoutNews = null)
     {
         var faker = new Faker();
@@ -80,6 +97,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
         services.AddSingleton(newsClientMock);
 
         var articleExtractorMock = Substitute.For<IArticleExtractor>();
+        _articleExtractorMock = articleExtractorMock;
         articleExtractorMock.DownloadImageAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(SampleImageBytes));
         articleExtractorMock.GetVisibleTextAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -87,6 +105,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
         services.AddSingleton(articleExtractorMock);
 
         var generativeAIClientMock = Substitute.For<IGenerativeAIClient>();
+        _generativeAIClientMock = generativeAIClientMock;
         generativeAIClientMock.GenerateTextAsync(Arg.Any<ComplexityEnum>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(new AIGeneratedTextDto(faker.Lorem.Paragraph(10), faker.Lorem.Paragraph(3000))));
         generativeAIClientMock.ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -138,7 +157,30 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 
     private static byte[] CreateSampleImageBytes()
     {
-        using var image = new Image<Rgba32>(1280, 720, new Rgba32(40, 80, 120));
+        using var image = new Image<Rgba32>(1280, 720);
+        image.ProcessPixelRows(accessor =>
+        {
+            for (var y = 0; y < accessor.Height; y++)
+            {
+                var row = accessor.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba32(
+                        (byte)((x * 255) / accessor.Width),
+                        (byte)((y * 255) / accessor.Height),
+                        (byte)(((x + y) * 255) / (accessor.Width + accessor.Height)));
+                }
+            }
+        });
+
+        using var outputStream = new MemoryStream();
+        image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = 80 });
+        return outputStream.ToArray();
+    }
+
+    private static byte[] CreateBlankImageBytes()
+    {
+        using var image = new Image<Rgba32>(1280, 720, new Rgba32(245, 247, 250));
         using var outputStream = new MemoryStream();
         image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = 80 });
         return outputStream.ToArray();
