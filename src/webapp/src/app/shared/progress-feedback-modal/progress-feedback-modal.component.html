@@ -1,0 +1,84 @@
+@if (isOpen()) {
+  <div
+    class="progress-feedback-modal-backdrop"
+    role="presentation"
+    (click)="onBackdropClick()">
+    <section
+      class="progress-feedback-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="progress-feedback-title"
+      (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="close-btn"
+        aria-label="Close feedback request"
+        (click)="onCloseClick()">
+        &times;
+      </button>
+
+      <div class="modal-grid">
+        <div class="content-column">
+          <p class="eyebrow">Quick feedback request</p>
+          <h2 id="progress-feedback-title">{{ title() }}</h2>
+
+          <div class="video-column">
+            @if (safeEmbedUrl(); as safeEmbedUrl) {
+              <div class="video-shell">
+                <iframe
+                  title="Message from the WriteFluency creator"
+                  [src]="safeEmbedUrl"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  referrerpolicy="strict-origin-when-cross-origin">
+                </iframe>
+              </div>
+
+              <p class="fallback-link">
+                If playback fails, open on
+                <a
+                  [href]="watchUrl()"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  YouTube
+                </a>.
+              </p>
+            } @else {
+              <div class="video-placeholder">
+                <p>A short message from Matthew will appear here soon.</p>
+              </div>
+            }
+          </div>
+
+          <label class="feedback-label" for="progress-feedback-comment">
+            Your feedback
+          </label>
+          <textarea
+            id="progress-feedback-comment"
+            name="progress-feedback-comment"
+            maxlength="4000"
+            rows="6"
+            [(ngModel)]="comment"
+            placeholder="What has your experience been like so far?">
+          </textarea>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="onNotNowClick()">
+              Not now
+            </button>
+            <button
+              type="button"
+              class="primary-btn"
+              [disabled]="!comment.trim()"
+              (click)="onSubmit()">
+              Send feedback
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+}

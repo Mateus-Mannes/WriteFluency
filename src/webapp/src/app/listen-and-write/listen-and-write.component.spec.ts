@@ -7,6 +7,7 @@ import { ListenAndWriteComponent, LISTEN_WRITE_FIRST_TIME_KEY } from './listen-a
 import { ExerciseProgressTrackingService } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
+import { FeedbackService } from './services/feedback.service';
 
 const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
@@ -17,6 +18,7 @@ describe('ListenAndWriteComponent', () => {
   let routeParams$: Subject<Record<string, unknown>>;
   let progressSyncNotificationSignal: ReturnType<typeof signal>;
   let authSessionStoreMock: jasmine.SpyObj<AuthSessionStore>;
+  let feedbackServiceMock: jasmine.SpyObj<FeedbackService>;
   let insightsMock: jasmine.SpyObj<Insights>;
   let exerciseProgressTrackingMock: {
     trackStart: jasmine.Spy;
@@ -49,6 +51,12 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
     authSessionStoreMock.userId.and.returnValue(null);
+    feedbackServiceMock = jasmine.createSpyObj<FeedbackService>(
+      'FeedbackService',
+      ['shouldShowPrompt', 'consumePromptOpportunity', 'markDismissed', 'submitFeedback'],
+    );
+    feedbackServiceMock.shouldShowPrompt.and.returnValue(false);
+    feedbackServiceMock.consumePromptOpportunity.and.returnValue(false);
     exerciseProgressTrackingMock = {
       trackStart: jasmine.createSpy('trackStart'),
       trackComplete: jasmine.createSpy('trackComplete'),
@@ -75,6 +83,10 @@ describe('ListenAndWriteComponent', () => {
         {
           provide: AuthSessionStore,
           useValue: authSessionStoreMock,
+        },
+        {
+          provide: FeedbackService,
+          useValue: feedbackServiceMock,
         },
         {
           provide: Insights,
@@ -141,6 +153,43 @@ describe('ListenAndWriteComponent', () => {
     expect(component.isFirstTime()).toBeFalse();
     expect(component.isFirstTime()).toBeFalse();
     expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalledTimes(1);
+  });
+
+  it('should include authenticated user id when submitting exercise feedback', () => {
+    authSessionStoreMock.userId.and.returnValue('user-123');
+    component.exerciseId = 42;
+    component.proposition.set({
+      id: 42,
+      complexity: { description: 'Beginner' },
+      subject: { description: 'Business' },
+    } as any);
+
+    component.onFeedbackSubmitted({
+      rating: 5,
+      tags: ['useful'],
+      comment: 'Great exercise',
+    });
+
+    expect(feedbackServiceMock.submitFeedback).toHaveBeenCalledWith(jasmine.objectContaining({
+      exerciseId: '42',
+      difficulty: 'Beginner',
+      topic: 'Business',
+      userId: 'user-123',
+    }));
+  });
+
+  it('should send empty user id when guest submits exercise feedback', () => {
+    authSessionStoreMock.userId.and.returnValue(null);
+
+    component.onFeedbackSubmitted({
+      rating: 4,
+      tags: [],
+      comment: null,
+    });
+
+    expect(feedbackServiceMock.submitFeedback).toHaveBeenCalledWith(jasmine.objectContaining({
+      userId: '',
+    }));
   });
 
   it('should use auto-pause value for rewind shortcut when enabled', () => {

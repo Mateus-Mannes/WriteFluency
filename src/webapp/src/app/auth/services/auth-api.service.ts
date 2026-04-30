@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthSession, ExternalProvider } from '../models/auth-session.model';
 import { environment } from '../../../enviroments/enviroment';
+import { FeedbackPromptStatusResponse } from '../models/feedback-prompt.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
@@ -36,6 +37,26 @@ export class AuthApiService {
     );
   }
 
+  feedbackPromptStatus(campaignKey: string): Observable<FeedbackPromptStatusResponse> {
+    const encodedCampaignKey = encodeURIComponent(campaignKey);
+    return this.http.get<FeedbackPromptStatusResponse>(
+      `${this.basePath}/feedback-prompts/${encodedCampaignKey}/status`,
+      { withCredentials: true },
+    );
+  }
+
+  markFeedbackPromptShown(campaignKey: string): Observable<FeedbackPromptStatusResponse> {
+    return this.markFeedbackPrompt(campaignKey, 'shown');
+  }
+
+  markFeedbackPromptDismissed(campaignKey: string): Observable<FeedbackPromptStatusResponse> {
+    return this.markFeedbackPrompt(campaignKey, 'dismissed');
+  }
+
+  markFeedbackPromptSubmitted(campaignKey: string): Observable<FeedbackPromptStatusResponse> {
+    return this.markFeedbackPrompt(campaignKey, 'submitted');
+  }
+
   requestOtp(email: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.basePath}/passwordless/request`, { email }, { withCredentials: true });
   }
@@ -58,5 +79,17 @@ export class AuthApiService {
       withCredentials: true,
       responseType: 'text',
     });
+  }
+
+  private markFeedbackPrompt(
+    campaignKey: string,
+    action: 'shown' | 'dismissed' | 'submitted',
+  ): Observable<FeedbackPromptStatusResponse> {
+    const encodedCampaignKey = encodeURIComponent(campaignKey);
+    return this.http.post<FeedbackPromptStatusResponse>(
+      `${this.basePath}/feedback-prompts/${encodedCampaignKey}/${action}`,
+      {},
+      { withCredentials: true },
+    );
   }
 }

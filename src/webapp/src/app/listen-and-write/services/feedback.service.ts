@@ -10,6 +10,7 @@ export interface ExerciseFeedbackEvent {
   difficulty: string;
   topic: string;
   sessionId: string;
+  userId: string;
   timestamp: string;
 }
 
@@ -76,6 +77,7 @@ export class FeedbackService {
         difficulty: event.difficulty,
         topic: event.topic,
         sessionId: event.sessionId,
+        userId: event.userId,
         timestamp: event.timestamp
       },
       {

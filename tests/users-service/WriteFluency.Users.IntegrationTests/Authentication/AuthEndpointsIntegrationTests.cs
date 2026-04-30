@@ -295,6 +295,113 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
     }
 
     [Fact]
+    public async Task FeedbackPromptStatus_WhenFirstRequested_ShouldBeEligible()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"feedback-status-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var response = await client.GetAsync("/users/auth/feedback-prompts/progress_feedback_v1/status");
+        response.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("campaignKey").GetString().ShouldBe("progress_feedback_v1");
+        doc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeTrue();
+        doc.RootElement.GetProperty("dismissCount").GetInt32().ShouldBe(0);
+        doc.RootElement.GetProperty("submitCount").GetInt32().ShouldBe(0);
+        doc.RootElement.GetProperty("nextEligibleAtUtc").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task FeedbackPromptLifecycle_ShouldTrackShownDismissedAndSubmittedCooldowns()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"feedback-lifecycle-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var shown = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/feedback-prompts/progress_feedback_v1/shown", new { });
+        shown.IsSuccessStatusCode.ShouldBeTrue();
+        using (var shownDoc = await JsonDocument.ParseAsync(await shown.Content.ReadAsStreamAsync()))
+        {
+            shownDoc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeTrue();
+            shownDoc.RootElement.GetProperty("lastShownAtUtc").ValueKind.ShouldBe(JsonValueKind.String);
+        }
+
+        var dismissed = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/feedback-prompts/progress_feedback_v1/dismissed", new { });
+        dismissed.IsSuccessStatusCode.ShouldBeTrue();
+        using (var dismissedDoc = await JsonDocument.ParseAsync(await dismissed.Content.ReadAsStreamAsync()))
+        {
+            dismissedDoc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeFalse();
+            dismissedDoc.RootElement.GetProperty("dismissCount").GetInt32().ShouldBe(1);
+            dismissedDoc.RootElement.GetProperty("nextEligibleAtUtc").ValueKind.ShouldBe(JsonValueKind.String);
+        }
+
+        await SetFeedbackPromptDatesAsync(
+            email,
+            "progress_feedback_v1",
+            lastDismissedAtUtc: DateTimeOffset.UtcNow.AddDays(-22));
+
+        var eligibleAfterDismissCooldown = await client.GetAsync("/users/auth/feedback-prompts/progress_feedback_v1/status");
+        eligibleAfterDismissCooldown.IsSuccessStatusCode.ShouldBeTrue();
+        using (var eligibleAfterDismissDoc = await JsonDocument.ParseAsync(await eligibleAfterDismissCooldown.Content.ReadAsStreamAsync()))
+        {
+            eligibleAfterDismissDoc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeTrue();
+        }
+
+        var submitted = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/feedback-prompts/progress_feedback_v1/submitted", new { });
+        submitted.IsSuccessStatusCode.ShouldBeTrue();
+        using (var submittedDoc = await JsonDocument.ParseAsync(await submitted.Content.ReadAsStreamAsync()))
+        {
+            submittedDoc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeFalse();
+            submittedDoc.RootElement.GetProperty("submitCount").GetInt32().ShouldBe(1);
+            submittedDoc.RootElement.GetProperty("nextEligibleAtUtc").ValueKind.ShouldBe(JsonValueKind.String);
+        }
+
+        await SetFeedbackPromptDatesAsync(
+            email,
+            "progress_feedback_v1",
+            lastSubmittedAtUtc: DateTimeOffset.UtcNow.AddDays(-61));
+
+        var eligibleAfterSubmitCooldown = await client.GetAsync("/users/auth/feedback-prompts/progress_feedback_v1/status");
+        eligibleAfterSubmitCooldown.IsSuccessStatusCode.ShouldBeTrue();
+        using (var eligibleAfterSubmitDoc = await JsonDocument.ParseAsync(await eligibleAfterSubmitCooldown.Content.ReadAsStreamAsync()))
+        {
+            eligibleAfterSubmitDoc.RootElement.GetProperty("isEligible").GetBoolean().ShouldBeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task FeedbackPromptStatus_WhenUnauthenticated_ShouldReturnUnauthorized()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var response = await client.GetAsync("/users/auth/feedback-prompts/progress_feedback_v1/status");
+        IsUnauthenticatedStatus(response.StatusCode).ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task Logout_WithCrossSiteOriginHeader_ShouldBeRejectedWithForbidden()
     {
         if (!CanRunIntegration())
@@ -809,5 +916,34 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         using var scope = _fixture.Factory!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
         return await db.Users.SingleAsync(x => x.Email == email);
+    }
+
+    private async Task SetFeedbackPromptDatesAsync(
+        string email,
+        string campaignKey,
+        DateTimeOffset? lastDismissedAtUtc = null,
+        DateTimeOffset? lastSubmittedAtUtc = null)
+    {
+        _fixture.Factory.ShouldNotBeNull();
+
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        var user = await db.Users.SingleAsync(u => u.Email == email);
+        var state = await db.UserFeedbackPromptStates.SingleAsync(s =>
+            s.UserId == user.Id &&
+            s.CampaignKey == campaignKey);
+
+        if (lastDismissedAtUtc.HasValue)
+        {
+            state.LastDismissedAtUtc = lastDismissedAtUtc;
+        }
+
+        if (lastSubmittedAtUtc.HasValue)
+        {
+            state.LastSubmittedAtUtc = lastSubmittedAtUtc;
+        }
+
+        state.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync();
     }
 }

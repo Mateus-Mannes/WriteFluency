@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Options;
@@ -16,6 +17,8 @@ namespace WriteFluency.Users.WebApi.Authentication;
 public static class AuthEndpointExtensions
 {
     private const string UsersAuthBasePath = "/users/auth";
+    private const int FeedbackSubmittedCooldownDays = 60;
+    private const int FeedbackDismissedCooldownDays = 21;
 
     private static readonly Dictionary<string, ExternalProviderDefinition> ExternalProviders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -36,6 +39,18 @@ public static class AuthEndpointExtensions
             .RequireAuthorization();
 
         authGroup.MapPost("/tutorial/listen-write/completed", MarkListenWriteTutorialCompletedAsync)
+            .RequireAuthorization();
+
+        authGroup.MapGet("/feedback-prompts/{campaignKey}/status", GetFeedbackPromptStatusAsync)
+            .RequireAuthorization();
+
+        authGroup.MapPost("/feedback-prompts/{campaignKey}/shown", MarkFeedbackPromptShownAsync)
+            .RequireAuthorization();
+
+        authGroup.MapPost("/feedback-prompts/{campaignKey}/dismissed", MarkFeedbackPromptDismissedAsync)
+            .RequireAuthorization();
+
+        authGroup.MapPost("/feedback-prompts/{campaignKey}/submitted", MarkFeedbackPromptSubmittedAsync)
             .RequireAuthorization();
 
         authGroup.MapPost("/passwordless/request", RequestPasswordlessOtpAsync);
@@ -116,6 +131,185 @@ public static class AuthEndpointExtensions
         {
             ListenWriteTutorialCompleted = true
         });
+    }
+
+    private static async Task<IResult> GetFeedbackPromptStatusAsync(
+        string campaignKey,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        UsersDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (!IsValidFeedbackCampaignKey(campaignKey))
+        {
+            return Results.BadRequest(new { Error = "invalid_campaign_key" });
+        }
+
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var state = await db.UserFeedbackPromptStates
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.UserId == user.Id && x.CampaignKey == campaignKey, cancellationToken);
+
+        return Results.Ok(BuildFeedbackPromptStatus(campaignKey, state, DateTimeOffset.UtcNow));
+    }
+
+    private static async Task<IResult> MarkFeedbackPromptShownAsync(
+        string campaignKey,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        UsersDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var result = await GetOrCreateFeedbackPromptStateAsync(campaignKey, principal, userManager, db, cancellationToken);
+        if (result.Result is not null)
+        {
+            return result.Result;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        result.State!.LastShownAtUtc = now;
+        result.State.UpdatedAtUtc = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(BuildFeedbackPromptStatus(campaignKey, result.State, now));
+    }
+
+    private static async Task<IResult> MarkFeedbackPromptDismissedAsync(
+        string campaignKey,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        UsersDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var result = await GetOrCreateFeedbackPromptStateAsync(campaignKey, principal, userManager, db, cancellationToken);
+        if (result.Result is not null)
+        {
+            return result.Result;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        result.State!.LastDismissedAtUtc = now;
+        result.State.DismissCount++;
+        result.State.UpdatedAtUtc = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(BuildFeedbackPromptStatus(campaignKey, result.State, now));
+    }
+
+    private static async Task<IResult> MarkFeedbackPromptSubmittedAsync(
+        string campaignKey,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        UsersDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var result = await GetOrCreateFeedbackPromptStateAsync(campaignKey, principal, userManager, db, cancellationToken);
+        if (result.Result is not null)
+        {
+            return result.Result;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        result.State!.LastSubmittedAtUtc = now;
+        result.State.SubmitCount++;
+        result.State.UpdatedAtUtc = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Results.Ok(BuildFeedbackPromptStatus(campaignKey, result.State, now));
+    }
+
+    private static async Task<FeedbackPromptStateResult> GetOrCreateFeedbackPromptStateAsync(
+        string campaignKey,
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        UsersDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (!IsValidFeedbackCampaignKey(campaignKey))
+        {
+            return new FeedbackPromptStateResult(null, Results.BadRequest(new { Error = "invalid_campaign_key" }));
+        }
+
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null)
+        {
+            return new FeedbackPromptStateResult(null, Results.Unauthorized());
+        }
+
+        var state = await db.UserFeedbackPromptStates
+            .SingleOrDefaultAsync(x => x.UserId == user.Id && x.CampaignKey == campaignKey, cancellationToken);
+
+        if (state is not null)
+        {
+            return new FeedbackPromptStateResult(state, null);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        state = new UserFeedbackPromptState
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            CampaignKey = campaignKey,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+        await db.UserFeedbackPromptStates.AddAsync(state, cancellationToken);
+        return new FeedbackPromptStateResult(state, null);
+    }
+
+    private static FeedbackPromptStatusResponse BuildFeedbackPromptStatus(
+        string campaignKey,
+        UserFeedbackPromptState? state,
+        DateTimeOffset now)
+    {
+        var nextEligibleAtUtc = GetFeedbackPromptNextEligibleAtUtc(state);
+        var isEligible = nextEligibleAtUtc is null || nextEligibleAtUtc <= now;
+
+        return new FeedbackPromptStatusResponse(
+            campaignKey,
+            isEligible,
+            nextEligibleAtUtc,
+            state?.LastShownAtUtc,
+            state?.LastDismissedAtUtc,
+            state?.LastSubmittedAtUtc,
+            state?.DismissCount ?? 0,
+            state?.SubmitCount ?? 0);
+    }
+
+    private static DateTimeOffset? GetFeedbackPromptNextEligibleAtUtc(UserFeedbackPromptState? state)
+    {
+        if (state is null)
+        {
+            return null;
+        }
+
+        DateTimeOffset? nextEligibleAtUtc = null;
+        if (state.LastDismissedAtUtc is DateTimeOffset dismissedAtUtc)
+        {
+            nextEligibleAtUtc = dismissedAtUtc.AddDays(FeedbackDismissedCooldownDays);
+        }
+
+        if (state.LastSubmittedAtUtc is DateTimeOffset submittedAtUtc)
+        {
+            var submittedNextEligibleAtUtc = submittedAtUtc.AddDays(FeedbackSubmittedCooldownDays);
+            nextEligibleAtUtc = nextEligibleAtUtc is null || submittedNextEligibleAtUtc > nextEligibleAtUtc
+                ? submittedNextEligibleAtUtc
+                : nextEligibleAtUtc;
+        }
+
+        return nextEligibleAtUtc;
+    }
+
+    private static bool IsValidFeedbackCampaignKey(string campaignKey)
+    {
+        return !string.IsNullOrWhiteSpace(campaignKey)
+            && campaignKey.Length <= 100
+            && campaignKey.All(c => char.IsLetterOrDigit(c) || c is '-' or '_' or '.');
     }
 
     private static async Task<IResult> RequestPasswordlessOtpAsync(
@@ -414,4 +608,16 @@ public static class AuthEndpointExtensions
     private sealed record ExternalProviderDefinition(string Id, string SchemeName, string DisplayName);
 
     private sealed record ExternalProviderResponse(string Id, string DisplayName, string StartEndpoint);
+
+    private sealed record FeedbackPromptStatusResponse(
+        string CampaignKey,
+        bool IsEligible,
+        DateTimeOffset? NextEligibleAtUtc,
+        DateTimeOffset? LastShownAtUtc,
+        DateTimeOffset? LastDismissedAtUtc,
+        DateTimeOffset? LastSubmittedAtUtc,
+        int DismissCount,
+        int SubmitCount);
+
+    private sealed record FeedbackPromptStateResult(UserFeedbackPromptState? State, IResult? Result);
 }

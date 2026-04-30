@@ -106,3 +106,12 @@
     </section>
   }
 </section>
+
+<app-progress-feedback-modal
+  [isOpen]="isProgressFeedbackModalOpen()"
+  [embedUrl]="progressFeedbackVideoConfig.embedUrl"
+  [watchUrl]="progressFeedbackVideoConfig.watchUrl"
+  [title]="progressFeedbackVideoConfig.title"
+  (dismissed)="onProgressFeedbackDismissed($event)"
+  (submitted)="onProgressFeedbackSubmitted($event)">
+</app-progress-feedback-modal>

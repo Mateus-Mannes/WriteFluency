@@ -1558,6 +1558,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       difficulty: proposition?.complexity?.description ?? '',
       topic: proposition?.subject?.description ?? '',
       sessionId: this.exerciseSessionTracking.getCurrentSessionId() ?? '',
+      userId: this.authSessionStore.userId() ?? '',
       timestamp: new Date().toISOString()
     };
 
