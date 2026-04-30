@@ -46,6 +46,8 @@ public class CreatePropositionServiceTests : ApplicationTestBase
         UploadedFiles.Keys.ShouldContain($"{baseId}_w640.webp");
         UploadedFiles.Keys.ShouldContain($"{baseId}_w1024.webp");
         UploadedFiles.Keys.ShouldContain($"{baseId}.jpg");
+        await _generativeAIClientMock.DidNotReceive()
+            .ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -73,7 +75,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
     }
 
     [Fact]
-    public async Task ShouldRejectBlankImageBeforeAiValidation()
+    public async Task ShouldRejectBlankImageWithoutAiValidation()
     {
         _articleExtractorMock.DownloadImageAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Ok(CreateBlankImageBytes()));

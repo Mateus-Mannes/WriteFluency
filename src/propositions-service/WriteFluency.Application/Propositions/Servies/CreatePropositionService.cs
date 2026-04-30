@@ -159,16 +159,6 @@ public class CreatePropositionService
                 return Result.Fail(new Error($"Image exceeds max original size limit ({processedImageBytes.Length / 1024} KB > {MaxOriginalJpegBytes / 1024} KB)"));
             }
 
-            var imageValidation = await _generativeAIClient.ValidateImageAsync(processedImageBytes, newsArticle.Title, cancellationToken);
-            if (imageValidation.IsFailed)
-            {
-                return Result.Fail(new Error("Failed to validate image").CausedBy(imageValidation.Errors));
-            }
-            if (!imageValidation.Value)
-            {
-                return Result.Fail(new Error($"Image is invalid or not coherent with article: {newsArticle.Title}"));
-            }
-
             var imageBaseId = Guid.NewGuid().ToString("N");
             var optimizedVariantsResult = await GenerateOptimizedVariantsAsync(processedImage, cancellationToken);
             if (optimizedVariantsResult.IsFailed)
