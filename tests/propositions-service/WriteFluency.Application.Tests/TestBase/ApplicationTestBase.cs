@@ -38,6 +38,7 @@ public class ApplicationTestBase : IDisposable
         services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
             opts.UseSqlite(_connection));
 
+        services.AddTransient<PropositionService>();
         services.AddTransient<CreatePropositionService>();
         services.AddTransient<DailyPropositionGenerator>();
 

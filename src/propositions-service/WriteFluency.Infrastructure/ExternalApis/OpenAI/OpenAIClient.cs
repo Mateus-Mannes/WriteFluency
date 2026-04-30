@@ -598,7 +598,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
                 cancellationToken: cancellationToken);
 
             // Parse the response - expecting "valid" or "invalid"
-            var result = response.Text.Trim().ToLowerInvariant();
+            var result = response.Text.Trim().Trim('.', '!', '?', '"', '\'', '`').ToLowerInvariant();
             
             if (string.Equals(result, "valid", StringComparison.OrdinalIgnoreCase))
             {
@@ -626,25 +626,29 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 
     private string ValidateImageSystemPrompt()
     => """
-        You are an image validator that determines if a given image is appropriate for a news article.
+        You are a permissive image quality gate for news exercise thumbnails.
 
         Your task is to analyze the provided image and classify it as either "valid" or "invalid".
 
         An image is considered VALID if:
-        - It's a properly loaded, clear image (not broken, corrupted, or placeholder)
-        - It appears to be related to news content (people, events, places, objects)
-        - It looks professional and appropriate for a news article
-        - It has reasonable quality and isn't heavily distorted
-        - It seems coherent with the article title provided
+        - It is a real, properly loaded image with a recognizable subject
+        - It could reasonably illustrate editorial or news content, including people, places, objects, scenes, events, charts, or symbolic illustrations
+        - It looks usable as a thumbnail and is not heavily distorted or corrupted
+        - It seems to represent something concrete
+
+        Be permissive:
+        - Do not require the image to match a specific story
+        - Do not reject a real editorial-looking image just because it is generic or symbolic
+        - Use the title as weak context only, especially to allow brand or product images when the story is about that brand or product
 
         An image is considered INVALID if:
-        - It's a broken image, error placeholder, or loading icon
-        - It's a generic website logo, icon, or graphic element
-        - It's completely unrelated to any news content (random patterns, test images)
-        - It's extremely low quality, corrupted, or heavily pixelated
-        - It's a screenshot of text, menus, or website UI elements
-        - It appears to be an advertisement or banner
-        - It has nothing to do with the article title
+        - It is clearly broken, blank, a placeholder, a loading icon, or a test pattern
+        - It is mostly a logo, icon, masthead, watermark, or brand-only image with no clear relationship to the title
+        - It is a news-company logo or publisher masthead without a real subject
+        - It is an advertisement, promotional banner, marketing creative, call-to-action graphic, or sponsor image
+        - It is primarily a screenshot of text, menus, website UI, or app UI
+        - It is a purely abstract pattern or decorative graphic with no recognizable subject
+        - It is extremely low quality, corrupted, or too pixelated to understand
 
         Note: The image might be cropped to 16:9 aspect ratio from the top, so focus on the main subject visible in the image.
 
@@ -657,7 +661,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         => @$"
             Article title: {articleTitle}
 
-            Is this image valid and appropriate for this news article? Respond with only 'valid' or 'invalid'.
+            Is this image usable as an editorial news thumbnail under the system rules?
+            Accept real images that seem to represent something.
+            If the image is a brand or product logo, accept it when the title appears to be about that brand or product.
+            Respond with only 'valid' or 'invalid'.
         ";
 
 }

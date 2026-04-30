@@ -170,10 +170,10 @@ public class PropositionService
             query = query.Where(p => p.ComplexityId == filter.Level!.Value);
         }
         
-        // Order by date
+        // Order by creation date so the exercises grid shows the latest exercises added to WriteFluency.
         query = filter.SortBy.ToLower() == "oldest" 
-            ? query.OrderBy(p => p.PublishedOn).ThenBy(p => p.Id)
-            : query.OrderByDescending(p => p.PublishedOn).ThenBy(p => p.Id);
+            ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
+            : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
         
         // Get total count before pagination
         var totalCount = await query.CountAsync(cancellationToken);
