@@ -58,6 +58,11 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
                 ["PasswordlessOtp:RequestWindowMinutes"] = "15",
                 ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "1",
+                ["SupportRequest:RecipientEmails:0"] = "support-1@writefluency.test",
+                ["SupportRequest:RecipientEmails:1"] = "support-2@writefluency.test",
+                ["SupportRequest:RecipientEmails:2"] = "support-3@writefluency.test",
+                ["SupportRequest:MaxRequestsPerWindowPerIp"] = "3",
+                ["SupportRequest:RequestWindowMinutes"] = "15",
                 ["Authentication:ConfirmationRedirectUrl"] = "http://localhost:4200/auth/confirm-email",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback"

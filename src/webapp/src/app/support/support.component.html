@@ -1,0 +1,79 @@
+<section class="support-page">
+  <div class="support-container">
+    <header class="support-header">
+      <p class="eyebrow text-label">Support</p>
+      <h1 class="support-title text-title">How can we help?</h1>
+      <p class="support-intro text-body">
+        Send a short note with what happened, what you expected, and the exercise or page where you saw it.
+      </p>
+    </header>
+
+    <mat-card class="support-card">
+      <mat-card-content>
+        @if (submitSucceeded()) {
+          <div class="success-state" role="status">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+            <div>
+              <h2 class="text-heading">Request sent</h2>
+              <p class="text-body">Thanks. Your message was sent to support.</p>
+            </div>
+          </div>
+        } @else {
+          <form [formGroup]="supportForm" class="support-form" (ngSubmit)="submitSupportRequest()">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Message</mat-label>
+              <textarea
+                matInput
+                rows="8"
+                formControlName="message"
+                [maxlength]="maxMessageLength"
+                autocomplete="off"></textarea>
+              <mat-hint align="end">{{ supportForm.controls.message.getRawValue().length }} / {{ maxMessageLength }}</mat-hint>
+              @if (supportForm.controls.message.hasError('required') && supportForm.controls.message.touched) {
+                <mat-error>Message is required.</mat-error>
+              }
+              @if (supportForm.controls.message.hasError('maxlength')) {
+                <mat-error>Message must be {{ maxMessageLength }} characters or fewer.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Reply email (optional)</mat-label>
+              <input
+                matInput
+                type="email"
+                formControlName="replyEmail"
+                autocomplete="email" />
+              @if (supportForm.controls.replyEmail.hasError('email') && supportForm.controls.replyEmail.touched) {
+                <mat-error>Enter a valid email address.</mat-error>
+              }
+            </mat-form-field>
+
+            @if (submitError(); as error) {
+              <p class="error-message text-body" role="alert">{{ error }}</p>
+            }
+
+            <button
+              mat-flat-button
+              color="primary"
+              class="submit-button"
+              type="submit"
+              [disabled]="isSubmitting()">
+              @if (isSubmitting()) {
+                <span class="button-content">
+                  <mat-spinner diameter="20"></mat-spinner>
+                  <span>Sending</span>
+                </span>
+              } @else {
+                <span class="button-content">
+                  <mat-icon aria-hidden="true">send</mat-icon>
+                  <span>Send request</span>
+                </span>
+              }
+            </button>
+          </form>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
+</section>

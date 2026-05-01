@@ -13,6 +13,7 @@ using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Email;
 using WriteFluency.Users.WebApi.Options;
+using WriteFluency.Users.WebApi.Support;
 
 namespace WriteFluency.Users.WebApi.Configuration;
 
@@ -56,6 +57,14 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => options.CodeLength is >= 4 and <= 9, "OTP code length must be between 4 and 9")
             .Validate(options => options.TtlMinutes > 0, "OTP TTL must be greater than zero")
             .Validate(options => options.MaxVerifyAttempts > 0, "OTP max verify attempts must be greater than zero")
+            .ValidateOnStart();
+
+        services.AddOptions<SupportRequestOptions>()
+            .Bind(configuration.GetSection(SupportRequestOptions.SectionName))
+            .Validate(options => options.RecipientEmails.Any(email => IsValidEmail(email)), "At least one support recipient email is required")
+            .Validate(options => options.RecipientEmails.All(IsValidEmail), "Support recipient emails must be valid")
+            .Validate(options => options.MaxRequestsPerWindowPerIp > 0, "Support request IP limit must be greater than zero")
+            .Validate(options => options.RequestWindowMinutes > 0, "Support request window must be greater than zero")
             .ValidateOnStart();
 
         services.AddOptions<ExternalAuthenticationOptions>()
@@ -173,6 +182,7 @@ public static class UsersServiceCollectionExtensions
         services.AddScoped<IExternalLoginInfoResolver, DefaultExternalLoginInfoResolver>();
         services.AddScoped<ILoginActivityRecorder, LoginActivityRecorder>();
         services.AddSingleton<IClientIpResolver, ClientIpResolver>();
+        services.AddSingleton<SupportRequestRateLimiter>();
 
         services.AddSingleton<ILoginGeoLocationDataSource, MaxMindGeoLocationDataSource>();
         services.AddSingleton<ILoginGeoLookupService, LoginGeoLookupService>();
@@ -307,6 +317,25 @@ public static class UsersServiceCollectionExtensions
         }
 
         return uri.Scheme == Uri.UriSchemeHttps;
+    }
+
+    private static bool IsValidEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        var trimmed = email.Trim();
+        try
+        {
+            var address = new System.Net.Mail.MailAddress(trimmed);
+            return string.Equals(address.Address, trimmed, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     private static void ConfigureSharedDataProtection(

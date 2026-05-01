@@ -19,6 +19,11 @@ export const appRoutes: Routes = [
             import('./about/about.component').then((m) => m.AboutComponent),
     },
     {
+        path: 'support',
+        loadComponent: () =>
+            import('./support/support.component').then((m) => m.SupportComponent),
+    },
+    {
         path: 'user',
         canActivate: [userPageAuthGuard],
         loadComponent: () =>

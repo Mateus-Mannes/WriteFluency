@@ -126,4 +126,13 @@ describe('NavbarComponent', () => {
 
     expect(loginRedirectPath).toBe('/auth/login');
   });
+
+  it('should render support navigation link', () => {
+    const links = Array.from(fixture.nativeElement.querySelectorAll('a')) as HTMLAnchorElement[];
+    const supportLink = links.find((link) => link.textContent?.includes('Support'));
+
+    expect(supportLink).toBeTruthy();
+    expect(supportLink?.getAttribute('href')).toContain('/support');
+    expect(supportLink?.textContent).toContain('Support');
+  });
 });

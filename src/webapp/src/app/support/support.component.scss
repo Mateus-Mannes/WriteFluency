@@ -1,0 +1,132 @@
+@use '../../styles/variables' as vars;
+
+.support-page {
+  min-height: calc(100vh - vars.$nav-bar-height);
+  background:
+    linear-gradient(180deg, rgba(58, 125, 255, 0.08) 0%, rgba(0, 194, 168, 0.05) 42%, vars.$color-background 100%);
+  padding: 3rem 1.25rem;
+}
+
+.support-container {
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+
+.support-header {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: vars.$color-primary-dark;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.support-title {
+  margin: 0 0 0.75rem;
+  color: vars.$color-text;
+}
+
+.support-intro {
+  max-width: 680px;
+  margin: 0;
+  color: vars.$color-text-muted;
+  line-height: 1.6;
+}
+
+.support-card {
+  border: 1px solid rgba(58, 125, 255, 0.14) !important;
+  border-radius: 8px !important;
+  box-shadow: vars.$shadow-elevation-low;
+}
+
+.support-card mat-card-content {
+  padding: 1.5rem;
+}
+
+.support-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.success-state {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: vars.$color-status-success-bg;
+  color: vars.$color-status-success-text;
+}
+
+.success-state mat-icon {
+  margin-top: 0.1rem;
+}
+
+.success-state h2,
+.success-state p {
+  margin: 0;
+}
+
+.success-state p {
+  margin-top: 0.25rem;
+}
+
+.error-message {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: rgba(255, 107, 107, 0.12);
+  color: #8a1f1f;
+}
+
+.submit-button {
+  justify-self: start;
+  min-width: 150px;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  line-height: 1;
+}
+
+.button-content mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  flex: 0 0 auto;
+}
+
+.button-content span {
+  line-height: 1;
+}
+
+.submit-button mat-spinner {
+  --mdc-circular-progress-active-indicator-color: #ffffff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+@media (max-width: 600px) {
+  .support-page {
+    padding: 2rem 1rem;
+  }
+
+  .support-card mat-card-content {
+    padding: 1rem;
+  }
+
+  .submit-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

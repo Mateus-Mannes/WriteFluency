@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Configuration;
+using WriteFluency.Users.WebApi.Support;
 
 var builder = WebApplication.CreateBuilder(args);
 const string WebappCorsPolicy = "WebappCors";
@@ -97,6 +98,7 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 
 usersApi.MapAuthEndpoints();
+usersApi.MapSupportRequestEndpoints();
 app.MapDefaultEndpoints();
 
 app.Run();

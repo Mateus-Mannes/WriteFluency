@@ -94,6 +94,11 @@ public class UsersServiceCollectionExtensionsTests
         loginLocationOptions.GeoLite2CityBlobUri.ShouldBe("https://wfusersdpprod01.blob.core.windows.net/geolite/GeoLite2-City.mmdb");
         loginLocationOptions.BlobMetadataRefreshMinutes.ShouldBe(60);
         loginLocationOptions.GeoLite2CityDbPath.ShouldBe("/tmp/GeoLite2-City.mmdb");
+
+        var supportRequestOptions = scope.ServiceProvider.GetRequiredService<IOptions<SupportRequestOptions>>().Value;
+        supportRequestOptions.RecipientEmails.ShouldBe(["support-1@writefluency.local", "support-2@writefluency.local", "support-3@writefluency.local"]);
+        supportRequestOptions.MaxRequestsPerWindowPerIp.ShouldBe(3);
+        supportRequestOptions.RequestWindowMinutes.ShouldBe(15);
     }
 
     [Fact]
@@ -168,6 +173,11 @@ public class UsersServiceCollectionExtensionsTests
             ["PasswordlessOtp:MaxRequestsPerWindowPerIp"] = "20",
             ["PasswordlessOtp:RequestWindowMinutes"] = "15",
             ["PasswordlessOtp:MinimumSecondsBetweenRequestsPerEmail"] = "30",
+            ["SupportRequest:RecipientEmails:0"] = "support-1@writefluency.local",
+            ["SupportRequest:RecipientEmails:1"] = "support-2@writefluency.local",
+            ["SupportRequest:RecipientEmails:2"] = "support-3@writefluency.local",
+            ["SupportRequest:MaxRequestsPerWindowPerIp"] = "3",
+            ["SupportRequest:RequestWindowMinutes"] = "15",
             ["LoginLocation:Enabled"] = "true",
             ["LoginLocation:GeoLite2CityBlobUri"] = "https://wfusersdpprod01.blob.core.windows.net/geolite/GeoLite2-City.mmdb",
             ["LoginLocation:BlobMetadataRefreshMinutes"] = "60",
