@@ -5,5 +5,6 @@ public record ExerciseFilterDto(
     ComplexityEnum? Level = null,
     int PageNumber = 1,
     int PageSize = 9,
-    string SortBy = "newest"
+    string SortBy = "newest",
+    string? SearchText = null
 );

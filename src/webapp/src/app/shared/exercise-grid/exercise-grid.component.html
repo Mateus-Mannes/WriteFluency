@@ -25,8 +25,30 @@
           }
         </mat-select>
       </mat-form-field>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search exercises</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          type="search"
+          autocomplete="off"
+          [ngModel]="searchInput()"
+          (ngModelChange)="onSearchInputChange($event)"
+          placeholder="Search exercises" />
+        @if (searchInput()) {
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Clear search"
+            (click)="clearSearch()">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
       
-      <mat-form-field appearance="outline" class="filter-field">
+      <mat-form-field appearance="outline" class="filter-field sort-field">
         <mat-label>Sort by</mat-label>
         <mat-select [value]="sortOrder()" (selectionChange)="onSortChange($event.value)">
           @for (option of sortOptions; track option.value) {
@@ -35,9 +57,14 @@
         </mat-select>
       </mat-form-field>
       
-      <button mat-stroked-button (click)="clearFilters()" class="clear-filters-btn">
+      <button
+        type="button"
+        (click)="clearFilters()"
+        class="clear-filters-btn"
+        aria-label="Clear filters"
+        matTooltip="Clear filters"
+        matTooltipPosition="above">
         <mat-icon>clear_all</mat-icon>
-        Clear Filters
       </button>
     </div>
   </div>
@@ -105,8 +132,8 @@
     } @empty {
       <div class="empty-state">
         <mat-icon>search_off</mat-icon>
-        <h3>No exercises found</h3>
-        <p>Try adjusting your filters to see more results</p>
+        <h3>{{ hasSearch() ? 'No exercises match your search' : 'No exercises found' }}</h3>
+        <p>{{ hasSearch() ? 'Try another search term or adjust your filters' : 'Try adjusting your filters to see more results' }}</p>
       </div>
     }
   }

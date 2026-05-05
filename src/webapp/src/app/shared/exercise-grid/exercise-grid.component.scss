@@ -23,25 +23,49 @@
 
 .filters {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: flex-start;
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .filter-field {
-  min-width: 180px;
+  flex: 0 0 140px;
+  min-width: 140px;
+}
+
+.sort-field {
+  flex-basis: 128px;
+  min-width: 128px;
+}
+
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 360px;
+
+  mat-icon[matPrefix] {
+    margin-right: 0.5rem;
+  }
 }
 
 .clear-filters-btn {
   height: 56px;
+  width: 56px;
+  min-width: 56px !important;
+  flex: 0 0 56px;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0 1.5rem !important;
+  justify-content: center;
   border-radius: 8px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
+  color: vars.$color-primary;
+  cursor: pointer;
   text-transform: none !important;
   font-weight: 500 !important;
-  border-color: rgba(0, 0, 0, 0.12) !important;
   transition: all 0.3s ease !important;
 
   mat-icon {
@@ -52,7 +76,12 @@
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.24) !important;
+    border-color: rgba(0, 0, 0, 0.24);
+  }
+
+  &:focus-visible {
+    outline: 2px solid vars.$color-primary;
+    outline-offset: 2px;
   }
 }
 
