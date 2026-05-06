@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -12,16 +13,17 @@ using WriteFluency.Data;
 namespace WriteFluency.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504192017_AddPropositionSearchVector")]
+    partial class AddPropositionSearchVector
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "10.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -334,16 +336,6 @@ namespace WriteFluency.Infrastructure.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
 
-                    b.HasIndex("Text");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Text"), "GIN");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Text"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex("Title");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "GIN");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
-
                     b.HasIndex("SubjectId", "IsDeleted");
 
                     b.HasIndex("SubjectId", "ComplexityId", "PublishedOn");
@@ -368,9 +360,6 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<DateTime>("GenerationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("RequestedPublishedBefore")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("SubjectId")
                         .HasColumnType("integer");
 
@@ -387,8 +376,6 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.HasIndex("SubjectId", "ComplexityId", "CreatedAt");
 
                     b.HasIndex("SubjectId", "ComplexityId", "GenerationDate");
-
-                    b.HasIndex("SubjectId", "ComplexityId", "RequestedPublishedBefore");
 
                     b.HasIndex("SubjectId", "ComplexityId", "Success");
 

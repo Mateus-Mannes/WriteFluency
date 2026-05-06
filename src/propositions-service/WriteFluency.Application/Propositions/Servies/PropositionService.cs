@@ -1,6 +1,8 @@
 using FluentResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NpgsqlTypes;
+using System.Text.RegularExpressions;
 using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.TextComparisons;
@@ -9,6 +11,11 @@ namespace WriteFluency.Propositions;
 
 public class PropositionService
 {
+    private const int MaxSearchTerms = 8;
+    private const double TitleTrigramMatchThreshold = 0.35;
+    private const double TextTrigramMatchThreshold = 0.45;
+    private static readonly Regex SearchTermRegex = new(@"[\p{L}\p{N}]+", RegexOptions.Compiled);
+
     private readonly IAppDbContext _context;
     private readonly IFileService _fileService;
     private readonly IGenerativeAIClient _generativeAIClient;
@@ -159,6 +166,8 @@ public class PropositionService
         // Apply filters
         bool hasSubjectFilter = filter.Topic.HasValue;
         bool hasLevelFilter = filter.Level.HasValue;
+        var searchCriteria = BuildSearchCriteria(filter.SearchText);
+        bool hasSearchFilter = searchCriteria is not null;
         
         if (hasSubjectFilter)
         {
@@ -169,11 +178,43 @@ public class PropositionService
         {
             query = query.Where(p => p.ComplexityId == filter.Level!.Value);
         }
+
+        if (hasSearchFilter)
+        {
+            query = query.Where(p =>
+                EF.Property<NpgsqlTsVector>(p, "SearchVector")
+                    .Matches(EF.Functions.ToTsQuery("english", searchCriteria!.PrefixTsQuery))
+                || EF.Functions.TrigramsWordSimilarity(p.Title, searchCriteria.TrigramText) >= TitleTrigramMatchThreshold
+                || EF.Functions.TrigramsWordSimilarity(p.Text, searchCriteria.TrigramText) >= TextTrigramMatchThreshold);
+        }
         
         // Order by creation date so the exercises grid shows the latest exercises added to WriteFluency.
-        query = filter.SortBy.ToLower() == "oldest" 
-            ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
-            : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
+        var sortBy = filter.SortBy.ToLowerInvariant();
+
+        if (hasSearchFilter)
+        {
+            query = sortBy == "oldest"
+                ? query
+                    .OrderByDescending(p => EF.Property<NpgsqlTsVector>(p, "SearchVector")
+                        .Rank(EF.Functions.ToTsQuery("english", searchCriteria!.PrefixTsQuery))
+                        + EF.Functions.TrigramsWordSimilarity(p.Title, searchCriteria.TrigramText)
+                        + (EF.Functions.TrigramsWordSimilarity(p.Text, searchCriteria.TrigramText) * 0.25))
+                    .ThenBy(p => p.CreatedAt)
+                    .ThenBy(p => p.Id)
+                : query
+                    .OrderByDescending(p => EF.Property<NpgsqlTsVector>(p, "SearchVector")
+                        .Rank(EF.Functions.ToTsQuery("english", searchCriteria!.PrefixTsQuery))
+                        + EF.Functions.TrigramsWordSimilarity(p.Title, searchCriteria.TrigramText)
+                        + (EF.Functions.TrigramsWordSimilarity(p.Text, searchCriteria.TrigramText) * 0.25))
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ThenByDescending(p => p.Id);
+        }
+        else
+        {
+            query = sortBy == "oldest"
+                ? query.OrderBy(p => p.CreatedAt).ThenBy(p => p.Id)
+                : query.OrderByDescending(p => p.CreatedAt).ThenByDescending(p => p.Id);
+        }
         
         // Get total count before pagination
         var totalCount = await query.CountAsync(cancellationToken);
@@ -194,8 +235,8 @@ public class PropositionService
             ))
             .ToListAsync(cancellationToken);
         
-        // When no filters are applied, reorder to maximize distance between repeated topics.
-        if (!hasSubjectFilter && !hasLevelFilter)
+        // When no filters are applied, reorder to alternate subjects and complexities
+        if (!hasSubjectFilter && !hasLevelFilter && !hasSearchFilter)
         {
             items = SpreadExercisesByTopicAndLevel(items);
         }
@@ -245,4 +286,28 @@ public class PropositionService
             ? currentIndex - index
             : int.MaxValue;
     }
+    private static SearchCriteria? BuildSearchCriteria(string? searchText)
+    {
+        var normalized = searchText?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        var terms = SearchTermRegex.Matches(normalized)
+            .Select(match => match.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxSearchTerms)
+            .ToArray();
+
+        if (terms.Length == 0)
+        {
+            return null;
+        }
+
+        var prefixTsQuery = string.Join(" | ", terms.Select(term => $"{term}:*"));
+        return new SearchCriteria(prefixTsQuery, string.Join(' ', terms));
+    }
+
+    private sealed record SearchCriteria(string PrefixTsQuery, string TrigramText);
 }

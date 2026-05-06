@@ -19,7 +19,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     {
         base.OnModelCreating(builder);
 
-        builder.ApplyConfiguration(new PropositionEfConfiguration());
+        if (Database.IsNpgsql())
+        {
+            builder.HasPostgresExtension("pg_trgm");
+        }
+
+        builder.ApplyConfiguration(new PropositionEfConfiguration(Database.IsNpgsql()));
         builder.ApplyConfiguration(new PropositionGenerationLogEfConfiguration());
     }
 

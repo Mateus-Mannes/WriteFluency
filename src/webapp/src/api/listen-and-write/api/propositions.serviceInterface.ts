@@ -35,8 +35,9 @@ export interface PropositionsServiceInterface {
      * @param pageNumber 
      * @param pageSize 
      * @param sortBy 
+     * @param searchText 
      */
-    apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, extraHttpRequestParams?: any): Observable<ExerciseListItemDtoPagedResultDto>;
+    apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, searchText?: string, extraHttpRequestParams?: any): Observable<ExerciseListItemDtoPagedResultDto>;
 
     /**
      * 

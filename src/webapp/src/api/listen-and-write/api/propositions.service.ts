@@ -46,14 +46,15 @@ export class PropositionsService extends BaseService {
      * @param pageNumber 
      * @param pageSize 
      * @param sortBy 
+     * @param searchText 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
      * @param options additional options
      */
-    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<ExerciseListItemDtoPagedResultDto>;
-    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<ExerciseListItemDtoPagedResultDto>>;
-    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<ExerciseListItemDtoPagedResultDto>>;
-    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, searchText?: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<ExerciseListItemDtoPagedResultDto>;
+    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, searchText?: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<ExerciseListItemDtoPagedResultDto>>;
+    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, searchText?: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<ExerciseListItemDtoPagedResultDto>>;
+    public apiPropositionExercisesGet(topic?: string, level?: string, pageNumber?: number, pageSize?: number, sortBy?: string, searchText?: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
 
         let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
 
@@ -97,6 +98,15 @@ export class PropositionsService extends BaseService {
             localVarQueryParameters,
             'SortBy',
             <any>sortBy,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'SearchText',
+            <any>searchText,
             QueryParamStyle.Form,
             true,
         );

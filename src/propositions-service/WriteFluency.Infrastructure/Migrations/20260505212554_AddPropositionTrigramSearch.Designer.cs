@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -12,9 +13,11 @@ using WriteFluency.Data;
 namespace WriteFluency.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505212554_AddPropositionTrigramSearch")]
+    partial class AddPropositionTrigramSearch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -368,9 +371,6 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<DateTime>("GenerationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("RequestedPublishedBefore")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("SubjectId")
                         .HasColumnType("integer");
 
@@ -387,8 +387,6 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.HasIndex("SubjectId", "ComplexityId", "CreatedAt");
 
                     b.HasIndex("SubjectId", "ComplexityId", "GenerationDate");
-
-                    b.HasIndex("SubjectId", "ComplexityId", "RequestedPublishedBefore");
 
                     b.HasIndex("SubjectId", "ComplexityId", "Success");
 
