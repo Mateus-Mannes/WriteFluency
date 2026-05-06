@@ -347,6 +347,9 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.Property<DateTime>("GenerationDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime>("RequestedPublishedBefore")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("SubjectId")
                         .HasColumnType("integer");
 
@@ -363,6 +366,8 @@ namespace WriteFluency.Infrastructure.Migrations
                     b.HasIndex("SubjectId", "ComplexityId", "CreatedAt");
 
                     b.HasIndex("SubjectId", "ComplexityId", "GenerationDate");
+
+                    b.HasIndex("SubjectId", "ComplexityId", "RequestedPublishedBefore");
 
                     b.HasIndex("SubjectId", "ComplexityId", "Success");
 

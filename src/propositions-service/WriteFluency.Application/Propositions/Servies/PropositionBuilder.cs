@@ -66,7 +66,7 @@ public class PropositionBuilder
         // create the proposition
         var proposition = new Proposition
         {
-            PublishedOn = dto.PublishedOn,
+            PublishedOn = newsArticle.PublishedOn,
             SubjectId = dto.Subject,
             ComplexityId = dto.Complexity,
             AudioFileId = AudioFileId!,

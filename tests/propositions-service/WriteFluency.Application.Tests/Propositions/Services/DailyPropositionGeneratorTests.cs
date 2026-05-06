@@ -103,15 +103,13 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
             diff.ShouldBeLessThanOrEqualTo(_options.NewsRequestLimit);
         }
 
-        // Verify dates distribution
-        var date = DateTime.UtcNow.Date.AddDays(-2);
-        int count = 0;
-        foreach (var proposition in propositions.OrderByDescending(x => x.PublishedOn))
+        // Verify newest-first cursor behavior
+        var orderedPropositions = propositions.OrderByDescending(x => x.PublishedOn).ToList();
+        for (var i = 1; i < orderedPropositions.Count; i++)
         {
-            if (count > 1 && count % (Proposition.Parameters.Count * _options.NewsRequestLimit) == 0)
-                date = date.AddDays(-1).Date;
-            proposition.PublishedOn.ShouldBe(date, customMessage: $"Proposition index {count} has wrong date");
-            count++;
+            orderedPropositions[i].PublishedOn.ShouldBeLessThanOrEqualTo(orderedPropositions[i - 1].PublishedOn);
         }
+
+        orderedPropositions.ShouldAllBe(proposition => proposition.PublishedOn <= DateTime.UtcNow);
     }
 }

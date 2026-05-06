@@ -1,4 +1,5 @@
 using FluentResults;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteFluency.Extensions;
@@ -42,17 +43,19 @@ public class NewsClient : BaseHttpClientService, INewsClient
     }
 
     public async Task<Result<IEnumerable<NewsDto>>> GetNewsAsync(
-        SubjectEnum subject, DateTime publishedOn, int quantity, int page, CancellationToken cancellationToken = default)
+        SubjectEnum subject, DateTime publishedBefore, int quantity, int page, CancellationToken cancellationToken = default)
     {
         var subjectParameter = subject.ToString().ToLowerInvariant();
-        var dateParameter = publishedOn.ToString("yyyy-MM-dd");
+        var dateParameter = publishedBefore
+            .ToUniversalTime()
+            .ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
 
         var query = $"api_token={_options.Key}" +
-                    $"&published_on={dateParameter}" +
+                    $"&published_before={Uri.EscapeDataString(dateParameter)}" +
                     $"&categories={subjectParameter}" +
                     $"&language=en" +
                     $"&locale=au,ca,gb,us,nz,ie" +
-                    $"&sort=relevance_score" +
+                    $"&sort=published_on" +
                     $"&page={page}" +
                     $"&limit={quantity}" +
                     $"&exclude_domains={string.Join(",", _excludedDomains)}";
@@ -68,19 +71,22 @@ public class NewsClient : BaseHttpClientService, INewsClient
             return Result.Fail(new Error($"Error when calling news API. {errorMessage}"));
         }
 
-        var newsArticles = requestResult.Value.Data?.Select(article => new NewsDto(
-            article.Uuid!,
-            article.Title!,
-            article.Description!,
-            article.Url!,
-            article.ImageUrl!,
-            subject,
-            publishedOn
-        )) ?? Enumerable.Empty<NewsDto>();
+        var newsArticles = requestResult.Value.Data?
+            .Select(article => new NewsDto(
+                article.Uuid!,
+                article.Title!,
+                article.Description!,
+                article.Url!,
+                article.ImageUrl!,
+                subject,
+                article.PublishedAt!.Value.ToUniversalTime()
+            ))
+            .OrderByDescending(article => article.PublishedOn)
+            ?? Enumerable.Empty<NewsDto>();
 
         if (!newsArticles.Any())
         {
-            _logger.LogInformation($"No news articles found for subject {subjectParameter}, page {page}, date {dateParameter}");
+            _logger.LogInformation($"No news articles found for subject {subjectParameter}, page {page}, before {dateParameter}");
         }
 
         return Result.Ok(newsArticles);

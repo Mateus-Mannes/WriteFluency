@@ -8,6 +8,7 @@ public class PropositionGenerationLog
     public int Id { get; set; }
 
     public required DateTime GenerationDate { get; set; }
+    public required DateTime RequestedPublishedBefore { get; set; }
     public required SubjectEnum SubjectId { get; set; }
     public required ComplexityEnum ComplexityId { get; set; }
     

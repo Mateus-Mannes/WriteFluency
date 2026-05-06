@@ -16,6 +16,9 @@ public class PropositionGenerationLogEfConfiguration : IEntityTypeConfiguration<
         
         // Index for finding attempted dates for a specific combination
         builder.HasIndex(x => new { x.SubjectId, x.ComplexityId, x.GenerationDate });
+
+        // Index for inspecting latest-window requests for a specific combination
+        builder.HasIndex(x => new { x.SubjectId, x.ComplexityId, x.RequestedPublishedBefore });
         
         // Index for finding oldest log date for a combination
         builder.HasIndex(x => new { x.SubjectId, x.ComplexityId, x.CreatedAt });

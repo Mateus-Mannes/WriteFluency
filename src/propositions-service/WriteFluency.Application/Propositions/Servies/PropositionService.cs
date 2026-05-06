@@ -194,36 +194,10 @@ public class PropositionService
             ))
             .ToListAsync(cancellationToken);
         
-        // When no filters are applied, reorder to alternate subjects and complexities
+        // When no filters are applied, reorder to maximize distance between repeated topics.
         if (!hasSubjectFilter && !hasLevelFilter)
         {
-            var reordered = new List<ExerciseListItemDto>();
-            var remaining = new List<ExerciseListItemDto>(items);
-            
-            while (remaining.Any())
-            {
-                ExerciseListItemDto? next = null;
-                
-                if (reordered.Any())
-                {
-                    var last = reordered.Last();
-                    // Try to find an item with different subject AND complexity
-                    next = remaining.FirstOrDefault(p => 
-                        p.Topic != last.Topic && p.Level != last.Level);
-                    
-                    // If not possible, try to find different subject OR different complexity
-                    next ??= remaining.FirstOrDefault(p => 
-                        p.Topic != last.Topic || p.Level != last.Level);
-                }
-                
-                // If still no match (first item or no different options), take the first available
-                next ??= remaining.First();
-                
-                reordered.Add(next);
-                remaining.Remove(next);
-            }
-            
-            items = reordered;
+            items = SpreadExercisesByTopicAndLevel(items);
         }
         
         return new PagedResultDto<ExerciseListItemDto>(
@@ -232,5 +206,43 @@ public class PropositionService
             filter.PageNumber,
             filter.PageSize
         );
+    }
+
+    private static List<ExerciseListItemDto> SpreadExercisesByTopicAndLevel(List<ExerciseListItemDto> items)
+    {
+        var remaining = new List<ExerciseListItemDto>(items);
+        var reordered = new List<ExerciseListItemDto>(items.Count);
+        var lastTopicIndex = new Dictionary<SubjectEnum, int>();
+        var lastLevelIndex = new Dictionary<ComplexityEnum, int>();
+
+        while (remaining.Any())
+        {
+            var currentIndex = reordered.Count;
+            var next = remaining
+                .OrderByDescending(item => DistanceSinceLastUse(item.Topic, lastTopicIndex, currentIndex))
+                .ThenByDescending(item => DistanceSinceLastUse(item.Level, lastLevelIndex, currentIndex))
+                .ThenByDescending(item => remaining.Count(candidate => candidate.Topic == item.Topic))
+                .ThenByDescending(item => remaining.Count(candidate => candidate.Level == item.Level))
+                .ThenBy(item => remaining.IndexOf(item))
+                .First();
+
+            reordered.Add(next);
+            remaining.Remove(next);
+            lastTopicIndex[next.Topic] = currentIndex;
+            lastLevelIndex[next.Level] = currentIndex;
+        }
+
+        return reordered;
+    }
+
+    private static int DistanceSinceLastUse<T>(
+        T key,
+        IReadOnlyDictionary<T, int> lastUseIndex,
+        int currentIndex)
+        where T : notnull
+    {
+        return lastUseIndex.TryGetValue(key, out var index)
+            ? currentIndex - index
+            : int.MaxValue;
     }
 }

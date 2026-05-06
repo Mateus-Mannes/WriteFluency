@@ -14,6 +14,7 @@ public class NewsResponseValidator : AbstractValidator<NewsResponse>
             data.RuleFor(x => x.Title).NotEmpty();
             data.RuleFor(x => x.Url).NotEmpty().Must(url => Uri.IsWellFormedUriString(url, UriKind.Absolute));
             data.RuleFor(x => x.ImageUrl).NotEmpty().Must(url => Uri.IsWellFormedUriString(url, UriKind.Absolute));
+            data.RuleFor(x => x.PublishedAt).NotEmpty();
         }).When(x => x.Data != null && x.Data.Count > 0);
     }
 }
