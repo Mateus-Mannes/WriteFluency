@@ -34,9 +34,12 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 
         var result = await _service.CreatePropositionsAsync(dto, 1);
 
-        result.Count().ShouldBe(1);
-        var proposition = result.Single();
+        result.Propositions.Count.ShouldBe(1);
+        var proposition = result.Propositions.Single();
         proposition.ImageFileId.ShouldNotBeNull();
+        proposition.PublishedOn.ShouldBe(dto.PublishedOn.AddMinutes(-1));
+        result.OldestFetchedPublishedOn.ShouldBe(dto.PublishedOn.AddMinutes(-1));
+        result.FetchedCount.ShouldBe(1);
 
         var baseId = Path.GetFileNameWithoutExtension(proposition.ImageFileId);
         baseId.ShouldNotBeNullOrWhiteSpace();
@@ -71,7 +74,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 
         var result = await _service.CreatePropositionsAsync(dto, 1);
 
-        result.ShouldBeEmpty();
+        result.Propositions.ShouldBeEmpty();
     }
 
     [Fact]
@@ -84,7 +87,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 
         var result = await _service.CreatePropositionsAsync(dto, 1);
 
-        result.ShouldBeEmpty();
+        result.Propositions.ShouldBeEmpty();
         await _generativeAIClientMock.DidNotReceive()
             .ValidateImageAsync(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
@@ -95,7 +98,7 @@ public class CreatePropositionServiceTests : ApplicationTestBase
 
         var newsClientMock = Substitute.For<INewsClient>();
         newsClientMock.GetNewsAsync(Arg.Any<SubjectEnum>(), Arg.Any<DateTime>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Ok(NewsDtoFaker.Generate(1)));
+            .Returns(x => Result.Ok(NewsDtoFaker.Generate(1, x.Arg<SubjectEnum>(), x.Arg<DateTime>())));
         services.AddSingleton(newsClientMock);
 
         var articleExtractorMock = Substitute.For<IArticleExtractor>();

@@ -76,7 +76,7 @@ public class CreatePropositionService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<Proposition>> CreatePropositionsAsync(
+    public async Task<CreatePropositionsResult> CreatePropositionsAsync(
         CreatePropositionDto dto, 
         int quantity, 
         CancellationToken cancellationToken = default)
@@ -91,9 +91,16 @@ public class CreatePropositionService
         };
 
         var newsResult = await _newsClient.GetNewsAsync(dto.Subject, dto.PublishedOn, quantity, page, cancellationToken);
-        if (newsResult.IsFailed) return Enumerable.Empty<Proposition>();
+        if (newsResult.IsFailed) return CreatePropositionsResult.Empty;
 
-        var newsIds = newsResult.Value.Select(n => n.ExternalId).ToList();
+        var fetchedNews = newsResult.Value
+            .OrderByDescending(n => n.PublishedOn)
+            .ToList();
+        var oldestFetchedPublishedOn = fetchedNews.Count > 0
+            ? fetchedNews.Min(n => n.PublishedOn)
+            : (DateTime?)null;
+
+        var newsIds = fetchedNews.Select(n => n.ExternalId).ToList();
         
         // Check for existing propositions in database (includes soft delete filter automatically)
         var existingNewsIds = await _context.Propositions.AsNoTracking()
@@ -102,14 +109,14 @@ public class CreatePropositionService
             .ToListAsync(cancellationToken);
 
         // Filter out news that already have propositions
-        var news = newsResult.Value
+        var news = fetchedNews
             .Where(n => !existingNewsIds.Contains(n.ExternalId))
             .ToList();
 
         if(!news.Any())
         {
-            _logger.LogWarning($"No new articles found for subject '{dto.Subject}' on {dto.PublishedOn:yyyy-MM-dd} after filtering existing propositions.");
-            return Enumerable.Empty<Proposition>();
+            _logger.LogWarning($"No new articles found for subject '{dto.Subject}' before {dto.PublishedOn:O} after filtering existing propositions.");
+            return new CreatePropositionsResult(Array.Empty<Proposition>(), oldestFetchedPublishedOn, fetchedNews.Count);
         }
 
         var propositions = new List<Proposition>();
@@ -122,7 +129,7 @@ public class CreatePropositionService
                 _logger.LogError($"Failed to build proposition for article '{newsArticle.Url}': {string.Join(", ", propositionResult.Errors.Select(e => e.Message))}");
             }
         }
-        return propositions;
+        return new CreatePropositionsResult(propositions, oldestFetchedPublishedOn, fetchedNews.Count);
     }
 
     private async Task<Result<Proposition>> BuildPropositionAsync(CreatePropositionDto dto, NewsDto newsArticle, CancellationToken cancellationToken = default)

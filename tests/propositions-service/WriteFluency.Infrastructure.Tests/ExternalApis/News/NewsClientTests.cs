@@ -122,7 +122,8 @@ public class NewsClientTests : InfrastructureTestBase
                     "title": null,
                     "description": null,
                     "url": null,
-                    "image_url": null
+                    "image_url": null,
+                    "published_at": null
                 }
             ]
         }
@@ -156,7 +157,8 @@ public class NewsClientTests : InfrastructureTestBase
                     "title": "Sample News",
                     "description": "Description here",
                     "url": "https://example.com/news",
-                    "image_url": "https://example.com/image.jpg"
+                    "image_url": "https://example.com/image.jpg",
+                    "published_at": "2026-05-05T12:30:00Z"
                 }
             ]
         }
@@ -178,6 +180,47 @@ public class NewsClientTests : InfrastructureTestBase
         result.IsSuccess.ShouldBe(true);
         result.Value.Count().ShouldBe(1);
         result.Value.First().Title.ShouldBe("Sample News");
+        result.Value.First().PublishedOn.ShouldBe(DateTime.Parse("2026-05-05T12:30:00Z").ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task GetNewsAsync_ShouldUsePublishedBeforeAndNewestSort()
+    {
+        var validJson = """
+        {
+            "data": [
+                {
+                    "uuid": "123",
+                    "title": "Sample News",
+                    "description": "Description here",
+                    "url": "https://example.com/news",
+                    "image_url": "https://example.com/image.jpg",
+                    "published_at": "2026-05-05T12:30:00Z"
+                }
+            ]
+        }
+        """;
+
+        string? capturedRequestUri = null;
+        _httpClient = CreateMockHttpClient((request, ct) =>
+        {
+            capturedRequestUri = request.RequestUri?.ToString();
+            return Task.FromResult(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(validJson)
+            });
+        });
+
+        var client = GetService<INewsClient>();
+
+        var result = await client.GetNewsAsync(SubjectEnum.Science, new DateTime(2026, 5, 5, 13, 45, 30, DateTimeKind.Utc));
+
+        result.IsSuccess.ShouldBeTrue();
+        capturedRequestUri.ShouldNotBeNullOrWhiteSpace();
+        capturedRequestUri.ShouldContain("published_before=2026-05-05T13%3A45%3A30");
+        capturedRequestUri.ShouldNotContain("published_on=");
+        capturedRequestUri.ShouldContain("sort=published_on");
     }
 
     [Fact]
@@ -191,7 +234,8 @@ public class NewsClientTests : InfrastructureTestBase
                     "title": "Sample News",
                     "description": "Description here",
                     "url": "https://example.com/news",
-                    "image_url": "https://example.com/image.jpg"
+                    "image_url": "https://example.com/image.jpg",
+                    "published_at": "2026-05-05T12:30:00Z"
                 }
             ]
         }

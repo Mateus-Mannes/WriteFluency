@@ -47,7 +47,8 @@ public class DailyPropositionGenerator
 
     private async Task GenerateAsync(CancellationToken cancellationToken = default)
     {
-        var targetDate = DateTime.UtcNow.Date.AddDays(-2);
+        var latestPublishedBefore = TrimToSecond(DateTime.UtcNow);
+        var latestWindowAttempts = new HashSet<(SubjectEnum SubjectId, ComplexityEnum ComplexityId)>();
 
         // Get generation statistics for each subject/complexity combination
         var generationStats = await GetGenerationStatsAsync(cancellationToken);
@@ -70,17 +71,18 @@ public class DailyPropositionGenerator
             
             var isOverLimit = subjectPropositionCount >= _options.PropositionsLimitPerTopic;
 
-            // Find the most recent date that hasn't been generated yet for this combination
-            var dateToGenerate = await GetNextDateToGenerateAsync(
+            // Find the newest cursor that should be queried for this combination.
+            var publishedBefore = await GetNextPublishedBeforeAsync(
                 targetParameters.SubjectId, 
                 targetParameters.ComplexityId, 
-                targetDate,
+                latestPublishedBefore,
+                latestWindowAttempts.Contains((targetParameters.SubjectId, targetParameters.ComplexityId)),
                 isOverLimit,
                 cancellationToken);
 
-            if (dateToGenerate == null)
+            if (publishedBefore == null)
             {
-                _logger.LogWarning($"No available date found for {targetParameters.SubjectId} - {targetParameters.ComplexityId}");
+                _logger.LogWarning($"No available cursor found for {targetParameters.SubjectId} - {targetParameters.ComplexityId}");
                 // Remove this combination from consideration
                 generationStats.Remove(targetParameters);
                 
@@ -92,9 +94,9 @@ public class DailyPropositionGenerator
                 continue;
             }
 
-            _logger.LogInformation($"Generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} - {dateToGenerate}");
+            _logger.LogInformation($"Generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} before {publishedBefore}");
 
-            var dto = new CreatePropositionDto(dateToGenerate.Value, targetParameters.ComplexityId, targetParameters.SubjectId);
+            var dto = new CreatePropositionDto(publishedBefore.Value, targetParameters.ComplexityId, targetParameters.SubjectId);
             
             PropositionGenerationLog? generationLog = null;
             try
@@ -102,7 +104,8 @@ public class DailyPropositionGenerator
                 // Create log entry first to get the ID
                 generationLog = new PropositionGenerationLog
                 {
-                    GenerationDate = dto.PublishedOn.Date,
+                    GenerationDate = dto.PublishedOn,
+                    RequestedPublishedBefore = dto.PublishedOn,
                     SubjectId = dto.Subject,
                     ComplexityId = dto.Complexity,
                     SuccessCount = 0,
@@ -117,26 +120,46 @@ public class DailyPropositionGenerator
                     _options.NewsRequestLimit, 
                     cancellationToken);
 
-                var successCount = result.Count();
+                var successCount = result.Propositions.Count;
                 var success = successCount > 0;
 
                 // Update the log with results
+                if (result.OldestFetchedPublishedOn.HasValue)
+                {
+                    generationLog.GenerationDate = result.OldestFetchedPublishedOn.Value;
+                }
+
                 generationLog.SuccessCount = successCount;
                 generationLog.Success = success;
                 await _context.SaveChangesAsync(cancellationToken);
 
                 // Always increment log count (tracks attempts, not success)
                 targetParameters.LogCount++;
+                latestWindowAttempts.Add((targetParameters.SubjectId, targetParameters.ComplexityId));
+
+                if (result.FetchedCount == 0)
+                {
+                    _logger.LogWarning($"No articles fetched for {targetParameters.SubjectId} - {targetParameters.ComplexityId} before {publishedBefore}");
+                    generationStats.Remove(targetParameters);
+                    
+                    if (!generationStats.Any())
+                    {
+                        _logger.LogWarning("No more combinations available for generation");
+                        break;
+                    }
+
+                    continue;
+                }
                 
                 if (success)
                 {
                     // Link propositions to the generation log and save immediately
-                    foreach (var proposition in result)
+                    foreach (var proposition in result.Propositions)
                     {
                         proposition.PropositionGenerationLogId = generationLog.Id;
                     }
                     
-                    await _context.Propositions.AddRangeAsync(result, cancellationToken);
+                    await _context.Propositions.AddRangeAsync(result.Propositions, cancellationToken);
                     await _context.SaveChangesAsync(cancellationToken);
                     
                     // Check and soft delete if over limit
@@ -145,7 +168,7 @@ public class DailyPropositionGenerator
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} - {dateToGenerate}");
+                _logger.LogError(ex, $"Error generating proposition for {targetParameters.SubjectId} - {targetParameters.ComplexityId} before {publishedBefore}");
                 
                 // Update log as failed if it was created
                 if (generationLog != null)
@@ -190,37 +213,36 @@ public class DailyPropositionGenerator
         return stats;
     }
 
-    private async Task<DateTime?> GetNextDateToGenerateAsync(
+    private async Task<DateTime?> GetNextPublishedBeforeAsync(
         SubjectEnum subjectId, 
         ComplexityEnum complexityId, 
-        DateTime targetDate,
+        DateTime latestPublishedBefore,
+        bool latestWindowAttempted,
         bool isOverLimit,
         CancellationToken cancellationToken = default)
     {
-        // Check if target date has already been attempted
-        var targetDateHasLog = await _context.PropositionGenerationLogs
-            .AnyAsync(x => x.SubjectId == subjectId 
-                && x.ComplexityId == complexityId 
-                && x.GenerationDate.Date == targetDate,
-                cancellationToken);
-
-        if (!targetDateHasLog)
+        if (!latestWindowAttempted)
         {
-            return targetDate;
+            return latestPublishedBefore;
         }
 
-        // If over limit and target date already done, stop
+        // If over limit and the latest window was already checked in this run, stop.
         if (isOverLimit)
         {
             return null;
         }
 
-        // Target date already done, go back from oldest log date
+        // Latest window already done in this run; go back from the oldest fetched article.
         var oldestLogDate = await _context.PropositionGenerationLogs
             .Where(x => x.SubjectId == subjectId && x.ComplexityId == complexityId)
             .MinAsync(x => (DateTime?)x.GenerationDate, cancellationToken);
 
-        return oldestLogDate?.Date.AddDays(-1) ?? targetDate;
+        return oldestLogDate?.AddTicks(-1) ?? latestPublishedBefore;
+    }
+
+    private static DateTime TrimToSecond(DateTime value)
+    {
+        return new DateTime(value.Ticks - value.Ticks % TimeSpan.TicksPerSecond, DateTimeKind.Utc);
     }
 
     private async Task CleanupOldPropositionsAsync(

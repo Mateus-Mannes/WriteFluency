@@ -65,7 +65,7 @@ public class ApplicationTestBase : IDisposable
             .Returns(x =>
             {
                 if (x.Arg<SubjectEnum>() == subjectWithoutNews) return Result.Ok(Enumerable.Empty<NewsDto>());
-                return Result.Ok(NewsDtoFaker.Generate(3));
+                return Result.Ok(NewsDtoFaker.Generate(3, x.Arg<SubjectEnum>(), x.Arg<DateTime>()));
             });
         services.AddSingleton(newsClientMock);
 
