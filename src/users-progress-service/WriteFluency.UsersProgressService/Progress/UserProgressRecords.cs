@@ -22,6 +22,10 @@ public sealed class UserProgressRecord
 
     public double? BestAccuracyPercentage { get; set; }
 
+    public string? CompletedOriginalText { get; set; }
+
+    public IReadOnlyList<ProgressTextComparison>? CompletedComparisons { get; set; }
+
     public int? CurrentWordCount { get; set; }
 
     public int? OriginalWordCount { get; set; }

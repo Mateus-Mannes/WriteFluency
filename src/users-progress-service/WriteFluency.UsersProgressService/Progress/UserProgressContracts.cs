@@ -15,7 +15,9 @@ public sealed record CompleteProgressRequest(
     string? ExerciseTitle,
     string? Subject,
     string? Complexity,
-    string? UserText = null);
+    string? UserText = null,
+    string? OriginalText = null,
+    IReadOnlyList<ProgressTextComparison>? Comparisons = null);
 
 public sealed record ProgressOperationResponse(
     bool TrackingEnabled,
@@ -45,7 +47,19 @@ public sealed record ProgressStateResponse(
     int? AutoPauseSeconds,
     double? PausedTimeSeconds,
     DateTimeOffset? UpdatedAtUtc,
-    double? AccuracyPercentage = null);
+    double? AccuracyPercentage = null,
+    string? OriginalText = null,
+    IReadOnlyList<ProgressTextComparison>? Comparisons = null);
+
+public sealed record ProgressTextComparison(
+    ProgressTextRange? OriginalTextRange,
+    string? OriginalText,
+    ProgressTextRange? UserTextRange,
+    string? UserText);
+
+public sealed record ProgressTextRange(
+    int? InitialIndex,
+    int? FinalIndex);
 
 public sealed record ProgressSummaryResponse(
     bool TrackingEnabled,

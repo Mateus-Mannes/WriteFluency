@@ -58,6 +58,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
                 progress.LastInteractionAtUtc = now;
                 progress.DraftExerciseState = null;
                 progress.DraftUserText = null;
+                progress.CompletedOriginalText = null;
+                progress.CompletedComparisons = null;
                 progress.DraftAutoPauseSeconds = null;
                 progress.DraftPausedTimeSeconds = null;
             }
@@ -135,6 +137,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         progress.LastAttemptId = attempt.Id;
         progress.DraftExerciseState = "results";
         progress.DraftUserText = NormalizeDraftText(request.UserText);
+        progress.CompletedOriginalText = NormalizeDraftText(request.OriginalText);
+        progress.CompletedComparisons = NormalizeComparisons(request.Comparisons);
         progress.DraftAutoPauseSeconds = null;
         progress.DraftPausedTimeSeconds = null;
 
@@ -254,7 +258,9 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             AutoPauseSeconds: normalizedAutoPause,
             PausedTimeSeconds: normalizedPausedTime,
             UpdatedAtUtc: current.UpdatedAtUtc,
-            AccuracyPercentage: current.LatestAccuracyPercentage);
+            AccuracyPercentage: current.LatestAccuracyPercentage,
+            OriginalText: NormalizeDraftText(current.CompletedOriginalText),
+            Comparisons: NormalizeComparisons(current.CompletedComparisons));
     }
 
     public async Task<ProgressSummaryResponse> GetSummaryAsync(string userId, CancellationToken cancellationToken)
@@ -521,6 +527,45 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         }
 
         return trimmed[..MaxDraftUserTextLength];
+    }
+
+    private static IReadOnlyList<ProgressTextComparison>? NormalizeComparisons(
+        IReadOnlyList<ProgressTextComparison>? comparisons)
+    {
+        if (comparisons is null || comparisons.Count == 0)
+        {
+            return null;
+        }
+
+        return comparisons
+            .Select(comparison => new ProgressTextComparison(
+                NormalizeTextRange(comparison.OriginalTextRange),
+                NormalizeDraftText(comparison.OriginalText),
+                NormalizeTextRange(comparison.UserTextRange),
+                NormalizeDraftText(comparison.UserText)))
+            .ToArray();
+    }
+
+    private static ProgressTextRange? NormalizeTextRange(ProgressTextRange? range)
+    {
+        if (range is null)
+        {
+            return null;
+        }
+
+        return new ProgressTextRange(
+            NormalizeTextIndex(range.InitialIndex),
+            NormalizeTextIndex(range.FinalIndex));
+    }
+
+    private static int? NormalizeTextIndex(int? value)
+    {
+        if (!value.HasValue)
+        {
+            return null;
+        }
+
+        return Math.Max(0, value.Value);
     }
 
     private static void AccrueActiveSeconds(UserProgressRecord progress, DateTimeOffset now)

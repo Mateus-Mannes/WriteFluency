@@ -225,7 +225,16 @@ public class UserProgressTrackingServiceTests
                 ExerciseTitle: "Exercise 39",
                 Subject: null,
                 Complexity: null,
-                UserText: "rewq dsaf ads fewq radsf as 4"),
+                UserText: "rewq dsaf ads fewq radsf as 4",
+                OriginalText: "correct original exercise text",
+                Comparisons:
+                [
+                    new ProgressTextComparison(
+                        new ProgressTextRange(0, 7),
+                        "correct",
+                        new ProgressTextRange(0, 3),
+                        "rewq")
+                ]),
             CancellationToken.None);
 
         var state = await service.GetStateAsync(userId, 39, CancellationToken.None);
@@ -236,6 +245,13 @@ public class UserProgressTrackingServiceTests
         state.UserText.ShouldBe("rewq dsaf ads fewq radsf as 4");
         state.WordCount.ShouldBe(7);
         state.AccuracyPercentage.ShouldBe(0);
+        state.OriginalText.ShouldBe("correct original exercise text");
+        state.Comparisons.ShouldNotBeNull();
+        state.Comparisons.Count.ShouldBe(1);
+        state.Comparisons[0].OriginalText.ShouldBe("correct");
+        state.Comparisons[0].UserText.ShouldBe("rewq");
+        state.Comparisons[0].OriginalTextRange.ShouldBe(new ProgressTextRange(0, 7));
+        state.Comparisons[0].UserTextRange.ShouldBe(new ProgressTextRange(0, 3));
     }
 
     [Fact]

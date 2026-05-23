@@ -149,6 +149,14 @@ describe('ExerciseProgressTrackingService', () => {
       accuracyPercentage: 0.9,
       userText: 'submitted answer',
       originalText: 'comparison original text',
+      comparisons: [
+        {
+          originalTextRange: { initialIndex: 0, finalIndex: 18 },
+          originalText: 'comparison original',
+          userTextRange: { initialIndex: 0, finalIndex: 15 },
+          userText: 'submitted answer',
+        },
+      ],
     } as any);
 
     expect(userProgressApiMock.complete).toHaveBeenCalledWith({
@@ -157,6 +165,15 @@ describe('ExerciseProgressTrackingService', () => {
       wordCount: 2,
       originalWordCount: 3,
       userText: 'submitted answer',
+      originalText: 'comparison original text',
+      comparisons: [
+        {
+          originalTextRange: { initialIndex: 0, finalIndex: 18 },
+          originalText: 'comparison original',
+          userTextRange: { initialIndex: 0, finalIndex: 15 },
+          userText: 'submitted answer',
+        },
+      ],
       exerciseTitle: 'Exercise 5',
       subject: null,
       complexity: null,

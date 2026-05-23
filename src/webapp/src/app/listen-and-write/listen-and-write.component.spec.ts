@@ -639,19 +639,6 @@ describe('ListenAndWriteComponent', () => {
       id: 18,
       text: 'proposition original text',
     } as any);
-    textComparisonsServiceMock.apiTextComparisonCompareTextsPost.and.returnValue(of({
-      originalText: 'proposition original text',
-      userText: 'server submitted answer',
-      comparisons: [
-        {
-          originalTextRange: { initialIndex: 0, finalIndex: 10 },
-          originalText: 'proposition',
-          userTextRange: { initialIndex: 0, finalIndex: 5 },
-          userText: 'server',
-        },
-      ],
-      accuracyPercentage: 0.72,
-    } as any) as any);
 
     exerciseProgressTrackingMock.loadState.and.resolveTo({
       trackingEnabled: true,
@@ -664,6 +651,15 @@ describe('ListenAndWriteComponent', () => {
       pausedTimeSeconds: null,
       updatedAtUtc: '2026-04-20T18:00:00.000Z',
       accuracyPercentage: 0.75,
+      originalText: 'server original text',
+      comparisons: [
+        {
+          originalTextRange: { initialIndex: 0, finalIndex: 10 },
+          originalText: 'server original',
+          userTextRange: { initialIndex: 0, finalIndex: 5 },
+          userText: 'server',
+        },
+      ],
     });
 
     const browserService = (component as any).browserService;
@@ -673,18 +669,14 @@ describe('ListenAndWriteComponent', () => {
 
     expect(component.exerciseState()).toBe('results');
     expect(component.initialText()).toBe('server submitted answer');
-    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).toHaveBeenCalledWith({
-      originalText: 'proposition original text',
-      userText: 'server submitted answer',
-      propositionId: 18,
-    });
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).not.toHaveBeenCalled();
     expect(component.result()).toEqual(jasmine.objectContaining({
-      accuracyPercentage: 0.72,
+      accuracyPercentage: 0.75,
       userText: 'server submitted answer',
-      originalText: 'proposition original text',
+      originalText: 'server original text',
       comparisons: [
         jasmine.objectContaining({
-          originalText: 'proposition',
+          originalText: 'server original',
           userText: 'server',
         }),
       ],

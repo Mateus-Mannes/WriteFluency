@@ -144,7 +144,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldSyncCompletedResultAfterRestore = false;
-  private restoredResultComparisonHydrationKey: string | null = null;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
   private tutorialVideoSource: TutorialVideoSource | null = null;
@@ -188,7 +187,6 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
         this.shouldSyncCompletedResultAfterRestore = false;
-        this.restoredResultComparisonHydrationKey = null;
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -308,7 +306,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           '@graph': [exerciseData, breadcrumbData]
         };
         this.seoService.addStructuredData(structuredData);
-        this.hydrateRestoredResultFromProposition(data);
+        this.hydrateRestoredResultOriginalText(data);
         this.syncCompletedResultAfterRestoreIfNeeded(data);
       },
       error: (error) => {
@@ -420,11 +418,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.initialAutoPause.set(serverState.autoPauseSeconds ?? 2);
     this.result.set(this.buildRestoredResult(serverState, restoredExerciseState));
     this.setPendingPausedTime(serverState.pausedTimeSeconds);
-
-    const proposition = this.proposition();
-    if (proposition) {
-      this.hydrateRestoredResultFromProposition(proposition);
-    }
   }
 
   private buildRestoredResult(
@@ -436,70 +429,22 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     return {
-      originalText: this.proposition()?.text ?? null,
+      originalText: serverState.originalText ?? this.proposition()?.text ?? null,
       userText: serverState.userText,
-      comparisons: [],
+      comparisons: serverState.comparisons ?? [],
       accuracyPercentage: serverState.accuracyPercentage ?? 0,
     };
   }
 
-  private hydrateRestoredResultFromProposition(proposition: Proposition): void {
+  private hydrateRestoredResultOriginalText(proposition: Proposition): void {
     const restoredResult = this.result();
-    const originalText = proposition.text;
-    const userText = restoredResult?.userText;
-    if (this.exerciseState() !== 'results' || !restoredResult || !originalText || !userText) {
+    if (this.exerciseState() !== 'results' || !restoredResult || restoredResult.originalText) {
       return;
     }
 
-    if (restoredResult.originalText !== originalText) {
-      this.result.set({
-        ...restoredResult,
-        originalText,
-      });
-    }
-
-    if ((restoredResult.comparisons?.length ?? 0) > 0) {
-      return;
-    }
-
-    const hydrationKey = `${this.exerciseId ?? proposition.id ?? ''}:${userText}:${originalText}`;
-    if (this.restoredResultComparisonHydrationKey === hydrationKey) {
-      return;
-    }
-
-    this.restoredResultComparisonHydrationKey = hydrationKey;
-    this.textComparisonsService.apiTextComparisonCompareTextsPost({
-      originalText,
-      userText,
-      propositionId: proposition.id ?? this.exerciseId ?? null,
-    }).subscribe({
-      next: (comparisonResult) => {
-        if (this.restoredResultComparisonHydrationKey !== hydrationKey || this.exerciseState() !== 'results') {
-          return;
-        }
-
-        const currentResult = this.result();
-        if (!currentResult || currentResult.userText !== userText) {
-          return;
-        }
-
-        this.result.set({
-          originalText: comparisonResult.originalText ?? originalText,
-          userText: comparisonResult.userText ?? userText,
-          comparisons: comparisonResult.comparisons ?? [],
-          accuracyPercentage: comparisonResult.accuracyPercentage ?? currentResult.accuracyPercentage ?? 0,
-        });
-      },
-      error: () => {
-        if (this.restoredResultComparisonHydrationKey === hydrationKey) {
-          this.restoredResultComparisonHydrationKey = null;
-        }
-      },
-      complete: () => {
-        if (this.restoredResultComparisonHydrationKey === hydrationKey) {
-          this.restoredResultComparisonHydrationKey = null;
-        }
-      },
+    this.result.set({
+      ...restoredResult,
+      originalText: proposition.text ?? null,
     });
   }
 
@@ -1743,7 +1688,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.initialText.set(null);
     this.initialAutoPause.set(null);
     this.result.set(null);
-    this.restoredResultComparisonHydrationKey = null;
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.setNewState('intro');
   }
