@@ -16,6 +16,7 @@ export interface CompleteProgressRequest {
   exerciseTitle?: string | null;
   subject?: string | null;
   complexity?: string | null;
+  userText?: string | null;
 }
 
 export interface SaveProgressStateRequest {
@@ -48,6 +49,7 @@ export interface ProgressStateResponse {
   autoPauseSeconds: number | null;
   pausedTimeSeconds: number | null;
   updatedAtUtc: string | null;
+  accuracyPercentage?: number | null;
 }
 
 export interface ProgressSummaryResponse {

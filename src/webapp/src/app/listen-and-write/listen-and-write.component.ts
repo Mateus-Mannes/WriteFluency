@@ -144,6 +144,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldSyncCompletedResultAfterRestore = false;
+  private restoredResultComparisonHydrationKey: string | null = null;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
   private tutorialVideoSource: TutorialVideoSource | null = null;
@@ -187,6 +188,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
         this.shouldSyncCompletedResultAfterRestore = false;
+        this.restoredResultComparisonHydrationKey = null;
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -306,6 +308,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           '@graph': [exerciseData, breadcrumbData]
         };
         this.seoService.addStructuredData(structuredData);
+        this.hydrateRestoredResultFromProposition(data);
         this.syncCompletedResultAfterRestoreIfNeeded(data);
       },
       error: (error) => {
@@ -368,7 +371,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
       if (serverState) {
         this.shouldSyncCompletedResultAfterRestore = false;
-        this.applyServerState(serverState.pausedTimeSeconds, serverState.exerciseState, serverState.userText, serverState.autoPauseSeconds);
+        this.applyServerState(serverState);
         return;
       }
 
@@ -404,13 +407,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
   }
 
-  private applyServerState(
-    pausedTimeSeconds: number | null,
-    serverExerciseState: 'intro' | 'exercise' | 'results' | null,
-    userText: string | null,
-    autoPauseSeconds: number | null
-  ): void {
-    const restoredExerciseState = this.normalizeExerciseState(serverExerciseState);
+  private applyServerState(serverState: ProgressStateResponse): void {
+    const restoredExerciseState = this.normalizeExerciseState(serverState.exerciseState);
     if (restoredExerciseState) {
       this.exerciseState.set(restoredExerciseState);
       if (restoredExerciseState === 'exercise' && this.exerciseStartedAtMs === null) {
@@ -418,10 +416,91 @@ export class ListenAndWriteComponent implements OnDestroy {
       }
     }
 
-    this.initialText.set(userText ?? null);
-    this.initialAutoPause.set(autoPauseSeconds ?? 2);
-    this.result.set(null);
-    this.setPendingPausedTime(pausedTimeSeconds);
+    this.initialText.set(serverState.userText ?? null);
+    this.initialAutoPause.set(serverState.autoPauseSeconds ?? 2);
+    this.result.set(this.buildRestoredResult(serverState, restoredExerciseState));
+    this.setPendingPausedTime(serverState.pausedTimeSeconds);
+
+    const proposition = this.proposition();
+    if (proposition) {
+      this.hydrateRestoredResultFromProposition(proposition);
+    }
+  }
+
+  private buildRestoredResult(
+    serverState: ProgressStateResponse,
+    restoredExerciseState: ExerciseState | null,
+  ): TextComparisonResult | null {
+    if (restoredExerciseState !== 'results') {
+      return null;
+    }
+
+    return {
+      originalText: this.proposition()?.text ?? null,
+      userText: serverState.userText,
+      comparisons: [],
+      accuracyPercentage: serverState.accuracyPercentage ?? 0,
+    };
+  }
+
+  private hydrateRestoredResultFromProposition(proposition: Proposition): void {
+    const restoredResult = this.result();
+    const originalText = proposition.text;
+    const userText = restoredResult?.userText;
+    if (this.exerciseState() !== 'results' || !restoredResult || !originalText || !userText) {
+      return;
+    }
+
+    if (restoredResult.originalText !== originalText) {
+      this.result.set({
+        ...restoredResult,
+        originalText,
+      });
+    }
+
+    if ((restoredResult.comparisons?.length ?? 0) > 0) {
+      return;
+    }
+
+    const hydrationKey = `${this.exerciseId ?? proposition.id ?? ''}:${userText}:${originalText}`;
+    if (this.restoredResultComparisonHydrationKey === hydrationKey) {
+      return;
+    }
+
+    this.restoredResultComparisonHydrationKey = hydrationKey;
+    this.textComparisonsService.apiTextComparisonCompareTextsPost({
+      originalText,
+      userText,
+      propositionId: proposition.id ?? this.exerciseId ?? null,
+    }).subscribe({
+      next: (comparisonResult) => {
+        if (this.restoredResultComparisonHydrationKey !== hydrationKey || this.exerciseState() !== 'results') {
+          return;
+        }
+
+        const currentResult = this.result();
+        if (!currentResult || currentResult.userText !== userText) {
+          return;
+        }
+
+        this.result.set({
+          originalText: comparisonResult.originalText ?? originalText,
+          userText: comparisonResult.userText ?? userText,
+          comparisons: comparisonResult.comparisons ?? [],
+          accuracyPercentage: comparisonResult.accuracyPercentage ?? currentResult.accuracyPercentage ?? 0,
+        });
+      },
+      error: () => {
+        if (this.restoredResultComparisonHydrationKey === hydrationKey) {
+          this.restoredResultComparisonHydrationKey = null;
+        }
+      },
+      complete: () => {
+        if (this.restoredResultComparisonHydrationKey === hydrationKey) {
+          this.restoredResultComparisonHydrationKey = null;
+        }
+      },
+    });
   }
 
   private restoreStateFromLocalStorage(exerciseId: number, restoreToken: number): void {
@@ -1664,6 +1743,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.initialText.set(null);
     this.initialAutoPause.set(null);
     this.result.set(null);
+    this.restoredResultComparisonHydrationKey = null;
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.setNewState('intro');
   }

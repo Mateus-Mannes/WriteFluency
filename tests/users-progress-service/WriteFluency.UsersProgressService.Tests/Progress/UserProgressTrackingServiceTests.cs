@@ -195,7 +195,7 @@ public class UserProgressTrackingServiceTests
     }
 
     [Fact]
-    public async Task GetState_AfterCompleteWithoutDraft_ShouldNotReportServerState()
+    public async Task GetState_AfterComplete_ShouldReportRestorableResultsState()
     {
         var repository = new InMemoryUserProgressRepository();
         var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
@@ -224,16 +224,18 @@ public class UserProgressTrackingServiceTests
                 OriginalWordCount: 113,
                 ExerciseTitle: "Exercise 39",
                 Subject: null,
-                Complexity: null),
+                Complexity: null,
+                UserText: "rewq dsaf ads fewq radsf as 4"),
             CancellationToken.None);
 
         var state = await service.GetStateAsync(userId, 39, CancellationToken.None);
 
         state.TrackingEnabled.ShouldBeTrue();
-        state.HasServerState.ShouldBeFalse();
-        state.ExerciseState.ShouldBeNull();
-        state.UserText.ShouldBeNull();
+        state.HasServerState.ShouldBeTrue();
+        state.ExerciseState.ShouldBe("results");
+        state.UserText.ShouldBe("rewq dsaf ads fewq radsf as 4");
         state.WordCount.ShouldBe(7);
+        state.AccuracyPercentage.ShouldBe(0);
     }
 
     [Fact]

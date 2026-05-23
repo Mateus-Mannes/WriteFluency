@@ -14,7 +14,8 @@ public sealed record CompleteProgressRequest(
     int? OriginalWordCount,
     string? ExerciseTitle,
     string? Subject,
-    string? Complexity);
+    string? Complexity,
+    string? UserText = null);
 
 public sealed record ProgressOperationResponse(
     bool TrackingEnabled,
@@ -43,7 +44,8 @@ public sealed record ProgressStateResponse(
     int? WordCount,
     int? AutoPauseSeconds,
     double? PausedTimeSeconds,
-    DateTimeOffset? UpdatedAtUtc);
+    DateTimeOffset? UpdatedAtUtc,
+    double? AccuracyPercentage = null);
 
 public sealed record ProgressSummaryResponse(
     bool TrackingEnabled,

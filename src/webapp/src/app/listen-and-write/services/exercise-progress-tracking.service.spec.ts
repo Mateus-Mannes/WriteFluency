@@ -140,6 +140,29 @@ describe('ExerciseProgressTrackingService', () => {
     );
   });
 
+  it('should send restorable result text when tracking completion', () => {
+    service.trackComplete({
+      id: 5,
+      title: 'Exercise 5',
+      text: 'original proposition text',
+    } as any, {
+      accuracyPercentage: 0.9,
+      userText: 'submitted answer',
+      originalText: 'comparison original text',
+    } as any);
+
+    expect(userProgressApiMock.complete).toHaveBeenCalledWith({
+      exerciseId: 5,
+      accuracyPercentage: 0.9,
+      wordCount: 2,
+      originalWordCount: 3,
+      userText: 'submitted answer',
+      exerciseTitle: 'Exercise 5',
+      subject: null,
+      complexity: null,
+    });
+  });
+
   it('should auto-dismiss session-expired notification after 10 seconds', fakeAsync(() => {
     userProgressApiMock.start.and.returnValue(throwError(() =>
       new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' })));

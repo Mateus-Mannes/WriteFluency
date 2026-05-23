@@ -1,13 +1,14 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 import { ListenAndWriteComponent, LISTEN_WRITE_FIRST_TIME_KEY } from './listen-and-write.component';
 import { ExerciseProgressTrackingService } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import { FeedbackService } from './services/feedback.service';
+import { TextComparisonsService } from 'src/api/listen-and-write';
 
 const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
@@ -19,6 +20,7 @@ describe('ListenAndWriteComponent', () => {
   let progressSyncNotificationSignal: ReturnType<typeof signal>;
   let authSessionStoreMock: jasmine.SpyObj<AuthSessionStore>;
   let feedbackServiceMock: jasmine.SpyObj<FeedbackService>;
+  let textComparisonsServiceMock: jasmine.SpyObj<TextComparisonsService>;
   let insightsMock: jasmine.SpyObj<Insights>;
   let exerciseProgressTrackingMock: {
     trackStart: jasmine.Spy;
@@ -57,6 +59,16 @@ describe('ListenAndWriteComponent', () => {
     );
     feedbackServiceMock.shouldShowPrompt.and.returnValue(false);
     feedbackServiceMock.consumePromptOpportunity.and.returnValue(false);
+    textComparisonsServiceMock = jasmine.createSpyObj<TextComparisonsService>(
+      'TextComparisonsService',
+      ['apiTextComparisonCompareTextsPost'],
+    );
+    textComparisonsServiceMock.apiTextComparisonCompareTextsPost.and.returnValue(of({
+      originalText: 'proposition original text',
+      userText: 'server submitted answer',
+      comparisons: [],
+      accuracyPercentage: 0.75,
+    } as any) as any);
     exerciseProgressTrackingMock = {
       trackStart: jasmine.createSpy('trackStart'),
       trackComplete: jasmine.createSpy('trackComplete'),
@@ -87,6 +99,10 @@ describe('ListenAndWriteComponent', () => {
         {
           provide: FeedbackService,
           useValue: feedbackServiceMock,
+        },
+        {
+          provide: TextComparisonsService,
+          useValue: textComparisonsServiceMock,
         },
         {
           provide: Insights,
@@ -613,6 +629,65 @@ describe('ListenAndWriteComponent', () => {
     expect(exerciseProgressTrackingMock.trackComplete).not.toHaveBeenCalled();
     expect(component.result()).toEqual(jasmine.objectContaining({
       accuracyPercentage: 0.42,
+    }));
+  });
+
+  it('should restore completed result state from the server', async () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    component.exerciseId = 18;
+    component.proposition.set({
+      id: 18,
+      text: 'proposition original text',
+    } as any);
+    textComparisonsServiceMock.apiTextComparisonCompareTextsPost.and.returnValue(of({
+      originalText: 'proposition original text',
+      userText: 'server submitted answer',
+      comparisons: [
+        {
+          originalTextRange: { initialIndex: 0, finalIndex: 10 },
+          originalText: 'proposition',
+          userTextRange: { initialIndex: 0, finalIndex: 5 },
+          userText: 'server',
+        },
+      ],
+      accuracyPercentage: 0.72,
+    } as any) as any);
+
+    exerciseProgressTrackingMock.loadState.and.resolveTo({
+      trackingEnabled: true,
+      exerciseId: 18,
+      hasServerState: true,
+      exerciseState: 'results',
+      userText: 'server submitted answer',
+      wordCount: 3,
+      autoPauseSeconds: null,
+      pausedTimeSeconds: null,
+      updatedAtUtc: '2026-04-20T18:00:00.000Z',
+      accuracyPercentage: 0.75,
+    });
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'getItem').and.returnValue(null);
+
+    await component.restoreExerciseState();
+
+    expect(component.exerciseState()).toBe('results');
+    expect(component.initialText()).toBe('server submitted answer');
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).toHaveBeenCalledWith({
+      originalText: 'proposition original text',
+      userText: 'server submitted answer',
+      propositionId: 18,
+    });
+    expect(component.result()).toEqual(jasmine.objectContaining({
+      accuracyPercentage: 0.72,
+      userText: 'server submitted answer',
+      originalText: 'proposition original text',
+      comparisons: [
+        jasmine.objectContaining({
+          originalText: 'proposition',
+          userText: 'server',
+        }),
+      ],
     }));
   });
 

@@ -56,6 +56,10 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             {
                 progress.CurrentAttemptActiveSeconds = 0;
                 progress.LastInteractionAtUtc = now;
+                progress.DraftExerciseState = null;
+                progress.DraftUserText = null;
+                progress.DraftAutoPauseSeconds = null;
+                progress.DraftPausedTimeSeconds = null;
             }
         }
 
@@ -129,8 +133,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         progress.CurrentWordCount = NormalizeWordCount(request.WordCount) ?? progress.CurrentWordCount;
         progress.OriginalWordCount = NormalizeWordCount(request.OriginalWordCount) ?? progress.OriginalWordCount;
         progress.LastAttemptId = attempt.Id;
-        progress.DraftExerciseState = null;
-        progress.DraftUserText = null;
+        progress.DraftExerciseState = "results";
+        progress.DraftUserText = NormalizeDraftText(request.UserText);
         progress.DraftAutoPauseSeconds = null;
         progress.DraftPausedTimeSeconds = null;
 
@@ -249,7 +253,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             WordCount: normalizedWordCount,
             AutoPauseSeconds: normalizedAutoPause,
             PausedTimeSeconds: normalizedPausedTime,
-            UpdatedAtUtc: current.UpdatedAtUtc);
+            UpdatedAtUtc: current.UpdatedAtUtc,
+            AccuracyPercentage: current.LatestAccuracyPercentage);
     }
 
     public async Task<ProgressSummaryResponse> GetSummaryAsync(string userId, CancellationToken cancellationToken)

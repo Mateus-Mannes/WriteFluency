@@ -88,6 +88,7 @@ export class ExerciseProgressTrackingService {
       accuracyPercentage: result?.accuracyPercentage ?? null,
       wordCount: this.countWords(result?.userText),
       originalWordCount: this.resolveOriginalWordCount(proposition, result),
+      userText: result?.userText ?? null,
       ...metadata,
     })
       .pipe(catchError((error) => this.handleProgressApiError('complete', exerciseId, error)))
