@@ -365,4 +365,20 @@ describe('ExerciseProgressTrackingService', () => {
       originalWordCount: 0,
     });
   });
+
+  it('should send reset-completed-state intent when starting after try again', () => {
+    service.trackStart(
+      { id: 12, title: 'Exercise 12' } as any,
+      { resetCompletedState: true },
+    );
+
+    expect(userProgressApiMock.start).toHaveBeenCalledWith({
+      exerciseId: 12,
+      exerciseTitle: 'Exercise 12',
+      subject: null,
+      complexity: null,
+      originalWordCount: 0,
+      resetCompletedState: true,
+    });
+  });
 });

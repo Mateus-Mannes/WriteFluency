@@ -208,6 +208,33 @@ describe('ListenAndWriteComponent', () => {
     }));
   });
 
+  it('should not save exercise state when audio pauses outside exercise state', () => {
+    component.exerciseId = 55;
+    component.exerciseState.set('results');
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'setItem');
+    spyOn(component, 'onSaveExerciseState').and.callThrough();
+
+    component.onAudioPaused();
+
+    expect(component.onSaveExerciseState).not.toHaveBeenCalled();
+    expect(browserService.setItem).not.toHaveBeenCalled();
+  });
+
+  it('should not save exercise state when called outside exercise state', () => {
+    component.exerciseId = 56;
+    component.exerciseState.set('results');
+
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'setItem');
+
+    component.onSaveExerciseState();
+
+    expect(browserService.setItem).not.toHaveBeenCalled();
+    expect(exerciseProgressTrackingMock.saveState).not.toHaveBeenCalled();
+  });
+
   it('should use auto-pause value for rewind shortcut when enabled', () => {
     const rewindAudio = jasmine.createSpy('rewindAudio');
 
@@ -826,6 +853,36 @@ describe('ListenAndWriteComponent', () => {
 
     expect(component.isGuestLoginModalOpen()).toBeFalse();
     expect(component.exerciseState()).toBe('exercise');
+  });
+
+  it('should send reset-completed-state intent only when starting after try again', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
+    component.exerciseId = 91;
+    component.proposition.set({ id: 91, title: 'Exercise 91' } as any);
+    component.exerciseState.set('results');
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio: jasmine.createSpy('pauseAudio'),
+      playAudio: jasmine.createSpy('playAudio'),
+      audioRef: { nativeElement: { currentTime: 25 } },
+    } as any;
+
+    component.onTryAgain();
+    component.beginExercise();
+
+    expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 91 }),
+      { resetCompletedState: true },
+    );
+
+    component.setNewState('intro');
+    component.beginExercise();
+
+    expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 91 }),
+    );
+    expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledTimes(2);
   });
 
   it('should navigate to login with returnUrl when guest begin modal sign-in CTA is clicked', () => {

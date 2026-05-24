@@ -7,7 +7,7 @@ namespace WriteFluency.UsersProgressService.Tests.Progress;
 public class UserProgressTrackingServiceTests
 {
     [Fact]
-    public async Task StartThenCompleteThenStartAgain_ShouldKeepCompletedStatusAndResetCurrentAttemptAccumulator()
+    public async Task StartThenCompleteThenStartAgainWithResetIntent_ShouldMoveToInProgressAndResetCurrentAttemptAccumulator()
     {
         var repository = new InMemoryUserProgressRepository();
         var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
@@ -35,14 +35,19 @@ public class UserProgressTrackingServiceTests
 
         var startedAgain = await service.StartAsync(
             userId,
-            new StartProgressRequest(12, "Climate exercise", "Science", "Intermediate"),
+            new StartProgressRequest(
+                ExerciseId: 12,
+                ExerciseTitle: "Climate exercise",
+                Subject: "Science",
+                Complexity: "Intermediate",
+                ResetCompletedState: true),
             CancellationToken.None);
         startedAgain.TrackingEnabled.ShouldBeTrue();
-        startedAgain.Status.ShouldBe(ProgressStatus.Completed);
+        startedAgain.Status.ShouldBe(ProgressStatus.InProgress);
 
         var items = await service.GetItemsAsync(userId, CancellationToken.None);
         items.Count.ShouldBe(1);
-        items[0].Status.ShouldBe(ProgressStatus.Completed);
+        items[0].Status.ShouldBe(ProgressStatus.InProgress);
         items[0].AttemptCount.ShouldBe(1);
         items[0].LatestAccuracyPercentage.ShouldBe(0.82);
         items[0].BestAccuracyPercentage.ShouldBe(0.82);
@@ -51,7 +56,182 @@ public class UserProgressTrackingServiceTests
 
         var progressAfterRestart = await repository.GetProgressAsync(userId, 12, CancellationToken.None);
         progressAfterRestart.ShouldNotBeNull();
+        progressAfterRestart.Status.ShouldBe(ProgressStatus.InProgress);
         progressAfterRestart.CurrentAttemptActiveSeconds.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task StartCompletedExerciseWithoutResetIntent_ShouldPreserveCompletedRestoreState()
+    {
+        var repository = new InMemoryUserProgressRepository();
+        var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
+        var userId = "user-start-preserve";
+
+        await service.CompleteAsync(
+            userId,
+            new CompleteProgressRequest(
+                ExerciseId: 13,
+                AccuracyPercentage: 0.7,
+                WordCount: 8,
+                OriginalWordCount: 10,
+                ExerciseTitle: "Exercise 13",
+                Subject: "Science",
+                Complexity: "Intermediate",
+                UserText: "submitted text",
+                OriginalText: "original exercise text",
+                Comparisons:
+                [
+                    new ProgressTextComparison(
+                        new ProgressTextRange(0, 8),
+                        "original",
+                        new ProgressTextRange(0, 9),
+                        "submitted")
+                ]),
+            CancellationToken.None);
+
+        var completedProgress = await repository.GetProgressAsync(userId, 13, CancellationToken.None);
+        completedProgress.ShouldNotBeNull();
+        completedProgress.CurrentAttemptActiveSeconds = 55;
+        completedProgress.LastInteractionAtUtc = DateTimeOffset.UtcNow.AddMinutes(-10);
+        await repository.UpsertProgressAsync(completedProgress, CancellationToken.None);
+
+        var started = await service.StartAsync(
+            userId,
+            new StartProgressRequest(13, "Exercise 13", "Science", "Intermediate"),
+            CancellationToken.None);
+
+        started.Status.ShouldBe(ProgressStatus.Completed);
+
+        var state = await service.GetStateAsync(userId, 13, CancellationToken.None);
+        state.HasServerState.ShouldBeTrue();
+        state.ExerciseState.ShouldBe("results");
+        state.UserText.ShouldBe("submitted text");
+        state.OriginalText.ShouldBe("original exercise text");
+        state.Comparisons.ShouldNotBeNull();
+        state.Comparisons.Count.ShouldBe(1);
+
+        var progressAfterStart = await repository.GetProgressAsync(userId, 13, CancellationToken.None);
+        progressAfterStart.ShouldNotBeNull();
+        progressAfterStart.CurrentAttemptActiveSeconds.ShouldBe(55);
+    }
+
+    [Fact]
+    public async Task SaveStateCompletedExercise_ShouldIgnoreRequestAndPreserveCompletedRestoreState()
+    {
+        var repository = new InMemoryUserProgressRepository();
+        var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
+        var userId = "user-save-completed";
+
+        await service.CompleteAsync(
+            userId,
+            new CompleteProgressRequest(
+                ExerciseId: 14,
+                AccuracyPercentage: 0.8,
+                WordCount: 5,
+                OriginalWordCount: 6,
+                ExerciseTitle: "Exercise 14",
+                Subject: "Science",
+                Complexity: "Intermediate",
+                UserText: "completed text",
+                OriginalText: "completed original",
+                Comparisons:
+                [
+                    new ProgressTextComparison(
+                        new ProgressTextRange(0, 8),
+                        "completed",
+                        new ProgressTextRange(0, 8),
+                        "completed")
+                ]),
+            CancellationToken.None);
+
+        var beforeSave = await repository.GetProgressAsync(userId, 14, CancellationToken.None);
+        beforeSave.ShouldNotBeNull();
+        var beforeUpdatedAt = beforeSave.UpdatedAtUtc;
+
+        var saved = await service.SaveStateAsync(
+            userId,
+            new SaveProgressStateRequest(
+                ExerciseId: 14,
+                ExerciseState: "exercise",
+                UserText: "accidental draft",
+                WordCount: 2,
+                AutoPauseSeconds: 4,
+                PausedTimeSeconds: 9,
+                ExerciseTitle: "Changed title",
+                Subject: "Changed subject",
+                Complexity: "Changed complexity"),
+            CancellationToken.None);
+
+        saved.Status.ShouldBe(ProgressStatus.Completed);
+        saved.UpdatedAtUtc.ShouldBe(beforeUpdatedAt);
+
+        var state = await service.GetStateAsync(userId, 14, CancellationToken.None);
+        state.ExerciseState.ShouldBe("results");
+        state.UserText.ShouldBe("completed text");
+        state.OriginalText.ShouldBe("completed original");
+        state.WordCount.ShouldBe(5);
+        state.AutoPauseSeconds.ShouldBeNull();
+        state.PausedTimeSeconds.ShouldBeNull();
+        state.Comparisons.ShouldNotBeNull();
+        state.Comparisons.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task CompleteAlreadyCompletedExercise_ShouldIgnoreRequestAndPreserveExistingCompletion()
+    {
+        var repository = new InMemoryUserProgressRepository();
+        var service = new UserProgressTrackingService(repository, NullLogger<UserProgressTrackingService>.Instance);
+        var userId = "user-complete-completed";
+
+        await service.CompleteAsync(
+            userId,
+            new CompleteProgressRequest(
+                ExerciseId: 15,
+                AccuracyPercentage: 0.8,
+                WordCount: 5,
+                OriginalWordCount: 6,
+                ExerciseTitle: "Exercise 15",
+                Subject: "Science",
+                Complexity: "Intermediate",
+                UserText: "first completed text",
+                OriginalText: "first completed original",
+                Comparisons:
+                [
+                    new ProgressTextComparison(
+                        new ProgressTextRange(0, 5),
+                        "first",
+                        new ProgressTextRange(0, 5),
+                        "first")
+                ]),
+            CancellationToken.None);
+
+        var firstState = await service.GetStateAsync(userId, 15, CancellationToken.None);
+        var ignored = await service.CompleteAsync(
+            userId,
+            new CompleteProgressRequest(
+                ExerciseId: 15,
+                AccuracyPercentage: 0.1,
+                WordCount: 1,
+                OriginalWordCount: 2,
+                ExerciseTitle: "Changed exercise",
+                Subject: "Changed subject",
+                Complexity: "Changed complexity",
+                UserText: "second completed text",
+                OriginalText: "second completed original",
+                Comparisons: []),
+            CancellationToken.None);
+
+        ignored.Status.ShouldBe(ProgressStatus.Completed);
+
+        var secondState = await service.GetStateAsync(userId, 15, CancellationToken.None);
+        secondState.UpdatedAtUtc.ShouldBe(firstState.UpdatedAtUtc);
+        secondState.UserText.ShouldBe("first completed text");
+        secondState.OriginalText.ShouldBe("first completed original");
+        secondState.AccuracyPercentage.ShouldBe(0.8);
+        secondState.WordCount.ShouldBe(5);
+
+        var attempts = await service.GetAttemptsAsync(userId, exerciseId: 15, CancellationToken.None);
+        attempts.Count.ShouldBe(1);
     }
 
     [Fact]

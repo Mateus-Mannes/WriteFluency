@@ -48,12 +48,13 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         if (current is not null)
         {
             progress.StartedAtUtc = progress.StartedAtUtc == default ? now : progress.StartedAtUtc;
-            if (!string.Equals(progress.Status, ProgressStatus.Completed, StringComparison.OrdinalIgnoreCase))
+            if (!IsCompleted(progress))
             {
                 progress.Status = ProgressStatus.InProgress;
             }
-            else
+            else if (request.ResetCompletedState)
             {
+                progress.Status = ProgressStatus.InProgress;
                 progress.CurrentAttemptActiveSeconds = 0;
                 progress.LastInteractionAtUtc = now;
                 progress.DraftExerciseState = null;
@@ -62,6 +63,15 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
                 progress.CompletedComparisons = null;
                 progress.DraftAutoPauseSeconds = null;
                 progress.DraftPausedTimeSeconds = null;
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Start progress operation ignored for completed progress without reset intent. UserId={UserId}, ExerciseId={ExerciseId}.",
+                    userId,
+                    request.ExerciseId);
+
+                return new ProgressOperationResponse(true, request.ExerciseId, progress.Status, progress.UpdatedAtUtc);
             }
         }
 
@@ -104,6 +114,16 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             ExerciseId = request.ExerciseId,
             StartedAtUtc = now
         };
+
+        if (current is not null && IsCompleted(current))
+        {
+            _logger.LogInformation(
+                "Complete progress operation ignored for already completed progress. UserId={UserId}, ExerciseId={ExerciseId}.",
+                userId,
+                request.ExerciseId);
+
+            return new ProgressOperationResponse(true, request.ExerciseId, current.Status, current.UpdatedAtUtc);
+        }
 
         progress.StartedAtUtc = progress.StartedAtUtc == default ? now : progress.StartedAtUtc;
         AccrueActiveSeconds(progress, now);
@@ -181,8 +201,18 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             Status = ProgressStatus.InProgress
         };
 
+        if (current is not null && IsCompleted(current))
+        {
+            _logger.LogInformation(
+                "Save progress state operation ignored for completed progress. UserId={UserId}, ExerciseId={ExerciseId}.",
+                userId,
+                request.ExerciseId);
+
+            return new ProgressOperationResponse(true, request.ExerciseId, current.Status, current.UpdatedAtUtc);
+        }
+
         progress.StartedAtUtc = progress.StartedAtUtc == default ? now : progress.StartedAtUtc;
-        if (!string.Equals(progress.Status, ProgressStatus.Completed, StringComparison.OrdinalIgnoreCase))
+        if (!IsCompleted(progress))
         {
             progress.Status = ProgressStatus.InProgress;
         }
@@ -455,6 +485,11 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         }
 
         return ProgressStatus.InProgress;
+    }
+
+    private static bool IsCompleted(UserProgressRecord progress)
+    {
+        return string.Equals(progress.Status, ProgressStatus.Completed, StringComparison.OrdinalIgnoreCase);
     }
 
     private static int? NormalizeWordCount(int? value)

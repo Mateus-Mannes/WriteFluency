@@ -144,6 +144,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldSyncCompletedResultAfterRestore = false;
+  private shouldResetCompletedStateOnNextStart = false;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
   private tutorialVideoSource: TutorialVideoSource | null = null;
@@ -187,6 +188,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
         this.shouldSyncCompletedResultAfterRestore = false;
+        this.shouldResetCompletedStateOnNextStart = false;
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.result.set(null);
@@ -908,7 +910,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       }, {
         guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
       });
-      this.exerciseProgressTracking.trackStart(this.proposition());
+      this.trackExerciseStart();
       this.setNewState('exercise');
       this.browserService.scrollToTop();
       return;
@@ -933,7 +935,7 @@ export class ListenAndWriteComponent implements OnDestroy {
           }, {
             guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
           });
-          this.exerciseProgressTracking.trackStart(this.proposition());
+          this.trackExerciseStart();
           this.setNewState('exercise');
           this.browserService.scrollToTop();
         }
@@ -947,9 +949,19 @@ export class ListenAndWriteComponent implements OnDestroy {
     }, {
       guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
     });
-    this.exerciseProgressTracking.trackStart(this.proposition());
+    this.trackExerciseStart();
     this.setNewState('exercise');
     this.browserService.scrollToTop();
+  }
+
+  private trackExerciseStart(): void {
+    if (this.shouldResetCompletedStateOnNextStart) {
+      this.shouldResetCompletedStateOnNextStart = false;
+      this.exerciseProgressTracking.trackStart(this.proposition(), { resetCompletedState: true });
+      return;
+    }
+
+    this.exerciseProgressTracking.trackStart(this.proposition());
   }
 
   private incrementGuestBeginAttemptCountIfGuest(): number | null {
@@ -1351,8 +1363,8 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onAudioPaused() {
-    this.onSaveExerciseState();
     if (this.exerciseState() !== 'exercise') return;
+    this.onSaveExerciseState();
     // When the user pauses via native controls, restore focus so shortcuts keep working.
     this.exerciseSectionComponent?.focusTextArea();
   }
@@ -1366,6 +1378,10 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onSaveExerciseState() {
+    if (this.exerciseState() !== 'exercise') {
+      return;
+    }
+
     const stateKey = this.getExerciseStateKey();
     if (!stateKey) return;
     
@@ -1379,7 +1395,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     this.browserService.setItem(stateKey, JSON.stringify(state));
 
-    if (this.exerciseState() === 'exercise' && this.result() === null) {
+    if (this.result() === null) {
       this.exerciseProgressTracking.saveState(this.proposition(), {
         exerciseState: 'exercise',
         userText: state.userText ?? null,
@@ -1688,6 +1704,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.initialText.set(null);
     this.initialAutoPause.set(null);
     this.result.set(null);
+    this.shouldResetCompletedStateOnNextStart = true;
     this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
     this.setNewState('intro');
   }

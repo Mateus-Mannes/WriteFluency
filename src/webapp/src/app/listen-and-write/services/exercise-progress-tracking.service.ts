@@ -29,6 +29,10 @@ export interface ProgressSyncNotification {
   message: string;
 }
 
+export interface ExerciseProgressStartOptions {
+  resetCompletedState?: boolean;
+}
+
 type ProgressOperation = 'start' | 'save_state' | 'complete' | 'load_state';
 
 const stateSaveDebounceMs = 2000;
@@ -55,7 +59,7 @@ export class ExerciseProgressTrackingService {
 
   readonly syncNotification = this.syncNotificationSignal.asReadonly();
 
-  trackStart(proposition: Proposition | null): void {
+  trackStart(proposition: Proposition | null, options: ExerciseProgressStartOptions = {}): void {
     const exerciseId = proposition?.id;
     if (!this.authSessionStore.isAuthenticated() || exerciseId === undefined) {
       return;
@@ -68,6 +72,7 @@ export class ExerciseProgressTrackingService {
       exerciseId,
       ...metadata,
       originalWordCount: this.countWords(proposition?.text),
+      ...(options.resetCompletedState ? { resetCompletedState: true } : {}),
     })
       .pipe(catchError((error) => this.handleProgressApiError('start', exerciseId, error)))
       .subscribe();

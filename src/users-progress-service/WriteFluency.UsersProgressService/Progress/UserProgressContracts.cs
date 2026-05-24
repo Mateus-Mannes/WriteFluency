@@ -5,7 +5,8 @@ public sealed record StartProgressRequest(
     string? ExerciseTitle,
     string? Subject,
     string? Complexity,
-    int? OriginalWordCount = null);
+    int? OriginalWordCount = null,
+    bool ResetCompletedState = false);
 
 public sealed record CompleteProgressRequest(
     int ExerciseId,

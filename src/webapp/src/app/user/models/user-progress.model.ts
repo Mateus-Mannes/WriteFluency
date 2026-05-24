@@ -8,6 +8,7 @@ export interface StartProgressRequest {
   subject?: string | null;
   complexity?: string | null;
   originalWordCount?: number | null;
+  resetCompletedState?: boolean | null;
 }
 
 export interface CompleteProgressRequest {
