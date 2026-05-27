@@ -13,6 +13,17 @@ public class UsersDbContext(DbContextOptions<UsersDbContext> options)
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(x => x.SubscriptionPlan)
+                .HasMaxLength(20)
+                .HasDefaultValue("free")
+                .IsRequired();
+
+            entity.Property(x => x.SubscriptionCancelAtPeriodEnd)
+                .HasDefaultValue(false);
+        });
+
         builder.Entity<UserLoginActivity>(entity =>
         {
             entity.ToTable("UserLoginActivities");

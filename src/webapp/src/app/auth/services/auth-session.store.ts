@@ -3,12 +3,20 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { AuthApiService } from './auth-api.service';
-import { AuthSessionState } from '../models/auth-session.model';
+import { AuthEntitlementStatus, AuthPlan, AuthSessionState } from '../models/auth-session.model';
 
 const sessionSnapshotStorageKey = 'wf.auth.session.snapshot.v1';
 const sessionRefreshLeadTimeMs = 5 * 60 * 1000;
 const minimumScheduledRefreshDelayMs = 15 * 1000;
 const fallbackValidationIntervalMs = 15 * 60 * 1000;
+
+const freeEntitlementState = {
+  plan: 'free' as AuthPlan,
+  entitlementStatus: 'free' as AuthEntitlementStatus,
+  isPro: false,
+  currentPeriodEndUtc: null,
+  cancelAtPeriodEnd: false,
+};
 
 const initialState: AuthSessionState = {
   isAuthenticated: false,
@@ -16,6 +24,7 @@ const initialState: AuthSessionState = {
   email: null,
   emailConfirmed: false,
   listenWriteTutorialCompleted: null,
+  ...freeEntitlementState,
   hasReliableSessionState: false,
   issuedAtUtc: null,
   expiresAtUtc: null,
@@ -30,6 +39,11 @@ type AuthSessionSnapshot = Pick<
   | 'email'
   | 'emailConfirmed'
   | 'listenWriteTutorialCompleted'
+  | 'plan'
+  | 'entitlementStatus'
+  | 'isPro'
+  | 'currentPeriodEndUtc'
+  | 'cancelAtPeriodEnd'
   | 'issuedAtUtc'
   | 'expiresAtUtc'
 > & {
@@ -56,6 +70,9 @@ export class AuthSessionStore {
   readonly userId = computed(() => this.stateSignal().userId);
   readonly hasReliableSessionState = computed(() => this.stateSignal().hasReliableSessionState);
   readonly listenWriteTutorialCompleted = computed(() => this.stateSignal().listenWriteTutorialCompleted);
+  readonly plan = computed(() => this.stateSignal().plan);
+  readonly entitlementStatus = computed(() => this.stateSignal().entitlementStatus);
+  readonly isPro = computed(() => this.stateSignal().isPro);
 
   isLogoutInProgress(): boolean {
     return this.logoutRequestInFlight;
@@ -154,6 +171,11 @@ export class AuthSessionStore {
         email: session.email,
         emailConfirmed: session.emailConfirmed,
         listenWriteTutorialCompleted: this.resolveTutorialCompletionFlag(session.listenWriteTutorialCompleted),
+        plan: this.resolvePlan(session.plan),
+        entitlementStatus: this.resolveEntitlementStatus(session.entitlementStatus),
+        isPro: session.isPro === true,
+        currentPeriodEndUtc: session.currentPeriodEndUtc ?? null,
+        cancelAtPeriodEnd: session.cancelAtPeriodEnd === true,
         hasReliableSessionState: true,
         issuedAtUtc: session.issuedAtUtc,
         expiresAtUtc: session.expiresAtUtc,
@@ -217,6 +239,11 @@ export class AuthSessionStore {
         email: snapshot.email ?? null,
         emailConfirmed: snapshot.emailConfirmed === true,
         listenWriteTutorialCompleted: this.resolveTutorialCompletionFlag(snapshot.listenWriteTutorialCompleted),
+        plan: this.resolvePlan(snapshot.plan),
+        entitlementStatus: this.resolveEntitlementStatus(snapshot.entitlementStatus),
+        isPro: snapshot.isPro === true,
+        currentPeriodEndUtc: snapshot.currentPeriodEndUtc ?? null,
+        cancelAtPeriodEnd: snapshot.cancelAtPeriodEnd === true,
         hasReliableSessionState: false,
         issuedAtUtc: snapshot.issuedAtUtc ?? null,
         expiresAtUtc: snapshot.expiresAtUtc ?? null,
@@ -242,6 +269,11 @@ export class AuthSessionStore {
       email: state.email,
       emailConfirmed: state.emailConfirmed,
       listenWriteTutorialCompleted: state.listenWriteTutorialCompleted,
+      plan: state.plan,
+      entitlementStatus: state.entitlementStatus,
+      isPro: state.isPro,
+      currentPeriodEndUtc: state.currentPeriodEndUtc,
+      cancelAtPeriodEnd: state.cancelAtPeriodEnd,
       issuedAtUtc: state.issuedAtUtc,
       expiresAtUtc: state.expiresAtUtc,
       cachedAtUtc: new Date().toISOString(),
@@ -329,6 +361,7 @@ export class AuthSessionStore {
       email: null,
       emailConfirmed: false,
       listenWriteTutorialCompleted: null,
+      ...freeEntitlementState,
       hasReliableSessionState: true,
       issuedAtUtc: null,
       expiresAtUtc: null,
@@ -340,6 +373,16 @@ export class AuthSessionStore {
 
   private resolveTutorialCompletionFlag(value: unknown): boolean | null {
     return typeof value === 'boolean' ? value : null;
+  }
+
+  private resolvePlan(value: unknown): AuthPlan {
+    return value === 'pro' ? 'pro' : 'free';
+  }
+
+  private resolveEntitlementStatus(value: unknown): AuthEntitlementStatus {
+    return value === 'pro_active' || value === 'pro_canceling' || value === 'pro_expired'
+      ? value
+      : 'free';
   }
 
   private patchState(patch: Partial<AuthSessionState>): void {

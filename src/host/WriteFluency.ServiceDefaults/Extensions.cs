@@ -19,6 +19,15 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string MinioHealthCheckName = "minio_health";
+    private const string MinioConnectionStringName = "wf-infra-minio";
+    private const string MinioHealthEndpointPrefix = "/minio/health";
+    private static readonly string[] MinioHealthPaths =
+    [
+        "/minio/health/live",
+        "/minio/health/cluster",
+        "/minio/health/cluster/read"
+    ];
     private static readonly string[] CriticalAppMetricNames =
     [
         "http.server.request.duration",
@@ -59,6 +68,7 @@ public static class Extensions
         // Keep Information+; suppress Verbose/Debug everywhere.
         builder.Logging.SetMinimumLevel(LogLevel.Information);
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+        builder.Logging.AddFilter($"System.Net.Http.HttpClient.{MinioHealthCheckName}", LogLevel.Warning);
         var aiConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
         var resourceAttributes = new Dictionary<string, object>();
@@ -117,7 +127,8 @@ public static class Extensions
                     .AddEntityFrameworkCoreInstrumentation()
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
-                    .AddHttpClientInstrumentation();
+                    .AddHttpClientInstrumentation(tracing =>
+                        tracing.FilterHttpRequestMessage = static request => !IsMinioHealthCheckRequest(request));
 
                 if (!string.IsNullOrWhiteSpace(aiConnectionString))
                 {
@@ -170,13 +181,10 @@ public static class Extensions
 
     public static TBuilder AddMinioHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
-        builder.Services.AddHealthChecks().AddUrlGroup(options =>
-            {
-                var uri = new Uri(builder.Configuration.GetConnectionString("wf-infra-minio")!.Split(";")[0].Replace("Endpoint=", ""));
-                options.AddUri(new Uri(uri, "/minio/health/live"), setup => setup.ExpectHttpCode(200));
-                options.AddUri(new Uri(uri, "/minio/health/cluster"), setup => setup.ExpectHttpCode(200));
-                options.AddUri(new Uri(uri, "/minio/health/cluster/read"), setup => setup.ExpectHttpCode(200));
-            }, "minio_health", tags: new[] { "ready", "live" });
+        builder.Services.AddHttpClient(MinioHealthCheckName);
+        builder.Services.AddHealthChecks()
+            .AddCheck<MinioHealthCheck>(MinioHealthCheckName, tags: ["ready", "live"]);
+
         return builder;
     }    
 
@@ -200,5 +208,79 @@ public static class Extensions
         });
 
         return app;
+    }
+
+    private static bool IsMinioHealthCheckRequest(HttpRequestMessage request)
+    {
+        var uri = request.RequestUri;
+
+        return uri is not null
+            && string.Equals(uri.Host, "wf-infra-minio", StringComparison.OrdinalIgnoreCase)
+            && uri.AbsolutePath.StartsWith(MinioHealthEndpointPrefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class MinioHealthCheck(IConfiguration configuration, IHttpClientFactory httpClientFactory) : IHealthCheck
+    {
+        public async Task<HealthCheckResult> CheckHealthAsync(
+            HealthCheckContext context,
+            CancellationToken cancellationToken = default)
+        {
+            var endpoint = GetMinioEndpoint(configuration);
+            if (endpoint is null)
+            {
+                return HealthCheckResult.Unhealthy(
+                    $"Connection string '{MinioConnectionStringName}' is missing or does not contain a valid Endpoint value.");
+            }
+
+            var httpClient = httpClientFactory.CreateClient(MinioHealthCheckName);
+            var failures = new List<string>();
+
+            foreach (var path in MinioHealthPaths)
+            {
+                var healthUri = new Uri(endpoint, path);
+                try
+                {
+                    using var response = await httpClient.GetAsync(healthUri, cancellationToken);
+                    if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        failures.Add($"{path} returned {(int)response.StatusCode}");
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    failures.Add($"{path} timed out or was canceled");
+                }
+                catch (HttpRequestException ex)
+                {
+                    failures.Add($"{path} request failed: {ex.Message}");
+                }
+            }
+
+            return failures.Count == 0
+                ? HealthCheckResult.Healthy()
+                : HealthCheckResult.Unhealthy(string.Join("; ", failures));
+        }
+
+        private static Uri? GetMinioEndpoint(IConfiguration configuration)
+        {
+            var connectionString = configuration.GetConnectionString(MinioConnectionStringName);
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return null;
+            }
+
+            var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var part in parts)
+            {
+                const string endpointPrefix = "Endpoint=";
+                if (part.StartsWith(endpointPrefix, StringComparison.OrdinalIgnoreCase)
+                    && Uri.TryCreate(part[endpointPrefix.Length..], UriKind.Absolute, out var endpoint))
+                {
+                    return endpoint;
+                }
+            }
+
+            return null;
+        }
     }
 }

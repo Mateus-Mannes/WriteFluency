@@ -1,8 +1,27 @@
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
+import { AuthSession } from '../models/auth-session.model';
 import { AuthApiService } from './auth-api.service';
 import { AuthSessionStore } from './auth-session.store';
+
+function authenticatedSession(overrides: Partial<AuthSession> = {}): AuthSession {
+  return {
+    isAuthenticated: true,
+    userId: 'abc',
+    email: 'user@test.com',
+    emailConfirmed: true,
+    listenWriteTutorialCompleted: false,
+    plan: 'free',
+    entitlementStatus: 'free',
+    isPro: false,
+    currentPeriodEndUtc: null,
+    cancelAtPeriodEnd: false,
+    issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+    expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
+    ...overrides,
+  };
+}
 
 describe('AuthSessionStore', () => {
   let store: AuthSessionStore;
@@ -32,20 +51,27 @@ describe('AuthSessionStore', () => {
     window.localStorage.removeItem('wf.auth.session.snapshot.v1');
   });
 
+  it('should expose free entitlement in initial state', () => {
+    expect(store.state().plan).toBe('free');
+    expect(store.state().entitlementStatus).toBe('free');
+    expect(store.state().isPro).toBeFalse();
+    expect(store.state().currentPeriodEndUtc).toBeNull();
+    expect(store.state().cancelAtPeriodEnd).toBeFalse();
+  });
+
   it('should set authenticated state after successful refresh', async () => {
     const issuedAtUtc = new Date('2026-01-01T00:00:00.000Z').toISOString();
     const expiresAtUtc = new Date('2026-01-01T01:00:00.000Z').toISOString();
 
     authApiServiceSpy.session.and.returnValue(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        listenWriteTutorialCompleted: false,
+      of(authenticatedSession({
+        plan: 'pro',
+        entitlementStatus: 'pro_active',
+        isPro: true,
+        currentPeriodEndUtc: '2026-02-01T00:00:00.000Z',
         issuedAtUtc,
         expiresAtUtc,
-      }),
+      })),
     );
 
     await store.refreshSession();
@@ -54,21 +80,18 @@ describe('AuthSessionStore', () => {
     expect(store.state().hasReliableSessionState).toBeTrue();
     expect(store.state().email).toBe('user@test.com');
     expect(store.state().listenWriteTutorialCompleted).toBeFalse();
+    expect(store.state().plan).toBe('pro');
+    expect(store.state().entitlementStatus).toBe('pro_active');
+    expect(store.state().isPro).toBeTrue();
+    expect(store.state().currentPeriodEndUtc).toBe('2026-02-01T00:00:00.000Z');
+    expect(store.state().cancelAtPeriodEnd).toBeFalse();
     expect(store.state().issuedAtUtc).toBe(issuedAtUtc);
     expect(store.state().expiresAtUtc).toBe(expiresAtUtc);
   });
 
   it('should clear authenticated state on unauthorized refresh', async () => {
     authApiServiceSpy.session.and.returnValue(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        listenWriteTutorialCompleted: false,
-        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-      }),
+      of(authenticatedSession({ plan: 'pro', entitlementStatus: 'pro_active', isPro: true })),
     );
     await store.refreshSession();
 
@@ -80,19 +103,14 @@ describe('AuthSessionStore', () => {
     expect(store.state().email).toBeNull();
     expect(store.state().hasReliableSessionState).toBeTrue();
     expect(store.state().listenWriteTutorialCompleted).toBeNull();
+    expect(store.state().plan).toBe('free');
+    expect(store.state().entitlementStatus).toBe('free');
+    expect(store.state().isPro).toBeFalse();
   });
 
   it('should mark session state as unreliable on non-auth refresh failure', async () => {
     authApiServiceSpy.session.and.returnValues(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        listenWriteTutorialCompleted: false,
-        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-      }),
+      of(authenticatedSession()),
       throwError(() => ({ status: 0 })),
     );
 
@@ -110,6 +128,9 @@ describe('AuthSessionStore', () => {
 
     expect(authApiServiceSpy.logout).toHaveBeenCalled();
     expect(store.state().isAuthenticated).toBeFalse();
+    expect(store.state().plan).toBe('free');
+    expect(store.state().entitlementStatus).toBe('free');
+    expect(store.state().isPro).toBeFalse();
   });
 
   it('should restore cached session state from localStorage snapshot', () => {
@@ -123,6 +144,11 @@ describe('AuthSessionStore', () => {
         email: 'snapshot@test.com',
         emailConfirmed: true,
         listenWriteTutorialCompleted: true,
+        plan: 'pro',
+        entitlementStatus: 'pro_canceling',
+        isPro: true,
+        currentPeriodEndUtc: '2026-02-01T00:00:00.000Z',
+        cancelAtPeriodEnd: true,
         issuedAtUtc,
         expiresAtUtc,
         cachedAtUtc: new Date('2026-01-01T00:10:00.000Z').toISOString(),
@@ -135,6 +161,11 @@ describe('AuthSessionStore', () => {
     expect(store.state().userId).toBe('snapshot-user');
     expect(store.state().email).toBe('snapshot@test.com');
     expect(store.state().listenWriteTutorialCompleted).toBeTrue();
+    expect(store.state().plan).toBe('pro');
+    expect(store.state().entitlementStatus).toBe('pro_canceling');
+    expect(store.state().isPro).toBeTrue();
+    expect(store.state().currentPeriodEndUtc).toBe('2026-02-01T00:00:00.000Z');
+    expect(store.state().cancelAtPeriodEnd).toBeTrue();
     expect(store.state().hasReliableSessionState).toBeFalse();
     expect(store.state().issuedAtUtc).toBe(issuedAtUtc);
     expect(store.state().expiresAtUtc).toBe(expiresAtUtc);
@@ -142,14 +173,7 @@ describe('AuthSessionStore', () => {
 
   it('should tolerate missing tutorial flag from older session responses', async () => {
     authApiServiceSpy.session.and.returnValue(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-      }),
+      of(authenticatedSession({ listenWriteTutorialCompleted: undefined })),
     );
 
     await store.refreshSession();
@@ -165,24 +189,14 @@ describe('AuthSessionStore', () => {
       jasmine.clock().mockDate(now);
 
       authApiServiceSpy.session.and.returnValues(
-        of({
-          isAuthenticated: true,
-          userId: 'abc',
-          email: 'user@test.com',
-          emailConfirmed: true,
-          listenWriteTutorialCompleted: false,
+        of(authenticatedSession({
           issuedAtUtc: now.toISOString(),
           expiresAtUtc: new Date(now.getTime() + 6 * 60 * 1000).toISOString(),
-        }),
-        of({
-          isAuthenticated: true,
-          userId: 'abc',
-          email: 'user@test.com',
-          emailConfirmed: true,
-          listenWriteTutorialCompleted: false,
+        })),
+        of(authenticatedSession({
           issuedAtUtc: now.toISOString(),
           expiresAtUtc: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-        }),
+        })),
       );
 
       await store.refreshSession();
@@ -199,24 +213,8 @@ describe('AuthSessionStore', () => {
   });
 
   it('should ignore stale refresh response when a newer refresh already completed', async () => {
-    const staleSessionResponse = new Subject<{
-      isAuthenticated: boolean;
-      userId: string;
-      email: string;
-      emailConfirmed: boolean;
-      listenWriteTutorialCompleted?: boolean;
-      issuedAtUtc: string;
-      expiresAtUtc: string;
-    }>();
-    const latestSessionResponse = new Subject<{
-      isAuthenticated: boolean;
-      userId: string;
-      email: string;
-      emailConfirmed: boolean;
-      listenWriteTutorialCompleted?: boolean;
-      issuedAtUtc: string;
-      expiresAtUtc: string;
-    }>();
+    const staleSessionResponse = new Subject<AuthSession>();
+    const latestSessionResponse = new Subject<AuthSession>();
 
     authApiServiceSpy.session.and.returnValues(
       staleSessionResponse.asObservable(),
@@ -226,28 +224,24 @@ describe('AuthSessionStore', () => {
     store.refreshSessionInBackground();
     const latestRefresh = store.refreshSession();
 
-    latestSessionResponse.next({
-      isAuthenticated: true,
+    latestSessionResponse.next(authenticatedSession({
       userId: 'new-user',
       email: 'new@test.com',
-      emailConfirmed: true,
       listenWriteTutorialCompleted: true,
       issuedAtUtc: new Date('2026-01-01T02:00:00.000Z').toISOString(),
       expiresAtUtc: new Date('2026-01-01T03:00:00.000Z').toISOString(),
-    });
+    }));
     latestSessionResponse.complete();
 
     await latestRefresh;
 
-    staleSessionResponse.next({
-      isAuthenticated: true,
+    staleSessionResponse.next(authenticatedSession({
       userId: 'old-user',
       email: 'old@test.com',
-      emailConfirmed: true,
       listenWriteTutorialCompleted: false,
       issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
       expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-    });
+    }));
     staleSessionResponse.complete();
 
     expect(store.state().userId).toBe('new-user');
@@ -262,15 +256,7 @@ describe('AuthSessionStore', () => {
 
   it('should patch tutorial flag locally after background mark-completed succeeds', async () => {
     authApiServiceSpy.session.and.returnValue(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        listenWriteTutorialCompleted: false,
-        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-      }),
+      of(authenticatedSession()),
     );
     authApiServiceSpy.markListenWriteTutorialCompleted.and.returnValue(
       of({ listenWriteTutorialCompleted: true }),
@@ -286,15 +272,7 @@ describe('AuthSessionStore', () => {
 
   it('should swallow failures from background mark-completed calls', async () => {
     authApiServiceSpy.session.and.returnValue(
-      of({
-        isAuthenticated: true,
-        userId: 'abc',
-        email: 'user@test.com',
-        emailConfirmed: true,
-        listenWriteTutorialCompleted: false,
-        issuedAtUtc: new Date('2026-01-01T00:00:00.000Z').toISOString(),
-        expiresAtUtc: new Date('2026-01-01T01:00:00.000Z').toISOString(),
-      }),
+      of(authenticatedSession()),
     );
     authApiServiceSpy.markListenWriteTutorialCompleted.and.returnValue(
       throwError(() => ({ status: 500 })),

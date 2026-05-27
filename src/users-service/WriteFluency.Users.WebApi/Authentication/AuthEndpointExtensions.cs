@@ -19,6 +19,8 @@ public static class AuthEndpointExtensions
     private const string UsersAuthBasePath = "/users/auth";
     private const int FeedbackSubmittedCooldownDays = 60;
     private const int FeedbackDismissedCooldownDays = 21;
+    private const string FreePlan = "free";
+    private const string ProPlan = "pro";
 
     private static readonly Dictionary<string, ExternalProviderDefinition> ExternalProviders = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -92,6 +94,7 @@ public static class AuthEndpointExtensions
         var authenticateResult = await httpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
         var issuedAtUtc = authenticateResult.Properties?.IssuedUtc;
         var expiresAtUtc = authenticateResult.Properties?.ExpiresUtc;
+        var entitlement = BuildSubscriptionEntitlement(user, DateTimeOffset.UtcNow);
 
         return Results.Ok(new
         {
@@ -100,9 +103,50 @@ public static class AuthEndpointExtensions
             Email = user?.Email ?? principal.FindFirstValue(ClaimTypes.Email),
             EmailConfirmed = user?.EmailConfirmed ?? false,
             ListenWriteTutorialCompleted = user?.ListenWriteTutorialCompleted ?? false,
+            Plan = entitlement.Plan,
+            EntitlementStatus = entitlement.Status,
+            IsPro = entitlement.IsPro,
+            CurrentPeriodEndUtc = entitlement.CurrentPeriodEndUtc,
+            CancelAtPeriodEnd = entitlement.CancelAtPeriodEnd,
             IssuedAtUtc = issuedAtUtc,
             ExpiresAtUtc = expiresAtUtc
         });
+    }
+
+    private static SubscriptionEntitlement BuildSubscriptionEntitlement(ApplicationUser? user, DateTimeOffset nowUtc)
+    {
+        var plan = string.Equals(user?.SubscriptionPlan, ProPlan, StringComparison.OrdinalIgnoreCase)
+            ? ProPlan
+            : FreePlan;
+        var currentPeriodEndUtc = user?.SubscriptionCurrentPeriodEndUtc;
+        var cancelAtPeriodEnd = user?.SubscriptionCancelAtPeriodEnd ?? false;
+
+        if (plan is not ProPlan)
+        {
+            return new SubscriptionEntitlement(
+                Plan: FreePlan,
+                Status: "free",
+                IsPro: false,
+                CurrentPeriodEndUtc: currentPeriodEndUtc,
+                CancelAtPeriodEnd: cancelAtPeriodEnd);
+        }
+
+        if (currentPeriodEndUtc is null || currentPeriodEndUtc <= nowUtc)
+        {
+            return new SubscriptionEntitlement(
+                Plan: ProPlan,
+                Status: "pro_expired",
+                IsPro: false,
+                CurrentPeriodEndUtc: currentPeriodEndUtc,
+                CancelAtPeriodEnd: cancelAtPeriodEnd);
+        }
+
+        return new SubscriptionEntitlement(
+            Plan: ProPlan,
+            Status: cancelAtPeriodEnd ? "pro_canceling" : "pro_active",
+            IsPro: true,
+            CurrentPeriodEndUtc: currentPeriodEndUtc,
+            CancelAtPeriodEnd: cancelAtPeriodEnd);
     }
 
     private static async Task<IResult> MarkListenWriteTutorialCompletedAsync(
@@ -620,4 +664,11 @@ public static class AuthEndpointExtensions
         int SubmitCount);
 
     private sealed record FeedbackPromptStateResult(UserFeedbackPromptState? State, IResult? Result);
+
+    private sealed record SubscriptionEntitlement(
+        string Plan,
+        string Status,
+        bool IsPro,
+        DateTimeOffset? CurrentPeriodEndUtc,
+        bool CancelAtPeriodEnd);
 }

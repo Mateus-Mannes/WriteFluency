@@ -116,6 +116,13 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
             sessionDoc.RootElement.GetProperty("emailConfirmed").GetBoolean().ShouldBeTrue();
             sessionDoc.RootElement.GetProperty("email").GetString().ShouldBe(email);
             sessionDoc.RootElement.GetProperty("listenWriteTutorialCompleted").GetBoolean().ShouldBeFalse();
+            AssertSessionEntitlement(
+                sessionDoc.RootElement,
+                expectedPlan: "free",
+                expectedStatus: "free",
+                expectedIsPro: false,
+                expectedCurrentPeriodEndUtc: null,
+                expectedCancelAtPeriodEnd: false);
             sessionDoc.RootElement.TryGetProperty("issuedAtUtc", out var issuedAtUtc).ShouldBeTrue();
             sessionDoc.RootElement.TryGetProperty("expiresAtUtc", out var expiresAtUtc).ShouldBeTrue();
             DateTimeOffset.TryParse(issuedAtUtc.GetString(), out _).ShouldBeTrue();
@@ -129,6 +136,99 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
 
         var sessionAfterLogout = await client.GetAsync("/users/auth/session");
         IsUnauthenticatedStatus(sessionAfterLogout.StatusCode).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Session_ForDefaultAuthenticatedUser_ShouldReturnFreeEntitlement()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"free-entitlement-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var session = await client.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var sessionDoc = await JsonDocument.ParseAsync(await session.Content.ReadAsStreamAsync());
+        AssertSessionEntitlement(
+            sessionDoc.RootElement,
+            expectedPlan: "free",
+            expectedStatus: "free",
+            expectedIsPro: false,
+            expectedCurrentPeriodEndUtc: null,
+            expectedCancelAtPeriodEnd: false);
+    }
+
+    [Theory]
+    [InlineData(false, "pro_active", true)]
+    [InlineData(true, "pro_canceling", true)]
+    public async Task Session_ForProUserWithFuturePeriodEnd_ShouldReturnActiveEntitlement(
+        bool cancelAtPeriodEnd,
+        string expectedStatus,
+        bool expectedIsPro)
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"pro-entitlement-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        var periodEndUtc = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionEntitlementAsync(email, "pro", periodEndUtc, cancelAtPeriodEnd);
+
+        var session = await client.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var sessionDoc = await JsonDocument.ParseAsync(await session.Content.ReadAsStreamAsync());
+        AssertSessionEntitlement(
+            sessionDoc.RootElement,
+            expectedPlan: "pro",
+            expectedStatus: expectedStatus,
+            expectedIsPro: expectedIsPro,
+            expectedCurrentPeriodEndUtc: periodEndUtc,
+            expectedCancelAtPeriodEnd: cancelAtPeriodEnd);
+    }
+
+    [Fact]
+    public async Task Session_ForProUserWithPastPeriodEnd_ShouldReturnExpiredEntitlement()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"expired-entitlement-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        var periodEndUtc = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionEntitlementAsync(email, "pro", periodEndUtc, cancelAtPeriodEnd: false);
+
+        var session = await client.GetAsync("/users/auth/session");
+        session.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var sessionDoc = await JsonDocument.ParseAsync(await session.Content.ReadAsStreamAsync());
+        AssertSessionEntitlement(
+            sessionDoc.RootElement,
+            expectedPlan: "pro",
+            expectedStatus: "pro_expired",
+            expectedIsPro: false,
+            expectedCurrentPeriodEndUtc: periodEndUtc,
+            expectedCancelAtPeriodEnd: false);
     }
 
     [Fact]
@@ -916,6 +1016,48 @@ public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFi
         using var scope = _fixture.Factory!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
         return await db.Users.SingleAsync(x => x.Email == email);
+    }
+
+    private async Task SetSubscriptionEntitlementAsync(
+        string email,
+        string plan,
+        DateTimeOffset? currentPeriodEndUtc,
+        bool cancelAtPeriodEnd)
+    {
+        _fixture.Factory.ShouldNotBeNull();
+
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        var user = await db.Users.SingleAsync(u => u.Email == email);
+        user.SubscriptionPlan = plan;
+        user.SubscriptionCurrentPeriodEndUtc = currentPeriodEndUtc;
+        user.SubscriptionCancelAtPeriodEnd = cancelAtPeriodEnd;
+        await db.SaveChangesAsync();
+    }
+
+    private static void AssertSessionEntitlement(
+        JsonElement root,
+        string expectedPlan,
+        string expectedStatus,
+        bool expectedIsPro,
+        DateTimeOffset? expectedCurrentPeriodEndUtc,
+        bool expectedCancelAtPeriodEnd)
+    {
+        root.GetProperty("plan").GetString().ShouldBe(expectedPlan);
+        root.GetProperty("entitlementStatus").GetString().ShouldBe(expectedStatus);
+        root.GetProperty("isPro").GetBoolean().ShouldBe(expectedIsPro);
+        root.GetProperty("cancelAtPeriodEnd").GetBoolean().ShouldBe(expectedCancelAtPeriodEnd);
+
+        var currentPeriodEndUtc = root.GetProperty("currentPeriodEndUtc");
+        if (expectedCurrentPeriodEndUtc is null)
+        {
+            currentPeriodEndUtc.ValueKind.ShouldBe(JsonValueKind.Null);
+            return;
+        }
+
+        DateTimeOffset.TryParse(currentPeriodEndUtc.GetString(), out var parsedCurrentPeriodEndUtc)
+            .ShouldBeTrue();
+        parsedCurrentPeriodEndUtc.ShouldBe(expectedCurrentPeriodEndUtc.Value);
     }
 
     private async Task SetFeedbackPromptDatesAsync(
