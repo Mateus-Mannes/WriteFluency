@@ -38,18 +38,118 @@ $card-padding: 18px;
 
 .account-card {
   display: grid;
-  gap: 8px;
-  padding: $card-padding;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 24px;
 }
 
-.account-card p {
+.account-details {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  justify-self: start;
+  text-align: left;
+}
+
+.account-details p {
   margin: 0;
   color: vars.$color-text-muted;
+  overflow-wrap: anywhere;
 }
 
-.account-card strong {
+.account-details strong {
   color: vars.$color-text;
   font-weight: 600;
+}
+
+.subscription-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  min-width: 190px;
+}
+
+.subscription-actions .pro-upgrade-button {
+  width: 190px;
+  min-height: 46px;
+  border-radius: 14px !important;
+  font-size: 0.95rem;
+  font-weight: 700 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  color: #fff !important;
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%) !important;
+  box-shadow:
+    0 8px 22px rgba(58, 125, 255, 0.28),
+    0 3px 8px rgba(58, 125, 255, 0.18) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+
+.subscription-actions .pro-upgrade-button::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -100%;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transition: left 0.55s ease;
+}
+
+.subscription-actions .pro-upgrade-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 30px rgba(58, 125, 255, 0.38),
+    0 5px 12px rgba(58, 125, 255, 0.24) !important;
+}
+
+.subscription-actions .pro-upgrade-button:hover::before {
+  left: 100%;
+}
+
+.subscription-actions .pro-upgrade-button:active {
+  transform: translateY(-1px);
+}
+
+.subscription-actions .subscription-manage-button {
+  min-width: 220px;
+  min-height: 46px;
+  border-radius: 14px !important;
+  border-color: rgba(vars.$color-primary, 0.42) !important;
+  color: vars.$color-primary-dark !important;
+  font-size: 0.95rem;
+  font-weight: 700 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(vars.$color-primary, 0.04);
+  transition: background-color 0.22s ease, border-color 0.22s ease, transform 0.22s ease !important;
+}
+
+.subscription-actions .subscription-manage-button:hover {
+  background: rgba(vars.$color-primary, 0.08);
+  border-color: rgba(vars.$color-primary, 0.62) !important;
+  transform: translateY(-1px);
+}
+
+.plan-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.plan-chip.pro {
+  color: vars.$color-status-success-text;
+  background-color: rgba(vars.$color-accent-success, 0.14);
+  border: 1px solid rgba(vars.$color-accent-success, 0.35);
 }
 
 .loading-state {
@@ -68,6 +168,8 @@ $card-padding: 18px;
 }
 
 .error-card,
+.billing-message-card,
+.billing-error-card,
 .info-card,
 .empty-card {
   display: grid;
@@ -75,12 +177,24 @@ $card-padding: 18px;
   padding: $card-padding;
 }
 
-.error-card {
+.error-card,
+.billing-error-card {
   background-color: rgba(vars.$color-accent-warning, 0.08);
   border-color: rgba(vars.$color-accent-warning, 0.26);
 }
 
-.error-card button[mat-flat-button] {
+.billing-message-card {
+  background-color: rgba(vars.$color-accent-success, 0.1);
+  border-color: rgba(vars.$color-accent-success, 0.24);
+}
+
+.billing-message-card p,
+.billing-error-card p {
+  margin: 0;
+}
+
+.error-card button[mat-flat-button],
+.billing-error-card a[mat-flat-button] {
   justify-self: start;
   border-radius: 10px;
   font-weight: 600;
@@ -269,7 +383,14 @@ $card-padding: 18px;
 .tracker-item-link,
 .tracker-item-body {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title status"
+    "meta status"
+    "scores status";
+  column-gap: 18px;
+  row-gap: 12px;
+  align-items: start;
   padding: 16px 18px 16px 20px;
   color: inherit;
   text-decoration: none;
@@ -345,20 +466,20 @@ $card-padding: 18px;
   background-color: vars.$color-surface-subtle;
 }
 
-.tracker-title-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
 .tracker-title-row h3 {
+  grid-area: title;
   margin: 0;
   font-size: 1.02rem;
   line-height: 1.3;
+  max-width: 72ch;
+}
+
+.tracker-title-row {
+  display: contents;
 }
 
 .meta {
+  grid-area: meta;
   margin: 0;
   color: vars.$color-text-muted;
   font-size: 0.92rem;
@@ -366,6 +487,7 @@ $card-padding: 18px;
 }
 
 .scores {
+  grid-area: scores;
   display: flex;
   gap: 12px 16px;
   flex-wrap: wrap;
@@ -379,6 +501,10 @@ $card-padding: 18px;
 }
 
 .status-chip {
+  grid-area: status;
+  justify-self: end;
+  align-self: start;
+  white-space: nowrap;
   border-radius: 999px;
   padding: 5px 10px;
   font-size: 0.78rem;
@@ -415,6 +541,20 @@ $card-padding: 18px;
   }
 }
 
+@media (max-width: 640px) {
+  .account-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: $card-padding;
+  }
+
+  .subscription-actions {
+    justify-self: start;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}
+
 @media (max-width: 560px) {
   .kpi-grid {
     grid-template-columns: 1fr;
@@ -422,7 +562,17 @@ $card-padding: 18px;
 
   .tracker-item-link,
   .tracker-item-body {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "status"
+      "title"
+      "meta"
+      "scores";
     padding: 14px 14px 14px 18px;
+  }
+
+  .status-chip {
+    justify-self: start;
   }
 }
 

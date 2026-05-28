@@ -24,6 +24,11 @@ export const appRoutes: Routes = [
             import('./support/support.component').then((m) => m.SupportComponent),
     },
     {
+        path: 'plans',
+        loadComponent: () =>
+            import('./plans/plans.component').then((m) => m.PlansComponent),
+    },
+    {
         path: 'user',
         canActivate: [userPageAuthGuard],
         loadComponent: () =>

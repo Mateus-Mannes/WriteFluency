@@ -1,0 +1,180 @@
+@use '../../styles/variables' as vars;
+
+.plans-page {
+  width: min(920px, calc(100% - 32px));
+  margin: 32px auto 48px;
+  display: grid;
+  gap: 20px;
+}
+
+.plans-header {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: vars.$color-primary;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plans-header h1 {
+  margin: 0;
+  color: vars.$color-text;
+  font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
+  line-height: 1.05;
+}
+
+.plans-header p:not(.eyebrow) {
+  margin: 0;
+  max-width: 58ch;
+  color: vars.$color-text-muted;
+  line-height: 1.5;
+}
+
+.plan-card,
+.plans-error {
+  border-radius: 14px;
+  border: 1px solid vars.$color-border-subtle;
+  box-shadow: vars.$shadow-elevation-low;
+}
+
+.plan-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(vars.$color-primary, 0.08), transparent 52%),
+    vars.$color-surface;
+}
+
+.plan-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.plan-name,
+.plan-price {
+  margin: 0;
+}
+
+.plan-name {
+  color: vars.$color-text;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.plan-price {
+  color: vars.$color-primary-dark;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.plan-price span {
+  color: vars.$color-text-muted;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.plan-cta {
+  width: 200px;
+  min-height: 46px;
+  border-radius: 14px !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%) !important;
+  box-shadow:
+    0 8px 22px rgba(58, 125, 255, 0.28),
+    0 3px 8px rgba(58, 125, 255, 0.18) !important;
+}
+
+.plan-cta:disabled {
+  opacity: 1 !important;
+  color: #fff !important;
+  cursor: default;
+  background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%) !important;
+}
+
+.plan-cta-loading {
+  animation: plan-cta-loading-pulse 1.2s ease-in-out infinite;
+}
+
+.plan-cta-loading:disabled {
+  cursor: progress;
+}
+
+.plan-cta-loading .plan-cta__label {
+  visibility: hidden;
+}
+
+.plan-cta-pro,
+.plan-cta-pro:disabled {
+  color: vars.$color-status-success-text !important;
+  background: vars.$color-status-success-bg !important;
+  border: 1px solid rgba(vars.$color-status-success-text, 0.2) !important;
+  box-shadow: none !important;
+}
+
+.plan-cta__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.plan-cta__loading mat-spinner {
+  --mdc-circular-progress-active-indicator-color: #fff;
+}
+
+@keyframes plan-cta-loading-pulse {
+  0% {
+    box-shadow:
+      0 8px 22px rgba(58, 125, 255, 0.28),
+      0 3px 8px rgba(58, 125, 255, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 11px 28px rgba(58, 125, 255, 0.42),
+      0 5px 12px rgba(58, 125, 255, 0.28);
+  }
+  100% {
+    box-shadow:
+      0 8px 22px rgba(58, 125, 255, 0.28),
+      0 3px 8px rgba(58, 125, 255, 0.18);
+  }
+}
+
+.plans-error {
+  padding: 16px 18px;
+  background-color: rgba(vars.$color-accent-warning, 0.08);
+  border-color: rgba(vars.$color-accent-warning, 0.26);
+}
+
+.plans-error p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .plans-page {
+    width: min(100%, calc(100% - 20px));
+    margin-top: 20px;
+  }
+
+  .plan-card {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 18px;
+  }
+
+  .plan-cta {
+    justify-self: start;
+  }
+}

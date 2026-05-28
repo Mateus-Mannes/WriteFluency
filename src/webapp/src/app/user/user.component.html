@@ -5,9 +5,47 @@
   </header>
 
   <mat-card class="account-card">
-    <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
-    <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
+    <div class="account-details">
+      <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
+      <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
+      <p><strong>Plan:</strong> {{ authState().isPro ? 'Pro' : 'Free' }}</p>
+    </div>
+
+    <div class="subscription-actions">
+      @if (authState().isPro) {
+        <a
+          mat-stroked-button
+          class="subscription-manage-button"
+          routerLink="/plans"
+          aria-label="Manage subscription">
+          Manage my subscription
+        </a>
+      } @else {
+        <a
+          mat-flat-button
+          class="pro-upgrade-button"
+          routerLink="/plans"
+          aria-label="View Pro plans">
+          Subscribe to Pro
+        </a>
+      }
+    </div>
   </mat-card>
+
+  @if (billingMessage()) {
+    <mat-card class="billing-message-card" aria-live="polite">
+      <p>{{ billingMessage() }}</p>
+    </mat-card>
+  }
+
+  @if (billingError()) {
+    <mat-card class="billing-error-card" aria-live="assertive">
+      <p>{{ billingError() }}</p>
+      @if (canSubscribeToPro()) {
+        <a mat-flat-button color="primary" routerLink="/plans">View plans</a>
+      }
+    </mat-card>
+  }
 
   @if (isLoading()) {
     <div class="loading-state" aria-live="polite">

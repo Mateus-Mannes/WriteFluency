@@ -1,0 +1,38 @@
+<section class="plans-page">
+  <header class="plans-header">
+    <p class="eyebrow">WriteFluency Pro</p>
+    <h1>Upgrade your writing practice</h1>
+    <p>
+      Start Pro to unlock the paid exercise experience as it becomes available.
+    </p>
+  </header>
+
+  <mat-card class="plan-card">
+    <div class="plan-copy">
+      <p class="plan-name">Pro Monthly</p>
+      <p class="plan-price">$3<span>/month</span></p>
+    </div>
+
+    <button
+      mat-flat-button
+      class="plan-cta"
+      [class.plan-cta-loading]="isCheckoutStarting()"
+      [class.plan-cta-pro]="authState().isPro"
+      type="button"
+      [disabled]="isCheckoutDisabled() || authState().isPro"
+      (click)="startCheckout()">
+      <span class="plan-cta__label">{{ planCtaLabel() }}</span>
+      @if (isCheckoutStarting()) {
+        <span class="plan-cta__loading" aria-hidden="true">
+          <mat-spinner diameter="20"></mat-spinner>
+        </span>
+      }
+    </button>
+  </mat-card>
+
+  @if (checkoutError()) {
+    <mat-card class="plans-error" aria-live="assertive">
+      <p>{{ checkoutError() }}</p>
+    </mat-card>
+  }
+</section>

@@ -51,6 +51,10 @@ jobs:
       Authentication__Microsoft__ClientSecret: ${{ secrets.Authentication__Microsoft__ClientSecret }}
       Authentication__ConfirmationRedirectUrl: https://writefluency.com/auth/confirm-email
       Authentication__ExternalRedirect__AllowedReturnUrls__0: ${{ vars.Authentication__ExternalRedirect__AllowedReturnUrls__0 }}
+      Stripe__SecretKey: ${{ secrets.Stripe__SecretKey }}
+      Stripe__ProMonthlyPriceId: ${{ secrets.Stripe__ProMonthlyPriceId }}
+      Stripe__SuccessUrl: https://writefluency.com/user?checkout=success&session_id={CHECKOUT_SESSION_ID}
+      Stripe__CancelUrl: https://writefluency.com/user?checkout=cancelled
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -72,7 +76,9 @@ jobs:
           SharedDataProtection__BlobUri \
           SharedDataProtection__KeyIdentifier \
           Authentication__ConfirmationRedirectUrl \
-          Authentication__ExternalRedirect__AllowedReturnUrls__0
+          Authentication__ExternalRedirect__AllowedReturnUrls__0 \
+          Stripe__SecretKey \
+          Stripe__ProMonthlyPriceId
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4
