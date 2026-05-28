@@ -22,6 +22,15 @@ public class UsersDbContext(DbContextOptions<UsersDbContext> options)
 
             entity.Property(x => x.SubscriptionCancelAtPeriodEnd)
                 .HasDefaultValue(false);
+
+            entity.Property(x => x.StripeCustomerId)
+                .HasMaxLength(255);
+
+            entity.Property(x => x.StripeSubscriptionId)
+                .HasMaxLength(255);
+
+            entity.Property(x => x.StripeSubscriptionStatus)
+                .HasMaxLength(50);
         });
 
         builder.Entity<UserLoginActivity>(entity =>

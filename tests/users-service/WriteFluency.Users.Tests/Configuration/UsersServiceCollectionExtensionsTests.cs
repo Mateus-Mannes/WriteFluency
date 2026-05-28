@@ -99,6 +99,11 @@ public class UsersServiceCollectionExtensionsTests
         supportRequestOptions.RecipientEmails.ShouldBe(["support-1@writefluency.local", "support-2@writefluency.local", "support-3@writefluency.local"]);
         supportRequestOptions.MaxRequestsPerWindowPerIp.ShouldBe(3);
         supportRequestOptions.RequestWindowMinutes.ShouldBe(15);
+
+        var stripeOptions = scope.ServiceProvider.GetRequiredService<IOptions<StripeOptions>>().Value;
+        stripeOptions.ProMonthlyPriceId.ShouldBe("price_test_pro_monthly");
+        stripeOptions.SuccessUrl.ShouldBe("https://writefluency.local/user?checkout=success&session_id={CHECKOUT_SESSION_ID}");
+        stripeOptions.CancelUrl.ShouldBe("https://writefluency.local/user?checkout=cancelled");
     }
 
     [Fact]
@@ -187,7 +192,11 @@ public class UsersServiceCollectionExtensionsTests
             ["SharedAuthCookie:CookieDomain"] = ".writefluency.com",
             ["SharedDataProtection:ApplicationName"] = "WriteFluency.SharedAuth",
             ["Authentication:ConfirmationRedirectUrl"] = "https://writefluency.local/auth/confirm-email",
-            ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html"
+            ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
+            ["Stripe:SecretKey"] = "sk_test_writefluency",
+            ["Stripe:ProMonthlyPriceId"] = "price_test_pro_monthly",
+            ["Stripe:SuccessUrl"] = "https://writefluency.local/user?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+            ["Stripe:CancelUrl"] = "https://writefluency.local/user?checkout=cancelled"
         };
 
         if (enableExternalProviders)

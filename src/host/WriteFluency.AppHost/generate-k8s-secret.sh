@@ -33,6 +33,11 @@ shared_data_protection_application_name="${SharedDataProtection__ApplicationName
 shared_data_protection_blob_uri="${SharedDataProtection__BlobUri:-}"
 shared_data_protection_key_identifier="${SharedDataProtection__KeyIdentifier:-}"
 
+stripe_secret_key="${Stripe__SecretKey:-}"
+stripe_pro_monthly_price_id="${Stripe__ProMonthlyPriceId:-}"
+stripe_success_url="${Stripe__SuccessUrl:-https://writefluency.com/user?checkout=success&session_id={CHECKOUT_SESSION_ID}}"
+stripe_cancel_url="${Stripe__CancelUrl:-https://writefluency.com/user?checkout=cancelled}"
+
 azure_client_id="${AZURE_CLIENT_ID:-}"
 azure_tenant_id="${AZURE_TENANT_ID:-}"
 azure_client_secret="${AZURE_CLIENT_SECRET:-}"
@@ -178,6 +183,10 @@ stringData:
   SharedDataProtection__ApplicationName: "$shared_data_protection_application_name"
   SharedDataProtection__BlobUri: "$shared_data_protection_blob_uri"
   SharedDataProtection__KeyIdentifier: "$shared_data_protection_key_identifier"
+  Stripe__SecretKey: "$stripe_secret_key"
+  Stripe__ProMonthlyPriceId: "$stripe_pro_monthly_price_id"
+  Stripe__SuccessUrl: "$stripe_success_url"
+  Stripe__CancelUrl: "$stripe_cancel_url"
   Smtp__Host: "wf-infra-smtp"
   Smtp__Port: "2525"
   Smtp__FromEmail: "noreply@writefluency.com"

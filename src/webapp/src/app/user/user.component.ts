@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -15,6 +15,7 @@ import {
   ProgressFeedbackModalComponent,
 } from '../shared/progress-feedback-modal/progress-feedback-modal.component';
 import { ProgressItemResponse, ProgressSummaryResponse } from './models/user-progress.model';
+import { BillingApiService } from './services/billing-api.service';
 import { UserProgressApiService } from './services/user-progress-api.service';
 import { Insights } from '../../telemetry/insights.service';
 
@@ -39,7 +40,9 @@ const progressFeedbackCommentMaxLength = 4000;
 export class UserComponent implements OnInit {
   private readonly authSessionStore = inject(AuthSessionStore);
   private readonly authApi = inject(AuthApiService);
+  private readonly billingApi = inject(BillingApiService);
   private readonly userProgressApi = inject(UserProgressApiService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly insights = inject(Insights, { optional: true });
 
@@ -51,9 +54,17 @@ export class UserComponent implements OnInit {
   readonly summary = signal<ProgressSummaryResponse | null>(null);
   readonly items = signal<ProgressItemResponse[]>([]);
   readonly isProgressFeedbackModalOpen = signal(false);
+  readonly billingMessage = signal<string | null>(null);
+  readonly billingError = signal<string | null>(null);
+  readonly isBillingActionInProgress = signal(false);
   readonly hasItems = computed(() => this.items().length > 0);
+  readonly canSubscribeToPro = computed(() => {
+    const state = this.authState();
+    return state.isAuthenticated && !state.isPro;
+  });
 
   async ngOnInit(): Promise<void> {
+    await this.handleCheckoutReturn();
     await this.reload();
   }
 
@@ -176,6 +187,58 @@ export class UserComponent implements OnInit {
     });
   }
 
+  private async handleCheckoutReturn(): Promise<void> {
+    const checkoutState = this.route.snapshot.queryParamMap.get('checkout');
+    if (checkoutState === 'cancelled') {
+      this.billingMessage.set('Checkout was cancelled.');
+      await this.clearCheckoutQueryParams();
+      return;
+    }
+
+    if (checkoutState !== 'success') {
+      return;
+    }
+
+    const sessionId = this.route.snapshot.queryParamMap.get('session_id');
+    if (!sessionId) {
+      this.billingError.set('Checkout returned without a session ID.');
+      await this.clearCheckoutQueryParams();
+      return;
+    }
+
+    this.isBillingActionInProgress.set(true);
+    this.billingMessage.set(null);
+    this.billingError.set(null);
+
+    try {
+      await firstValueFrom(this.billingApi.confirmCheckoutSession(sessionId));
+      await this.authSessionStore.refreshSession();
+      this.billingMessage.set('Your Pro subscription is active.');
+      this.insights?.trackEvent('checkout_confirmed', {
+        area: 'billing',
+        checkout_session_id: sessionId,
+      });
+    } catch (error) {
+      this.billingError.set('Could not confirm checkout. Please try again.');
+      this.trackBillingException(error, 'confirm_checkout');
+    } finally {
+      this.isBillingActionInProgress.set(false);
+      await this.clearCheckoutQueryParams();
+    }
+  }
+
+  private async clearCheckoutQueryParams(): Promise<void> {
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        checkout: null,
+        session_id: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   private async evaluateProgressFeedbackPrompt(summary: ProgressSummaryResponse): Promise<void> {
     if (summary.completedCount < progressFeedbackMinimumCompletedExercises) {
       return;
@@ -210,6 +273,21 @@ export class UserComponent implements OnInit {
       prompt_next_eligible_at_utc: status?.nextEligibleAtUtc ?? '',
       progress_last_activity_at_utc: this.summary()?.lastActivityAtUtc ?? '',
     };
+  }
+
+  private trackBillingException(error: unknown, operation: string): void {
+    const statusCode = this.getStatusCode(error);
+    this.insights?.trackException(error, {
+      properties: {
+        area: 'billing',
+        operation,
+        error_kind: this.getErrorKind(error, statusCode),
+        http_status: statusCode === null ? 'unknown' : String(statusCode),
+      },
+      measurements: {
+        http_status: statusCode ?? 0,
+      },
+    });
   }
 
   private buildProgressFeedbackTelemetryMeasurements(

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using StackExchange.Redis;
 using WriteFluency.Users.WebApi.Authentication;
+using WriteFluency.Users.WebApi.Billing;
 using WriteFluency.Users.WebApi.Configuration;
 using WriteFluency.Users.WebApi.Support;
 
@@ -100,6 +101,7 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 
 usersApi.MapAuthEndpoints();
+usersApi.MapBillingEndpoints();
 usersApi.MapSupportRequestEndpoints();
 app.MapDefaultEndpoints();
 
