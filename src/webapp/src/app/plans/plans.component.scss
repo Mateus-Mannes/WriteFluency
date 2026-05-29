@@ -59,7 +59,8 @@
 }
 
 .plan-name,
-.plan-price {
+.plan-price,
+.plan-status {
   margin: 0;
 }
 
@@ -80,6 +81,12 @@
   color: vars.$color-text-muted;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.plan-status {
+  color: vars.$color-status-success-text;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .plan-cta {
@@ -117,10 +124,11 @@
 
 .plan-cta-pro,
 .plan-cta-pro:disabled {
-  color: vars.$color-status-success-text !important;
-  background: vars.$color-status-success-bg !important;
-  border: 1px solid rgba(vars.$color-status-success-text, 0.2) !important;
-  box-shadow: none !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, vars.$color-status-success-text 0%, #0f766e 100%) !important;
+  box-shadow:
+    0 8px 22px rgba(15, 118, 110, 0.22),
+    0 3px 8px rgba(15, 118, 110, 0.14) !important;
 }
 
 .plan-cta__loading {

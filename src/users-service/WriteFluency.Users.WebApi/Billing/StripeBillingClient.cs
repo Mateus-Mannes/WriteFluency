@@ -23,6 +23,10 @@ public interface IStripeBillingClient
     Task<StripeSubscriptionResult?> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken);
+
+    Task<StripePortalSessionResult> CreatePortalSessionAsync(
+        StripePortalSessionCreateRequest request,
+        CancellationToken cancellationToken);
 }
 
 public sealed class StripeBillingClient(IOptions<StripeOptions> options) : IStripeBillingClient
@@ -128,12 +132,35 @@ public sealed class StripeBillingClient(IOptions<StripeOptions> options) : IStri
                 CustomerId: subscription.CustomerId,
                 Status: subscription.Status,
                 CurrentPeriodEndUtc: subscription.Items?.Data.FirstOrDefault()?.CurrentPeriodEnd,
+                CancelAtUtc: subscription.CancelAt,
                 CancelAtPeriodEnd: subscription.CancelAtPeriodEnd);
         }
         catch (StripeException ex) when (ex.StripeError?.Type == "invalid_request_error")
         {
             return null;
         }
+    }
+
+    public async Task<StripePortalSessionResult> CreatePortalSessionAsync(
+        StripePortalSessionCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var service = new Stripe.BillingPortal.SessionService();
+        var session = await service.CreateAsync(
+            new Stripe.BillingPortal.SessionCreateOptions
+            {
+                Customer = request.CustomerId,
+                Configuration = request.PortalConfigurationId,
+                ReturnUrl = request.ReturnUrl
+            },
+            RequestOptions(),
+            cancellationToken);
+
+        return new StripePortalSessionResult(
+            Id: session.Id,
+            CustomerId: session.Customer,
+            Url: session.Url,
+            ReturnUrl: session.ReturnUrl);
     }
 
     private RequestOptions RequestOptions() => new()
@@ -165,4 +192,16 @@ public sealed record StripeSubscriptionResult(
     string? CustomerId,
     string? Status,
     DateTimeOffset? CurrentPeriodEndUtc,
+    DateTimeOffset? CancelAtUtc,
     bool CancelAtPeriodEnd);
+
+public sealed record StripePortalSessionCreateRequest(
+    string CustomerId,
+    string PortalConfigurationId,
+    string ReturnUrl);
+
+public sealed record StripePortalSessionResult(
+    string Id,
+    string? CustomerId,
+    string? Url,
+    string? ReturnUrl);

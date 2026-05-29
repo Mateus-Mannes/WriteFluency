@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -7,9 +7,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FeedbackPromptStatusResponse } from '../auth/models/feedback-prompt.model';
+import { AuthEntitlementStatus } from '../auth/models/auth-session.model';
 import { AuthApiService } from '../auth/services/auth-api.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { progressFeedbackVideoConfig } from '../core/config/progress-feedback-video.config';
+import { BrowserService } from '../core/services/browser.service';
 import {
   ProgressFeedbackDismissReason,
   ProgressFeedbackModalComponent,
@@ -22,6 +24,7 @@ import { Insights } from '../../telemetry/insights.service';
 const progressFeedbackCampaignKey = 'progress_feedback_v1';
 const progressFeedbackMinimumCompletedExercises = 3;
 const progressFeedbackCommentMaxLength = 4000;
+const subscriptionManagementLoadingTimeoutMs = 8000;
 
 @Component({
   selector: 'app-user',
@@ -37,14 +40,16 @@ const progressFeedbackCommentMaxLength = 4000;
   templateUrl: './user.component.html',
   styleUrls: ['./user.component.scss'],
 })
-export class UserComponent implements OnInit {
+export class UserComponent implements OnInit, OnDestroy {
   private readonly authSessionStore = inject(AuthSessionStore);
   private readonly authApi = inject(AuthApiService);
   private readonly billingApi = inject(BillingApiService);
+  private readonly browser = inject(BrowserService);
   private readonly userProgressApi = inject(UserProgressApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly insights = inject(Insights, { optional: true });
+  private subscriptionManagementLoadingTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly authState = this.authSessionStore.state;
   readonly progressFeedbackVideoConfig = progressFeedbackVideoConfig;
@@ -57,15 +62,30 @@ export class UserComponent implements OnInit {
   readonly billingMessage = signal<string | null>(null);
   readonly billingError = signal<string | null>(null);
   readonly isBillingActionInProgress = signal(false);
+  readonly isSubscriptionManagementLoading = signal(false);
+  private readonly isSubscriptionManagementRequestInProgress = signal(false);
   readonly hasItems = computed(() => this.items().length > 0);
   readonly canSubscribeToPro = computed(() => {
     const state = this.authState();
     return state.isAuthenticated && !state.isPro;
   });
+  readonly canManageSubscription = computed(() => {
+    const status = this.authState().entitlementStatus;
+    return status === 'pro_active' || status === 'pro_canceling';
+  });
+  readonly isSubscriptionManagementDisabled = computed(() =>
+    this.isSubscriptionManagementLoading() || this.isSubscriptionManagementRequestInProgress());
 
   async ngOnInit(): Promise<void> {
-    await this.handleCheckoutReturn();
+    await this.handleBillingReturn();
     await this.reload();
+  }
+
+  ngOnDestroy(): void {
+    if (this.subscriptionManagementLoadingTimer) {
+      clearTimeout(this.subscriptionManagementLoadingTimer);
+      this.subscriptionManagementLoadingTimer = null;
+    }
   }
 
   async reload(): Promise<void> {
@@ -187,22 +207,68 @@ export class UserComponent implements OnInit {
     });
   }
 
-  private async handleCheckoutReturn(): Promise<void> {
+  async startSubscriptionManagement(): Promise<void> {
+    if (this.isSubscriptionManagementDisabled() || !this.canManageSubscription()) {
+      return;
+    }
+
+    this.startSubscriptionManagementLoadingTimeout();
+    this.isSubscriptionManagementRequestInProgress.set(true);
+    this.billingMessage.set(null);
+    this.billingError.set(null);
+
+    try {
+      const response = await firstValueFrom(this.billingApi.createPortalSession());
+      if (response.portalUrl) {
+        this.browser.navigateTo(response.portalUrl);
+        return;
+      }
+
+      this.billingError.set('Could not open subscription management right now. Please try again.');
+    } catch (error) {
+      this.billingError.set('Could not open subscription management right now. Please try again.');
+      this.trackBillingException(error, 'create_portal_session');
+    } finally {
+      this.isSubscriptionManagementRequestInProgress.set(false);
+    }
+  }
+
+  private startSubscriptionManagementLoadingTimeout(): void {
+    if (this.subscriptionManagementLoadingTimer) {
+      clearTimeout(this.subscriptionManagementLoadingTimer);
+    }
+
+    this.isSubscriptionManagementLoading.set(true);
+    this.subscriptionManagementLoadingTimer = setTimeout(() => {
+      this.isSubscriptionManagementLoading.set(false);
+      this.subscriptionManagementLoadingTimer = null;
+    }, subscriptionManagementLoadingTimeoutMs);
+  }
+
+  private async handleBillingReturn(): Promise<void> {
     const checkoutState = this.route.snapshot.queryParamMap.get('checkout');
     if (checkoutState === 'cancelled') {
       this.billingMessage.set('Checkout was cancelled.');
-      await this.clearCheckoutQueryParams();
+      await this.clearBillingQueryParams();
       return;
     }
 
-    if (checkoutState !== 'success') {
+    if (checkoutState === 'success') {
+      await this.handleCheckoutSuccessReturn();
       return;
     }
 
+    const billingState = this.route.snapshot.queryParamMap.get('billing');
+    if (billingState === 'returned') {
+      await this.handlePortalReturn();
+    }
+  }
+
+  private async handleCheckoutSuccessReturn(): Promise<void> {
     const sessionId = this.route.snapshot.queryParamMap.get('session_id');
     if (!sessionId) {
       this.billingError.set('Checkout returned without a session ID.');
-      await this.clearCheckoutQueryParams();
+      await this.clearBillingQueryParams();
       return;
     }
 
@@ -223,16 +289,39 @@ export class UserComponent implements OnInit {
       this.trackBillingException(error, 'confirm_checkout');
     } finally {
       this.isBillingActionInProgress.set(false);
-      await this.clearCheckoutQueryParams();
+      await this.clearBillingQueryParams();
     }
   }
 
-  private async clearCheckoutQueryParams(): Promise<void> {
+  private async handlePortalReturn(): Promise<void> {
+    this.isBillingActionInProgress.set(true);
+    this.billingMessage.set(null);
+    this.billingError.set(null);
+
+    try {
+      await firstValueFrom(this.billingApi.syncSubscription());
+      await this.authSessionStore.refreshSession();
+      this.billingMessage.set('Subscription details updated.');
+      this.insights?.trackEvent('subscription_synced', {
+        area: 'billing',
+        source: 'portal_return',
+      });
+    } catch (error) {
+      this.billingError.set('Could not refresh subscription status. Please try again.');
+      this.trackBillingException(error, 'sync_subscription');
+    } finally {
+      this.isBillingActionInProgress.set(false);
+      await this.clearBillingQueryParams();
+    }
+  }
+
+  private async clearBillingQueryParams(): Promise<void> {
     await this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
         checkout: null,
         session_id: null,
+        billing: null,
       },
       queryParamsHandling: 'merge',
       replaceUrl: true,
@@ -378,6 +467,39 @@ export class UserComponent implements OnInit {
     }
 
     return 'Unavailable';
+  }
+
+  planStatusLabel(status: AuthEntitlementStatus): string {
+    if (status === 'pro_active') {
+      return 'Pro active';
+    }
+
+    if (status === 'pro_canceling') {
+      return 'Pro canceling';
+    }
+
+    if (status === 'pro_expired') {
+      return 'Pro expired';
+    }
+
+    return 'Free';
+  }
+
+  formatBillingDate(value: string | null | undefined): string {
+    if (!value) {
+      return 'the end of your billing period';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'the end of your billing period';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
   }
 
   trackByExerciseId(_index: number, item: ProgressItemResponse): number {
