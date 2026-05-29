@@ -8,18 +8,31 @@
     <div class="account-details">
       <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
       <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
-      <p><strong>Plan:</strong> {{ authState().isPro ? 'Pro' : 'Free' }}</p>
+      <p><strong>Plan:</strong> {{ planStatusLabel(authState().entitlementStatus) }}</p>
+      @if (authState().entitlementStatus === 'pro_canceling') {
+        <p class="plan-note">
+          Access until {{ formatBillingDate(authState().currentPeriodEndUtc) }}.
+        </p>
+      }
     </div>
 
     <div class="subscription-actions">
-      @if (authState().isPro) {
-        <a
+      @if (canManageSubscription()) {
+        <button
           mat-stroked-button
           class="subscription-manage-button"
-          routerLink="/plans"
+          [class.subscription-manage-button-loading]="isSubscriptionManagementLoading()"
+          type="button"
+          [disabled]="isSubscriptionManagementDisabled()"
+          (click)="startSubscriptionManagement()"
           aria-label="Manage subscription">
-          Manage my subscription
-        </a>
+          <span class="subscription-manage-button__label">Manage my subscription</span>
+          @if (isSubscriptionManagementLoading()) {
+            <span class="subscription-manage-button__loading" aria-hidden="true">
+              <mat-spinner diameter="18"></mat-spinner>
+            </span>
+          }
+        </button>
       } @else {
         <a
           mat-flat-button

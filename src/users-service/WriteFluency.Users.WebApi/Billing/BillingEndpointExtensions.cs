@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Stripe;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Options;
 
@@ -10,6 +12,8 @@ namespace WriteFluency.Users.WebApi.Billing;
 
 public static class BillingEndpointExtensions
 {
+    private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
+
     public static IEndpointRouteBuilder MapBillingEndpoints(this IEndpointRouteBuilder app)
     {
         var billingGroup = app.MapGroup("/billing").WithTags("Billing");
@@ -18,6 +22,12 @@ public static class BillingEndpointExtensions
             .RequireAuthorization();
 
         billingGroup.MapPost("/checkout-session/confirm", ConfirmCheckoutSessionAsync)
+            .RequireAuthorization();
+
+        billingGroup.MapPost("/portal-session", CreatePortalSessionAsync)
+            .RequireAuthorization();
+
+        billingGroup.MapPost("/sync", SyncSubscriptionAsync)
             .RequireAuthorization();
 
         return app;
@@ -145,21 +155,152 @@ public static class BillingEndpointExtensions
         return Results.Ok(BillingEntitlementResponse.From(SubscriptionEntitlements.Build(user, DateTimeOffset.UtcNow)));
     }
 
+    private static async Task<IResult> CreatePortalSessionAsync(
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        IStripeBillingClient stripeBillingClient,
+        IOptions<StripeOptions> stripeOptions,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var entitlement = SubscriptionEntitlements.Build(user, DateTimeOffset.UtcNow);
+        if (entitlement.Status is not (SubscriptionEntitlements.ProActiveStatus or SubscriptionEntitlements.ProCancelingStatus))
+        {
+            var reason = entitlement.Status == SubscriptionEntitlements.ProExpiredStatus ? "pro_expired" : "free_user";
+            return Results.Json(
+                new { Error = "subscription_management_unavailable", Reason = reason },
+                WebJsonOptions,
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        if (string.IsNullOrWhiteSpace(user.StripeCustomerId) || string.IsNullOrWhiteSpace(user.StripeSubscriptionId))
+        {
+            return Results.Json(
+                new { Error = "missing_stripe_billing_reference" },
+                WebJsonOptions,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (!IsPortalConfigured(stripeOptions.Value))
+        {
+            return Results.Problem(
+                detail: "Stripe customer portal is not configured.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        try
+        {
+            var session = await stripeBillingClient.CreatePortalSessionAsync(
+                new StripePortalSessionCreateRequest(
+                    CustomerId: user.StripeCustomerId,
+                    PortalConfigurationId: stripeOptions.Value.PortalConfigurationId,
+                    ReturnUrl: stripeOptions.Value.PortalReturnUrl),
+                cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(session.Url))
+            {
+                return Results.Problem(
+                    detail: "Stripe did not return a Customer Portal URL.",
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
+
+            return Results.Ok(new BillingPortalSessionResponse(session.Url));
+        }
+        catch (StripeException)
+        {
+            return Results.Problem(
+                detail: "Stripe customer portal session creation failed.",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
+
+    private static async Task<IResult> SyncSubscriptionAsync(
+        ClaimsPrincipal principal,
+        UserManager<ApplicationUser> userManager,
+        IStripeBillingClient stripeBillingClient,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        if (string.IsNullOrWhiteSpace(user.StripeCustomerId) || string.IsNullOrWhiteSpace(user.StripeSubscriptionId))
+        {
+            return Results.Json(
+                new { Error = "missing_stripe_billing_reference" },
+                WebJsonOptions,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        StripeSubscriptionResult? subscription;
+        try
+        {
+            subscription = await stripeBillingClient.GetSubscriptionAsync(user.StripeSubscriptionId, cancellationToken);
+        }
+        catch (StripeException)
+        {
+            return Results.Problem(
+                detail: "Stripe subscription sync failed.",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        if (subscription is null)
+        {
+            return Results.BadRequest(new { Error = "invalid_subscription" });
+        }
+
+        if (!string.Equals(subscription.CustomerId, user.StripeCustomerId, StringComparison.Ordinal))
+        {
+            return Results.Forbid();
+        }
+
+        ApplySubscriptionState(user, subscription);
+
+        var updateResult = await userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            return Results.Problem(
+                detail: "Unable to persist subscription state.",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Results.Ok(BillingEntitlementResponse.From(SubscriptionEntitlements.Build(user, DateTimeOffset.UtcNow)));
+    }
+
     private static void ApplySubscriptionState(ApplicationUser user, StripeSubscriptionResult subscription)
     {
+        var nowUtc = DateTimeOffset.UtcNow;
+        var accessEndUtc = subscription.CancelAtUtc ?? subscription.CurrentPeriodEndUtc;
+
         user.StripeSubscriptionId = subscription.Id;
         user.StripeSubscriptionStatus = subscription.Status;
-        user.SubscriptionCurrentPeriodEndUtc = subscription.CurrentPeriodEndUtc;
-        user.SubscriptionCancelAtPeriodEnd = subscription.CancelAtPeriodEnd;
-        user.SubscriptionPlan = IsProEligibleSubscription(subscription)
+        user.SubscriptionCurrentPeriodEndUtc = accessEndUtc;
+        user.SubscriptionCancelAtPeriodEnd = IsSubscriptionCanceling(subscription, nowUtc);
+        user.SubscriptionPlan = IsProEligibleSubscription(subscription, accessEndUtc, nowUtc)
             ? SubscriptionEntitlements.ProPlan
             : SubscriptionEntitlements.FreePlan;
     }
 
-    private static bool IsProEligibleSubscription(StripeSubscriptionResult subscription)
+    private static bool IsProEligibleSubscription(
+        StripeSubscriptionResult subscription,
+        DateTimeOffset? accessEndUtc,
+        DateTimeOffset nowUtc)
     {
         return string.Equals(subscription.Status, "active", StringComparison.OrdinalIgnoreCase)
-            && subscription.CurrentPeriodEndUtc > DateTimeOffset.UtcNow;
+            && accessEndUtc > nowUtc;
+    }
+
+    private static bool IsSubscriptionCanceling(StripeSubscriptionResult subscription, DateTimeOffset nowUtc)
+    {
+        return subscription.CancelAtPeriodEnd
+            || subscription.CancelAtUtc > nowUtc;
     }
 
     private static bool IsConfigured(StripeOptions options)
@@ -170,7 +311,16 @@ public static class BillingEndpointExtensions
             && !string.IsNullOrWhiteSpace(options.CancelUrl);
     }
 
+    private static bool IsPortalConfigured(StripeOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.SecretKey)
+            && !string.IsNullOrWhiteSpace(options.PortalConfigurationId)
+            && !string.IsNullOrWhiteSpace(options.PortalReturnUrl);
+    }
+
     public sealed record ConfirmCheckoutSessionRequest([Required] string SessionId);
+
+    private sealed record BillingPortalSessionResponse(string PortalUrl);
 
     private sealed record BillingCheckoutSessionResponse(
         string Status,

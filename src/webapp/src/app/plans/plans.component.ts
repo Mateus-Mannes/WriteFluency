@@ -32,7 +32,21 @@ export class PlansComponent implements OnDestroy {
   readonly isCheckoutStarting = signal(false);
   private readonly isCheckoutRequestInProgress = signal(false);
   readonly isCheckoutDisabled = computed(() => this.isCheckoutStarting() || this.isCheckoutRequestInProgress());
-  readonly planCtaLabel = computed(() => this.authState().isPro ? 'You are already Pro' : 'Subscribe to Pro');
+  readonly isPortalEligible = computed(() => this.authState().entitlementStatus === 'pro_active'
+    || this.authState().entitlementStatus === 'pro_canceling');
+  readonly planCtaLabel = computed(() => this.isPortalEligible() ? 'Manage subscription' : 'Subscribe to Pro');
+  readonly planStatusMessage = computed(() => {
+    const state = this.authState();
+    if (state.entitlementStatus === 'pro_canceling' && state.currentPeriodEndUtc) {
+      return `You are already Pro. Access remains active until ${this.formatDate(state.currentPeriodEndUtc)}.`;
+    }
+
+    if (state.entitlementStatus === 'pro_active') {
+      return 'You are already Pro. Manage your subscription anytime.';
+    }
+
+    return null;
+  });
 
   ngOnDestroy(): void {
     if (this.checkoutLoadingTimer) {
@@ -59,8 +73,8 @@ export class PlansComponent implements OnDestroy {
       return;
     }
 
-    if (state.isPro) {
-      await this.router.navigate(['/user']);
+    if (this.isPortalEligible()) {
+      await this.startPortalSession();
       return;
     }
 
@@ -104,5 +118,43 @@ export class PlansComponent implements OnDestroy {
       this.isCheckoutStarting.set(false);
       this.checkoutLoadingTimer = null;
     }, checkoutLoadingTimeoutMs);
+  }
+
+  private async startPortalSession(): Promise<void> {
+    this.startCheckoutLoadingTimeout();
+    this.isCheckoutRequestInProgress.set(true);
+
+    try {
+      const response = await firstValueFrom(this.billingApi.createPortalSession());
+      if (response.portalUrl) {
+        this.browser.navigateTo(response.portalUrl);
+        return;
+      }
+
+      this.checkoutError.set('Could not open subscription management right now. Please try again.');
+    } catch (error) {
+      this.checkoutError.set('Could not open subscription management right now. Please try again.');
+      this.insights?.trackException(error, {
+        properties: {
+          area: 'billing',
+          operation: 'plans_manage_subscription',
+        },
+      });
+    } finally {
+      this.isCheckoutRequestInProgress.set(false);
+    }
+  }
+
+  private formatDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'the end of your billing period';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
   }
 }

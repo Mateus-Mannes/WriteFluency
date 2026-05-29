@@ -103,9 +103,10 @@ public static class UsersServiceCollectionExtensions
 
         services.AddOptions<StripeOptions>()
             .Bind(configuration.GetSection(StripeOptions.SectionName))
-            .Validate(options => !isProduction || IsStripeConfigured(options), "Stripe SecretKey, ProMonthlyPriceId, SuccessUrl, and CancelUrl are required in production")
+            .Validate(options => !isProduction || IsStripeConfigured(options), "Stripe SecretKey, ProMonthlyPriceId, SuccessUrl, CancelUrl, PortalConfigurationId, and PortalReturnUrl are required in production")
             .Validate(options => IsOptionalAbsoluteHttpUrl(options.SuccessUrl), "Stripe SuccessUrl must be an absolute HTTP(S) URL when configured")
             .Validate(options => IsOptionalAbsoluteHttpUrl(options.CancelUrl), "Stripe CancelUrl must be an absolute HTTP(S) URL when configured")
+            .Validate(options => IsOptionalAbsoluteHttpUrl(options.PortalReturnUrl), "Stripe PortalReturnUrl must be an absolute HTTP(S) URL when configured")
             .ValidateOnStart();
 
         var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
@@ -332,7 +333,9 @@ public static class UsersServiceCollectionExtensions
         return !string.IsNullOrWhiteSpace(options.SecretKey)
             && !string.IsNullOrWhiteSpace(options.ProMonthlyPriceId)
             && !string.IsNullOrWhiteSpace(options.SuccessUrl)
-            && !string.IsNullOrWhiteSpace(options.CancelUrl);
+            && !string.IsNullOrWhiteSpace(options.CancelUrl)
+            && !string.IsNullOrWhiteSpace(options.PortalConfigurationId)
+            && !string.IsNullOrWhiteSpace(options.PortalReturnUrl);
     }
 
     private static bool IsOptionalAbsoluteHttpUrl(string? value)

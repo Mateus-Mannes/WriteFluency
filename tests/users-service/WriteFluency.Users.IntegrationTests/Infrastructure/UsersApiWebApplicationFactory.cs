@@ -82,7 +82,9 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["SharedDataProtection:KeyIdentifier"] = string.Empty,
                 ["LoginLocation:Enabled"] = "false",
                 ["LoginLocation:GeoLite2CityBlobUri"] = string.Empty,
-                ["LoginLocation:GeoLite2CityDbPath"] = string.Empty
+                ["LoginLocation:GeoLite2CityDbPath"] = string.Empty,
+                ["Stripe:PortalConfigurationId"] = "bpc_test_writefluency",
+                ["Stripe:PortalReturnUrl"] = "http://localhost:4200/user?billing=returned"
             });
         });
 

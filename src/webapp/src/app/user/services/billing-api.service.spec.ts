@@ -56,4 +56,30 @@ describe('BillingApiService', () => {
       cancelAtPeriodEnd: false,
     });
   });
+
+  it('should create portal session with credentials', () => {
+    service.createPortalSession().subscribe();
+
+    const request = httpMock.expectOne(`${billingBaseUrl}/portal-session`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    request.flush({
+      portalUrl: 'https://billing.stripe.test/session',
+    });
+  });
+
+  it('should sync subscription with credentials', () => {
+    service.syncSubscription().subscribe();
+
+    const request = httpMock.expectOne(`${billingBaseUrl}/sync`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    request.flush({
+      plan: 'pro',
+      entitlementStatus: 'pro_canceling',
+      isPro: true,
+      currentPeriodEndUtc: new Date('2030-01-01T00:00:00.000Z').toISOString(),
+      cancelAtPeriodEnd: true,
+    });
+  });
 });

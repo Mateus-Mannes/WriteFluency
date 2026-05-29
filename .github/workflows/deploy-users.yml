@@ -55,6 +55,8 @@ jobs:
       Stripe__ProMonthlyPriceId: ${{ secrets.Stripe__ProMonthlyPriceId }}
       Stripe__SuccessUrl: https://writefluency.com/user?checkout=success&session_id={CHECKOUT_SESSION_ID}
       Stripe__CancelUrl: https://writefluency.com/user?checkout=cancelled
+      Stripe__PortalConfigurationId: ${{ secrets.Stripe__PortalConfigurationId }}
+      Stripe__PortalReturnUrl: https://writefluency.com/user?billing=returned
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -78,7 +80,8 @@ jobs:
           Authentication__ConfirmationRedirectUrl \
           Authentication__ExternalRedirect__AllowedReturnUrls__0 \
           Stripe__SecretKey \
-          Stripe__ProMonthlyPriceId
+          Stripe__ProMonthlyPriceId \
+          Stripe__PortalConfigurationId
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4

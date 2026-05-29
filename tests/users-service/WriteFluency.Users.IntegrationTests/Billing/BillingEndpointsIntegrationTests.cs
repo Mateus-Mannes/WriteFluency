@@ -215,6 +215,7 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
             CustomerId: "cus_confirm",
             Status: "active",
             CurrentPeriodEndUtc: currentPeriodEndUtc,
+            CancelAtUtc: null,
             CancelAtPeriodEnd: false);
 
         var response = await PostAsJsonWithAllowedOriginAsync(
@@ -235,6 +236,319 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         updatedUser.SubscriptionPlan.ShouldBe("pro");
         updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(currentPeriodEndUtc);
         updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task PortalSession_WhenUnauthenticated_ShouldReturnUnauthorized()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/portal-session", new { });
+
+        IsUnauthenticatedStatus(response.StatusCode).ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData(SubscriptionEntitlements.FreePlan, null, false, "free_user")]
+    [InlineData(SubscriptionEntitlements.ProPlan, "2020-01-01T00:00:00+00:00", false, "pro_expired")]
+    public async Task PortalSession_ForFreeOrExpiredUser_ShouldReturnForbidden(
+        string plan,
+        string? periodEnd,
+        bool cancelAtPeriodEnd,
+        string expectedReason)
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-portal-forbidden-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            plan,
+            periodEnd is null ? null : DateTimeOffset.Parse(periodEnd),
+            cancelAtPeriodEnd,
+            "cus_portal",
+            "sub_portal",
+            "active");
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/portal-session", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("error").GetString().ShouldBe("subscription_management_unavailable");
+        doc.RootElement.GetProperty("reason").GetString().ShouldBe(expectedReason);
+    }
+
+    [Fact]
+    public async Task PortalSession_WhenBillingReferencesAreMissing_ShouldReturnConflict()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-portal-missing-refs-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionEntitlementAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/portal-session", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("error").GetString().ShouldBe("missing_stripe_billing_reference");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PortalSession_ForActiveOrCancelingProUser_ShouldCreateStripePortalSession(bool cancelAtPeriodEnd)
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-portal-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            cancelAtPeriodEnd,
+            "cus_portal",
+            "sub_portal",
+            "active");
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/portal-session", new { });
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("portalUrl").GetString().ShouldBe("https://billing.stripe.test/session/1");
+        _fixture.StripeBillingClient.CreatedPortalSessions.Count.ShouldBe(1);
+        var portalRequest = _fixture.StripeBillingClient.CreatedPortalSessions[0];
+        portalRequest.CustomerId.ShouldBe("cus_portal");
+        portalRequest.PortalConfigurationId.ShouldBe("bpc_test_writefluency");
+        portalRequest.ReturnUrl.ShouldBe("http://localhost:4200/user?billing=returned");
+    }
+
+    [Fact]
+    public async Task SyncSubscription_WhenBillingReferencesAreMissing_ShouldReturnConflict()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-sync-missing-refs-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/sync", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task SyncSubscription_WhenSubscriptionIsCanceling_ShouldPersistCancelingEntitlement()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-sync-canceling-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_sync",
+            "sub_sync",
+            "active");
+        var periodEndUtc = new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        _fixture.StripeBillingClient.Subscriptions["sub_sync"] = new StripeSubscriptionResult(
+            Id: "sub_sync",
+            CustomerId: "cus_sync",
+            Status: "active",
+            CurrentPeriodEndUtc: periodEndUtc,
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: true);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/sync", new { });
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("plan").GetString().ShouldBe("pro");
+        doc.RootElement.GetProperty("entitlementStatus").GetString().ShouldBe("pro_canceling");
+        doc.RootElement.GetProperty("isPro").GetBoolean().ShouldBeTrue();
+        doc.RootElement.GetProperty("cancelAtPeriodEnd").GetBoolean().ShouldBeTrue();
+
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe("pro");
+        updatedUser.StripeSubscriptionStatus.ShouldBe("active");
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(periodEndUtc);
+        updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task SyncSubscription_WhenSubscriptionHasFutureCancelAt_ShouldPersistCancelingEntitlement()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-sync-cancel-at-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_sync_cancel_at",
+            "sub_sync_cancel_at",
+            "active");
+        var periodEndUtc = new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        var cancelAtUtc = new DateTimeOffset(2030, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        _fixture.StripeBillingClient.Subscriptions["sub_sync_cancel_at"] = new StripeSubscriptionResult(
+            Id: "sub_sync_cancel_at",
+            CustomerId: "cus_sync_cancel_at",
+            Status: "active",
+            CurrentPeriodEndUtc: periodEndUtc,
+            CancelAtUtc: cancelAtUtc,
+            CancelAtPeriodEnd: false);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/sync", new { });
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("plan").GetString().ShouldBe("pro");
+        doc.RootElement.GetProperty("entitlementStatus").GetString().ShouldBe("pro_canceling");
+        doc.RootElement.GetProperty("isPro").GetBoolean().ShouldBeTrue();
+        doc.RootElement.GetProperty("cancelAtPeriodEnd").GetBoolean().ShouldBeTrue();
+
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe("pro");
+        updatedUser.StripeSubscriptionStatus.ShouldBe("active");
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(cancelAtUtc);
+        updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData("canceled")]
+    [InlineData("incomplete_expired")]
+    public async Task SyncSubscription_WhenSubscriptionIsNoLongerEligible_ShouldPersistFreeEntitlement(string stripeStatus)
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-sync-expired-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_sync_expired",
+            "sub_sync_expired",
+            "active");
+        _fixture.StripeBillingClient.Subscriptions["sub_sync_expired"] = new StripeSubscriptionResult(
+            Id: "sub_sync_expired",
+            CustomerId: "cus_sync_expired",
+            Status: stripeStatus,
+            CurrentPeriodEndUtc: new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/sync", new { });
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        doc.RootElement.GetProperty("plan").GetString().ShouldBe("free");
+        doc.RootElement.GetProperty("entitlementStatus").GetString().ShouldBe("free");
+        doc.RootElement.GetProperty("isPro").GetBoolean().ShouldBeFalse();
+
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe("free");
+        updatedUser.StripeSubscriptionStatus.ShouldBe(stripeStatus);
+        updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task SyncSubscription_WhenSubscriptionBelongsToAnotherCustomer_ShouldReturnForbidden()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-sync-wrong-customer-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_current",
+            "sub_current",
+            "active");
+        _fixture.StripeBillingClient.Subscriptions["sub_current"] = new StripeSubscriptionResult(
+            Id: "sub_current",
+            CustomerId: "cus_other",
+            Status: "active",
+            CurrentPeriodEndUtc: new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false);
+
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/billing/sync", new { });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     private bool CanRunIntegration()
@@ -288,6 +602,27 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         user.SubscriptionPlan = plan;
         user.SubscriptionCurrentPeriodEndUtc = currentPeriodEndUtc;
         user.SubscriptionCancelAtPeriodEnd = cancelAtPeriodEnd;
+        await db.SaveChangesAsync();
+    }
+
+    private async Task SetSubscriptionStateAsync(
+        string email,
+        string plan,
+        DateTimeOffset? currentPeriodEndUtc,
+        bool cancelAtPeriodEnd,
+        string stripeCustomerId,
+        string stripeSubscriptionId,
+        string stripeSubscriptionStatus)
+    {
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        var user = await db.Users.SingleAsync(u => u.Email == email);
+        user.SubscriptionPlan = plan;
+        user.SubscriptionCurrentPeriodEndUtc = currentPeriodEndUtc;
+        user.SubscriptionCancelAtPeriodEnd = cancelAtPeriodEnd;
+        user.StripeCustomerId = stripeCustomerId;
+        user.StripeSubscriptionId = stripeSubscriptionId;
+        user.StripeSubscriptionStatus = stripeSubscriptionStatus;
         await db.SaveChangesAsync();
     }
 

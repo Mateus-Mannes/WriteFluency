@@ -24,7 +24,10 @@ describe('PlansComponent', () => {
   };
 
   beforeEach(async () => {
-    billingApiSpy = jasmine.createSpyObj<BillingApiService>('BillingApiService', ['createCheckoutSession']);
+    billingApiSpy = jasmine.createSpyObj<BillingApiService>('BillingApiService', [
+      'createCheckoutSession',
+      'createPortalSession',
+    ]);
     browserServiceSpy = jasmine.createSpyObj<BrowserService>('BrowserService', ['navigateTo']);
     insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException']);
     authSessionStoreMock = {
@@ -57,6 +60,9 @@ describe('PlansComponent', () => {
       currentPeriodEndUtc: null,
       cancelAtPeriodEnd: false,
     }));
+    billingApiSpy.createPortalSession.and.returnValue(of({
+      portalUrl: 'https://billing.stripe.test/session',
+    }));
 
     await TestBed.configureTestingModule({
       imports: [PlansComponent],
@@ -84,7 +90,7 @@ describe('PlansComponent', () => {
     expect(root.textContent).toContain('Subscribe to Pro');
   });
 
-  it('should show an already Pro state for Pro users', () => {
+  it('should show a portal management CTA for Pro users', () => {
     authSessionStoreMock.state.set({
       ...authSessionStoreMock.state(),
       plan: 'pro',
@@ -95,10 +101,29 @@ describe('PlansComponent', () => {
 
     const cta = fixture.nativeElement.querySelector('.plan-cta') as HTMLButtonElement;
 
-    expect(cta.textContent).toContain('You are already Pro');
-    expect(cta.disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('You are already Pro');
+    expect(cta.textContent).toContain('Manage subscription');
+    expect(cta.disabled).toBeFalse();
     expect(billingApiSpy.createCheckoutSession).not.toHaveBeenCalled();
   });
+
+  it('should create portal session for Pro users and redirect to Stripe portal', fakeAsync(() => {
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+    });
+
+    void component.startCheckout();
+    flushMicrotasks();
+
+    expect(billingApiSpy.createCheckoutSession).not.toHaveBeenCalled();
+    expect(billingApiSpy.createPortalSession).toHaveBeenCalledTimes(1);
+    expect(browserServiceSpy.navigateTo).toHaveBeenCalledWith('https://billing.stripe.test/session');
+
+    tick(8000);
+  }));
 
   it('should create checkout session, redirect to Stripe, and keep loading for 8 seconds', fakeAsync(() => {
     void component.startCheckout();

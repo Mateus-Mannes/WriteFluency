@@ -13,6 +13,10 @@ export interface CheckoutSessionResponse extends BillingEntitlementResponse {
   checkoutUrl: string | null;
 }
 
+export interface PortalSessionResponse {
+  portalUrl: string;
+}
+
 export interface ConfirmCheckoutSessionRequest {
   sessionId: string;
 }

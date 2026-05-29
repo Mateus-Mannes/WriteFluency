@@ -6,9 +6,11 @@ public sealed class TestingStripeBillingClient : IStripeBillingClient
 {
     private int _customerSequence;
     private int _checkoutSessionSequence;
+    private int _portalSessionSequence;
 
     public List<CreateCustomerRequest> CreatedCustomers { get; } = [];
     public List<CreateCheckoutSessionRequest> CreatedCheckoutSessions { get; } = [];
+    public List<CreatePortalSessionRequest> CreatedPortalSessions { get; } = [];
     public Dictionary<string, StripeCheckoutSessionResult> CheckoutSessions { get; } = new(StringComparer.Ordinal);
     public Dictionary<string, StripeSubscriptionResult> Subscriptions { get; } = new(StringComparer.Ordinal);
 
@@ -16,8 +18,10 @@ public sealed class TestingStripeBillingClient : IStripeBillingClient
     {
         _customerSequence = 0;
         _checkoutSessionSequence = 0;
+        _portalSessionSequence = 0;
         CreatedCustomers.Clear();
         CreatedCheckoutSessions.Clear();
+        CreatedPortalSessions.Clear();
         CheckoutSessions.Clear();
         Subscriptions.Clear();
     }
@@ -73,6 +77,23 @@ public sealed class TestingStripeBillingClient : IStripeBillingClient
         return Task.FromResult<StripeSubscriptionResult?>(subscription);
     }
 
+    public Task<StripePortalSessionResult> CreatePortalSessionAsync(
+        StripePortalSessionCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var sequence = ++_portalSessionSequence;
+        CreatedPortalSessions.Add(new CreatePortalSessionRequest(
+            request.CustomerId,
+            request.PortalConfigurationId,
+            request.ReturnUrl));
+
+        return Task.FromResult(new StripePortalSessionResult(
+            Id: $"bps_test_{sequence}",
+            CustomerId: request.CustomerId,
+            Url: $"https://billing.stripe.test/session/{sequence}",
+            ReturnUrl: request.ReturnUrl));
+    }
+
     public sealed record CreateCustomerRequest(string UserId, string? Email, string CustomerId);
 
     public sealed record CreateCheckoutSessionRequest(
@@ -82,4 +103,9 @@ public sealed class TestingStripeBillingClient : IStripeBillingClient
         string SuccessUrl,
         string CancelUrl,
         string SessionId);
+
+    public sealed record CreatePortalSessionRequest(
+        string CustomerId,
+        string PortalConfigurationId,
+        string ReturnUrl);
 }

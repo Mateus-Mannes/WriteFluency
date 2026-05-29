@@ -11,15 +11,18 @@
     <div class="plan-copy">
       <p class="plan-name">Pro Monthly</p>
       <p class="plan-price">$3<span>/month</span></p>
+      @if (planStatusMessage()) {
+        <p class="plan-status">{{ planStatusMessage() }}</p>
+      }
     </div>
 
     <button
       mat-flat-button
       class="plan-cta"
       [class.plan-cta-loading]="isCheckoutStarting()"
-      [class.plan-cta-pro]="authState().isPro"
+      [class.plan-cta-pro]="isPortalEligible()"
       type="button"
-      [disabled]="isCheckoutDisabled() || authState().isPro"
+      [disabled]="isCheckoutDisabled()"
       (click)="startCheckout()">
       <span class="plan-cta__label">{{ planCtaLabel() }}</span>
       @if (isCheckoutStarting()) {
