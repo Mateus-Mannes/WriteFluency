@@ -39,6 +39,7 @@ stripe_success_url="${Stripe__SuccessUrl:-https://writefluency.com/user?checkout
 stripe_cancel_url="${Stripe__CancelUrl:-https://writefluency.com/user?checkout=cancelled}"
 stripe_portal_configuration_id="${Stripe__PortalConfigurationId:-}"
 stripe_portal_return_url="${Stripe__PortalReturnUrl:-https://writefluency.com/user?billing=returned}"
+stripe_webhook_secret="${Stripe__WebhookSecret:-}"
 
 azure_client_id="${AZURE_CLIENT_ID:-}"
 azure_tenant_id="${AZURE_TENANT_ID:-}"
@@ -191,6 +192,7 @@ stringData:
   Stripe__CancelUrl: "$stripe_cancel_url"
   Stripe__PortalConfigurationId: "$stripe_portal_configuration_id"
   Stripe__PortalReturnUrl: "$stripe_portal_return_url"
+  Stripe__WebhookSecret: "$stripe_webhook_secret"
   Smtp__Host: "wf-infra-smtp"
   Smtp__Port: "2525"
   Smtp__FromEmail: "noreply@writefluency.com"

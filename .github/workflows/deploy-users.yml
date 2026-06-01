@@ -57,6 +57,7 @@ jobs:
       Stripe__CancelUrl: https://writefluency.com/user?checkout=cancelled
       Stripe__PortalConfigurationId: ${{ secrets.Stripe__PortalConfigurationId }}
       Stripe__PortalReturnUrl: https://writefluency.com/user?billing=returned
+      Stripe__WebhookSecret: ${{ secrets.Stripe__WebhookSecret }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -81,7 +82,8 @@ jobs:
           Authentication__ExternalRedirect__AllowedReturnUrls__0 \
           Stripe__SecretKey \
           Stripe__ProMonthlyPriceId \
-          Stripe__PortalConfigurationId
+          Stripe__PortalConfigurationId \
+          Stripe__WebhookSecret
 
     - name: Install .NET
       uses: actions/setup-dotnet@v4

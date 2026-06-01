@@ -30,6 +30,8 @@ public static class BillingEndpointExtensions
         billingGroup.MapPost("/sync", SyncSubscriptionAsync)
             .RequireAuthorization();
 
+        billingGroup.MapPost("/stripe-webhook", ProcessStripeWebhookAsync);
+
         return app;
     }
 
@@ -96,6 +98,7 @@ public static class BillingEndpointExtensions
         ClaimsPrincipal principal,
         UserManager<ApplicationUser> userManager,
         IStripeBillingClient stripeBillingClient,
+        BillingSubscriptionSynchronizer subscriptionSynchronizer,
         CancellationToken cancellationToken)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.SessionId))
@@ -142,7 +145,7 @@ public static class BillingEndpointExtensions
             return Results.Forbid();
         }
 
-        ApplySubscriptionState(user, subscription);
+        subscriptionSynchronizer.Apply(user, subscription, DateTimeOffset.UtcNow);
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
@@ -223,6 +226,7 @@ public static class BillingEndpointExtensions
         ClaimsPrincipal principal,
         UserManager<ApplicationUser> userManager,
         IStripeBillingClient stripeBillingClient,
+        BillingSubscriptionSynchronizer subscriptionSynchronizer,
         CancellationToken cancellationToken)
     {
         var user = await userManager.GetUserAsync(principal);
@@ -261,7 +265,7 @@ public static class BillingEndpointExtensions
             return Results.Forbid();
         }
 
-        ApplySubscriptionState(user, subscription);
+        subscriptionSynchronizer.Apply(user, subscription, DateTimeOffset.UtcNow);
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
@@ -274,33 +278,76 @@ public static class BillingEndpointExtensions
         return Results.Ok(BillingEntitlementResponse.From(SubscriptionEntitlements.Build(user, DateTimeOffset.UtcNow)));
     }
 
-    private static void ApplySubscriptionState(ApplicationUser user, StripeSubscriptionResult subscription)
+    private static async Task<IResult> ProcessStripeWebhookAsync(
+        HttpRequest request,
+        IOptions<StripeOptions> stripeOptions,
+        StripeWebhookProcessor webhookProcessor,
+        ILoggerFactory loggerFactory,
+        CancellationToken cancellationToken)
     {
-        var nowUtc = DateTimeOffset.UtcNow;
-        var accessEndUtc = subscription.CancelAtUtc ?? subscription.CurrentPeriodEndUtc;
+        if (string.IsNullOrWhiteSpace(stripeOptions.Value.WebhookSecret))
+        {
+            return Results.Problem(
+                detail: "Stripe webhook is not configured.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
 
-        user.StripeSubscriptionId = subscription.Id;
-        user.StripeSubscriptionStatus = subscription.Status;
-        user.SubscriptionCurrentPeriodEndUtc = accessEndUtc;
-        user.SubscriptionCancelAtPeriodEnd = IsSubscriptionCanceling(subscription, nowUtc);
-        user.SubscriptionPlan = IsProEligibleSubscription(subscription, accessEndUtc, nowUtc)
-            ? SubscriptionEntitlements.ProPlan
-            : SubscriptionEntitlements.FreePlan;
-    }
+        var signature = request.Headers["Stripe-Signature"].ToString();
+        if (string.IsNullOrWhiteSpace(signature))
+        {
+            return Results.BadRequest(new { Error = "missing_stripe_signature" });
+        }
 
-    private static bool IsProEligibleSubscription(
-        StripeSubscriptionResult subscription,
-        DateTimeOffset? accessEndUtc,
-        DateTimeOffset nowUtc)
-    {
-        return string.Equals(subscription.Status, "active", StringComparison.OrdinalIgnoreCase)
-            && accessEndUtc > nowUtc;
-    }
+        string payload;
+        using (var reader = new StreamReader(request.Body))
+        {
+            payload = await reader.ReadToEndAsync(cancellationToken);
+        }
 
-    private static bool IsSubscriptionCanceling(StripeSubscriptionResult subscription, DateTimeOffset nowUtc)
-    {
-        return subscription.CancelAtPeriodEnd
-            || subscription.CancelAtUtc > nowUtc;
+        Event stripeEvent;
+        JsonDocument payloadDocument;
+        try
+        {
+            stripeEvent = EventUtility.ConstructEvent(
+                payload,
+                signature,
+                stripeOptions.Value.WebhookSecret,
+                throwOnApiVersionMismatch: false);
+            payloadDocument = JsonDocument.Parse(payload);
+        }
+        catch (Exception ex) when (ex is StripeException or JsonException)
+        {
+            return Results.BadRequest(new { Error = "invalid_stripe_signature" });
+        }
+
+        using (payloadDocument)
+        {
+            if (!payloadDocument.RootElement.TryGetProperty("data", out var data)
+                || !data.TryGetProperty("object", out var stripeObject))
+            {
+                return Results.BadRequest(new { Error = "invalid_stripe_event" });
+            }
+
+            var eventCreatedUtc = payloadDocument.RootElement.TryGetProperty("created", out var created)
+                && created.TryGetInt64(out var createdUnixTimestamp)
+                    ? (DateTimeOffset?)DateTimeOffset.FromUnixTimeSeconds(createdUnixTimestamp)
+                    : null;
+
+            try
+            {
+                await webhookProcessor.ProcessAsync(stripeEvent, stripeObject, eventCreatedUtc, cancellationToken);
+                return Results.Ok();
+            }
+            catch (Exception ex)
+            {
+                loggerFactory.CreateLogger("StripeWebhookEndpoint").LogError(
+                    ex,
+                    "Stripe webhook {StripeEventId} type {StripeEventType} could not be processed",
+                    stripeEvent.Id,
+                    stripeEvent.Type);
+                return Results.StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 
     private static bool IsConfigured(StripeOptions options)

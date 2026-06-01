@@ -103,7 +103,7 @@ public static class UsersServiceCollectionExtensions
 
         services.AddOptions<StripeOptions>()
             .Bind(configuration.GetSection(StripeOptions.SectionName))
-            .Validate(options => !isProduction || IsStripeConfigured(options), "Stripe SecretKey, ProMonthlyPriceId, SuccessUrl, CancelUrl, PortalConfigurationId, and PortalReturnUrl are required in production")
+            .Validate(options => !isProduction || IsStripeConfigured(options), "Stripe SecretKey, ProMonthlyPriceId, SuccessUrl, CancelUrl, PortalConfigurationId, PortalReturnUrl, and WebhookSecret are required in production")
             .Validate(options => IsOptionalAbsoluteHttpUrl(options.SuccessUrl), "Stripe SuccessUrl must be an absolute HTTP(S) URL when configured")
             .Validate(options => IsOptionalAbsoluteHttpUrl(options.CancelUrl), "Stripe CancelUrl must be an absolute HTTP(S) URL when configured")
             .Validate(options => IsOptionalAbsoluteHttpUrl(options.PortalReturnUrl), "Stripe PortalReturnUrl must be an absolute HTTP(S) URL when configured")
@@ -194,6 +194,8 @@ public static class UsersServiceCollectionExtensions
         services.AddSingleton<IClientIpResolver, ClientIpResolver>();
         services.AddSingleton<SupportRequestRateLimiter>();
         services.AddScoped<IStripeBillingClient, StripeBillingClient>();
+        services.AddScoped<BillingSubscriptionSynchronizer>();
+        services.AddScoped<StripeWebhookProcessor>();
 
         services.AddSingleton<ILoginGeoLocationDataSource, MaxMindGeoLocationDataSource>();
         services.AddSingleton<ILoginGeoLookupService, LoginGeoLookupService>();
@@ -335,7 +337,8 @@ public static class UsersServiceCollectionExtensions
             && !string.IsNullOrWhiteSpace(options.SuccessUrl)
             && !string.IsNullOrWhiteSpace(options.CancelUrl)
             && !string.IsNullOrWhiteSpace(options.PortalConfigurationId)
-            && !string.IsNullOrWhiteSpace(options.PortalReturnUrl);
+            && !string.IsNullOrWhiteSpace(options.PortalReturnUrl)
+            && !string.IsNullOrWhiteSpace(options.WebhookSecret);
     }
 
     private static bool IsOptionalAbsoluteHttpUrl(string? value)

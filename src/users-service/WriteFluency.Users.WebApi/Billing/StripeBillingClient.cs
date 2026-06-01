@@ -133,7 +133,8 @@ public sealed class StripeBillingClient(IOptions<StripeOptions> options) : IStri
                 Status: subscription.Status,
                 CurrentPeriodEndUtc: subscription.Items?.Data.FirstOrDefault()?.CurrentPeriodEnd,
                 CancelAtUtc: subscription.CancelAt,
-                CancelAtPeriodEnd: subscription.CancelAtPeriodEnd);
+                CancelAtPeriodEnd: subscription.CancelAtPeriodEnd,
+                WriteFluencyUserId: subscription.Metadata?.GetValueOrDefault("writefluency_user_id"));
         }
         catch (StripeException ex) when (ex.StripeError?.Type == "invalid_request_error")
         {
@@ -193,7 +194,8 @@ public sealed record StripeSubscriptionResult(
     string? Status,
     DateTimeOffset? CurrentPeriodEndUtc,
     DateTimeOffset? CancelAtUtc,
-    bool CancelAtPeriodEnd);
+    bool CancelAtPeriodEnd,
+    string? WriteFluencyUserId = null);
 
 public sealed record StripePortalSessionCreateRequest(
     string CustomerId,
