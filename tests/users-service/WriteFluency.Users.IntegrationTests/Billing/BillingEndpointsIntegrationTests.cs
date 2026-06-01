@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Stripe;
 using WriteFluency.Users.IntegrationTests.Infrastructure;
 using WriteFluency.Users.WebApi.Billing;
 using WriteFluency.Users.WebApi.Data;
@@ -14,6 +16,8 @@ namespace WriteFluency.Users.IntegrationTests.Billing;
 
 public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFixture>
 {
+    private const string WebhookSecret = "whsec_test_writefluency";
+
     private readonly UsersApiIntegrationFixture _fixture;
 
     public BillingEndpointsIntegrationTests(UsersApiIntegrationFixture fixture)
@@ -551,6 +555,416 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
+    [Fact]
+    public async Task StripeWebhook_WhenSignatureIsMissingOrInvalid_ShouldReturnBadRequestWithoutCsrfOrigin()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+        var payload = CreateStripeEventPayload($"evt_{Guid.NewGuid():N}", "product.created", new { id = "prod_test" });
+
+        using var missingSignature = new HttpRequestMessage(HttpMethod.Post, "/users/billing/stripe-webhook")
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
+        var missingSignatureResponse = await client.SendAsync(missingSignature);
+        missingSignatureResponse.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        using var invalidSignature = new HttpRequestMessage(HttpMethod.Post, "/users/billing/stripe-webhook")
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
+        invalidSignature.Headers.TryAddWithoutValidation("Stripe-Signature", "t=1,v1=invalid");
+        var invalidSignatureResponse = await client.SendAsync(invalidSignature);
+        invalidSignatureResponse.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenCheckoutCompletes_ShouldActivateProAndIgnoreDuplicateDelivery()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-webhook-checkout-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        var user = await SetStripeCustomerAsync(email, "cus_webhook_checkout");
+        var periodEndUtc = new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        _fixture.StripeBillingClient.CheckoutSessions["cs_webhook_checkout"] = new StripeCheckoutSessionResult(
+            Id: "cs_webhook_checkout",
+            CustomerId: "cus_webhook_checkout",
+            SubscriptionId: "sub_webhook_checkout",
+            Url: null,
+            Mode: "subscription",
+            ClientReferenceId: user.Id,
+            Status: "complete");
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_checkout"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_checkout",
+            CustomerId: "cus_webhook_checkout",
+            Status: "active",
+            CurrentPeriodEndUtc: periodEndUtc,
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: user.Id);
+        var eventId = $"evt_{Guid.NewGuid():N}";
+        var payload = CreateStripeEventPayload(
+            eventId,
+            EventTypes.CheckoutSessionCompleted,
+            new { id = "cs_webhook_checkout" });
+
+        var response = await PostStripeWebhookAsync(client, payload);
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.ProPlan);
+        updatedUser.StripeSubscriptionId.ShouldBe("sub_webhook_checkout");
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(periodEndUtc);
+        (await GetWebhookEventAsync(eventId)).ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Processed);
+
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_checkout"] =
+            _fixture.StripeBillingClient.Subscriptions["sub_webhook_checkout"] with
+            {
+                Status = "canceled",
+                CurrentPeriodEndUtc = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero)
+            };
+
+        var duplicateResponse = await PostStripeWebhookAsync(client, payload);
+
+        duplicateResponse.IsSuccessStatusCode.ShouldBeTrue();
+        updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.ProPlan);
+        (await GetWebhookEventAsync(eventId)).AttemptCount.ShouldBe(1);
+
+        _fixture.StripeBillingClient.CheckoutSessions["cs_webhook_checkout_old"] = new StripeCheckoutSessionResult(
+            Id: "cs_webhook_checkout_old",
+            CustomerId: "cus_webhook_checkout",
+            SubscriptionId: "sub_webhook_checkout_old",
+            Url: null,
+            Mode: "subscription",
+            ClientReferenceId: user.Id,
+            Status: "complete");
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_checkout_old"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_checkout_old",
+            CustomerId: "cus_webhook_checkout",
+            Status: "active",
+            CurrentPeriodEndUtc: periodEndUtc.AddMonths(1),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: user.Id);
+        var oldCheckoutEventId = $"evt_{Guid.NewGuid():N}";
+
+        var oldCheckoutResponse = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                oldCheckoutEventId,
+                EventTypes.CheckoutSessionCompleted,
+                new { id = "cs_webhook_checkout_old" },
+                DateTimeOffset.UtcNow.AddDays(-1)));
+
+        oldCheckoutResponse.IsSuccessStatusCode.ShouldBeTrue();
+        updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.StripeSubscriptionId.ShouldBe("sub_webhook_checkout");
+        (await GetWebhookEventAsync(oldCheckoutEventId)).ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Ignored);
+
+        using var sessionDocument = JsonDocument.Parse(await client.GetStringAsync("/users/auth/session"));
+        sessionDocument.RootElement.GetProperty("isPro").GetBoolean().ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenSubscriptionUpdateSchedulesCancellation_ShouldKeepProAndIgnoreOlderSubscription()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-webhook-canceling-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        var user = await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_webhook_canceling",
+            "sub_webhook_current",
+            "active");
+        var periodEndUtc = new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_current"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_current",
+            CustomerId: "cus_webhook_canceling",
+            Status: "active",
+            CurrentPeriodEndUtc: periodEndUtc,
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: true,
+            WriteFluencyUserId: user.Id);
+
+        var response = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                $"evt_{Guid.NewGuid():N}",
+                EventTypes.CustomerSubscriptionUpdated,
+                new { id = "sub_webhook_current" }));
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.ProPlan);
+        updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeTrue();
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(periodEndUtc);
+
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_old"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_old",
+            CustomerId: "cus_webhook_canceling",
+            Status: "canceled",
+            CurrentPeriodEndUtc: new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: user.Id);
+        var staleEventId = $"evt_{Guid.NewGuid():N}";
+
+        var staleResponse = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                staleEventId,
+                EventTypes.CustomerSubscriptionUpdated,
+                new { id = "sub_webhook_old" }));
+
+        staleResponse.IsSuccessStatusCode.ShouldBeTrue();
+        updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.StripeSubscriptionId.ShouldBe("sub_webhook_current");
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.ProPlan);
+        (await GetWebhookEventAsync(staleEventId)).ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Ignored);
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenSubscriptionIsDeleted_ShouldRemovePro()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-webhook-deleted-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        var user = await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            true,
+            "cus_webhook_deleted",
+            "sub_webhook_deleted",
+            "active");
+
+        var response = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                $"evt_{Guid.NewGuid():N}",
+                EventTypes.CustomerSubscriptionDeleted,
+                CreateSubscriptionPayload(
+                    "sub_webhook_deleted",
+                    "cus_webhook_deleted",
+                    "canceled",
+                    new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                    user.Id)));
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.FreePlan);
+        updatedUser.StripeSubscriptionStatus.ShouldBe("canceled");
+        updatedUser.SubscriptionCancelAtPeriodEnd.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenInvoiceIsPaidOrPaymentFails_ShouldSyncLatestPaidPeriod()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-webhook-invoice-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        var user = await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_webhook_invoice",
+            "sub_webhook_invoice",
+            "active");
+        var renewedPeriodEndUtc = new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_invoice"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_invoice",
+            CustomerId: "cus_webhook_invoice",
+            Status: "active",
+            CurrentPeriodEndUtc: renewedPeriodEndUtc,
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: user.Id);
+
+        var paidResponse = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                $"evt_{Guid.NewGuid():N}",
+                EventTypes.InvoicePaid,
+                CreateInvoicePayload("sub_webhook_invoice")));
+
+        paidResponse.IsSuccessStatusCode.ShouldBeTrue();
+        var updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(renewedPeriodEndUtc);
+
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_invoice"] =
+            _fixture.StripeBillingClient.Subscriptions["sub_webhook_invoice"] with { Status = "past_due" };
+        var failedResponse = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                $"evt_{Guid.NewGuid():N}",
+                EventTypes.InvoicePaymentFailed,
+                CreateInvoicePayload("sub_webhook_invoice")));
+
+        failedResponse.IsSuccessStatusCode.ShouldBeTrue();
+        updatedUser = await GetUserByEmailAsync(email);
+        updatedUser.SubscriptionPlan.ShouldBe(SubscriptionEntitlements.ProPlan);
+        updatedUser.StripeSubscriptionStatus.ShouldBe("past_due");
+        updatedUser.SubscriptionCurrentPeriodEndUtc.ShouldBe(renewedPeriodEndUtc);
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenProcessingFails_ShouldRecordFailureAndAllowRetry()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"billing-webhook-retry-{Guid.NewGuid():N}@writefluency.test";
+        const string password = "Passw0rd!123";
+        await RegisterConfirmAndLoginAsync(client, email, password);
+        var user = await SetSubscriptionStateAsync(
+            email,
+            SubscriptionEntitlements.ProPlan,
+            new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            false,
+            "cus_webhook_retry",
+            "sub_webhook_retry",
+            "active");
+        var eventId = $"evt_{Guid.NewGuid():N}";
+        var payload = CreateStripeEventPayload(
+            eventId,
+            EventTypes.CustomerSubscriptionUpdated,
+            new { id = "sub_webhook_retry" });
+
+        var failedResponse = await PostStripeWebhookAsync(client, payload);
+
+        failedResponse.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        var webhookEvent = await GetWebhookEventAsync(eventId);
+        webhookEvent.ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Failed);
+        webhookEvent.AttemptCount.ShouldBe(1);
+
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_retry"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_retry",
+            CustomerId: "cus_webhook_retry",
+            Status: "active",
+            CurrentPeriodEndUtc: new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: user.Id);
+
+        var retryResponse = await PostStripeWebhookAsync(client, payload);
+
+        retryResponse.IsSuccessStatusCode.ShouldBeTrue();
+        webhookEvent = await GetWebhookEventAsync(eventId);
+        webhookEvent.ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Processed);
+        webhookEvent.AttemptCount.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenStripeReferencesResolveToDifferentUsers_ShouldFailForRetry()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        const string password = "Passw0rd!123";
+        var metadataEmail = $"billing-webhook-conflict-metadata-{Guid.NewGuid():N}@writefluency.test";
+        await RegisterConfirmAndLoginAsync(client, metadataEmail, password);
+        var metadataUser = await SetStripeCustomerAsync(metadataEmail, "cus_webhook_metadata");
+
+        var customerEmail = $"billing-webhook-conflict-customer-{Guid.NewGuid():N}@writefluency.test";
+        await RegisterConfirmAndLoginAsync(client, customerEmail, password);
+        await SetStripeCustomerAsync(customerEmail, "cus_webhook_conflict");
+
+        _fixture.StripeBillingClient.Subscriptions["sub_webhook_conflict"] = new StripeSubscriptionResult(
+            Id: "sub_webhook_conflict",
+            CustomerId: "cus_webhook_conflict",
+            Status: "active",
+            CurrentPeriodEndUtc: new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            CancelAtUtc: null,
+            CancelAtPeriodEnd: false,
+            WriteFluencyUserId: metadataUser.Id);
+        var eventId = $"evt_{Guid.NewGuid():N}";
+
+        var response = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(
+                eventId,
+                EventTypes.CustomerSubscriptionUpdated,
+                new { id = "sub_webhook_conflict" }));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+        var webhookEvent = await GetWebhookEventAsync(eventId);
+        webhookEvent.ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Failed);
+        webhookEvent.LastError.ShouldNotBeNull();
+        webhookEvent.LastError!.ShouldContain("different WriteFluency users");
+    }
+
+    [Fact]
+    public async Task StripeWebhook_WhenEventIsUnrelated_ShouldMarkItIgnored()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+        var eventId = $"evt_{Guid.NewGuid():N}";
+
+        var response = await PostStripeWebhookAsync(
+            client,
+            CreateStripeEventPayload(eventId, "product.created", new { id = "prod_test" }));
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        (await GetWebhookEventAsync(eventId)).ProcessingStatus.ShouldBe(StripeWebhookEventStatuses.Ignored);
+    }
+
     private bool CanRunIntegration()
     {
         return _fixture.IsAvailable;
@@ -605,7 +1019,7 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         await db.SaveChangesAsync();
     }
 
-    private async Task SetSubscriptionStateAsync(
+    private async Task<ApplicationUser> SetSubscriptionStateAsync(
         string email,
         string plan,
         DateTimeOffset? currentPeriodEndUtc,
@@ -624,6 +1038,7 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         user.StripeSubscriptionId = stripeSubscriptionId;
         user.StripeSubscriptionStatus = stripeSubscriptionStatus;
         await db.SaveChangesAsync();
+        return user;
     }
 
     private async Task<ApplicationUser> GetUserByEmailAsync(string email)
@@ -631,6 +1046,88 @@ public class BillingEndpointsIntegrationTests : IClassFixture<UsersApiIntegratio
         using var scope = _fixture.Factory!.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
         return await db.Users.SingleAsync(x => x.Email == email);
+    }
+
+    private async Task<StripeWebhookEvent> GetWebhookEventAsync(string stripeEventId)
+    {
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        return await db.StripeWebhookEvents.SingleAsync(x => x.StripeEventId == stripeEventId);
+    }
+
+    private static async Task<HttpResponseMessage> PostStripeWebhookAsync(HttpClient client, string payload)
+    {
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var signature = EventUtility.ComputeSignature(WebhookSecret, timestamp, payload);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/users/billing/stripe-webhook")
+        {
+            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+        };
+        request.Headers.TryAddWithoutValidation("Stripe-Signature", $"t={timestamp},v1={signature}");
+        return await client.SendAsync(request);
+    }
+
+    private static string CreateStripeEventPayload(
+        string eventId,
+        string eventType,
+        object stripeObject,
+        DateTimeOffset? eventCreatedUtc = null)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            id = eventId,
+            type = eventType,
+            created = (eventCreatedUtc ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds(),
+            data = new
+            {
+                @object = stripeObject
+            }
+        });
+    }
+
+    private static object CreateSubscriptionPayload(
+        string subscriptionId,
+        string customerId,
+        string status,
+        DateTimeOffset currentPeriodEndUtc,
+        string writeFluencyUserId)
+    {
+        return new
+        {
+            id = subscriptionId,
+            customer = customerId,
+            status,
+            cancel_at_period_end = false,
+            items = new
+            {
+                data = new[]
+                {
+                    new
+                    {
+                        current_period_end = currentPeriodEndUtc.ToUnixTimeSeconds()
+                    }
+                }
+            },
+            metadata = new
+            {
+                writefluency_user_id = writeFluencyUserId
+            }
+        };
+    }
+
+    private static object CreateInvoicePayload(string subscriptionId)
+    {
+        return new
+        {
+            id = $"in_{Guid.NewGuid():N}",
+            parent = new
+            {
+                subscription_details = new
+                {
+                    subscription = subscriptionId
+                }
+            }
+        };
     }
 
     private static async Task<HttpResponseMessage> PostAsJsonWithAllowedOriginAsync(

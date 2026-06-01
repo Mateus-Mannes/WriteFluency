@@ -106,6 +106,7 @@ public class UsersServiceCollectionExtensionsTests
         stripeOptions.CancelUrl.ShouldBe("https://writefluency.local/user?checkout=cancelled");
         stripeOptions.PortalConfigurationId.ShouldBe("bpc_test_writefluency");
         stripeOptions.PortalReturnUrl.ShouldBe("https://writefluency.local/user?billing=returned");
+        stripeOptions.WebhookSecret.ShouldBe("whsec_test_writefluency");
     }
 
     [Fact]
@@ -174,6 +175,23 @@ public class UsersServiceCollectionExtensionsTests
         Should.Throw<OptionsValidationException>(() => provider.GetRequiredService<IOptions<StripeOptions>>().Value);
     }
 
+    [Fact]
+    public void AddUsersPersistence_WhenProductionAndWebhookSecretIsMissing_ShouldFailStripeValidation()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(
+            BuildConfiguration(overrides: new Dictionary<string, string?>
+            {
+                ["Stripe:WebhookSecret"] = ""
+            }),
+            isProduction: true);
+
+        using var provider = services.BuildServiceProvider();
+
+        Should.Throw<OptionsValidationException>(() => provider.GetRequiredService<IOptions<StripeOptions>>().Value);
+    }
+
     private static IConfiguration BuildConfiguration(
         string? connectionString = null,
         bool enableExternalProviders = true,
@@ -218,7 +236,8 @@ public class UsersServiceCollectionExtensionsTests
             ["Stripe:SuccessUrl"] = "https://writefluency.local/user?checkout=success&session_id={CHECKOUT_SESSION_ID}",
             ["Stripe:CancelUrl"] = "https://writefluency.local/user?checkout=cancelled",
             ["Stripe:PortalConfigurationId"] = "bpc_test_writefluency",
-            ["Stripe:PortalReturnUrl"] = "https://writefluency.local/user?billing=returned"
+            ["Stripe:PortalReturnUrl"] = "https://writefluency.local/user?billing=returned",
+            ["Stripe:WebhookSecret"] = "whsec_test_writefluency"
         };
 
         if (enableExternalProviders)

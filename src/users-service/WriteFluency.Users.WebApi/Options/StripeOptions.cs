@@ -23,4 +23,7 @@ public sealed class StripeOptions
 
     [Required]
     public string PortalReturnUrl { get; set; } = string.Empty;
+
+    [Required]
+    public string WebhookSecret { get; set; } = string.Empty;
 }

@@ -86,6 +86,12 @@ app.Use(async (context, next) =>
         return;
     }
 
+    if (IsStripeWebhookRequest(context.Request))
+    {
+        await next();
+        return;
+    }
+
     if (IsRequestFromAllowedOrigin(context.Request, allowedOriginSet))
     {
         await next();
@@ -118,6 +124,12 @@ static bool IsStateChangingUsersRequest(HttpRequest request)
         || HttpMethods.IsPut(request.Method)
         || HttpMethods.IsPatch(request.Method)
         || HttpMethods.IsDelete(request.Method);
+}
+
+static bool IsStripeWebhookRequest(HttpRequest request)
+{
+    return HttpMethods.IsPost(request.Method)
+        && request.Path.Equals("/users/billing/stripe-webhook", StringComparison.OrdinalIgnoreCase);
 }
 
 static bool IsRequestFromAllowedOrigin(HttpRequest request, HashSet<string> allowedOrigins)

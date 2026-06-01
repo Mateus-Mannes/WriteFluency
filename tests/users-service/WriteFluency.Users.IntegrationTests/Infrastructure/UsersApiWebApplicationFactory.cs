@@ -84,7 +84,8 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["LoginLocation:GeoLite2CityBlobUri"] = string.Empty,
                 ["LoginLocation:GeoLite2CityDbPath"] = string.Empty,
                 ["Stripe:PortalConfigurationId"] = "bpc_test_writefluency",
-                ["Stripe:PortalReturnUrl"] = "http://localhost:4200/user?billing=returned"
+                ["Stripe:PortalReturnUrl"] = "http://localhost:4200/user?billing=returned",
+                ["Stripe:WebhookSecret"] = "whsec_test_writefluency"
             });
         });
 

@@ -8,6 +8,7 @@ public class UsersDbContext(DbContextOptions<UsersDbContext> options)
 {
     public DbSet<UserLoginActivity> UserLoginActivities => Set<UserLoginActivity>();
     public DbSet<UserFeedbackPromptState> UserFeedbackPromptStates => Set<UserFeedbackPromptState>();
+    public DbSet<StripeWebhookEvent> StripeWebhookEvents => Set<StripeWebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -90,6 +91,29 @@ public class UsersDbContext(DbContextOptions<UsersDbContext> options)
 
             entity.HasIndex(x => new { x.UserId, x.CampaignKey })
                 .IsUnique();
+        });
+
+        builder.Entity<StripeWebhookEvent>(entity =>
+        {
+            entity.ToTable("StripeWebhookEvents");
+
+            entity.HasKey(x => x.StripeEventId);
+            entity.Property(x => x.StripeEventId)
+                .HasMaxLength(255);
+
+            entity.Property(x => x.EventType)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.Property(x => x.ReceivedAtUtc)
+                .IsRequired();
+
+            entity.Property(x => x.ProcessingStatus)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(x => x.LastError)
+                .HasMaxLength(2000);
         });
     }
 }

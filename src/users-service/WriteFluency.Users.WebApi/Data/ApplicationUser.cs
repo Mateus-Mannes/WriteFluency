@@ -17,4 +17,6 @@ public class ApplicationUser : IdentityUser
     public string? StripeSubscriptionId { get; set; }
 
     public string? StripeSubscriptionStatus { get; set; }
+
+    public DateTimeOffset? StripeSubscriptionLastEventCreatedUtc { get; set; }
 }
