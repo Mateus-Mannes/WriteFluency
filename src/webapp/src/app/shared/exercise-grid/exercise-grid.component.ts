@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule, IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,6 +16,7 @@ import { ComplexityEnum } from '../../../api/listen-and-write/model/complexityEn
 import { PropositionsService } from '../../../api/listen-and-write/api/propositions.service';
 import { minioVariantImageLoader } from '../image-loaders/minio-variant-image.loader';
 import { ImagePlaceholderDirective } from '../directives/image-placeholder.directive';
+import { AuthSessionStore } from '../../auth/services/auth-session.store';
 
 export interface Exercise {
   id: number;
@@ -28,6 +29,7 @@ export interface Exercise {
   imageBaseId?: string;
   imageLoadFailed?: boolean;
   newsUrl?: string;
+  requiresPro: boolean;
 }
 
 @Component({
@@ -59,10 +61,11 @@ export interface Exercise {
     }
   ],
 })
-export class ExerciseGridComponent implements OnInit {
+export class ExerciseGridComponent implements OnInit, OnDestroy {
   private propositionsService = inject(PropositionsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private authSessionStore = inject(AuthSessionStore);
 
   // Input parameters for customization
   @Input() maxItems?: number; // Limit number of items (for home page preview)
@@ -84,6 +87,9 @@ export class ExerciseGridComponent implements OnInit {
   searchText = signal<string>('');
   searchInput = signal<string>('');
   private searchDebounceHandle?: ReturnType<typeof setTimeout>;
+
+  readonly authState = this.authSessionStore.state;
+  selectedRestrictedExercise = signal<Exercise | null>(null);
   
   // Pagination signals
   pageIndex = signal<number>(0);
@@ -140,6 +146,12 @@ export class ExerciseGridComponent implements OnInit {
     // Manually trigger initial load
     this.loadExercises();
   }
+
+  ngOnDestroy(): void {
+    if (this.searchDebounceHandle) {
+      clearTimeout(this.searchDebounceHandle);
+    }
+  }
   
   private loadExercises(): void {
     this.isLoading.set(true);
@@ -170,7 +182,8 @@ export class ExerciseGridComponent implements OnInit {
             ? this.getImageBaseId(item.imageFileId)
             : undefined,
           imageLoadFailed: false,
-          newsUrl: item.newsUrl ?? ''
+          newsUrl: item.newsUrl ?? '',
+          requiresPro: item.requiresPro === true
         }));
         
         this.exercises.set(exercises);
@@ -316,6 +329,26 @@ export class ExerciseGridComponent implements OnInit {
     this.clearSearch();
     this.pageIndex.set(0);
     this.pageSize.set(18);
+  }
+
+  isExerciseRestricted(exercise: Exercise): boolean {
+    return exercise.requiresPro === true && this.authState().isPro !== true;
+  }
+
+  openProUpgradeModal(exercise: Exercise): void {
+    this.selectedRestrictedExercise.set(exercise);
+  }
+
+  closeProUpgradeModal(): void {
+    this.selectedRestrictedExercise.set(null);
+  }
+
+  async viewAvailablePlans(): Promise<void> {
+    await this.router.navigate(['/plans'], {
+      queryParams: {
+        source: 'pro_catalog_modal',
+      },
+    });
   }
 
   hasSearch(): boolean {

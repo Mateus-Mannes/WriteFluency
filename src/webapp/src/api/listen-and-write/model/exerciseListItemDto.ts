@@ -20,8 +20,8 @@ export interface ExerciseListItemDto {
     imageFileId?: string | null;
     audioDurationSeconds?: number;
     newsUrl?: string | null;
+    requiresPro?: boolean;
 }
 export namespace ExerciseListItemDto {
 }
-
 

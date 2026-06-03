@@ -318,6 +318,9 @@
           "newsUrl": {
             "type": "string",
             "nullable": true
+          },
+          "requiresPro": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

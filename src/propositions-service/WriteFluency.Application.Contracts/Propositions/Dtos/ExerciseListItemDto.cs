@@ -8,5 +8,6 @@ public record ExerciseListItemDto(
     DateTime PublishedOn,
     string? ImageFileId,
     int AudioDurationSeconds,
-    string NewsUrl
+    string NewsUrl,
+    bool RequiresPro
 );
