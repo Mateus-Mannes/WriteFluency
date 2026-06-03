@@ -104,6 +104,105 @@ public class PropositionServiceTests : ApplicationTestBase
         });
     }
 
+    [Fact]
+    public async Task GetExercisesAsync_ShouldMarkOnlyLatestEighteenGlobalExercisesAsFree()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 20)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExercisesAsync(new ExerciseFilterDto(
+            Topic: SubjectEnum.Business,
+            PageSize: 20));
+
+        var proItems = result.Items.Where(item => item.RequiresPro).Select(item => item.Title).ToArray();
+        var freeItems = result.Items.Where(item => !item.RequiresPro).Select(item => item.Title).ToArray();
+
+        proItems.ShouldBe(new[] { "Exercise 2", "Exercise 1" });
+        freeItems.ShouldBe(Enumerable.Range(3, 18).Reverse().Select(index => $"Exercise {index}").ToArray());
+    }
+
+    [Fact]
+    public async Task GetExercisesAsync_ShouldKeepGlobalFreeWindowWhenTopicFilterIsApplied()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var businessPropositions = new[]
+        {
+            CreateProposition("Business 1", createdAt: createdAt.AddMinutes(1)),
+            CreateProposition("Business 2", createdAt: createdAt.AddMinutes(2))
+        };
+        var sciencePropositions = Enumerable.Range(1, 18)
+            .Select(index => CreateProposition(
+                title: $"Science {index}",
+                createdAt: createdAt.AddMinutes(index + 2),
+                subject: SubjectEnum.Science))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(businessPropositions.Concat(sciencePropositions));
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExercisesAsync(new ExerciseFilterDto(
+            Topic: SubjectEnum.Business,
+            PageSize: 20));
+
+        result.Items.Count.ShouldBe(2);
+        result.Items.ShouldAllBe(item => item.RequiresPro);
+    }
+
+    [Fact]
+    public async Task GetExercisesAsync_ShouldKeepFreeWindowWhenOldestSortIsApplied()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 20)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExercisesAsync(new ExerciseFilterDto(
+            Topic: SubjectEnum.Business,
+            SortBy: "oldest",
+            PageSize: 20));
+
+        result.Items.Select(item => item.Title).Take(3).ShouldBe(new[] { "Exercise 1", "Exercise 2", "Exercise 3" });
+        result.Items.Single(item => item.Title == "Exercise 1").RequiresPro.ShouldBeTrue();
+        result.Items.Single(item => item.Title == "Exercise 2").RequiresPro.ShouldBeTrue();
+        result.Items.Single(item => item.Title == "Exercise 3").RequiresPro.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task GetExercisesAsync_ShouldKeepFullFilteredTotalCountWithProAnnotations()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 20)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExercisesAsync(new ExerciseFilterDto(
+            Topic: SubjectEnum.Business,
+            PageNumber: 2,
+            PageSize: 10));
+
+        result.TotalCount.ShouldBe(20);
+        result.Items.Count.ShouldBe(10);
+        result.Items.Select(item => item.Title).ShouldBe(Enumerable.Range(1, 10).Reverse().Select(index => $"Exercise {index}").ToArray());
+        result.Items.Count(item => item.RequiresPro).ShouldBe(2);
+    }
+
     private static Proposition CreateProposition(
         string title,
         DateTime? publishedOn = null,

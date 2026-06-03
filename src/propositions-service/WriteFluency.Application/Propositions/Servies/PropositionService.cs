@@ -11,6 +11,7 @@ namespace WriteFluency.Propositions;
 
 public class PropositionService
 {
+    private const int FreeCatalogExerciseLimit = 18;
     private const int MaxSearchTerms = 8;
     private const double TitleTrigramMatchThreshold = 0.35;
     private const double TextTrigramMatchThreshold = 0.45;
@@ -161,6 +162,14 @@ public class PropositionService
         ExerciseFilterDto filter, 
         CancellationToken cancellationToken = default)
     {
+        var freeExerciseIds = await _context.Propositions
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenByDescending(p => p.Id)
+            .Take(FreeCatalogExerciseLimit)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+
+        var freeExerciseIdSet = freeExerciseIds.ToHashSet();
         var query = _context.Propositions.AsQueryable();
         
         // Apply filters
@@ -220,20 +229,35 @@ public class PropositionService
         var totalCount = await query.CountAsync(cancellationToken);
         
         // Apply pagination and map to DTOs
-        var items = await query
+        var itemRows = await query
             .Skip((filter.PageNumber - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(p => new ExerciseListItemDto(
+            .Select(p => new
+            {
                 p.Id,
                 p.Title,
-                p.SubjectId,
-                p.ComplexityId,
+                Topic = p.SubjectId,
+                Level = p.ComplexityId,
                 p.PublishedOn,
                 p.ImageFileId,
                 p.AudioDurationSeconds,
-                p.NewsInfo.Url
-            ))
+                NewsUrl = p.NewsInfo.Url
+            })
             .ToListAsync(cancellationToken);
+
+        var items = itemRows
+            .Select(p => new ExerciseListItemDto(
+                p.Id,
+                p.Title,
+                p.Topic,
+                p.Level,
+                p.PublishedOn,
+                p.ImageFileId,
+                p.AudioDurationSeconds,
+                p.NewsUrl,
+                RequiresPro: !freeExerciseIdSet.Contains(p.Id)
+            ))
+            .ToList();
         
         // When no filters are applied, reorder to alternate subjects and complexities
         if (!hasSubjectFilter && !hasLevelFilter && !hasSearchFilter)
