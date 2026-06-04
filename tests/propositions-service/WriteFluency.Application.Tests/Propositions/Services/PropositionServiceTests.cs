@@ -203,12 +203,130 @@ public class PropositionServiceTests : ApplicationTestBase
         result.Items.Count(item => item.RequiresPro).ShouldBe(2);
     }
 
+    [Fact]
+    public async Task GetMetadataAsync_ShouldReturnSafeMetadataWithProRequirement()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 19)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var metadata = await _service.GetMetadataAsync(propositions[0].Id);
+
+        metadata.ShouldNotBeNull();
+        metadata.Id.ShouldBe(propositions[0].Id);
+        metadata.Title.ShouldBe("Exercise 1");
+        metadata.NewsUrl.ShouldBe(propositions[0].NewsInfo.Url);
+        metadata.RequiresPro.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenFreeExercise_ShouldReturnGrantedWithPresignedAudioUrl()
+    {
+        var proposition = CreateProposition("Free exercise");
+        await _context.Propositions.AddAsync(proposition);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.BeginExerciseAsync(proposition.Id, isPro: false);
+
+        result.ShouldNotBeNull();
+        result.Access.ShouldBe("granted");
+        result.AudioUrl.ShouldContain($"/{Proposition.AudioBucketName}/{proposition.AudioFileId}");
+        result.AudioExpiresAtUtc.ShouldNotBeNull();
+        result.Metadata.RequiresPro.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenRestrictedAndFreeUser_ShouldReturnProRequiredWithoutAudio()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 19)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.BeginExerciseAsync(propositions[0].Id, isPro: false);
+
+        result.ShouldNotBeNull();
+        result.Access.ShouldBe("pro_required");
+        result.AudioUrl.ShouldBeNull();
+        result.AudioExpiresAtUtc.ShouldBeNull();
+        result.Metadata.RequiresPro.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenRestrictedAndProUser_ShouldReturnGrantedWithAudio()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 19)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index)))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.BeginExerciseAsync(propositions[0].Id, isPro: true);
+
+        result.ShouldNotBeNull();
+        result.Access.ShouldBe("granted");
+        result.AudioUrl.ShouldNotBeNullOrWhiteSpace();
+        result.Metadata.RequiresPro.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task GetExerciseForComparisonAsync_WhenAllowed_ShouldReturnServerOriginalText()
+    {
+        var proposition = CreateProposition("Free exercise", text: "Server owned original text.");
+        await _context.Propositions.AddAsync(proposition);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExerciseForComparisonAsync(proposition.Id, isPro: false);
+
+        result.ShouldNotBeNull();
+        result.IsGranted.ShouldBeTrue();
+        result.OriginalText.ShouldBe("Server owned original text.");
+    }
+
+    [Fact]
+    public async Task GetExerciseForComparisonAsync_WhenRestrictedAndFreeUser_ShouldNotReturnOriginalText()
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, 19)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index),
+                text: $"Server text {index}."))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetExerciseForComparisonAsync(propositions[0].Id, isPro: false);
+
+        result.ShouldNotBeNull();
+        result.IsGranted.ShouldBeFalse();
+        result.OriginalText.ShouldBeNull();
+        result.Metadata.RequiresPro.ShouldBeTrue();
+    }
+
     private static Proposition CreateProposition(
         string title,
         DateTime? publishedOn = null,
         DateTime? createdAt = null,
         SubjectEnum subject = SubjectEnum.Business,
-        ComplexityEnum complexity = ComplexityEnum.Beginner) =>
+        ComplexityEnum complexity = ComplexityEnum.Beginner,
+        string text = "Test proposition text.") =>
         new()
         {
             PublishedOn = publishedOn ?? new DateTime(2026, 4, 29, 0, 0, 0, DateTimeKind.Utc),
@@ -217,8 +335,8 @@ public class PropositionServiceTests : ApplicationTestBase
             AudioFileId = Guid.NewGuid().ToString("N"),
             Voice = "test-voice",
             AudioDurationSeconds = 60,
-            Text = "Test proposition text.",
-            TextLength = "Test proposition text.".Length,
+            Text = text,
+            TextLength = text.Length,
             Title = title,
             CreatedAt = createdAt ?? new DateTime(2026, 4, 20, 10, 0, 0, DateTimeKind.Utc),
             NewsInfo = new NewsInfo

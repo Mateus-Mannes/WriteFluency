@@ -1,3 +1,3 @@
 namespace WriteFluency.TextComparisons;
 
-public record CompareTextsDto(string OriginalText, string UserText, int? PropositionId = null);
+public record CompareTextsDto(int PropositionId, string UserText);

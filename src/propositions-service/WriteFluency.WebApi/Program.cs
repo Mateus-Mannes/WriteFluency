@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
@@ -9,6 +10,7 @@ using WriteFluency.Infrastructure.FileStorage;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
+using WriteFluency.WebApi.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,10 @@ builder.Services.AddAppSwagger();
 // Options configuration
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<UsersServiceOptions>()
+    .Bind(builder.Configuration.GetSection(UsersServiceOptions.Section))
+    .Validate(options => options.HasValidBaseUrl(), "UsersService:BaseUrl must be an absolute HTTP(S) URL.")
+    .ValidateOnStart();
 
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
@@ -58,6 +64,15 @@ builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", openAIOptions.Key);
 });
 
+builder.Services.AddHttpClient<IUsersSessionClient, UsersSessionClient>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<UsersServiceOptions>>().Value;
+    var baseUrl = options.BaseUrl.TrimEnd('/') + "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
 // Using new microsoft AI abstraction
 builder.Services.AddChatClient(services =>
 {
@@ -88,7 +103,8 @@ app.UseCors(opts =>
     if (clients![0] != "*")
         opts.WithOrigins(clients)
         .AllowAnyMethod()
-        .AllowAnyHeader();
+        .AllowAnyHeader()
+        .AllowCredentials();
     else opts.AllowAnyOrigin()
         .AllowAnyMethod()
         .AllowAnyHeader();

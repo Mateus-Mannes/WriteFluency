@@ -1,4 +1,5 @@
 export * from './compareTextsDto';
+export * from './beginExerciseResultDto';
 export * from './complexity';
 export * from './complexityEnum';
 export * from './exerciseListItemDto';
@@ -9,6 +10,7 @@ export * from './iSuccess';
 export * from './newsInfo';
 export * from './proposition';
 export * from './propositionGenerationLog';
+export * from './proRequiredResultDto';
 export * from './subject';
 export * from './subjectEnum';
 export * from './textComparison';

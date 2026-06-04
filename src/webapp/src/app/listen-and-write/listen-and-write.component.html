@@ -68,21 +68,24 @@
         [class.compact]="exerciseState() == 'results'"
         ></app-news-info>
 
+    @if (shouldShowAudioPanel()) {
     <div class="news-audio">
         <app-news-audio id="newsAudio"
-            [proposition]="proposition()"
+            [audioUrl]="exerciseAudioUrl()"
+            [loading]="isResolvingAudioAccess()"
             (playClicked)="onAudioPlayClicked()"
-            [listenSuggestion]="exerciseState() == 'intro'"
+            [listenSuggestion]="exerciseState() === 'intro'"
             (seeked)="onAudioSeeked()"
             (paused)="onAudioPaused()"></app-news-audio>
     </div>
+    }
 
     @if(exerciseState() === 'intro') {
         <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
         <app-exercise-intro-section
             class="exercise-intro-section"
-            [isLoading]="isRestoringExercise()"
-            [loadingTooltip]="beginExerciseLoadingTooltip"
+            [isLoading]="isRestoringExercise() || isBeginningExercise() || isResolvingAudioAccess()"
+            [loadingTooltip]="getBeginExerciseLoadingTooltip()"
             (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
@@ -124,6 +127,46 @@
     }
 
 </div>
+
+@if (isProUpgradeModalOpen()) {
+    <div class="pro-upgrade-modal-backdrop" (click)="closeProUpgradeModal()">
+        <section
+            class="pro-upgrade-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pro-upgrade-modal-title"
+            (click)="$event.stopPropagation()">
+            <button
+                type="button"
+                class="pro-upgrade-modal-close"
+                aria-label="Close Pro plans dialog"
+                (click)="closeProUpgradeModal()">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+
+            <div class="pro-upgrade-modal-badge">Pro</div>
+            <h2 id="pro-upgrade-modal-title">This exercise is available on Pro</h2>
+            <p>
+                Free includes the latest 18 exercises. Pro unlocks the full catalog, including this one, plus AI correction.
+            </p>
+
+            <div class="pro-upgrade-modal-actions">
+                <button
+                    type="button"
+                    class="pro-upgrade-modal-primary text-body"
+                    (click)="viewAvailablePlans()">
+                    See available plans
+                </button>
+                <button
+                    type="button"
+                    class="pro-upgrade-modal-secondary text-body"
+                    (click)="keepPracticingFreeExercises()">
+                    Keep practicing free exercises
+                </button>
+            </div>
+        </section>
+    </div>
+}
 
 <app-feedback-modal
     [isOpen]="isFeedbackModalOpen()"

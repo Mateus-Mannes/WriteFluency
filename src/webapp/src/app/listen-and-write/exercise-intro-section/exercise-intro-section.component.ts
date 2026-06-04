@@ -12,7 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class ExerciseIntroSectionComponent {
 
   isLoading = input.required<boolean>();
-  loadingTooltip = input<string>('Finishing exercise loading...');
+  loadingTooltip = input<string>('Starting exercise...');
   beginExerciseClick = output<void>();
 
   beginExercise() {

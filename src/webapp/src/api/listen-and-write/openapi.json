@@ -55,6 +55,56 @@
         }
       }
     },
+    "/api/proposition/{id}/begin": {
+      "post": {
+        "tags": [
+          "Propositions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeginExerciseResultDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/proposition/exercises": {
       "get": {
         "tags": [
@@ -238,6 +288,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProRequiredResultDto"
+                }
+              }
+            }
           }
         }
       }
@@ -245,20 +305,37 @@
   },
   "components": {
     "schemas": {
+      "BeginExerciseResultDto": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioExpiresAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Proposition"
+          }
+        },
+        "additionalProperties": false
+      },
       "CompareTextsDto": {
         "type": "object",
         "properties": {
-          "originalText": {
-            "type": "string",
-            "nullable": true
+          "propositionId": {
+            "type": "integer",
+            "format": "int32"
           },
           "userText": {
             "type": "string",
-            "nullable": true
-          },
-          "propositionId": {
-            "type": "integer",
-            "format": "int32",
             "nullable": true
           }
         },
@@ -485,26 +562,7 @@
           "complexityId": {
             "$ref": "#/components/schemas/ComplexityEnum"
           },
-          "audioFileId": {
-            "maxLength": 50,
-            "type": "string",
-            "nullable": true
-          },
-          "voice": {
-            "maxLength": 50,
-            "type": "string",
-            "nullable": true
-          },
           "audioDurationSeconds": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "text": {
-            "maxLength": 3000,
-            "type": "string",
-            "nullable": true
-          },
-          "textLength": {
             "type": "integer",
             "format": "int32"
           },
@@ -518,34 +576,25 @@
             "type": "string",
             "nullable": true
           },
-          "createdAt": {
+          "newsUrl": {
             "type": "string",
-            "format": "date-time"
+            "nullable": true
           },
-          "isDeleted": {
+          "requiresPro": {
             "type": "boolean"
-          },
-          "deletedAt": {
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProRequiredResultDto": {
+        "type": "object",
+        "properties": {
+          "access": {
             "type": "string",
-            "format": "date-time",
             "nullable": true
           },
-          "propositionGenerationLogId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "propositionGenerationLog": {
-            "$ref": "#/components/schemas/PropositionGenerationLog"
-          },
-          "newsInfo": {
-            "$ref": "#/components/schemas/NewsInfo"
-          },
-          "complexity": {
-            "$ref": "#/components/schemas/Complexity"
-          },
-          "subject": {
-            "$ref": "#/components/schemas/Subject"
+          "metadata": {
+            "$ref": "#/components/schemas/Proposition"
           }
         },
         "additionalProperties": false

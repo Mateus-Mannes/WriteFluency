@@ -8,10 +8,6 @@
  * Do not edit the class manually.
  */
 import { SubjectEnum } from './subjectEnum';
-import { NewsInfo } from './newsInfo';
-import { PropositionGenerationLog } from './propositionGenerationLog';
-import { Subject } from './subject';
-import { Complexity } from './complexity';
 import { ComplexityEnum } from './complexityEnum';
 
 
@@ -20,23 +16,12 @@ export interface Proposition {
     publishedOn?: string;
     subjectId?: SubjectEnum;
     complexityId?: ComplexityEnum;
-    audioFileId?: string | null;
-    voice?: string | null;
     audioDurationSeconds?: number;
-    text?: string | null;
-    textLength?: number;
     title?: string | null;
     imageFileId?: string | null;
-    createdAt?: string;
-    isDeleted?: boolean;
-    deletedAt?: string | null;
-    propositionGenerationLogId?: number | null;
-    propositionGenerationLog?: PropositionGenerationLog;
-    newsInfo?: NewsInfo;
-    complexity?: Complexity;
-    subject?: Subject;
+    newsUrl?: string | null;
+    requiresPro?: boolean;
 }
 export namespace Proposition {
 }
-
 

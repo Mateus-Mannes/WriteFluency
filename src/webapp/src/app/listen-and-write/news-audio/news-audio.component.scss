@@ -79,6 +79,15 @@
     background-color: rgba(32, 33, 36, 0.08);
 }
 
+.icon-btn:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.icon-btn:disabled:hover {
+    background: transparent;
+}
+
 .icon-btn:focus-visible,
 .timeline:focus-visible,
 .speed-option:focus-visible,

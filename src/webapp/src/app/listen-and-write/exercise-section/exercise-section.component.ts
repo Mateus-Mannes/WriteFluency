@@ -47,10 +47,6 @@ export class ExerciseSectionComponent implements OnInit {
     return selected > 0 ? selected : 3;
   });
 
-  maxWords = computed(() => {
-    return this.proposition()?.text?.trim().split(/\s+/).filter(Boolean).length || 0;
-  });
-  
   text = signal('');
 
   get wordCount(): number {
@@ -59,12 +55,7 @@ export class ExerciseSectionComponent implements OnInit {
   }
 
   get wordCountClass(): string {
-    const percent = this.wordCount / this.maxWords();
-    if (percent > 1.5) return 'word-count-highlight';
-    if (percent > 1.1) return 'word-count-primary';
-    if (percent >= 0.9) return 'word-count-success';
-    if (percent > 0.5) return 'word-count-primary';
-    return 'word-count-highlight';
+    return this.wordCount > 0 ? 'word-count-primary' : '';
   }
 
   constructor(

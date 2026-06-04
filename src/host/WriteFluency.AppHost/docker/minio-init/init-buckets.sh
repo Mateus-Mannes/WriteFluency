@@ -12,7 +12,7 @@ mc mb -p local/propositions || true
 
 echo "Setting anonymous download policy..."
 mc anonymous set download local/images
-mc anonymous set download local/propositions
+mc anonymous set none local/propositions
 
 echo "Done. Current anonymous policies:"
 mc anonymous list local/images

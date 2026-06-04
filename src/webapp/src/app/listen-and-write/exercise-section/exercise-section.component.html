@@ -11,7 +11,10 @@
 
     <div class="exercise-header-actions">
         <div id="exercise-word-count">
-            <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
+            <span class="text-body">Word Count: </span>
+            <b class="text-body" [ngClass]="wordCountClass">
+                {{ wordCount }}
+            </b>
         </div>
 
         <button
