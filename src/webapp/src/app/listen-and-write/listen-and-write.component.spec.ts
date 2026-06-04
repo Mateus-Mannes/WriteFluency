@@ -9,6 +9,7 @@ import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import { FeedbackService } from './services/feedback.service';
 import { TextComparisonsService } from 'src/api/listen-and-write';
+import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 
 const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
@@ -21,6 +22,7 @@ describe('ListenAndWriteComponent', () => {
   let authSessionStoreMock: jasmine.SpyObj<AuthSessionStore>;
   let feedbackServiceMock: jasmine.SpyObj<FeedbackService>;
   let textComparisonsServiceMock: jasmine.SpyObj<TextComparisonsService>;
+  let propositionsServiceMock: jasmine.SpyObj<PropositionsService>;
   let insightsMock: jasmine.SpyObj<Insights>;
   let exerciseProgressTrackingMock: {
     trackStart: jasmine.Spy;
@@ -59,6 +61,33 @@ describe('ListenAndWriteComponent', () => {
     );
     feedbackServiceMock.shouldShowPrompt.and.returnValue(false);
     feedbackServiceMock.consumePromptOpportunity.and.returnValue(false);
+    propositionsServiceMock = jasmine.createSpyObj<PropositionsService>(
+      'PropositionsService',
+      ['apiPropositionIdGet', 'apiPropositionIdBeginPost'],
+    );
+    propositionsServiceMock.apiPropositionIdGet.and.returnValue(of({
+      id: 1,
+      title: 'Exercise 1',
+      subjectId: 'Business',
+      complexityId: 'Beginner',
+      audioDurationSeconds: 60,
+      newsUrl: 'https://example.com/news',
+      requiresPro: false,
+    } as any) as any);
+    propositionsServiceMock.apiPropositionIdBeginPost.and.callFake((id: number) => of({
+      access: 'granted',
+      audioUrl: 'https://minio.test/propositions/audio.mp3?signature=test',
+      audioExpiresAtUtc: '2026-04-20T20:00:00.000Z',
+      metadata: {
+        id,
+        title: `Exercise ${id}`,
+        subjectId: 'Business',
+        complexityId: 'Beginner',
+        audioDurationSeconds: 60,
+        newsUrl: 'https://example.com/news',
+        requiresPro: false,
+      },
+    } as any) as any);
     textComparisonsServiceMock = jasmine.createSpyObj<TextComparisonsService>(
       'TextComparisonsService',
       ['apiTextComparisonCompareTextsPost'],
@@ -103,6 +132,10 @@ describe('ListenAndWriteComponent', () => {
         {
           provide: TextComparisonsService,
           useValue: textComparisonsServiceMock,
+        },
+        {
+          provide: PropositionsService,
+          useValue: propositionsServiceMock,
         },
         {
           provide: Insights,
@@ -176,8 +209,8 @@ describe('ListenAndWriteComponent', () => {
     component.exerciseId = 42;
     component.proposition.set({
       id: 42,
-      complexity: { description: 'Beginner' },
-      subject: { description: 'Business' },
+      complexityId: 'Beginner',
+      subjectId: 'Business',
     } as any);
 
     component.onFeedbackSubmitted({
@@ -839,10 +872,109 @@ describe('ListenAndWriteComponent', () => {
     });
   });
 
+  it('should resolve audio access after hydration without starting the writing exercise', () => {
+    (component as any).hasHydrated = true;
+    component.exerciseId = 42;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 42, title: 'Exercise 42' } as any);
+
+    (component as any).tryResolveAudioAccessAfterHydration();
+
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).toHaveBeenCalledWith(42);
+    expect(component.exerciseAudioUrl()).toBe('https://minio.test/propositions/audio.mp3?signature=test');
+    expect(component.shouldShowAudioPanel()).toBeTrue();
+    expect(component.exerciseState()).toBe('intro');
+    expect(exerciseProgressTrackingMock.trackStart).not.toHaveBeenCalled();
+  });
+
+  it('should open the Pro modal when hydrated audio access is denied', () => {
+    propositionsServiceMock.apiPropositionIdBeginPost.and.returnValue(of({
+      access: 'pro_required',
+      audioUrl: null,
+      audioExpiresAtUtc: null,
+      metadata: {
+        id: 43,
+        title: 'Exercise 43',
+        subjectId: 'Business',
+        complexityId: 'Beginner',
+        audioDurationSeconds: 60,
+        newsUrl: 'https://example.com/news',
+        requiresPro: true,
+      },
+    } as any) as any);
+    (component as any).hasHydrated = true;
+    component.exerciseId = 43;
+    component.exerciseState.set('exercise');
+    component.proposition.set({ id: 43, title: 'Exercise 43', requiresPro: true } as any);
+
+    (component as any).tryResolveAudioAccessAfterHydration();
+
+    expect(component.exerciseAudioUrl()).toBeNull();
+    expect(component.shouldShowAudioPanel()).toBeTrue();
+    expect(component.isProUpgradeModalOpen()).toBeTrue();
+    expect(component.exerciseState()).toBe('intro');
+  });
+
+  it('should close the Pro modal and navigate to plans from the upgrade CTA', async () => {
+    const router = (component as any).router;
+    const navigateSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.isProUpgradeModalOpen.set(true);
+
+    await component.viewAvailablePlans();
+
+    expect(component.isProUpgradeModalOpen()).toBeFalse();
+    expect(navigateSpy).toHaveBeenCalledWith(['/plans'], {
+      queryParams: {
+        source: 'pro_exercise_begin',
+      },
+    });
+  });
+
+  it('should close the Pro modal and navigate to exercises from the free practice CTA', async () => {
+    const router = (component as any).router;
+    const navigateSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.isProUpgradeModalOpen.set(true);
+
+    await component.keepPracticingFreeExercises();
+
+    expect(component.isProUpgradeModalOpen()).toBeFalse();
+    expect(navigateSpy).toHaveBeenCalledWith(['/exercises'], {
+      queryParams: {
+        source: 'pro_exercise_begin',
+      },
+    });
+  });
+
+  it('should begin writing without requesting audio again when audio was already resolved', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
+    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    component.exerciseId = 44;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 44, title: 'Exercise 44' } as any);
+    component.exerciseAudioUrl.set('https://minio.test/propositions/audio.mp3?signature=test');
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio: jasmine.createSpy('pauseAudio'),
+      playAudio: jasmine.createSpy('playAudio'),
+      audioRef: { nativeElement: { currentTime: 0 } },
+    } as any;
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+
+    component.beginExercise();
+
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+    expect(component.exerciseState()).toBe('exercise');
+    expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 44 }),
+    );
+  });
+
   it('should show guest login modal on second begin attempt when user is not authenticated', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
 
+    component.exerciseId = 1;
     component.exerciseState.set('intro');
     component.newsAudioComponent = {
       audioEnded: false,
@@ -867,6 +999,7 @@ describe('ListenAndWriteComponent', () => {
     window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
     window.localStorage.setItem(guestBeginAttemptCountStorageKey, '1');
 
+    component.exerciseId = 1;
     component.exerciseState.set('intro');
     component.newsAudioComponent = {
       audioEnded: false,
@@ -951,6 +1084,7 @@ describe('ListenAndWriteComponent', () => {
     window.localStorage.setItem(guestBeginAttemptCountStorageKey, '4');
     window.localStorage.setItem(guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
 
+    component.exerciseId = 1;
     component.exerciseState.set('intro');
     component.newsAudioComponent = {
       audioEnded: false,

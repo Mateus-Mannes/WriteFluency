@@ -227,7 +227,8 @@
         "WF_PROPOSITIONS_POSTGRESDB_JDBCCONNECTIONSTRING": "jdbc:postgresql://{wf-infra-postgres.bindings.tcp.host}:{wf-infra-postgres.bindings.tcp.port}/wf-propositions-postgresdb",
         "WF_PROPOSITIONS_POSTGRESDB_DATABASENAME": "wf-propositions-postgresdb",
         "ConnectionStrings__wf-infra-minio": "{wf-infra-minio.connectionString}",
-        "RESOURCE_NAME": "wf-propositions-api"
+        "RESOURCE_NAME": "wf-propositions-api",
+        "UsersService__BaseUrl": "http://wf-users-api:8080/users"
       },
       "bindings": {
         "http": {

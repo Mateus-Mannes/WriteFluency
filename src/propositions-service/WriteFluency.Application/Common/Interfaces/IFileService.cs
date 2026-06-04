@@ -28,4 +28,10 @@ public interface IFileService
         string bucketName,
         string objectName,
         CancellationToken cancellationToken = default);
+
+    Task<Result<string>> CreatePresignedGetUrlAsync(
+        string bucketName,
+        string objectName,
+        TimeSpan expiresIn,
+        CancellationToken cancellationToken = default);
 }

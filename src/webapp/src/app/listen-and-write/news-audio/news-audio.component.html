@@ -25,7 +25,12 @@
   </audio>
 
   <div class="custom-audio-controls" [class.audio-loading]="isAudioLoading()" [class.audio-playing]="isAudioPlaying()">
-    <button type="button" class="icon-btn play-btn" (click)="togglePlayPause()" [attr.aria-label]="isAudioPlaying() ? 'Pause audio' : 'Play audio'">
+    <button
+      type="button"
+      class="icon-btn play-btn"
+      (click)="togglePlayPause()"
+      [disabled]="isAudioLoading() || !audioUrl()"
+      [attr.aria-label]="isAudioPlaying() ? 'Pause audio' : 'Play audio'">
       @if (isAudioPlaying()) {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <rect x="7.5" y="5" width="3.4" height="14" rx="0.9" fill="currentColor" stroke="none"></rect>

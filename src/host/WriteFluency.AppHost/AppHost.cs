@@ -102,6 +102,13 @@ else
 
 usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
+api.WaitFor(usersApi)
+    .WithEnvironment(
+        "UsersService__BaseUrl",
+        builder.ExecutionContext.IsRunMode
+            ? "https://localhost:5101/users"
+            : "http://wf-users-api:8080/users");
+
 if (builder.ExecutionContext.IsRunMode)
 {
     var stripeSecretKeyValue = builder.Configuration["Stripe:SecretKey"];

@@ -37,6 +37,7 @@ type ProgressOperation = 'start' | 'save_state' | 'complete' | 'load_state';
 
 const stateSaveDebounceMs = 2000;
 const notificationAutoDismissMs = 10000;
+const unknownOriginalWordCount = 0;
 
 @Injectable({ providedIn: 'root' })
 export class ExerciseProgressTrackingService {
@@ -71,7 +72,7 @@ export class ExerciseProgressTrackingService {
     this.userProgressApi.start({
       exerciseId,
       ...metadata,
-      originalWordCount: this.countWords(proposition?.text),
+      originalWordCount: unknownOriginalWordCount,
       ...(options.resetCompletedState ? { resetCompletedState: true } : {}),
     })
       .pipe(catchError((error) => this.handleProgressApiError('start', exerciseId, error)))
@@ -94,7 +95,7 @@ export class ExerciseProgressTrackingService {
       wordCount: this.countWords(result?.userText),
       originalWordCount: this.resolveOriginalWordCount(proposition, result),
       userText: result?.userText ?? null,
-      originalText: result?.originalText ?? proposition?.text ?? null,
+      originalText: result?.originalText ?? null,
       comparisons: result?.comparisons ?? null,
       ...metadata,
     })
@@ -116,7 +117,7 @@ export class ExerciseProgressTrackingService {
       exerciseState: snapshot.exerciseState,
       userText: snapshot.userText ?? null,
       wordCount: this.countWords(snapshot.userText),
-      originalWordCount: this.countWords(proposition?.text),
+      originalWordCount: unknownOriginalWordCount,
       autoPauseSeconds: this.normalizeAutoPause(snapshot.autoPauseSeconds),
       pausedTimeSeconds: this.normalizePausedTime(snapshot.pausedTimeSeconds),
       ...metadata,
@@ -327,7 +328,7 @@ export class ExerciseProgressTrackingService {
       return resultWordCount;
     }
 
-    return this.countWords(proposition?.text);
+    return unknownOriginalWordCount;
   }
 
   private buildExerciseMetadata(proposition: Proposition | null): {
@@ -337,10 +338,8 @@ export class ExerciseProgressTrackingService {
   } {
     return {
       exerciseTitle: this.normalizeMetadataValue(proposition?.title),
-      subject: this.normalizeMetadataValue(proposition?.subject?.description)
-        ?? this.normalizeMetadataValue(proposition?.subjectId),
-      complexity: this.normalizeMetadataValue(proposition?.complexity?.description)
-        ?? this.normalizeMetadataValue(proposition?.complexityId),
+      subject: this.normalizeMetadataValue(proposition?.subjectId),
+      complexity: this.normalizeMetadataValue(proposition?.complexityId),
     };
   }
 

@@ -1,15 +1,21 @@
 using FluentResults;
 using Microsoft.AspNetCore.Http.HttpResults;
 using WriteFluency.Endpoints;
+using WriteFluency.WebApi.Users;
 
 namespace WriteFluency.Propositions;
 
 public class PropositionEndpointGroup : IEndpointMapper
 {
+    private const string NoStoreCacheControl = "no-store";
+
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("proposition").WithTags("Propositions");
-        group.MapGet("/{id}", GetPropositionAsync);
+        group.MapGet("/{id}", GetPropositionAsync)
+            .Produces<PropositionMetadataDto>();
+        group.MapPost("/{id}/begin", BeginExerciseAsync)
+            .Produces<BeginExerciseResultDto>();
         group.MapGet("/exercises", GetExercisesAsync)
             .Produces<PagedResultDto<ExerciseListItemDto>>();
         
@@ -24,14 +30,15 @@ public class PropositionEndpointGroup : IEndpointMapper
         group.MapGet("/topics", GetTopics).Produces<Result<TopicsDto>>();
     }
 
-    public async Task<Results<Ok<Proposition>, InternalServerError<string>, NotFound<string>>> GetPropositionAsync(
+    public async Task<Results<Ok<PropositionMetadataDto>, InternalServerError<string>, NotFound<string>>> GetPropositionAsync(
         int id,
         PropositionService propositionService,
-        ILogger<PropositionEndpointGroup> logger)
+        ILogger<PropositionEndpointGroup> logger,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var proposition = await propositionService.GetAsync(id);
+            var proposition = await propositionService.GetMetadataAsync(id, cancellationToken);
 
             if (proposition is null)
             {
@@ -44,6 +51,36 @@ public class PropositionEndpointGroup : IEndpointMapper
         {
             logger.LogError(e, "Error retrieving proposition");
             return TypedResults.InternalServerError("Unable to retrieve proposition");
+        }
+    }
+
+    public async Task<Results<Ok<BeginExerciseResultDto>, InternalServerError<string>, NotFound<string>>> BeginExerciseAsync(
+        int id,
+        HttpRequest request,
+        HttpResponse response,
+        PropositionService propositionService,
+        IUsersSessionClient usersSessionClient,
+        ILogger<PropositionEndpointGroup> logger,
+        CancellationToken cancellationToken)
+    {
+        response.Headers.CacheControl = NoStoreCacheControl;
+
+        try
+        {
+            var isPro = await usersSessionClient.IsProAsync(request, cancellationToken);
+            var result = await propositionService.BeginExerciseAsync(id, isPro, cancellationToken);
+
+            if (result is null)
+            {
+                return TypedResults.NotFound("Proposition not found");
+            }
+
+            return TypedResults.Ok(result);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error beginning proposition {PropositionId}", id);
+            return TypedResults.InternalServerError("Unable to begin exercise");
         }
     }
 

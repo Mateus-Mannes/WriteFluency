@@ -118,6 +118,11 @@ public class ApplicationTestBase : IDisposable
                 return Result.Ok(objectName);
             });
 
+        fileServiceMock
+            .CreatePresignedGetUrlAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+                Result.Ok($"https://minio.test/{callInfo.ArgAt<string>(0)}/{callInfo.ArgAt<string>(1)}?signature=test"));
+
         services.AddSingleton(fileServiceMock);
 
         var propositionOptions = new PropositionOptions

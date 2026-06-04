@@ -11,6 +11,7 @@ import { HttpHeaders }                                       from '@angular/comm
 
 import { Observable }                                        from 'rxjs';
 
+import { BeginExerciseResultDto } from '../model/models';
 import { ExerciseListItemDtoPagedResultDto } from '../model/models';
 import { GetPropositionDto } from '../model/models';
 import { Proposition } from '../model/models';
@@ -54,6 +55,14 @@ export interface PropositionsServiceInterface {
      * @param id 
      */
     apiPropositionIdGet(id: number, extraHttpRequestParams?: any): Observable<Proposition>;
+
+    /**
+     *
+     *
+     * @endpoint post /api/proposition/{id}/begin
+     * @param id
+     */
+    apiPropositionIdBeginPost(id: number, extraHttpRequestParams?: any): Observable<BeginExerciseResultDto>;
 
     /**
      * 

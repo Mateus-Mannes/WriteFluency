@@ -194,6 +194,97 @@
     background: rgba(58, 125, 255, 0.13);
 }
 
+.pro-upgrade-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10045;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(12, 20, 33, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.pro-upgrade-modal {
+    position: relative;
+    width: min(520px, calc(100vw - 2.5rem));
+    border-radius: 16px;
+    border: 1px solid rgba(58, 125, 255, 0.2);
+    background: #fff;
+    box-shadow: 0 24px 48px rgba(9, 18, 31, 0.3);
+    padding: 1.35rem;
+
+    h2 {
+        margin: 0.75rem 0 0;
+        color: #172036;
+        font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+        line-height: 1.15;
+    }
+
+    p {
+        margin: 0.65rem 0 0;
+        color: rgba(23, 32, 54, 0.78);
+        line-height: 1.45;
+    }
+}
+
+.pro-upgrade-modal-close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    display: inline-grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 0;
+    border-radius: 999px;
+    color: #4d5a73;
+    background: rgba(58, 125, 255, 0.08);
+    cursor: pointer;
+}
+
+.pro-upgrade-modal-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0.28rem 0.7rem;
+    background: rgba(58, 125, 255, 0.1);
+    color: vars.$color-primary-dark;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pro-upgrade-modal-actions {
+    margin-top: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.pro-upgrade-modal-primary,
+.pro-upgrade-modal-secondary {
+    min-height: 2.75rem;
+    border-radius: 12px;
+    border: 0;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.72rem 1rem;
+}
+
+.pro-upgrade-modal-primary {
+    color: #fff;
+    background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+    box-shadow: 0 5px 14px rgba(58, 125, 255, 0.24);
+}
+
+.pro-upgrade-modal-secondary {
+    color: #1d3960;
+    background: rgba(58, 125, 255, 0.1);
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -245,7 +336,7 @@
     display: grid;
     gap: 2rem;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     grid-template-areas:
         "news-info  news-image"
         "news-audio news-image"
@@ -579,6 +670,11 @@
     .guest-login-modal-primary,
     .guest-login-modal-secondary {
         width: 100%;
+    }
+
+    .pro-upgrade-modal-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

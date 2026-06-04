@@ -12,6 +12,9 @@ namespace WriteFluency.Propositions;
 public class PropositionService
 {
     private const int FreeCatalogExerciseLimit = 18;
+    private static readonly TimeSpan AudioPresignedUrlLifetime = TimeSpan.FromHours(8);
+    private const string AccessGranted = "granted";
+    private const string AccessProRequired = "pro_required";
     private const int MaxSearchTerms = 8;
     private const double TitleTrigramMatchThreshold = 0.35;
     private const double TextTrigramMatchThreshold = 0.45;
@@ -22,6 +25,18 @@ public class PropositionService
     private readonly IGenerativeAIClient _generativeAIClient;
     private readonly ITextToSpeechClient _textToSpeechClient;
     private readonly ILogger<PropositionService> _logger;
+
+    private sealed record PropositionAccessRow(
+        int Id,
+        DateTime PublishedOn,
+        SubjectEnum SubjectId,
+        ComplexityEnum ComplexityId,
+        int AudioDurationSeconds,
+        string Title,
+        string? ImageFileId,
+        string? NewsUrl,
+        string AudioFileId,
+        string Text);
 
     public PropositionService(
         IAppDbContext context, 
@@ -47,6 +62,82 @@ public class PropositionService
         }
 
         return proposition;
+    }
+
+    public async Task<PropositionMetadataDto?> GetMetadataAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var proposition = await GetAccessRowAsync(id, cancellationToken);
+
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        return ToMetadata(
+            proposition,
+            requiresPro: !await IsInFreeCatalogWindowAsync(id, cancellationToken));
+    }
+
+    public async Task<BeginExerciseResultDto?> BeginExerciseAsync(
+        int id,
+        bool isPro,
+        CancellationToken cancellationToken = default)
+    {
+        var proposition = await GetAccessRowAsync(id, cancellationToken);
+
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
+        var metadata = ToMetadata(proposition, requiresPro);
+
+        if (!CanAccessExercise(requiresPro, isPro))
+        {
+            return new BeginExerciseResultDto(AccessProRequired, null, null, metadata);
+        }
+
+        var audioExpiresAtUtc = DateTimeOffset.UtcNow.Add(AudioPresignedUrlLifetime);
+        var audioUrlResult = await _fileService.CreatePresignedGetUrlAsync(
+            Proposition.AudioBucketName,
+            proposition.AudioFileId,
+            AudioPresignedUrlLifetime,
+            cancellationToken);
+
+        if (audioUrlResult.IsFailed)
+        {
+            _logger.LogError(
+                "Failed to create presigned audio URL for proposition {PropositionId}: {Errors}",
+                id,
+                string.Join(", ", audioUrlResult.Errors.Select(e => e.Message)));
+            throw new InvalidOperationException("Unable to create exercise audio URL.");
+        }
+
+        return new BeginExerciseResultDto(AccessGranted, audioUrlResult.Value, audioExpiresAtUtc, metadata);
+    }
+
+    public async Task<ExerciseComparisonAccessResult?> GetExerciseForComparisonAsync(
+        int id,
+        bool isPro,
+        CancellationToken cancellationToken = default)
+    {
+        var proposition = await GetAccessRowAsync(id, cancellationToken);
+
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
+        var isGranted = CanAccessExercise(requiresPro, isPro);
+
+        return new ExerciseComparisonAccessResult(
+            isGranted,
+            ToMetadata(proposition, requiresPro),
+            OriginalText: isGranted ? proposition.Text : null);
     }
 
     public async Task<PropositionDto> GetAsync(GetPropositionDto dto)
@@ -162,12 +253,7 @@ public class PropositionService
         ExerciseFilterDto filter, 
         CancellationToken cancellationToken = default)
     {
-        var freeExerciseIds = await _context.Propositions
-            .OrderByDescending(p => p.CreatedAt)
-            .ThenByDescending(p => p.Id)
-            .Take(FreeCatalogExerciseLimit)
-            .Select(p => p.Id)
-            .ToListAsync(cancellationToken);
+        var freeExerciseIds = await GetFreeExerciseIdsAsync(cancellationToken);
 
         var freeExerciseIdSet = freeExerciseIds.ToHashSet();
         var query = _context.Propositions.AsQueryable();
@@ -272,6 +358,62 @@ public class PropositionService
             filter.PageSize
         );
     }
+
+    private async Task<bool> IsInFreeCatalogWindowAsync(
+        int propositionId,
+        CancellationToken cancellationToken)
+    {
+        var freeExerciseIds = await GetFreeExerciseIdsAsync(cancellationToken);
+        return freeExerciseIds.Contains(propositionId);
+    }
+
+    private Task<List<int>> GetFreeExerciseIdsAsync(CancellationToken cancellationToken)
+    {
+        return _context.Propositions
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenByDescending(p => p.Id)
+            .Take(FreeCatalogExerciseLimit)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    private Task<PropositionAccessRow?> GetAccessRowAsync(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        return _context.Propositions
+            .Where(p => p.Id == id)
+            .Select(p => new PropositionAccessRow(
+                p.Id,
+                p.PublishedOn,
+                p.SubjectId,
+                p.ComplexityId,
+                p.AudioDurationSeconds,
+                p.Title,
+                p.ImageFileId,
+                p.NewsInfo.Url,
+                p.AudioFileId,
+                p.Text))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private static PropositionMetadataDto ToMetadata(
+        PropositionAccessRow proposition,
+        bool requiresPro)
+    {
+        return new PropositionMetadataDto(
+            proposition.Id,
+            proposition.PublishedOn,
+            proposition.SubjectId,
+            proposition.ComplexityId,
+            proposition.AudioDurationSeconds,
+            proposition.Title,
+            proposition.ImageFileId,
+            proposition.NewsUrl,
+            requiresPro);
+    }
+
+    private static bool CanAccessExercise(bool requiresPro, bool isPro) => !requiresPro || isPro;
 
     private static List<ExerciseListItemDto> SpreadExercisesByTopicAndLevel(List<ExerciseListItemDto> items)
     {
