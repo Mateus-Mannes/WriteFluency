@@ -22,8 +22,8 @@ import { ExerciseSessionTrackingService } from './services/exercise-session-trac
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
+import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
-import { ProgressStateResponse } from '../user/models/user-progress.model';
 import { Insights } from '../../telemetry/insights.service';
 import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
 import * as tutorialVideoModal from '../shared/tutorial-video-modal/tutorial-video-modal.component';
@@ -46,16 +46,19 @@ import * as models from './listen-and-write.models';
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
-  providers: [ExerciseAudioAccessService],
+  providers: [
+    ExerciseAudioAccessService,
+    ExerciseStateRestoreService,
+  ],
 })
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
+  private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
   private newsAudioComponentRef: NewsAudioComponent | null = null;
   private pendingPausedTimeSeconds: number | null = null;
-  private restoreRequestToken = 0;
   private hasCompletedInitialBrowserRender = false;
 
   @ViewChild(NewsAudioComponent)
@@ -89,7 +92,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     Boolean(this.exerciseAudioUrl())
     || this.isResolvingAudioAccess()
     || (this.exerciseState() === 'intro' && Boolean(this.proposition())));
-  isRestoringExercise = signal<boolean>(false);
+  isRestoringExercise = this.exerciseStateRestore.isRestoring;
   isGuestLoginModalOpen = signal<boolean>(false);
   isProUpgradeModalOpen = signal<boolean>(false);
 
@@ -112,7 +115,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   private pendingBeginExerciseContext: models.BeginExerciseContext | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
-  private shouldSyncCompletedResultAfterRestore = false;
   private shouldResetCompletedStateOnNextStart = false;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
@@ -157,7 +159,6 @@ export class ListenAndWriteComponent implements OnDestroy {
         });
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
-        this.shouldSyncCompletedResultAfterRestore = false;
         this.shouldResetCompletedStateOnNextStart = false;
         this.exerciseState.set('intro');
         this.stateAnimOn.set(false);
@@ -166,7 +167,9 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.userText.set('');
+        this.pendingPausedTimeSeconds = null;
         this.exerciseAudioAccess.reset();
+        this.exerciseStateRestore.resetForExercise(this.exerciseId);
         this.result.set(null);
         this.pendingPausedTimeSeconds = null;
         if(this.browserService.isBrowserEnvironment()) {
@@ -320,311 +323,39 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   async restoreExerciseState(): Promise<void> {
-    const exerciseId = this.exerciseId;
-    if (!exerciseId) {
-      return;
-    }
-
-    const restoreToken = ++this.restoreRequestToken;
-    this.pendingPausedTimeSeconds = null;
-
-    if (!this.authSessionStore.isAuthenticated()) {
-      this.isRestoringExercise.set(false);
-      this.restoreStateFromLocalStorage(exerciseId, restoreToken);
-      return;
-    }
-
-    this.isRestoringExercise.set(true);
-
-    try {
-      const serverState = await this.loadServerStateWithTimeout(exerciseId);
-      if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
-        return;
-      }
-
-      const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
-      const shouldSyncCompletedAfterLogin = this.consumePendingCompletedSyncRequest(exerciseId, localSnapshot);
-      if (shouldSyncCompletedAfterLogin) {
-        this.applyLocalExerciseSnapshot(localSnapshot!);
-        this.shouldSyncCompletedResultAfterRestore = true;
-        const proposition = this.proposition();
-        if (proposition) {
-          this.syncCompletedResultAfterRestoreIfNeeded(proposition);
-        }
-        return;
-      }
-
-      if (this.shouldPreferLocalCompletedState(serverState, localSnapshot)) {
-        this.applyLocalExerciseSnapshot(localSnapshot!);
-        this.shouldSyncCompletedResultAfterRestore = false;
-        return;
-      }
-
-      if (serverState) {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.applyServerState(serverState);
-        return;
-      }
-
-      if (localSnapshot) {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.applyLocalExerciseSnapshot(localSnapshot);
-      } else {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.restoreStateFromLocalStorage(exerciseId, restoreToken);
-      }
-    } finally {
-      if (this.isRestoreTokenActive(restoreToken, exerciseId)) {
-        this.isRestoringExercise.set(false);
-      }
-    }
-  }
-
-  private async loadServerStateWithTimeout(exerciseId: number) {
-    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<null>((resolve) => {
-      timeoutHandle = setTimeout(() => resolve(null), constants.restoreServerStateTimeoutMs);
+    await this.exerciseStateRestore.restore({
+      exerciseId: this.exerciseId,
+      getStateKey: (exerciseId) => this.getStateKey(exerciseId),
+      getExerciseStateKey: (exerciseId) => this.getExerciseStateKey(exerciseId),
+      applySnapshot: (snapshot) => this.applyRestoredExerciseSnapshot(snapshot),
+      resetPendingPausedTime: () => {
+        this.pendingPausedTimeSeconds = null;
+      },
     });
 
-    try {
-      return await Promise.race([
-        this.exerciseProgressTracking.loadState(exerciseId),
-        timeoutPromise,
-      ]);
-    } finally {
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-      }
-    }
+    this.syncCompletedResultAfterRestoreIfNeeded(this.proposition());
   }
 
-  private applyServerState(serverState: ProgressStateResponse): void {
-    const restoredExerciseState = this.normalizeExerciseState(serverState.exerciseState);
-    if (restoredExerciseState) {
-      this.exerciseState.set(restoredExerciseState);
-      if (restoredExerciseState === 'exercise' && this.exerciseStartedAtMs === null) {
+  private applyRestoredExerciseSnapshot(snapshot: models.RestoredExerciseSnapshot): void {
+    if (snapshot.state) {
+      this.exerciseState.set(snapshot.state);
+      if (snapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
         this.exerciseStartedAtMs = Date.now();
       }
     }
 
-    this.initialText.set(serverState.userText ?? null);
-    this.initialAutoPause.set(serverState.autoPauseSeconds ?? 2);
-    this.result.set(this.buildRestoredResult(serverState, restoredExerciseState));
-    this.setPendingPausedTime(serverState.pausedTimeSeconds);
+    this.initialText.set(snapshot.userText);
+    this.initialAutoPause.set(snapshot.autoPauseSeconds ?? 2);
+    this.setPendingPausedTime(snapshot.pausedTimeSeconds);
+    this.result.set(snapshot.result);
   }
 
-  private buildRestoredResult(
-    serverState: ProgressStateResponse,
-    restoredExerciseState: models.ExerciseState | null,
-  ): TextComparisonResult | null {
-    if (restoredExerciseState !== 'results') {
-      return null;
-    }
-
-    return {
-      originalText: serverState.originalText ?? null,
-      userText: serverState.userText,
-      comparisons: serverState.comparisons ?? [],
-      accuracyPercentage: serverState.accuracyPercentage ?? 0,
-    };
-  }
-
-  private restoreStateFromLocalStorage(exerciseId: number, restoreToken: number): void {
-    if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
-      return;
-    }
-
-    const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
-    if (!localSnapshot) {
-      return;
-    }
-
-    this.applyLocalExerciseSnapshot(localSnapshot);
-  }
-
-  private applyLocalExerciseSnapshot(localSnapshot: models.LocalExerciseSnapshot): void {
-    if (localSnapshot.state) {
-      this.exerciseState.set(localSnapshot.state);
-      if (localSnapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
-        this.exerciseStartedAtMs = Date.now();
-      }
-    }
-
-    this.initialText.set(localSnapshot.userText);
-    this.initialAutoPause.set(localSnapshot.autoPauseSeconds ?? 2);
-    this.setPendingPausedTime(localSnapshot.pausedTimeSeconds);
-    this.result.set(localSnapshot.result);
-  }
-
-  private readLocalExerciseSnapshot(exerciseId: number): models.LocalExerciseSnapshot | null {
-    const stateKey = this.getStateKey(exerciseId);
-    const exerciseState = stateKey
-      ? this.normalizeExerciseState(this.browserService.getItem(stateKey))
-      : null;
-
-    const exerciseStateKey = this.getExerciseStateKey(exerciseId);
-    if (!exerciseStateKey) {
-      return null;
-    }
-
-    const serializedState = this.browserService.getItem(exerciseStateKey);
-    if (!serializedState) {
-      return exerciseState
-        ? {
-            state: exerciseState,
-            userText: null,
-            autoPauseSeconds: null,
-            pausedTimeSeconds: null,
-            result: null,
-            savedAtUtc: null,
-          }
-        : null;
-    }
-
-    try {
-      const parsed = JSON.parse(serializedState) as {
-        userText?: string | null;
-        autoPause?: number | null;
-        pausedTime?: number | null;
-        result?: TextComparisonResult | null;
-        savedAtUtc?: string | null;
-      };
-
-      return {
-        state: exerciseState,
-        userText: parsed.userText || null,
-        autoPauseSeconds: parsed.autoPause ?? null,
-        pausedTimeSeconds: parsed.pausedTime ?? null,
-        result: parsed.result ?? null,
-        savedAtUtc: parsed.savedAtUtc ?? null,
-      };
-    } catch {
-      this.browserService.removeItem(exerciseStateKey);
-      return exerciseState
-        ? {
-            state: exerciseState,
-            userText: null,
-            autoPauseSeconds: null,
-            pausedTimeSeconds: null,
-            result: null,
-            savedAtUtc: null,
-          }
-        : null;
-    }
-  }
-
-  private shouldPreferLocalCompletedState(
-    serverState: ProgressStateResponse | null,
-    localSnapshot: models.LocalExerciseSnapshot | null,
-  ): boolean {
-    if (!serverState || !localSnapshot) {
-      return false;
-    }
-
-    if (localSnapshot.state !== 'results' || !localSnapshot.result) {
-      return false;
-    }
-
-    const localSavedAtMs = this.parseTimestamp(localSnapshot.savedAtUtc);
-    const serverUpdatedAtMs = this.parseTimestamp(serverState.updatedAtUtc);
-    if (localSavedAtMs !== null && serverUpdatedAtMs !== null) {
-      return localSavedAtMs > serverUpdatedAtMs;
-    }
-
-    if (localSavedAtMs !== null && serverUpdatedAtMs === null) {
-      return true;
-    }
-
-    const normalizedServerState = this.normalizeExerciseState(serverState.exerciseState);
-    const serverHasDraftText = Boolean(serverState.userText?.trim());
-    const serverHasRestorableDraft =
-      normalizedServerState === 'exercise'
-      || serverHasDraftText
-      || serverState.autoPauseSeconds !== null
-      || serverState.pausedTimeSeconds !== null;
-
-    return !serverHasRestorableDraft;
-  }
-
-  private parseTimestamp(value: string | null | undefined): number | null {
-    if (!value) {
-      return null;
-    }
-
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) {
-      return null;
-    }
-
-    return parsed;
-  }
-
-  private setPendingCompletedSyncRequest(exerciseId: number | null): void {
-    if (!exerciseId || !this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem(
-        constants.postLoginCompleteSyncStorageKey,
-        JSON.stringify({
-          exerciseId,
-          createdAtUtc: new Date().toISOString(),
-        }));
-    } catch {
-      // noop
-    }
-  }
-
-  private consumePendingCompletedSyncRequest(
-    exerciseId: number,
-    localSnapshot: models.LocalExerciseSnapshot | null,
-  ): boolean {
-    if (!this.browserService.isBrowserEnvironment()) {
-      return false;
-    }
-
-    let pendingExerciseId: number | null = null;
-    try {
-      const rawValue = window.sessionStorage.getItem(constants.postLoginCompleteSyncStorageKey);
-      if (!rawValue) {
-        return false;
-      }
-
-      const parsed = JSON.parse(rawValue) as { exerciseId?: unknown };
-      if (typeof parsed.exerciseId === 'number' && Number.isFinite(parsed.exerciseId)) {
-        pendingExerciseId = parsed.exerciseId;
-      }
-    } catch {
-      // noop
-    }
-
-    if (pendingExerciseId !== exerciseId) {
-      return false;
-    }
-
-    try {
-      window.sessionStorage.removeItem(constants.postLoginCompleteSyncStorageKey);
-    } catch {
-      // noop
-    }
-
-    return localSnapshot?.state === 'results' && localSnapshot.result !== null;
-  }
-
-  private syncCompletedResultAfterRestoreIfNeeded(proposition: Proposition): void {
-    if (!this.shouldSyncCompletedResultAfterRestore || !this.authSessionStore.isAuthenticated()) {
-      return;
-    }
-
-    this.shouldSyncCompletedResultAfterRestore = false;
-
-    const restoredResult = this.result();
-    if (this.exerciseState() !== 'results' || !restoredResult) {
-      return;
-    }
-
-    this.exerciseProgressTracking.trackComplete(proposition, restoredResult);
+  private syncCompletedResultAfterRestoreIfNeeded(proposition: Proposition | null): void {
+    this.exerciseStateRestore.syncCompletedResultAfterRestoreIfNeeded({
+      proposition,
+      exerciseState: this.exerciseState(),
+      result: this.result(),
+    });
   }
 
   private setPendingPausedTime(pausedTimeSeconds: number | null): void {
@@ -644,22 +375,6 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     this.newsAudioComponentRef.forwardAudio(this.pendingPausedTimeSeconds);
     this.pendingPausedTimeSeconds = null;
-  }
-
-  private isRestoreTokenActive(restoreToken: number, exerciseId: number): boolean {
-    return this.restoreRequestToken === restoreToken && this.exerciseId === exerciseId;
-  }
-
-  private normalizeExerciseState(value: string | null | undefined): models.ExerciseState | null {
-    if (!value) {
-      return null;
-    }
-
-    if (value === 'intro' || value === 'exercise' || value === 'results') {
-      return value;
-    }
-
-    return null;
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -1398,7 +1113,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onSignInToSaveProgress(): void {
     const returnUrl = this.getPostLoginReturnUrl();
-    this.setPendingCompletedSyncRequest(this.exerciseId);
+    this.exerciseStateRestore.setPendingCompletedSyncRequest(this.exerciseId);
     this.exerciseSessionTracking.trackEvent('results_login_cta_clicked', {
       return_url: returnUrl,
       exercise_id: String(this.exerciseId ?? ''),
