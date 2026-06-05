@@ -2,7 +2,7 @@ import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { ShepherdService } from 'angular-shepherd';
 import { BrowserService } from '../../core/services/browser.service';
 import { AuthSessionStore } from '../../auth/services/auth-session.store';
-import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
+import * as constants from '../listen-and-write.constants';
 import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
 import { ExerciseTourService } from './exercise-tour.service';
 
@@ -60,7 +60,7 @@ describe('ExerciseTourService', () => {
     expect(shepherdMock.start).toHaveBeenCalled();
     tourCallbacks['complete']?.();
 
-    expect(browserServiceMock.setItem).toHaveBeenCalledWith(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    expect(browserServiceMock.setItem).toHaveBeenCalledWith(constants.listenWriteFirstTimeKey, 'false');
     expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalled();
   }));
 
@@ -70,7 +70,7 @@ describe('ExerciseTourService', () => {
 
     tourCallbacks['cancel']?.();
 
-    expect(browserServiceMock.setItem).toHaveBeenCalledWith(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    expect(browserServiceMock.setItem).toHaveBeenCalledWith(constants.listenWriteFirstTimeKey, 'false');
     expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalled();
   }));
 
@@ -80,7 +80,7 @@ describe('ExerciseTourService', () => {
 
     tourCallbacks['cancel']?.();
 
-    expect(browserServiceMock.setItem).toHaveBeenCalledWith(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    expect(browserServiceMock.setItem).toHaveBeenCalledWith(constants.listenWriteFirstTimeKey, 'false');
     expect(authSessionStoreMock.markListenWriteTutorialCompletedInBackground).toHaveBeenCalled();
   }));
 

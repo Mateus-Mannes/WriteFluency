@@ -24,56 +24,11 @@ import { ExerciseProgressTrackingService, ProgressSyncNotification } from './ser
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { ProgressStateResponse } from '../user/models/user-progress.model';
 import { Insights } from '../../telemetry/insights.service';
-import {
-  FeedbackModalComponent,
-  FeedbackModalInteractionEvent,
-  FeedbackModalSubmission
-} from '../shared/feedback-modal/feedback-modal.component';
-import { TutorialVideoModalComponent } from '../shared/tutorial-video-modal/tutorial-video-modal.component';
-import {
-  TutorialVideoSource,
-  tutorialVideoConfig,
-} from '../core/config/tutorial-video.config';
-
-export type ExerciseState = 'intro' | 'exercise' | 'results';
-
-export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
-const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
-const restoreServerStateTimeoutMs = 3000;
-const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
-const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
-const guestBeginLoginModalAttemptThreshold = 2;
-const guestBeginLoginModalCooldownMs = 24 * 60 * 60 * 1000;
-const submitTelemetryTextMaxLength = 4000;
-const submitAudioRemainingToleranceSeconds = 10;
-const postLoginCompleteSyncStorageKey = 'wf.auth.post-login-complete-sync.v1';
-const proRequiredAccess = 'pro_required';
-const accessGranted = 'granted';
-type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
-type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
-type GuestLoginModalDismissReason = 'continue_as_guest' | 'backdrop';
-
-interface BeginExerciseContext {
-  isFirstTimeUser: boolean;
-  audioEndedBeforeBegin: boolean;
-  guestBeginAttemptCount: number | null;
-  guestLoginModalShownBeforeStart: boolean;
-}
-
-interface GuestLoginModalDecision {
-  shouldShow: boolean;
-  reason: 'authenticated' | 'below_threshold' | 'cooldown_active' | 'eligible';
-  cooldownRemainingMs: number;
-}
-
-interface LocalExerciseSnapshot {
-  state: ExerciseState | null;
-  userText: string | null;
-  autoPauseSeconds: number | null;
-  pausedTimeSeconds: number | null;
-  result: TextComparisonResult | null;
-  savedAtUtc: string | null;
-}
+import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
+import * as tutorialVideoModal from '../shared/tutorial-video-modal/tutorial-video-modal.component';
+import * as tutorialVideoConfig from '../core/config/tutorial-video.config';
+import * as constants from './listen-and-write.constants';
+import * as models from './listen-and-write.models';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -85,8 +40,8 @@ interface LocalExerciseSnapshot {
     ExerciseSectionComponent,
     ExerciseResultsSectionComponent,
     NewsHighlightedTextComponent,
-    FeedbackModalComponent,
-    TutorialVideoModalComponent
+    feedbackModal.FeedbackModalComponent,
+    tutorialVideoModal.TutorialVideoModalComponent
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
@@ -111,10 +66,10 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private autoPauseTimer: any = null;
-  private pendingAudioPlaySource: AudioPlaySource | null = null;
+  private pendingAudioPlaySource: models.AudioPlaySource | null = null;
   private pendingAudioPlaySourceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  exerciseState = signal<ExerciseState>('intro');
+  exerciseState = signal<models.ExerciseState>('intro');
 
   stateAnimOn = signal(false);
   stateAnimEnabled = signal(false);
@@ -145,20 +100,20 @@ export class ListenAndWriteComponent implements OnDestroy {
   isTutorialVideoModalOpen = signal<boolean>(false);
 
   exerciseId: number | null = null;
-  readonly tutorialVideoEmbedUrl = tutorialVideoConfig.embedUrl;
-  readonly tutorialVideoWatchUrl = tutorialVideoConfig.watchUrl;
-  readonly tutorialVideoTitle = tutorialVideoConfig.title;
+  readonly tutorialVideoEmbedUrl = tutorialVideoConfig.tutorialVideoConfig.embedUrl;
+  readonly tutorialVideoWatchUrl = tutorialVideoConfig.tutorialVideoConfig.watchUrl;
+  readonly tutorialVideoTitle = tutorialVideoConfig.tutorialVideoConfig.title;
 
   private pendingLeaveAction: (() => void) | null = null;
   private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
-  private pendingBeginExerciseContext: BeginExerciseContext | null = null;
+  private pendingBeginExerciseContext: models.BeginExerciseContext | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldSyncCompletedResultAfterRestore = false;
   private shouldResetCompletedStateOnNextStart = false;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
-  private tutorialVideoSource: TutorialVideoSource | null = null;
+  private tutorialVideoSource: tutorialVideoConfig.TutorialVideoSource | null = null;
   private hasHydrated = false;
   private audioAccessRequestToken = 0;
   private audioAccessResolvedExerciseId: number | null = null;
@@ -180,7 +135,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     private authSessionStore: AuthSessionStore,
     @Optional() private readonly insights: Insights | null = null,
   ) {
-    let lastState: ExerciseState | null = null;
+    let lastState: models.ExerciseState | null = null;
     // Get the exercise ID from route parameters
     this.route.params.pipe(
       takeUntilDestroyed()
@@ -432,7 +387,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private async loadServerStateWithTimeout(exerciseId: number) {
     let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
     const timeoutPromise = new Promise<null>((resolve) => {
-      timeoutHandle = setTimeout(() => resolve(null), restoreServerStateTimeoutMs);
+      timeoutHandle = setTimeout(() => resolve(null), constants.restoreServerStateTimeoutMs);
     });
 
     try {
@@ -464,7 +419,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private buildRestoredResult(
     serverState: ProgressStateResponse,
-    restoredExerciseState: ExerciseState | null,
+    restoredExerciseState: models.ExerciseState | null,
   ): TextComparisonResult | null {
     if (restoredExerciseState !== 'results') {
       return null;
@@ -491,7 +446,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.applyLocalExerciseSnapshot(localSnapshot);
   }
 
-  private applyLocalExerciseSnapshot(localSnapshot: LocalExerciseSnapshot): void {
+  private applyLocalExerciseSnapshot(localSnapshot: models.LocalExerciseSnapshot): void {
     if (localSnapshot.state) {
       this.exerciseState.set(localSnapshot.state);
       if (localSnapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
@@ -505,7 +460,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.result.set(localSnapshot.result);
   }
 
-  private readLocalExerciseSnapshot(exerciseId: number): LocalExerciseSnapshot | null {
+  private readLocalExerciseSnapshot(exerciseId: number): models.LocalExerciseSnapshot | null {
     const stateKey = this.getStateKey(exerciseId);
     const exerciseState = stateKey
       ? this.normalizeExerciseState(this.browserService.getItem(stateKey))
@@ -564,7 +519,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private shouldPreferLocalCompletedState(
     serverState: ProgressStateResponse | null,
-    localSnapshot: LocalExerciseSnapshot | null,
+    localSnapshot: models.LocalExerciseSnapshot | null,
   ): boolean {
     if (!serverState || !localSnapshot) {
       return false;
@@ -615,7 +570,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     try {
       window.sessionStorage.setItem(
-        postLoginCompleteSyncStorageKey,
+        constants.postLoginCompleteSyncStorageKey,
         JSON.stringify({
           exerciseId,
           createdAtUtc: new Date().toISOString(),
@@ -627,7 +582,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private consumePendingCompletedSyncRequest(
     exerciseId: number,
-    localSnapshot: LocalExerciseSnapshot | null,
+    localSnapshot: models.LocalExerciseSnapshot | null,
   ): boolean {
     if (!this.browserService.isBrowserEnvironment()) {
       return false;
@@ -635,7 +590,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     let pendingExerciseId: number | null = null;
     try {
-      const rawValue = window.sessionStorage.getItem(postLoginCompleteSyncStorageKey);
+      const rawValue = window.sessionStorage.getItem(constants.postLoginCompleteSyncStorageKey);
       if (!rawValue) {
         return false;
       }
@@ -653,7 +608,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     try {
-      window.sessionStorage.removeItem(postLoginCompleteSyncStorageKey);
+      window.sessionStorage.removeItem(constants.postLoginCompleteSyncStorageKey);
     } catch {
       // noop
     }
@@ -699,7 +654,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     return this.restoreRequestToken === restoreToken && this.exerciseId === exerciseId;
   }
 
-  private normalizeExerciseState(value: string | null | undefined): ExerciseState | null {
+  private normalizeExerciseState(value: string | null | undefined): models.ExerciseState | null {
     if (!value) {
       return null;
     }
@@ -851,7 +806,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.dismissGuestLoginModal('backdrop');
   }
 
-  private dismissGuestLoginModal(reason: GuestLoginModalDismissReason): void {
+  private dismissGuestLoginModal(reason: models.GuestLoginModalDismissReason): void {
     const beginContext = this.pendingBeginExerciseContext;
 
     this.exerciseSessionTracking.trackEvent('guest_login_modal_dismissed', {
@@ -873,7 +828,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
   }
 
-  private buildBeginExerciseContext(): BeginExerciseContext {
+  private buildBeginExerciseContext(): models.BeginExerciseContext {
     return {
       isFirstTimeUser: this.isFirstTime(),
       audioEndedBeforeBegin: this.newsAudioComponentRef?.audioEnded ?? false,
@@ -882,7 +837,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     };
   }
 
-  private evaluateGuestLoginModalDecision(context: BeginExerciseContext): GuestLoginModalDecision {
+  private evaluateGuestLoginModalDecision(context: models.BeginExerciseContext): models.GuestLoginModalDecision {
     if (this.authSessionStore.isAuthenticated()) {
       return {
         shouldShow: false,
@@ -892,7 +847,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     const guestAttempt = context.guestBeginAttemptCount ?? 0;
-    if (guestAttempt < guestBeginLoginModalAttemptThreshold) {
+    if (guestAttempt < constants.guestBeginLoginModalAttemptThreshold) {
       return {
         shouldShow: false,
         reason: 'below_threshold',
@@ -916,10 +871,10 @@ export class ListenAndWriteComponent implements OnDestroy {
     };
   }
 
-  private openGuestLoginModal(context: BeginExerciseContext): void {
+  private openGuestLoginModal(context: models.BeginExerciseContext): void {
     this.pendingBeginExerciseContext = context;
     this.isGuestLoginModalOpen.set(true);
-    this.browserService.setItem(guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
+    this.browserService.setItem(constants.guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
 
     this.exerciseSessionTracking.trackEvent('guest_login_modal_shown', {
       source: 'begin_exercise',
@@ -928,11 +883,11 @@ export class ListenAndWriteComponent implements OnDestroy {
       audio_ended_before_begin: context.audioEndedBeforeBegin,
     }, {
       guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
-      guest_login_modal_cooldown_hours: guestBeginLoginModalCooldownMs / (60 * 60 * 1000),
+      guest_login_modal_cooldown_hours: constants.guestBeginLoginModalCooldownMs / (60 * 60 * 1000),
     });
   }
 
-  private startExerciseFromContext(context: BeginExerciseContext): void {
+  private startExerciseFromContext(context: models.BeginExerciseContext): void {
     if (!this.exerciseId) {
       return;
     }
@@ -976,7 +931,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private resolveExerciseAudioAccess(options: {
     startWritingWhenGranted: boolean;
-    context?: BeginExerciseContext;
+    context?: models.BeginExerciseContext;
   }): void {
     const exerciseId = this.exerciseId;
     if (!exerciseId) {
@@ -1023,7 +978,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     result: BeginExerciseResultDto,
     options: {
       startWritingWhenGranted: boolean;
-      context?: BeginExerciseContext;
+      context?: models.BeginExerciseContext;
     },
   ): void {
     this.audioAccessResolvedExerciseId = this.exerciseId;
@@ -1032,7 +987,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       this.proposition.set(result.metadata);
     }
 
-    if (result.access === proRequiredAccess) {
+    if (result.access === constants.proRequiredAccess) {
       this.exerciseAudioUrl.set(null);
       this.exerciseAudioExpiresAtUtc = null;
       this.clearAutoPauseTimer();
@@ -1043,7 +998,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       return;
     }
 
-    if (result.access !== accessGranted || !result.audioUrl) {
+    if (result.access !== constants.accessGranted || !result.audioUrl) {
       this.exerciseSessionTracking.trackEvent('begin_exercise_failed', {
         error: 'missing_audio_url',
       });
@@ -1061,7 +1016,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
   }
 
-  private startWritingExercise(context: BeginExerciseContext): void {
+  private startWritingExercise(context: models.BeginExerciseContext): void {
     if (!this.exerciseAudioUrl()) {
       this.resolveExerciseAudioAccess({
         context,
@@ -1126,14 +1081,14 @@ export class ListenAndWriteComponent implements OnDestroy {
       return null;
     }
 
-    const currentAttempt = this.readPositiveIntFromStorage(guestBeginAttemptCountStorageKey);
+    const currentAttempt = this.readPositiveIntFromStorage(constants.guestBeginAttemptCountStorageKey);
     const nextAttempt = currentAttempt + 1;
-    this.browserService.setItem(guestBeginAttemptCountStorageKey, String(nextAttempt));
+    this.browserService.setItem(constants.guestBeginAttemptCountStorageKey, String(nextAttempt));
     return nextAttempt;
   }
 
   private getGuestLoginModalCooldownRemainingMs(nowMs: number): number {
-    const rawLastShown = this.browserService.getItem(guestBeginLoginModalLastShownStorageKey);
+    const rawLastShown = this.browserService.getItem(constants.guestBeginLoginModalLastShownStorageKey);
     if (!rawLastShown) {
       return 0;
     }
@@ -1144,7 +1099,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     const elapsedMs = Math.max(0, nowMs - lastShownMs);
-    return Math.max(0, guestBeginLoginModalCooldownMs - elapsedMs);
+    return Math.max(0, constants.guestBeginLoginModalCooldownMs - elapsedMs);
   }
 
   private readPositiveIntFromStorage(key: string): number {
@@ -1328,7 +1283,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private isProRequiredError(error: unknown): boolean {
     return error instanceof HttpErrorResponse
       && error.status === 403
-      && error.error?.access === proRequiredAccess;
+      && error.error?.access === constants.proRequiredAccess;
   }
 
   private trackExerciseSubmitConversion(accuracyPercentage: number | null | undefined): void {
@@ -1340,13 +1295,13 @@ export class ListenAndWriteComponent implements OnDestroy {
       return;
     }
 
-    const gtag = (globalThis as typeof globalThis & { gtag?: GtagEvent }).gtag;
+    const gtag = (globalThis as typeof globalThis & { gtag?: models.GtagEvent }).gtag;
     if (typeof gtag !== 'function') {
       return;
     }
 
     gtag('event', 'conversion', {
-      send_to: EXERCISE_SUBMIT_CONVERSION_SEND_TO,
+      send_to: constants.exerciseSubmitConversionSendTo,
       value: 1.0,
       currency: 'BRL'
     });
@@ -1385,7 +1340,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       return false;
     }
 
-    return audio.currentTime >= Math.max(0, duration - submitAudioRemainingToleranceSeconds);
+    return audio.currentTime >= Math.max(0, duration - constants.submitAudioRemainingToleranceSeconds);
   }
 
   private countWords(text: string | null | undefined): number {
@@ -1439,12 +1394,12 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private toTelemetryText(text: string): { text: string; truncated: boolean } {
-    if (text.length <= submitTelemetryTextMaxLength) {
+    if (text.length <= constants.submitTelemetryTextMaxLength) {
       return { text, truncated: false };
     }
 
     return {
-      text: text.slice(0, submitTelemetryTextMaxLength),
+      text: text.slice(0, constants.submitTelemetryTextMaxLength),
       truncated: true
     };
   }
@@ -1600,7 +1555,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.isTutorialVideoModalOpen.set(false);
   }
 
-  setNewState(state: ExerciseState) {
+  setNewState(state: models.ExerciseState) {
     const previousState = this.exerciseState();
 
     if (state === 'intro') {
@@ -1641,7 +1596,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   isFirstTime(): boolean {
-    const localTutorialKey = this.browserService.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    const localTutorialKey = this.browserService.getItem(constants.listenWriteFirstTimeKey);
     const hasLocalDone = localTutorialKey !== null;
     const isAuthenticated = this.authSessionStore.isAuthenticated();
     const hasReliableSessionState = this.authSessionStore.hasReliableSessionState();
@@ -1714,7 +1669,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     return width > 0 && width <= 900;
   }
 
-  private markNextAudioPlaySource(source: AudioPlaySource): void {
+  private markNextAudioPlaySource(source: models.AudioPlaySource): void {
     this.clearPendingAudioPlaySource();
     this.pendingAudioPlaySource = source;
     this.pendingAudioPlaySourceTimer = setTimeout(() => {
@@ -1723,7 +1678,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     }, 2000);
   }
 
-  private consumePendingAudioPlaySource(): AudioPlaySource {
+  private consumePendingAudioPlaySource(): models.AudioPlaySource {
     const source = this.pendingAudioPlaySource ?? 'manual_click';
     this.clearPendingAudioPlaySource();
     return source;
@@ -1746,7 +1701,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.continuePendingLeaveFlow(true);
   }
 
-  onFeedbackSubmitted(submission: FeedbackModalSubmission): void {
+  onFeedbackSubmitted(submission: feedbackModal.FeedbackModalSubmission): void {
     const proposition = this.proposition();
     const feedbackEvent: ExerciseFeedbackEvent = {
       rating: submission.rating,
@@ -1773,7 +1728,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.feedbackService.submitFeedback(feedbackEvent);
   }
 
-  onFeedbackInteraction(event: FeedbackModalInteractionEvent): void {
+  onFeedbackInteraction(event: feedbackModal.FeedbackModalInteractionEvent): void {
     this.exerciseSessionTracking.trackEvent('feedback_modal_interaction', {
       action: event.action,
       rating: event.rating,
@@ -1887,7 +1842,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     return '/exercises';
   }
 
-  private openTutorialVideoFromSource(source: TutorialVideoSource): void {
+  private openTutorialVideoFromSource(source: tutorialVideoConfig.TutorialVideoSource): void {
     this.tutorialVideoSource = source;
     this.exerciseSessionTracking.trackEvent('tutorial_video_cta_clicked', {
       source,

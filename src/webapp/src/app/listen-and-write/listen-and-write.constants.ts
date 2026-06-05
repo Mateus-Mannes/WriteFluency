@@ -1,0 +1,12 @@
+export const listenWriteFirstTimeKey = 'listen-write-first-time';
+export const exerciseSubmitConversionSendTo = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
+export const restoreServerStateTimeoutMs = 3000;
+export const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
+export const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
+export const guestBeginLoginModalAttemptThreshold = 2;
+export const guestBeginLoginModalCooldownMs = 24 * 60 * 60 * 1000;
+export const submitTelemetryTextMaxLength = 4000;
+export const submitAudioRemainingToleranceSeconds = 10;
+export const postLoginCompleteSyncStorageKey = 'wf.auth.post-login-complete-sync.v1';
+export const proRequiredAccess = 'pro_required';
+export const accessGranted = 'granted';
