@@ -27,3 +27,11 @@ export interface LocalExerciseSnapshot {
   result: TextComparisonResult | null;
   savedAtUtc: string | null;
 }
+
+export interface RestoredExerciseSnapshot {
+  state: ExerciseState | null;
+  userText: string | null;
+  autoPauseSeconds: number | null;
+  pausedTimeSeconds: number | null;
+  result: TextComparisonResult | null;
+}
