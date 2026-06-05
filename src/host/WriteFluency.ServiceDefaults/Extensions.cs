@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -69,6 +70,8 @@ public static class Extensions
         builder.Logging.SetMinimumLevel(LogLevel.Information);
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
         builder.Logging.AddFilter($"System.Net.Http.HttpClient.{MinioHealthCheckName}", LogLevel.Warning);
+        builder.Logging.AddFilter("StackExchange.Redis", LogLevel.Warning);
+        builder.Logging.AddFilter("Microsoft.Extensions.Caching.StackExchangeRedis", LogLevel.Warning);
         var aiConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
         var resourceName = builder.Configuration["RESOURCE_NAME"] ?? builder.Environment.ApplicationName;
         var resourceAttributes = new Dictionary<string, object>();
@@ -116,6 +119,8 @@ public static class Extensions
             })
             .WithTracing(tracing =>
             {
+                // Drop noisy Redis PING and Postgres dependency spans.
+                tracing.SetSampler(new DependencyFilteringSampler());
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource("NewsWorker")
                     .AddAspNetCoreInstrumentation(tracing =>
@@ -140,6 +145,76 @@ public static class Extensions
         builder.AddOpenTelemetryExporters();
 
         return builder;
+    }
+
+    private sealed class DependencyFilteringSampler : Sampler
+    {
+        private static readonly Sampler FallbackSampler = new ParentBasedSampler(new AlwaysOnSampler());
+
+        public override SamplingResult ShouldSample(in SamplingParameters parameters)
+        {
+            if (IsRedisPing(parameters) || IsPostgresDependency(parameters))
+            {
+                return new SamplingResult(SamplingDecision.Drop);
+            }
+
+            return FallbackSampler.ShouldSample(parameters);
+        }
+
+        private static bool IsRedisPing(in SamplingParameters parameters)
+        {
+            if (!string.Equals(parameters.Name, "PING", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (parameters.Kind != ActivityKind.Client)
+            {
+                return false;
+            }
+
+            foreach (var tag in parameters.Tags)
+            {
+                if (string.Equals(tag.Key, "db.system", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tag.Value?.ToString(), "redis", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (string.Equals(tag.Key, "peer.service", StringComparison.OrdinalIgnoreCase)
+                    && tag.Value?.ToString()?.Contains("redis", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return true;
+                }
+
+                if (string.Equals(tag.Key, "net.peer.name", StringComparison.OrdinalIgnoreCase)
+                    && tag.Value?.ToString()?.Contains("redis", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return true;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsPostgresDependency(in SamplingParameters parameters)
+        {
+            if (parameters.Kind != ActivityKind.Client)
+            {
+                return false;
+            }
+
+            foreach (var tag in parameters.Tags)
+            {
+                if (string.Equals(tag.Key, "db.system", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(tag.Value?.ToString(), "postgresql", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
@@ -214,9 +289,13 @@ public static class Extensions
     {
         var uri = request.RequestUri;
 
-        return uri is not null
-            && string.Equals(uri.Host, "wf-infra-minio", StringComparison.OrdinalIgnoreCase)
-            && uri.AbsolutePath.StartsWith(MinioHealthEndpointPrefix, StringComparison.OrdinalIgnoreCase);
+        return uri is not null && IsMinioHealthPath(uri.AbsolutePath);
+    }
+
+    private static bool IsMinioHealthPath(string? path)
+    {
+        return !string.IsNullOrWhiteSpace(path)
+            && path.StartsWith(MinioHealthEndpointPrefix, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class MinioHealthCheck(IConfiguration configuration, IHttpClientFactory httpClientFactory) : IHealthCheck
@@ -240,6 +319,7 @@ public static class Extensions
                 var healthUri = new Uri(endpoint, path);
                 try
                 {
+                    using var suppressScope = SuppressInstrumentationScope.Begin();
                     using var response = await httpClient.GetAsync(healthUri, cancellationToken);
                     if (response.StatusCode != System.Net.HttpStatusCode.OK)
                     {
