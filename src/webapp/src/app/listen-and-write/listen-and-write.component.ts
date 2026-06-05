@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender, computed } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender, computed, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,13 +14,14 @@ import { SubmitTourService } from './services/submit-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
-import { BeginExerciseResultDto, TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
+import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
 import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
+import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { ProgressStateResponse } from '../user/models/user-progress.model';
 import { Insights } from '../../telemetry/insights.service';
@@ -45,8 +46,10 @@ import * as models from './listen-and-write.models';
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
+  providers: [ExerciseAudioAccessService],
 })
 export class ListenAndWriteComponent implements OnDestroy {
+  private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -75,13 +78,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   stateAnimEnabled = signal(false);
 
   proposition = signal<Proposition | null>(null);
-  exerciseAudioUrl = signal<string | null>(null);
+  exerciseAudioUrl = this.exerciseAudioAccess.audioUrl;
 
   result = signal<TextComparisonResult | null>(null);
 
   isSubmitting = signal<boolean>(false);
-  isBeginningExercise = signal<boolean>(false);
-  isResolvingAudioAccess = signal<boolean>(false);
+  isBeginningExercise = this.exerciseAudioAccess.isBeginningExercise;
+  isResolvingAudioAccess = this.exerciseAudioAccess.isResolving;
   shouldShowAudioPanel = computed(() =>
     Boolean(this.exerciseAudioUrl())
     || this.isResolvingAudioAccess()
@@ -115,9 +118,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
   private tutorialVideoSource: tutorialVideoConfig.TutorialVideoSource | null = null;
   private hasHydrated = false;
-  private audioAccessRequestToken = 0;
-  private audioAccessResolvedExerciseId: number | null = null;
-  private exerciseAudioExpiresAtUtc: string | null = null;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -166,11 +166,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.userText.set('');
-        this.exerciseAudioUrl.set(null);
-        this.exerciseAudioExpiresAtUtc = null;
-        this.audioAccessResolvedExerciseId = null;
-        this.audioAccessRequestToken += 1;
-        this.isResolvingAudioAccess.set(false);
+        this.exerciseAudioAccess.reset();
         this.result.set(null);
         this.pendingPausedTimeSeconds = null;
         if(this.browserService.isBrowserEnvironment()) {
@@ -904,28 +900,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private tryResolveAudioAccessAfterHydration(): void {
-    if (!this.hasHydrated || !this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    if (!this.exerciseId || !this.proposition()) {
-      return;
-    }
-
-    if (this.exerciseState() === 'results') {
-      return;
-    }
-
-    if (
-      this.exerciseAudioUrl()
-      || this.isResolvingAudioAccess()
-      || this.audioAccessResolvedExerciseId === this.exerciseId
-    ) {
-      return;
-    }
-
-    this.resolveExerciseAudioAccess({
-      startWritingWhenGranted: false,
+    this.exerciseAudioAccess.tryResolveAfterHydration({
+      exerciseId: this.exerciseId,
+      hasHydrated: this.hasHydrated,
+      isBrowserEnvironment: this.browserService.isBrowserEnvironment(),
+      hasProposition: Boolean(this.proposition()),
+      exerciseState: this.exerciseState(),
+      callbacks: this.buildAudioAccessCallbacks(),
     });
   }
 
@@ -933,87 +914,44 @@ export class ListenAndWriteComponent implements OnDestroy {
     startWritingWhenGranted: boolean;
     context?: models.BeginExerciseContext;
   }): void {
-    const exerciseId = this.exerciseId;
-    if (!exerciseId) {
+    if (!this.exerciseId) {
       return;
     }
 
-    const requestToken = ++this.audioAccessRequestToken;
-    this.isResolvingAudioAccess.set(true);
-    this.isBeginningExercise.set(options.startWritingWhenGranted);
-
-    this.propositionsService.apiPropositionIdBeginPost(exerciseId).subscribe({
-      next: (result) => {
-        if (!this.isCurrentAudioAccessRequest(requestToken, exerciseId)) {
-          return;
-        }
-
-        this.isResolvingAudioAccess.set(false);
-        this.isBeginningExercise.set(false);
-        this.handleAudioAccessResult(result, options);
-      },
-      error: (error) => {
-        if (!this.isCurrentAudioAccessRequest(requestToken, exerciseId)) {
-          return;
-        }
-
-        this.isResolvingAudioAccess.set(false);
-        this.isBeginningExercise.set(false);
-        this.exerciseSessionTracking.trackEvent('exercise_audio_access_failed', {
-          error: error?.message ?? 'unknown_error',
-        });
-
-        if (options.startWritingWhenGranted) {
-          alert('Error starting exercise. Please try again.');
-        }
-      }
+    this.exerciseAudioAccess.resolve({
+      exerciseId: this.exerciseId,
+      startWritingWhenGranted: options.startWritingWhenGranted,
+      context: options.context,
+      callbacks: this.buildAudioAccessCallbacks(),
     });
   }
 
-  private isCurrentAudioAccessRequest(requestToken: number, exerciseId: number): boolean {
-    return this.audioAccessRequestToken === requestToken && this.exerciseId === exerciseId;
-  }
-
-  private handleAudioAccessResult(
-    result: BeginExerciseResultDto,
-    options: {
-      startWritingWhenGranted: boolean;
-      context?: models.BeginExerciseContext;
-    },
-  ): void {
-    this.audioAccessResolvedExerciseId = this.exerciseId;
-
-    if (result.metadata) {
-      this.proposition.set(result.metadata);
-    }
-
-    if (result.access === constants.proRequiredAccess) {
-      this.exerciseAudioUrl.set(null);
-      this.exerciseAudioExpiresAtUtc = null;
-      this.clearAutoPauseTimer();
-      if (this.exerciseState() !== 'intro') {
-        this.setNewState('intro');
-      }
-      this.openProUpgradeModal();
-      return;
-    }
-
-    if (result.access !== constants.accessGranted || !result.audioUrl) {
-      this.exerciseSessionTracking.trackEvent('begin_exercise_failed', {
-        error: 'missing_audio_url',
-      });
-      if (options.startWritingWhenGranted) {
-        alert('Error starting exercise. Please try again.');
-      }
-      return;
-    }
-
-    this.exerciseAudioUrl.set(result.audioUrl);
-    this.exerciseAudioExpiresAtUtc = result.audioExpiresAtUtc ?? null;
-
-    if (options.startWritingWhenGranted && options.context) {
-      this.startWritingExercise(options.context);
-    }
+  private buildAudioAccessCallbacks(): AudioAccessCallbacks {
+    return {
+      onMetadata: (metadata: Proposition) => this.proposition.set(metadata),
+      onProRequired: () => {
+        this.clearAutoPauseTimer();
+        if (this.exerciseState() !== 'intro') {
+          this.setNewState('intro');
+        }
+        this.openProUpgradeModal();
+      },
+      onGranted: (context?: models.BeginExerciseContext) => {
+        if (context) {
+          this.startWritingExercise(context);
+        }
+      },
+      onMissingAudio: (startWritingWhenGranted: boolean) => {
+        if (startWritingWhenGranted) {
+          alert('Error starting exercise. Please try again.');
+        }
+      },
+      onError: (_error: unknown, startWritingWhenGranted: boolean) => {
+        if (startWritingWhenGranted) {
+          alert('Error starting exercise. Please try again.');
+        }
+      },
+    };
   }
 
   private startWritingExercise(context: models.BeginExerciseContext): void {
@@ -1030,7 +968,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.exerciseSessionTracking.trackEvent('exercise_started', {
       start_mode: 'direct_start',
       guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
-      audio_url_expires_at_utc: this.exerciseAudioExpiresAtUtc ?? '',
+      audio_url_expires_at_utc: this.exerciseAudioAccess.getAudioExpiresAtUtc() ?? '',
     }, {
       guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
     });
