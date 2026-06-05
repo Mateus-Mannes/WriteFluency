@@ -3,16 +3,14 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { ActivatedRoute } from '@angular/router';
 import { of, Subject } from 'rxjs';
 
-import { ListenAndWriteComponent, LISTEN_WRITE_FIRST_TIME_KEY } from './listen-and-write.component';
+import { ListenAndWriteComponent } from './listen-and-write.component';
 import { ExerciseProgressTrackingService } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import { FeedbackService } from './services/feedback.service';
 import { TextComparisonsService } from 'src/api/listen-and-write';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
-
-const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
-const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
+import * as constants from './listen-and-write.constants';
 
 describe('ListenAndWriteComponent', () => {
   let component: ListenAndWriteComponent;
@@ -34,9 +32,9 @@ describe('ListenAndWriteComponent', () => {
   };
 
   beforeEach(async () => {
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
-    window.localStorage.removeItem(guestBeginAttemptCountStorageKey);
-    window.localStorage.removeItem(guestBeginLoginModalLastShownStorageKey);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
+    window.localStorage.removeItem(constants.guestBeginAttemptCountStorageKey);
+    window.localStorage.removeItem(constants.guestBeginLoginModalLastShownStorageKey);
 
     routeParams$ = new Subject<Record<string, unknown>>();
     progressSyncNotificationSignal = signal<any>(null);
@@ -158,7 +156,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
 
     expect(component.isFirstTime()).toBeTrue();
   });
@@ -167,7 +165,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
 
     expect(component.isFirstTime()).toBeFalse();
   });
@@ -176,7 +174,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(false);
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
 
     expect(component.isFirstTime()).toBeTrue();
   });
@@ -185,7 +183,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(false);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
 
     expect(component.isFirstTime()).toBeFalse();
     expect(component.isFirstTime()).toBeFalse();
@@ -197,7 +195,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
     authSessionStoreMock.userId.and.returnValue('user-123');
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
 
     expect(component.isFirstTime()).toBeFalse();
     expect(component.isFirstTime()).toBeFalse();
@@ -446,7 +444,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
-    window.localStorage.removeItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
 
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getWindowWidth').and.returnValue(1200);
@@ -948,7 +946,7 @@ describe('ListenAndWriteComponent', () => {
   it('should begin writing without requesting audio again when audio was already resolved', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
     component.exerciseId = 44;
     component.exerciseState.set('intro');
     component.proposition.set({ id: 44, title: 'Exercise 44' } as any);
@@ -972,7 +970,7 @@ describe('ListenAndWriteComponent', () => {
 
   it('should show guest login modal on second begin attempt when user is not authenticated', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
 
     component.exerciseId = 1;
     component.exerciseState.set('intro');
@@ -996,8 +994,8 @@ describe('ListenAndWriteComponent', () => {
 
   it('should continue exercise start when guest chooses continue as guest in begin modal', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
-    window.localStorage.setItem(guestBeginAttemptCountStorageKey, '1');
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
+    window.localStorage.setItem(constants.guestBeginAttemptCountStorageKey, '1');
 
     component.exerciseId = 1;
     component.exerciseState.set('intro');
@@ -1049,8 +1047,8 @@ describe('ListenAndWriteComponent', () => {
 
   it('should navigate to login with returnUrl when guest begin modal sign-in CTA is clicked', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
-    window.localStorage.setItem(guestBeginAttemptCountStorageKey, '1');
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
+    window.localStorage.setItem(constants.guestBeginAttemptCountStorageKey, '1');
 
     component.exerciseId = 99;
     component.exerciseState.set('intro');
@@ -1080,9 +1078,9 @@ describe('ListenAndWriteComponent', () => {
 
   it('should respect cooldown and skip begin modal when it was recently shown', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
-    window.localStorage.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
-    window.localStorage.setItem(guestBeginAttemptCountStorageKey, '4');
-    window.localStorage.setItem(guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
+    window.localStorage.setItem(constants.guestBeginAttemptCountStorageKey, '4');
+    window.localStorage.setItem(constants.guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
 
     component.exerciseId = 1;
     component.exerciseState.set('intro');
