@@ -1,5 +1,4 @@
 import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender, computed, inject } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
@@ -14,7 +13,7 @@ import { SubmitTourService } from './services/submit-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
-import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
+import { TextComparisonResult } from 'src/api/listen-and-write';
 import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
 import { SeoService } from '../core/services/seo.service';
@@ -23,6 +22,7 @@ import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.serv
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
+import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
@@ -49,11 +49,13 @@ import * as models from './listen-and-write.models';
   providers: [
     ExerciseAudioAccessService,
     ExerciseStateRestoreService,
+    ExerciseSubmissionService,
   ],
 })
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
+  private readonly exerciseSubmission = inject(ExerciseSubmissionService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -85,7 +87,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   result = signal<TextComparisonResult | null>(null);
 
-  isSubmitting = signal<boolean>(false);
+  isSubmitting = this.exerciseSubmission.isSubmitting;
   isBeginningExercise = this.exerciseAudioAccess.isBeginningExercise;
   isResolvingAudioAccess = this.exerciseAudioAccess.isResolving;
   shouldShowAudioPanel = computed(() =>
@@ -128,7 +130,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private propositionsService: PropositionsService,
-    private textComparisonsService: TextComparisonsService,
     private browserService: BrowserService,
     private seoService: SeoService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
@@ -813,9 +814,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onExerciseSubmit() {
     const submitWarning = this.getSubmitWarningMessage();
-    this.exerciseSessionTracking.trackEvent('exercise_submit_clicked', {
-      has_submit_warning: Boolean(submitWarning)
-    });
+    this.exerciseSubmission.trackSubmitClicked(Boolean(submitWarning));
 
     if (submitWarning) {
       queueMicrotask(() => {
@@ -829,231 +828,56 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private submitExercise() {
     const proposition = this.proposition();
-    if (!proposition) {
-      this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
-        reason: 'missing_proposition'
-      });
-      alert('Error processing your exercise. Please try again.');
-      return;
-    }
-
-    if (!proposition.id) {
-      this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
-        reason: 'missing_proposition_id'
-      });
-      alert('Error processing your exercise. Please try again.');
-      return;
-    }
-
     const submittedUserText = this.exerciseSectionComponent.text();
     this.newsAudioComponentRef?.pauseAudio();
-    this.isSubmitting.set(true);
-    this.exerciseSessionTracking.markSubmitted();
-    this.exerciseSessionTracking.trackTextChanged(submittedUserText);
 
-    const submitConfirmedMetadata = this.buildSubmitTelemetryMetadata(
+    this.exerciseSubmission.submit({
+      proposition,
+      exerciseId: this.exerciseId,
       submittedUserText,
-      null,
-      null
-    );
-    this.exerciseSessionTracking.trackEvent('exercise_submit_confirmed', {
-      ...submitConfirmedMetadata.properties,
-      text_snapshot: submittedUserText.slice(0, 1200),
-      text_truncated: submittedUserText.length > 1200
-    }, {
-      ...submitConfirmedMetadata.measurements,
-      text_char_count: submittedUserText.length,
-      text_word_count: this.countWords(submittedUserText)
-    });
-    const submitRequestedAtMs = Date.now();
-    const minLoadingTime = 2000; // 2 seconds minimum
-
-    this.textComparisonsService.apiTextComparisonCompareTextsPost({
-      propositionId: proposition.id,
-      userText: submittedUserText
-    }).subscribe({
-      next: (result: TextComparisonResult) => {
-        const apiElapsedMs = Date.now() - submitRequestedAtMs;
-        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
-        
-        setTimeout(() => {
-          const finalUserText = result.userText ?? submittedUserText;
-          const finalOriginalText = result.originalText ?? null;
-          const submitSuccessMetadata = this.buildSubmitTelemetryMetadata(
-            finalUserText,
-            finalOriginalText,
-            result.accuracyPercentage
-          );
-
-          this.trackExerciseSubmitConversion(result.accuracyPercentage);
-          this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded', {
-            ...submitSuccessMetadata.properties,
-            comparison_count: result.comparisons?.length ?? 0,
-          }, {
-            ...submitSuccessMetadata.measurements,
-            submit_api_latency_ms: apiElapsedMs,
-            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
-          });
-          this.userText.set(submittedUserText);
-          this.result.set(result);
-          this.exerciseProgressTracking.trackComplete(proposition, result);
-          this.onSaveExerciseState();
-          this.setNewState('results');
-          this.browserService.scrollToTop();
-          this.isSubmitting.set(false);
-        }, remainingTime);
-      },
-      error: (error) => {
-        const apiElapsedMs = Date.now() - submitRequestedAtMs;
-        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
-        
-        setTimeout(() => {
-          const submitFailureMetadata = this.buildSubmitTelemetryMetadata(
-            submittedUserText,
-            null,
-            null
-          );
-
-          this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
-            ...submitFailureMetadata.properties,
-            error: error?.message ?? 'unknown_error'
-          }, {
-            ...submitFailureMetadata.measurements,
-            submit_api_latency_ms: apiElapsedMs,
-            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
-          });
-          this.isSubmitting.set(false);
-          if (this.isProRequiredError(error)) {
-            this.openProUpgradeModal();
-          } else {
-            alert('Error processing your exercise. Please try again.');
-          }
-        }, remainingTime);
-      }
+      exerciseTimeUsedMs: this.getExerciseTimeUsedMs(),
+      onSuccess: (result, finalSubmittedUserText) => this.applySubmitSuccess(
+        proposition,
+        result,
+        finalSubmittedUserText,
+      ),
+      onProRequired: () => this.openProUpgradeModal(),
+      onFailure: () => alert('Error processing your exercise. Please try again.'),
     });
   }
 
-  private isProRequiredError(error: unknown): boolean {
-    return error instanceof HttpErrorResponse
-      && error.status === 403
-      && error.error?.access === constants.proRequiredAccess;
-  }
-
-  private trackExerciseSubmitConversion(accuracyPercentage: number | null | undefined): void {
-    if (!Number.isFinite(accuracyPercentage) || (accuracyPercentage ?? 0) < 0.1) {
+  private applySubmitSuccess(
+    proposition: Proposition | null,
+    result: TextComparisonResult,
+    submittedUserText: string,
+  ): void {
+    if (!proposition) {
       return;
     }
 
-    if (!this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    const gtag = (globalThis as typeof globalThis & { gtag?: models.GtagEvent }).gtag;
-    if (typeof gtag !== 'function') {
-      return;
-    }
-
-    gtag('event', 'conversion', {
-      send_to: constants.exerciseSubmitConversionSendTo,
-      value: 1.0,
-      currency: 'BRL'
-    });
+    this.userText.set(submittedUserText);
+    this.result.set(result);
+    this.exerciseProgressTracking.trackComplete(proposition, result);
+    this.onSaveExerciseState();
+    this.setNewState('results');
+    this.browserService.scrollToTop();
   }
 
   private getSubmitWarningMessage(): string | null {
-    const warnings: string[] = [];
-
-    if (!this.hasCompletedAudioPlayback()) {
-      warnings.push('We strongly recommend listening through the audio before submitting. You can skip words or write what you think you heard.');
-      warnings.push('If you submit too early, the accuracy percentage can be less precise and you may lose points.');
-      warnings.push('If auto-pause is enabled, press play again after each pause using Ctrl/Cmd + Enter.');
-    }
-
-    if (warnings.length === 0) {
-      return null;
-    }
-
-    warnings.unshift('Goal: write as much of the full audio text as you can.');
-
-    return `Quick reminder before submitting:\n\n- ${warnings.join('\n\n- ')}`;
+    return this.exerciseSubmission.getSubmitWarningMessage(this.getSubmitAudioState());
   }
 
   private hasCompletedAudioPlayback(): boolean {
-    if (this.newsAudioComponent?.audioEnded) {
-      return true;
-    }
+    return this.exerciseSubmission.hasCompletedAudioPlayback(this.getSubmitAudioState());
+  }
 
+  private getSubmitAudioState(): SubmitAudioState {
     const audio = this.newsAudioComponent?.audioRef?.nativeElement;
-    if (!audio) {
-      return false;
-    }
-
-    const duration = audio.duration;
-    if (!Number.isFinite(duration) || duration <= 0) {
-      return false;
-    }
-
-    return audio.currentTime >= Math.max(0, duration - constants.submitAudioRemainingToleranceSeconds);
-  }
-
-  private countWords(text: string | null | undefined): number {
-    return (text || '').trim().split(/\s+/).filter(Boolean).length;
-  }
-
-  private buildSubmitTelemetryMetadata(
-    userText: string | null | undefined,
-    originalText: string | null | undefined,
-    accuracyPercentage: number | null | undefined
-  ): {
-    properties: Record<string, string | number | boolean>;
-    measurements: Record<string, number>;
-  } {
-    const normalizedUserText = userText ?? '';
-    const normalizedOriginalText = originalText ?? '';
-    const userTextTelemetry = this.toTelemetryText(normalizedUserText);
-    const originalTextTelemetry = this.toTelemetryText(normalizedOriginalText);
-    const exerciseTimeUsedMs = this.getExerciseTimeUsedMs();
-
-    const properties: Record<string, string | number | boolean> = {
-      exercise_id: this.exerciseId ?? this.proposition()?.id ?? '',
-      proposition_id: this.proposition()?.id ?? '',
-      user_text: userTextTelemetry.text,
-      user_text_truncated: userTextTelemetry.truncated,
-      original_text: originalTextTelemetry.text,
-      original_text_truncated: originalTextTelemetry.truncated,
-      has_exercise_time_used: exerciseTimeUsedMs !== null,
-    };
-
-    const measurements: Record<string, number> = {
-      user_text_char_count: normalizedUserText.length,
-      user_text_word_count: this.countWords(normalizedUserText),
-      original_text_char_count: normalizedOriginalText.length,
-      original_text_word_count: this.countWords(normalizedOriginalText),
-    };
-
-    if (exerciseTimeUsedMs !== null) {
-      measurements['exercise_time_used_ms'] = exerciseTimeUsedMs;
-      measurements['exercise_time_used_seconds'] = Number((exerciseTimeUsedMs / 1000).toFixed(2));
-    }
-
-    if (typeof accuracyPercentage === 'number' && Number.isFinite(accuracyPercentage)) {
-      measurements['accuracy_percentage'] = accuracyPercentage;
-    }
 
     return {
-      properties,
-      measurements
-    };
-  }
-
-  private toTelemetryText(text: string): { text: string; truncated: boolean } {
-    if (text.length <= constants.submitTelemetryTextMaxLength) {
-      return { text, truncated: false };
-    }
-
-    return {
-      text: text.slice(0, constants.submitTelemetryTextMaxLength),
-      truncated: true
+      audioEnded: this.newsAudioComponent?.audioEnded ?? false,
+      currentTime: audio?.currentTime ?? null,
+      duration: audio?.duration ?? null,
     };
   }
 
