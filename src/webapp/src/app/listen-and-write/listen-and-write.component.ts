@@ -23,6 +23,7 @@ import { ExerciseProgressTrackingService, ProgressSyncNotification } from './ser
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
+import { GuestExerciseLoginPromptService } from './services/guest-exercise-login-prompt.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
@@ -50,12 +51,14 @@ import * as models from './listen-and-write.models';
     ExerciseAudioAccessService,
     ExerciseStateRestoreService,
     ExerciseSubmissionService,
+    GuestExerciseLoginPromptService,
   ],
 })
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
+  private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -95,7 +98,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     || this.isResolvingAudioAccess()
     || (this.exerciseState() === 'intro' && Boolean(this.proposition())));
   isRestoringExercise = this.exerciseStateRestore.isRestoring;
-  isGuestLoginModalOpen = signal<boolean>(false);
+  isGuestLoginModalOpen = this.guestExerciseLoginPrompt.isOpen;
   isProUpgradeModalOpen = signal<boolean>(false);
 
   initialText = signal<string | null>(null);
@@ -114,7 +117,6 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private pendingLeaveAction: (() => void) | null = null;
   private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
-  private pendingBeginExerciseContext: models.BeginExerciseContext | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldResetCompletedStateOnNextStart = false;
@@ -152,8 +154,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
         this.exerciseSessionTracking.endSession('route_changed');
         this.exerciseId = parsedId;
-        this.isGuestLoginModalOpen.set(false);
-        this.pendingBeginExerciseContext = null;
+        this.guestExerciseLoginPrompt.reset();
         this.exerciseSessionTracking.startSession({
           exerciseId: this.exerciseId,
           source: 'route_navigation'
@@ -455,148 +456,35 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   beginExercise() {
-    const beginContext = this.buildBeginExerciseContext();
-    const modalDecision = this.evaluateGuestLoginModalDecision(beginContext);
-
-    this.exerciseSessionTracking.trackEvent('begin_exercise_clicked', {
-      is_first_time: beginContext.isFirstTimeUser,
-      audio_ended_before_begin: beginContext.audioEndedBeforeBegin,
-      is_authenticated: this.authSessionStore.isAuthenticated(),
-      guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
-      guest_login_modal_decision: modalDecision.reason,
-    }, {
-      guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
-      guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
+    const beginPrompt = this.guestExerciseLoginPrompt.prepareBeginExercise({
+      isFirstTimeUser: this.isFirstTime(),
+      audioEndedBeforeBegin: this.newsAudioComponentRef?.audioEnded ?? false,
     });
 
-    if (modalDecision.shouldShow) {
-      this.openGuestLoginModal(beginContext);
+    if (beginPrompt.decision.shouldShow) {
+      this.guestExerciseLoginPrompt.open(beginPrompt.context);
       return;
     }
 
-    if (!this.authSessionStore.isAuthenticated() && modalDecision.reason !== 'authenticated') {
-      this.exerciseSessionTracking.trackEvent('guest_login_modal_not_shown', {
-        reason: modalDecision.reason,
-        guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
-      }, {
-        guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
-        guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
-      });
-    }
-
-    this.startExerciseFromContext(beginContext);
+    this.startExerciseFromContext(beginPrompt.context);
   }
 
   onGuestLoginModalSignIn(): void {
-    const beginContext = this.pendingBeginExerciseContext;
-    const returnUrl = this.getPostLoginReturnUrl();
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_login_clicked', {
-      source: 'begin_exercise',
-      return_url: returnUrl,
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
-    }, {
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
-    });
-
-    this.isGuestLoginModalOpen.set(false);
-    this.pendingBeginExerciseContext = null;
-
-    void this.router.navigate(['/auth/login'], {
-      queryParams: {
-        returnUrl,
-        source: 'begin_exercise_modal',
-      }
-    });
+    this.guestExerciseLoginPrompt.signIn(this.getPostLoginReturnUrl());
   }
 
   onGuestLoginModalContinueAsGuest(): void {
-    this.dismissGuestLoginModal('continue_as_guest');
+    const beginContext = this.guestExerciseLoginPrompt.continueAsGuest();
+    if (beginContext) {
+      this.startExerciseFromContext(beginContext);
+    }
   }
 
   onGuestLoginModalBackdropClick(): void {
-    this.dismissGuestLoginModal('backdrop');
-  }
-
-  private dismissGuestLoginModal(reason: models.GuestLoginModalDismissReason): void {
-    const beginContext = this.pendingBeginExerciseContext;
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_dismissed', {
-      reason,
-      source: 'begin_exercise',
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
-    }, {
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
-    });
-
-    this.isGuestLoginModalOpen.set(false);
-    this.pendingBeginExerciseContext = null;
-
+    const beginContext = this.guestExerciseLoginPrompt.dismissBackdrop();
     if (beginContext) {
-      this.startExerciseFromContext({
-        ...beginContext,
-        guestLoginModalShownBeforeStart: true,
-      });
+      this.startExerciseFromContext(beginContext);
     }
-  }
-
-  private buildBeginExerciseContext(): models.BeginExerciseContext {
-    return {
-      isFirstTimeUser: this.isFirstTime(),
-      audioEndedBeforeBegin: this.newsAudioComponentRef?.audioEnded ?? false,
-      guestBeginAttemptCount: this.incrementGuestBeginAttemptCountIfGuest(),
-      guestLoginModalShownBeforeStart: false,
-    };
-  }
-
-  private evaluateGuestLoginModalDecision(context: models.BeginExerciseContext): models.GuestLoginModalDecision {
-    if (this.authSessionStore.isAuthenticated()) {
-      return {
-        shouldShow: false,
-        reason: 'authenticated',
-        cooldownRemainingMs: 0,
-      };
-    }
-
-    const guestAttempt = context.guestBeginAttemptCount ?? 0;
-    if (guestAttempt < constants.guestBeginLoginModalAttemptThreshold) {
-      return {
-        shouldShow: false,
-        reason: 'below_threshold',
-        cooldownRemainingMs: 0,
-      };
-    }
-
-    const cooldownRemainingMs = this.getGuestLoginModalCooldownRemainingMs(Date.now());
-    if (cooldownRemainingMs > 0) {
-      return {
-        shouldShow: false,
-        reason: 'cooldown_active',
-        cooldownRemainingMs,
-      };
-    }
-
-    return {
-      shouldShow: true,
-      reason: 'eligible',
-      cooldownRemainingMs: 0,
-    };
-  }
-
-  private openGuestLoginModal(context: models.BeginExerciseContext): void {
-    this.pendingBeginExerciseContext = context;
-    this.isGuestLoginModalOpen.set(true);
-    this.browserService.setItem(constants.guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_shown', {
-      source: 'begin_exercise',
-      guest_begin_attempt_count: context.guestBeginAttemptCount,
-      is_first_time: context.isFirstTimeUser,
-      audio_ended_before_begin: context.audioEndedBeforeBegin,
-    }, {
-      guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
-      guest_login_modal_cooldown_hours: constants.guestBeginLoginModalCooldownMs / (60 * 60 * 1000),
-    });
   }
 
   private startExerciseFromContext(context: models.BeginExerciseContext): void {
@@ -728,46 +616,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     this.exerciseProgressTracking.trackStart(this.proposition());
-  }
-
-  private incrementGuestBeginAttemptCountIfGuest(): number | null {
-    if (this.authSessionStore.isAuthenticated()) {
-      return null;
-    }
-
-    const currentAttempt = this.readPositiveIntFromStorage(constants.guestBeginAttemptCountStorageKey);
-    const nextAttempt = currentAttempt + 1;
-    this.browserService.setItem(constants.guestBeginAttemptCountStorageKey, String(nextAttempt));
-    return nextAttempt;
-  }
-
-  private getGuestLoginModalCooldownRemainingMs(nowMs: number): number {
-    const rawLastShown = this.browserService.getItem(constants.guestBeginLoginModalLastShownStorageKey);
-    if (!rawLastShown) {
-      return 0;
-    }
-
-    const lastShownMs = Date.parse(rawLastShown);
-    if (!Number.isFinite(lastShownMs)) {
-      return 0;
-    }
-
-    const elapsedMs = Math.max(0, nowMs - lastShownMs);
-    return Math.max(0, constants.guestBeginLoginModalCooldownMs - elapsedMs);
-  }
-
-  private readPositiveIntFromStorage(key: string): number {
-    const raw = this.browserService.getItem(key);
-    if (!raw) {
-      return 0;
-    }
-
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      return 0;
-    }
-
-    return parsed;
   }
 
   onAudioPlayClicked() {
