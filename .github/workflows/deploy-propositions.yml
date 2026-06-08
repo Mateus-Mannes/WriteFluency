@@ -71,8 +71,17 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Run .NET Tests
-      run: dotnet test
+    - name: Run propositions .NET tests
+      run: |
+        dotnet test tests/propositions-service/WriteFluency.Application.Tests/WriteFluency.Application.Tests.csproj \
+          -m:1 \
+          --blame-hang-timeout 10m \
+          --logger "console;verbosity=normal"
+
+        dotnet test tests/propositions-service/WriteFluency.Infrastructure.Tests/WriteFluency.Infrastructure.Tests.csproj \
+          -m:1 \
+          --blame-hang-timeout 10m \
+          --logger "console;verbosity=normal"
 
     - name: Install Aspirate
       run: dotnet tool install --global aspirate --version 9.1.0
