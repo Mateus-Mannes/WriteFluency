@@ -39,6 +39,7 @@ public class ApplicationTestBase : IDisposable
             opts.UseSqlite(_connection));
 
         services.AddTransient<PropositionService>();
+        services.AddSingleton<IPropositionImageService, FastPropositionImageService>();
         services.AddTransient<CreatePropositionService>();
         services.AddTransient<DailyPropositionGenerator>();
 
@@ -158,5 +159,13 @@ public class ApplicationTestBase : IDisposable
         using var outputStream = new MemoryStream();
         image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = 80 });
         return outputStream.ToArray();
+    }
+
+    private sealed class FastPropositionImageService : IPropositionImageService
+    {
+        public Task<Result<string>> ProcessAndUploadImageAsync(
+            string imageUrl,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(Result.Ok(Guid.NewGuid().ToString("N")));
     }
 }

@@ -1,6 +1,7 @@
 using Bogus;
 using FluentResults;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
@@ -95,6 +96,9 @@ public class CreatePropositionServiceTests : ApplicationTestBase
     protected override void ConfigureMocks(IServiceCollection services, SubjectEnum? subjectWithoutNews = null)
     {
         var faker = new Faker();
+
+        services.RemoveAll<IPropositionImageService>();
+        services.AddTransient<IPropositionImageService, PropositionImageService>();
 
         var newsClientMock = Substitute.For<INewsClient>();
         newsClientMock.GetNewsAsync(Arg.Any<SubjectEnum>(), Arg.Any<DateTime>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())

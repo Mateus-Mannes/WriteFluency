@@ -38,9 +38,6 @@ public class DailyPropositionGeneratorTests : ApplicationTestBase
         var subjects = Enum.GetValues<SubjectEnum>();
         var totalPropositionsOnLimit = subjects.Length * _options.PropositionsLimitPerTopic;
 
-        var requestCountToLimit = totalPropositionsOnLimit /
-            (_options.DailyRequestsLimit * _options.NewsRequestLimit - Proposition.Parameters.Count);
-
         // Initial Generation
         await _dailyPropositionGenerator.GenerateDailyPropositionsAsync();
         var propositions = await _context.Propositions.AsNoTracking().OrderBy(x => x.PublishedOn).ToListAsync();
