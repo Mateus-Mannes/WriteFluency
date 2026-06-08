@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Data;
@@ -65,12 +68,27 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["SupportRequest:RequestWindowMinutes"] = "15",
                 ["Authentication:ConfirmationRedirectUrl"] = "http://localhost:4200/auth/confirm-email",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
-                ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback"
+                ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback",
+                ["SharedDataProtection:ApplicationName"] = "WriteFluency.Users.IntegrationTests",
+                ["SharedDataProtection:BlobUri"] = string.Empty,
+                ["SharedDataProtection:KeyIdentifier"] = string.Empty,
+                ["LoginLocation:Enabled"] = "false",
+                ["LoginLocation:GeoLite2CityBlobUri"] = string.Empty,
+                ["LoginLocation:GeoLite2CityDbPath"] = string.Empty
             });
         });
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IConfigureOptions<KeyManagementOptions>>();
+            services.RemoveAll<IPostConfigureOptions<KeyManagementOptions>>();
+            services.AddDataProtection()
+                .SetApplicationName("WriteFluency.Users.IntegrationTests")
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(
+                    Path.GetTempPath(),
+                    "wf-users-integration-tests-dp",
+                    Guid.NewGuid().ToString("N"))));
+
             services.RemoveAll<IConnectionMultiplexer>();
             services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(_redisConnectionString));
 
