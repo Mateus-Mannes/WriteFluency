@@ -16,10 +16,10 @@ import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult } from 'src/api/listen-and-write';
 import { BrowserService } from '../core/services/browser.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
-import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { ExerciseAudioControllerService } from './services/exercise-audio-controller.service';
+import { ExerciseFeedbackFlowService } from './services/exercise-feedback-flow.service';
 import { ExerciseSeoService } from './services/exercise-seo.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
@@ -50,6 +50,7 @@ import * as models from './listen-and-write.models';
   providers: [
     ExerciseAudioAccessService,
     ExerciseAudioControllerService,
+    ExerciseFeedbackFlowService,
     ExerciseSeoService,
     ExerciseStateRestoreService,
     ExerciseSubmissionService,
@@ -59,6 +60,7 @@ import * as models from './listen-and-write.models';
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
   private readonly exerciseAudioController = inject(ExerciseAudioControllerService);
+  private readonly exerciseFeedbackFlow = inject(ExerciseFeedbackFlowService);
   private readonly exerciseSeo = inject(ExerciseSeoService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
@@ -106,7 +108,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   userText = signal<string>('');
 
-  isFeedbackModalOpen = signal<boolean>(false);
+  isFeedbackModalOpen = this.exerciseFeedbackFlow.isModalOpen;
   isTutorialVideoModalOpen = signal<boolean>(false);
 
   exerciseId: number | null = null;
@@ -114,8 +116,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   readonly tutorialVideoWatchUrl = tutorialVideoConfig.tutorialVideoConfig.watchUrl;
   readonly tutorialVideoTitle = tutorialVideoConfig.tutorialVideoConfig.title;
 
-  private pendingLeaveAction: (() => void) | null = null;
-  private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
   private shouldResetCompletedStateOnNextStart = false;
@@ -133,7 +133,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     private propositionsService: PropositionsService,
     private browserService: BrowserService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
-    private feedbackService: FeedbackService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
     private authSessionStore: AuthSessionStore,
     @Optional() private readonly insights: Insights | null = null,
@@ -618,28 +617,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.pendingRouteLeaveResolver) {
-      this.pendingRouteLeaveResolver(true);
-      this.pendingRouteLeaveResolver = null;
-    }
-
-    this.pendingLeaveAction = null;
+    this.exerciseFeedbackFlow.destroy();
     this.exerciseSessionTracking.endSession('component_destroyed');
     this.exerciseAudioController.reset();
   }
 
   canDeactivateFromRoute(): boolean | Promise<boolean> {
-    if (!this.shouldPromptFeedbackOnLeave()) {
-      return true;
-    }
-
-    if (!this.openFeedbackModalIfEligible()) {
-      return true;
-    }
-
-    return new Promise<boolean>((resolve) => {
-      this.pendingRouteLeaveResolver = resolve;
-    });
+    return this.exerciseFeedbackFlow.canDeactivateFromRoute(this.exerciseState());
   }
 
   onTryAgain() {
@@ -878,119 +862,30 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onFeedbackDismissed(_reason: 'not_now' | 'close'): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_dismissed', {
-      reason: _reason
-    });
-    this.feedbackService.markDismissed();
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(true);
+    this.exerciseFeedbackFlow.onDismissed(_reason);
   }
 
   onFeedbackSubmitted(submission: feedbackModal.FeedbackModalSubmission): void {
-    const proposition = this.proposition();
-    const feedbackEvent: ExerciseFeedbackEvent = {
-      rating: submission.rating,
-      tags: submission.tags,
-      comment: submission.comment,
-      exerciseId: String(proposition?.id ?? this.exerciseId ?? ''),
-      difficulty: proposition?.complexityId ?? '',
-      topic: proposition?.subjectId ?? '',
-      sessionId: this.exerciseSessionTracking.getCurrentSessionId() ?? '',
-      userId: this.authSessionStore.userId() ?? '',
-      timestamp: new Date().toISOString()
-    };
-
-    this.exerciseSessionTracking.trackEvent('feedback_modal_submitted', {
-      rating: submission.rating,
-      tags_count: submission.tags.length,
-      has_comment: Boolean(submission.comment)
-    }, {
-      feedback_rating: submission.rating,
-      feedback_tags_count: submission.tags.length,
-      feedback_comment_length: submission.comment?.length ?? 0
+    this.exerciseFeedbackFlow.onSubmitted(submission, {
+      proposition: this.proposition(),
+      exerciseId: this.exerciseId,
     });
-
-    this.feedbackService.submitFeedback(feedbackEvent);
   }
 
   onFeedbackInteraction(event: feedbackModal.FeedbackModalInteractionEvent): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_interaction', {
-      action: event.action,
-      rating: event.rating,
-      tag: event.tag,
-      tag_selected: event.tagSelected,
-      tags_count: event.tagsCount,
-      has_comment: event.hasComment
-    }, {
-      feedback_comment_length: event.commentLength ?? 0
-    });
+    this.exerciseFeedbackFlow.onInteraction(event);
   }
 
   onFeedbackClosedAfterSubmit(): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_closed_after_submit');
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(true);
+    this.exerciseFeedbackFlow.onClosedAfterSubmit();
   }
 
   onFeedbackFindAnotherExercise(): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_find_another_exercise_clicked');
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(false);
-    this.navigateToExercises();
+    this.exerciseFeedbackFlow.onFindAnotherExercise(() => this.navigateToExercises());
   }
 
   private attemptLeaveResults(action: () => void): void {
-    if (!this.shouldPromptFeedbackOnLeave()) {
-      action();
-      return;
-    }
-
-    if (!this.openFeedbackModalIfEligible()) {
-      action();
-      return;
-    }
-
-    this.pendingLeaveAction = action;
-  }
-
-  private shouldPromptFeedbackOnLeave(): boolean {
-    return this.exerciseState() === 'results' && this.feedbackService.shouldShowPrompt();
-  }
-
-  private openFeedbackModalIfEligible(): boolean {
-    if (this.isFeedbackModalOpen()) {
-      return true;
-    }
-
-    if (!this.feedbackService.consumePromptOpportunity()) {
-      return false;
-    }
-
-    this.exerciseSessionTracking.trackEvent('feedback_modal_opened');
-    this.isFeedbackModalOpen.set(true);
-    return true;
-  }
-
-  private closeFeedbackModal(): void {
-    this.isFeedbackModalOpen.set(false);
-  }
-
-  private continuePendingLeaveFlow(allowPendingAction: boolean): void {
-    const routeResolver = this.pendingRouteLeaveResolver;
-    this.pendingRouteLeaveResolver = null;
-
-    if (routeResolver) {
-      routeResolver(allowPendingAction);
-      this.pendingLeaveAction = null;
-      return;
-    }
-
-    const leaveAction = this.pendingLeaveAction;
-    this.pendingLeaveAction = null;
-
-    if (allowPendingAction) {
-      leaveAction?.();
-    }
+    this.exerciseFeedbackFlow.attemptLeaveResults(this.exerciseState(), action);
   }
 
   private resetExerciseForTryAgain(): void {
