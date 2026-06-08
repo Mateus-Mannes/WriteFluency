@@ -35,6 +35,7 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Run .NET tests
+      timeout-minutes: 10
       run: dotnet test -m:1 --blame-hang-timeout 10m --logger "console;verbosity=normal"
 
   manifest-drift:

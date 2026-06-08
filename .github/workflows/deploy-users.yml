@@ -78,17 +78,21 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Run users .NET tests
-      run: |
-        dotnet test tests/users-service/WriteFluency.Users.Tests/WriteFluency.Users.Tests.csproj \
-          -m:1 \
-          --blame-hang-timeout 10m \
-          --logger "console;verbosity=normal"
+    - name: Run users unit tests
+      timeout-minutes: 5
+      run: >
+        dotnet test tests/users-service/WriteFluency.Users.Tests/WriteFluency.Users.Tests.csproj
+        -m:1
+        --blame-hang-timeout 3m
+        --logger "console;verbosity=normal"
 
-        dotnet test tests/users-service/WriteFluency.Users.IntegrationTests/WriteFluency.Users.IntegrationTests.csproj \
-          -m:1 \
-          --blame-hang-timeout 10m \
-          --logger "console;verbosity=normal"
+    - name: Run users integration tests
+      timeout-minutes: 5
+      run: >
+        dotnet test tests/users-service/WriteFluency.Users.IntegrationTests/WriteFluency.Users.IntegrationTests.csproj
+        -m:1
+        --blame-hang-timeout 3m
+        --logger "console;verbosity=normal"
 
     - name: Install Aspirate
       run: dotnet tool install --global aspirate --version 9.1.0
