@@ -14,14 +14,13 @@ import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highl
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult } from 'src/api/listen-and-write';
-import { environment } from 'src/enviroments/enviroment';
 import { BrowserService } from '../core/services/browser.service';
-import { SeoService } from '../core/services/seo.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { ExerciseAudioControllerService } from './services/exercise-audio-controller.service';
+import { ExerciseSeoService } from './services/exercise-seo.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
 import { GuestExerciseLoginPromptService } from './services/guest-exercise-login-prompt.service';
@@ -51,6 +50,7 @@ import * as models from './listen-and-write.models';
   providers: [
     ExerciseAudioAccessService,
     ExerciseAudioControllerService,
+    ExerciseSeoService,
     ExerciseStateRestoreService,
     ExerciseSubmissionService,
     GuestExerciseLoginPromptService,
@@ -59,6 +59,7 @@ import * as models from './listen-and-write.models';
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
   private readonly exerciseAudioController = inject(ExerciseAudioControllerService);
+  private readonly exerciseSeo = inject(ExerciseSeoService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
   private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
@@ -131,7 +132,6 @@ export class ListenAndWriteComponent implements OnDestroy {
     private router: Router,
     private propositionsService: PropositionsService,
     private browserService: BrowserService,
-    private seoService: SeoService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
     private feedbackService: FeedbackService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
@@ -256,49 +256,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         }, {
           audio_duration_seconds: data.audioDurationSeconds ?? 0
         });
-        
-        // Update SEO meta tags for this specific exercise
-        const complexityDesc = data.complexityId || 'Intermediate';
-        const subjectDesc = data.subjectId || 'News';
-        const duration = data.audioDurationSeconds 
-          ? `${Math.ceil(data.audioDurationSeconds / 60)} min`
-          : '1-2 min';
-        const exerciseImageUrl = this.getExerciseImageUrl(data.imageFileId);
-        
-        this.seoService.updateMetaTags({
-          title: `${data.title} - ${complexityDesc} Level Exercise | WriteFluency`,
-          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise about ${subjectDesc}. Listen to real news audio and improve your dictation skills. Duration: ${duration}.`,
-          keywords: `${subjectDesc}, ${complexityDesc} level, English writing exercise, listening comprehension, dictation practice`,
-          type: 'article',
-          url: `/english-writing-exercise/${id}`,
-          image: exerciseImageUrl,
-          publishedTime: data.publishedOn || undefined
-        });
-
-        // Add structured data for this exercise
-        const exerciseData = this.seoService.generateExerciseStructuredData({
-          id: id,
-          title: data.title || 'English Writing Exercise',
-          topic: subjectDesc,
-          level: complexityDesc,
-          duration: duration,
-          imageUrl: exerciseImageUrl,
-          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise.`
-        });
-
-        // Add breadcrumb structured data
-        const breadcrumbData = this.seoService.generateBreadcrumbStructuredData([
-          { name: 'Home', url: '/' },
-          { name: 'Exercises', url: '/exercises' },
-          { name: data.title || 'Exercise', url: `/english-writing-exercise/${id}` }
-        ]);
-
-        // Combine structured data
-        const structuredData = {
-          '@context': 'https://schema.org',
-          '@graph': [exerciseData, breadcrumbData]
-        };
-        this.seoService.addStructuredData(structuredData);
+        this.exerciseSeo.applyExerciseSeo(id, data);
         this.syncCompletedResultAfterRestoreIfNeeded(data);
         this.tryResolveAudioAccessAfterHydration();
       },
@@ -313,14 +271,6 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.browserService.navigateTo('/');
       }
     });
-  }
-
-  private getExerciseImageUrl(imageFileId?: string | null): string | undefined {
-    if (!imageFileId) {
-      return undefined;
-    }
-
-    return `${environment.minioUrl}/images/${imageFileId}`;
   }
 
   async restoreExerciseState(): Promise<void> {
