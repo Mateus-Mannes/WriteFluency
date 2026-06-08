@@ -191,8 +191,6 @@ public static class UsersServiceCollectionExtensions
         services.AddSingleton<IEmailSender<ApplicationUser>, IdentityEmailSender>();
         services.AddSingleton<TokenCredential>(_ => tokenCredential);
 
-        services.AddHealthChecks().AddDbContextCheck<UsersDbContext>("users_db");
-
         return services;
     }
 

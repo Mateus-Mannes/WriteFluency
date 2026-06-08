@@ -6,6 +6,7 @@ resources:
   - ../aspirate-output/wf-propositions-news-worker
   - ../aspirate-output/wf-infra-minio
   - ../aspirate-output/wf-propositions-minio-init
+  - wf-db-migrator/job.yaml
   - ingress.yaml
 
 images:

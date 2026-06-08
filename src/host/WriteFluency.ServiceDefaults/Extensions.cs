@@ -127,7 +127,6 @@ public static class Extensions
                             !context.Request.Path.StartsWithSegments(HealthEndpointPath)
                             && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
                     )
-                    .AddEntityFrameworkCoreInstrumentation()
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation(tracing =>
@@ -186,7 +185,7 @@ public static class Extensions
     {
         builder.Services.AddHttpClient(MinioHealthCheckName);
         builder.Services.AddHealthChecks()
-            .AddCheck<MinioHealthCheck>(MinioHealthCheckName, tags: ["ready", "live"]);
+            .AddCheck<MinioHealthCheck>(MinioHealthCheckName, tags: ["ready"]);
 
         return builder;
     }    
@@ -207,7 +206,7 @@ public static class Extensions
         // must pass for app to be considered alive
         healthChecks.MapHealthChecks("/alive", new()
         {
-            Predicate = static r => r.Tags.Contains("live")
+            Predicate = static r => r.Name == "self"
         });
 
         return app;

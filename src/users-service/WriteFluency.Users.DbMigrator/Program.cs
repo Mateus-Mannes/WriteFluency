@@ -16,6 +16,7 @@ builder.Services.AddDbContext<UsersDbContext>(options =>
 builder.EnrichNpgsqlDbContext<UsersDbContext>(configureSettings: settings =>
 {
     settings.DisableRetry = false;
+    settings.DisableHealthChecks = true;
     settings.CommandTimeout = 30;
 });
 
