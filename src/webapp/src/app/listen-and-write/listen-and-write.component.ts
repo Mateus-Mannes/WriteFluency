@@ -21,6 +21,7 @@ import { ExerciseSessionTrackingService } from './services/exercise-session-trac
 import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
+import { ExerciseAudioControllerService } from './services/exercise-audio-controller.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
 import { GuestExerciseLoginPromptService } from './services/guest-exercise-login-prompt.service';
@@ -49,6 +50,7 @@ import * as models from './listen-and-write.models';
   styleUrls: ['./listen-and-write.component.scss'],
   providers: [
     ExerciseAudioAccessService,
+    ExerciseAudioControllerService,
     ExerciseStateRestoreService,
     ExerciseSubmissionService,
     GuestExerciseLoginPromptService,
@@ -56,6 +58,7 @@ import * as models from './listen-and-write.models';
 })
 export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
+  private readonly exerciseAudioController = inject(ExerciseAudioControllerService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
   private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
@@ -63,22 +66,17 @@ export class ListenAndWriteComponent implements OnDestroy {
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
   private newsAudioComponentRef: NewsAudioComponent | null = null;
-  private pendingPausedTimeSeconds: number | null = null;
   private hasCompletedInitialBrowserRender = false;
 
   @ViewChild(NewsAudioComponent)
   set newsAudioComponent(component: NewsAudioComponent | undefined) {
     this.newsAudioComponentRef = component ?? null;
-    this.applyPendingPausedTimeIfNeeded();
+    this.exerciseAudioController.applyPendingPausedTimeIfNeeded(this.newsAudioComponentRef);
   }
 
   get newsAudioComponent(): NewsAudioComponent {
     return this.newsAudioComponentRef as NewsAudioComponent;
   }
-
-  private autoPauseTimer: any = null;
-  private pendingAudioPlaySource: models.AudioPlaySource | null = null;
-  private pendingAudioPlaySourceTimer: ReturnType<typeof setTimeout> | null = null;
 
   exerciseState = signal<models.ExerciseState>('intro');
 
@@ -170,6 +168,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialAutoPause.set(null);
         this.userText.set('');
         this.pendingPausedTimeSeconds = null;
+        this.exerciseAudioController.reset();
         this.exerciseAudioAccess.reset();
         this.exerciseStateRestore.resetForExercise(this.exerciseId);
         this.result.set(null);
@@ -211,7 +210,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       this.hasCompletedInitialBrowserRender = true;
       this.hasHydrated = true;
       this.tryResolveAudioAccessAfterHydration();
-      this.applyPendingPausedTimeIfNeeded();
+      this.exerciseAudioController.applyPendingPausedTimeIfNeeded(this.newsAudioComponentRef);
       queueMicrotask(() => this.stateAnimEnabled.set(true));
       void this.restoreExerciseState();
     });
@@ -330,9 +329,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       getStateKey: (exerciseId) => this.getStateKey(exerciseId),
       getExerciseStateKey: (exerciseId) => this.getExerciseStateKey(exerciseId),
       applySnapshot: (snapshot) => this.applyRestoredExerciseSnapshot(snapshot),
-      resetPendingPausedTime: () => {
-        this.pendingPausedTimeSeconds = null;
-      },
+      resetPendingPausedTime: () => this.exerciseAudioController.resetPendingPausedTime(),
     });
 
     this.syncCompletedResultAfterRestoreIfNeeded(this.proposition());
@@ -361,75 +358,12 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private setPendingPausedTime(pausedTimeSeconds: number | null): void {
-    if (!pausedTimeSeconds || pausedTimeSeconds <= 0) {
-      this.pendingPausedTimeSeconds = null;
-      return;
-    }
-
-    this.pendingPausedTimeSeconds = pausedTimeSeconds;
-    this.applyPendingPausedTimeIfNeeded();
-  }
-
-  private applyPendingPausedTimeIfNeeded(): void {
-    if (!this.pendingPausedTimeSeconds || !this.newsAudioComponentRef) {
-      return;
-    }
-
-    this.newsAudioComponentRef.forwardAudio(this.pendingPausedTimeSeconds);
-    this.pendingPausedTimeSeconds = null;
+    this.exerciseAudioController.setPendingPausedTime(pausedTimeSeconds, this.newsAudioComponentRef);
   }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (this.exerciseState() !== 'exercise') return;
-    
-    const modifierKey = event.ctrlKey || event.metaKey;
-    
-    // Play/Pause: Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac)
-    if (modifierKey && event.key === 'Enter') {
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_enter',
-        action: this.newsAudioComponent.isAudioPlaying() ? 'pause' : 'play'
-      });
-      if (this.newsAudioComponent.isAudioPlaying()) {
-        this.pauseAudioWithTimerClear();
-      } else {
-        this.markNextAudioPlaySource('keyboard_shortcut');
-        this.playAudioWithAutoPause();
-        // Finish the tutorial if active
-        this.exerciseTourService.finishTour();
-      }
-    }
-    // Rewind: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
-    if (modifierKey && event.code === 'ArrowLeft') {
-      const seekSeconds = this.getShortcutSeekSeconds();
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_arrow_left',
-        action: 'rewind'
-      }, {
-        seek_seconds: seekSeconds
-      });
-      this.newsAudioComponent.rewindAudio(seekSeconds);
-    }
-    // Forward: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
-    if (modifierKey && event.code === 'ArrowRight') {
-      const seekSeconds = this.getShortcutSeekSeconds();
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_arrow_right',
-        action: 'forward'
-      }, {
-        seek_seconds: seekSeconds
-      });
-      this.newsAudioComponent.forwardAudio(seekSeconds);
-    }
-  }
-
-  private getShortcutSeekSeconds(): number {
-    const selectedAutoPause = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
-    return selectedAutoPause > 0 ? selectedAutoPause : 3;
+    this.exerciseAudioController.handleKeyboardEvent(event, this.getAudioControlContext());
   }
 
   getBeginExerciseLoadingTooltip(): string {
@@ -439,26 +373,23 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   playAudioWithAutoPause() {
-    this.newsAudioComponent.playAudio();
-    this.applyAutoPause();
+    this.exerciseAudioController.playAudioWithAutoPause(this.getAudioControlContext());
   }
 
   pauseAudioWithTimerClear() {
-    this.newsAudioComponent.pauseAudio();
-    this.clearAutoPauseTimer();
+    this.exerciseAudioController.pauseAudioWithTimerClear(this.newsAudioComponentRef);
   }
 
   clearAutoPauseTimer() {
-    if (this.autoPauseTimer) {
-      clearTimeout(this.autoPauseTimer);
-      this.autoPauseTimer = null;
-    }
+    this.exerciseAudioController.clearAutoPauseTimer();
   }
 
   beginExercise() {
+    const audioEndedBeforeBegin = this.newsAudioComponentRef?.audioEnded ?? false;
+
     const beginPrompt = this.guestExerciseLoginPrompt.prepareBeginExercise({
       isFirstTimeUser: this.isFirstTime(),
-      audioEndedBeforeBegin: this.newsAudioComponentRef?.audioEnded ?? false,
+      audioEndedBeforeBegin,
     });
 
     if (beginPrompt.decision.shouldShow) {
@@ -534,7 +465,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     return {
       onMetadata: (metadata: Proposition) => this.proposition.set(metadata),
       onProRequired: () => {
-        this.clearAutoPauseTimer();
+        this.exerciseAudioController.clearAutoPauseTimer();
         if (this.exerciseState() !== 'intro') {
           this.setNewState('intro');
         }
@@ -567,16 +498,41 @@ export class ListenAndWriteComponent implements OnDestroy {
       return;
     }
 
-    this.clearAutoPauseTimer();
+    this.exerciseAudioController.pauseAndResetAudio(this.newsAudioComponentRef);
 
+    if (context.audioEndedBeforeBegin) {
+      this.completeExerciseStart(context, 'audio_already_completed');
+      return;
+    }
+
+    if (context.isFirstTimeUser) {
+      this.exerciseSessionTracking.trackEvent('listen_first_prompt_shown', {
+        guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+      }, {
+        guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
+      });
+      this.listenFirstTourService.prompt(
+        '#newsAudio',
+        () => this.exerciseAudioController.playAudioFromListenFirstPrompt(this.newsAudioComponentRef),
+        () => this.completeExerciseStart(context, 'skip_listen_first_prompt'),
+      );
+      return;
+    }
+
+    this.completeExerciseStart(context, 'direct_start');
+  }
+
+  private completeExerciseStart(
+    context: models.BeginExerciseContext,
+    startMode: 'audio_already_completed' | 'skip_listen_first_prompt' | 'direct_start',
+  ): void {
     this.exerciseSessionTracking.trackEvent('exercise_started', {
-      start_mode: 'direct_start',
+      start_mode: startMode,
       guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
       audio_url_expires_at_utc: this.exerciseAudioAccess.getAudioExpiresAtUtc() ?? '',
     }, {
       guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
     });
-
     this.trackExerciseStart();
     this.setNewState('exercise');
     this.browserService.scrollToTop();
@@ -619,18 +575,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onAudioPlayClicked() {
-    const playSource = this.consumePendingAudioPlaySource();
-    this.exerciseSessionTracking.trackEvent('audio_play_clicked', {
-      exercise_state: this.exerciseState(),
-      play_source: playSource
-    });
-    this.cancelTour();
-    
-    // Apply auto-pause logic if in exercise state
-    if (this.exerciseState() === 'exercise') {
-      this.applyAutoPause();
-      this.onSaveExerciseState();
-    }
+    this.exerciseAudioController.onAudioPlayClicked(this.getAudioControlContext());
   }
 
   cancelTour() {
@@ -642,22 +587,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   applyAutoPause() {
-    this.clearAutoPauseTimer();
-    if (this.isMobileLayout()) return;
-    // Remove focus from textarea when audio starts
-    this.exerciseSectionComponent?.blurTextArea();
-    // Native audio controls can keep focus and swallow shortcuts after a mouse click.
-    this.browserService.blurActiveElement();
-    // Get auto-pause duration from exercise section
-    const duration = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
-    if (duration > 0) {
-      this.autoPauseTimer = setTimeout(() => {
-        if (this.newsAudioComponent.isAudioPlaying()) {
-          this.newsAudioComponent.pauseAudio();
-        }
-        this.clearAutoPauseTimer();
-      }, duration * 1000);
-    }
+    this.exerciseAudioController.applyAutoPause(this.getAudioControlContext());
   }
 
   onExerciseSubmit() {
@@ -677,7 +607,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private submitExercise() {
     const proposition = this.proposition();
     const submittedUserText = this.exerciseSectionComponent.text();
-    this.newsAudioComponentRef?.pauseAudio();
+    this.exerciseAudioController.pauseAndResetAudio(this.newsAudioComponentRef);
 
     this.exerciseSubmission.submit({
       proposition,
@@ -744,10 +674,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
 
     this.pendingLeaveAction = null;
-    this.clearPendingAudioPlaySource();
     this.exerciseSessionTracking.endSession('component_destroyed');
-    // Clean up timer to prevent memory leaks
-    this.clearAutoPauseTimer();
+    this.exerciseAudioController.reset();
   }
 
   canDeactivateFromRoute(): boolean | Promise<boolean> {
@@ -801,18 +729,11 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onAudioPaused() {
-    if (this.exerciseState() !== 'exercise') return;
-    this.onSaveExerciseState();
-    // When the user pauses via native controls, restore focus so shortcuts keep working.
-    this.exerciseSectionComponent?.focusTextArea();
+    this.exerciseAudioController.onAudioPaused(this.getAudioControlContext());
   }
 
   onAudioSeeked() {
-    if (this.exerciseState() !== 'exercise') {
-      return;
-    }
-
-    this.onSaveExerciseState();
+    this.exerciseAudioController.onAudioSeeked(this.getAudioControlContext());
   }
 
   onSaveExerciseState() {
@@ -994,27 +915,16 @@ export class ListenAndWriteComponent implements OnDestroy {
     return width > 0 && width <= 900;
   }
 
-  private markNextAudioPlaySource(source: models.AudioPlaySource): void {
-    this.clearPendingAudioPlaySource();
-    this.pendingAudioPlaySource = source;
-    this.pendingAudioPlaySourceTimer = setTimeout(() => {
-      this.pendingAudioPlaySource = null;
-      this.pendingAudioPlaySourceTimer = null;
-    }, 2000);
-  }
-
-  private consumePendingAudioPlaySource(): models.AudioPlaySource {
-    const source = this.pendingAudioPlaySource ?? 'manual_click';
-    this.clearPendingAudioPlaySource();
-    return source;
-  }
-
-  private clearPendingAudioPlaySource(): void {
-    if (this.pendingAudioPlaySourceTimer) {
-      clearTimeout(this.pendingAudioPlaySourceTimer);
-      this.pendingAudioPlaySourceTimer = null;
-    }
-    this.pendingAudioPlaySource = null;
+  private getAudioControlContext() {
+    return {
+      exerciseState: this.exerciseState(),
+      audio: this.newsAudioComponentRef,
+      section: this.exerciseSectionComponent ?? null,
+      isMobileLayout: this.isMobileLayout(),
+      onSaveExerciseState: () => this.onSaveExerciseState(),
+      onCancelListenFirstTour: () => this.cancelTour(),
+      onFinishExerciseTour: () => this.exerciseTourService.finishTour(),
+    };
   }
 
   onFeedbackDismissed(_reason: 'not_now' | 'close'): void {

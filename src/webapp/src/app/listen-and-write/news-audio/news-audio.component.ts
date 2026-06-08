@@ -210,6 +210,16 @@ export class NewsAudioComponent implements OnDestroy {
     this.audioRef?.nativeElement?.pause();
   }
 
+  resetAudioToStart() {
+    if (!this.isBrowser) return;
+    const audio = this.audioRef?.nativeElement;
+    if (audio) {
+      audio.currentTime = 0;
+      this.currentTime.set(0);
+      this.audioEnded = false;
+    }
+  }
+
   rewindAudio(seconds: number) {
     if (!this.isBrowser) return;
     const audio = this.audioRef?.nativeElement;
