@@ -119,7 +119,7 @@ public static class Extensions
             })
             .WithTracing(tracing =>
             {
-                // Drop noisy Redis PING and Postgres dependency spans.
+                // Drop noisy Redis PING dependency spans while keeping Postgres dependencies visible.
                 tracing.SetSampler(new DependencyFilteringSampler());
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource("NewsWorker")
@@ -153,7 +153,7 @@ public static class Extensions
 
         public override SamplingResult ShouldSample(in SamplingParameters parameters)
         {
-            if (IsRedisPing(parameters) || IsPostgresDependency(parameters))
+            if (IsRedisPing(parameters))
             {
                 return new SamplingResult(SamplingDecision.Drop);
             }
@@ -171,6 +171,11 @@ public static class Extensions
             if (parameters.Kind != ActivityKind.Client)
             {
                 return false;
+            }
+
+            if (parameters.Tags is null)
+            {
+                return true;
             }
 
             foreach (var tag in parameters.Tags)
@@ -195,25 +200,6 @@ public static class Extensions
             }
 
             return true;
-        }
-
-        private static bool IsPostgresDependency(in SamplingParameters parameters)
-        {
-            if (parameters.Kind != ActivityKind.Client)
-            {
-                return false;
-            }
-
-            foreach (var tag in parameters.Tags)
-            {
-                if (string.Equals(tag.Key, "db.system", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(tag.Value?.ToString(), "postgresql", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 
