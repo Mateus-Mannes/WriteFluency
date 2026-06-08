@@ -119,8 +119,6 @@ public static class Extensions
             })
             .WithTracing(tracing =>
             {
-                // Drop noisy Redis PING dependency spans while keeping Postgres dependencies visible.
-                tracing.SetSampler(new DependencyFilteringSampler());
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource("NewsWorker")
                     .AddAspNetCoreInstrumentation(tracing =>
@@ -145,62 +143,6 @@ public static class Extensions
         builder.AddOpenTelemetryExporters();
 
         return builder;
-    }
-
-    private sealed class DependencyFilteringSampler : Sampler
-    {
-        private static readonly Sampler FallbackSampler = new ParentBasedSampler(new AlwaysOnSampler());
-
-        public override SamplingResult ShouldSample(in SamplingParameters parameters)
-        {
-            if (IsRedisPing(parameters))
-            {
-                return new SamplingResult(SamplingDecision.Drop);
-            }
-
-            return FallbackSampler.ShouldSample(parameters);
-        }
-
-        private static bool IsRedisPing(in SamplingParameters parameters)
-        {
-            if (!string.Equals(parameters.Name, "PING", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (parameters.Kind != ActivityKind.Client)
-            {
-                return false;
-            }
-
-            if (parameters.Tags is null)
-            {
-                return true;
-            }
-
-            foreach (var tag in parameters.Tags)
-            {
-                if (string.Equals(tag.Key, "db.system", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(tag.Value?.ToString(), "redis", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
-                if (string.Equals(tag.Key, "peer.service", StringComparison.OrdinalIgnoreCase)
-                    && tag.Value?.ToString()?.Contains("redis", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    return true;
-                }
-
-                if (string.Equals(tag.Key, "net.peer.name", StringComparison.OrdinalIgnoreCase)
-                    && tag.Value?.ToString()?.Contains("redis", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    return true;
-                }
-            }
-
-            return true;
-        }
     }
 
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using StackExchange.Redis;
 using WriteFluency.Users.WebApi.Authentication;
 using WriteFluency.Users.WebApi.Configuration;
 using WriteFluency.Users.WebApi.Support;
@@ -15,6 +16,7 @@ builder.AddRedisClient(
         options.ConnectRetry = 5;
         options.ConnectTimeout = 5000;
         options.SyncTimeout = 5000;
+        options.CommandMap = CommandMap.Create(new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "PING" }, available: false);
     });
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
