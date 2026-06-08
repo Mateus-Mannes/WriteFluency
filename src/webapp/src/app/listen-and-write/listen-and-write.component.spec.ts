@@ -392,6 +392,54 @@ describe('ListenAndWriteComponent', () => {
     expect(warningMessage).toContain('Quick reminder before submitting:\n\n- Goal: write as much of the full audio text as you can.');
   });
 
+  it('should pause and reset audio when submitting the exercise', () => {
+    const pauseAudio = jasmine.createSpy('pauseAudio');
+    const resetAudioToStart = jasmine.createSpy('resetAudioToStart');
+    component.exerciseId = 60;
+    (component as any).exerciseStartedAtMs = Date.now() - 1000;
+    component.proposition.set({ id: 60, title: 'Exercise 60' } as any);
+    component.exerciseSectionComponent = {
+      text: () => 'submitted text',
+    } as any;
+    component.newsAudioComponent = {
+      audioEnded: true,
+      pauseAudio,
+      resetAudioToStart,
+      audioRef: { nativeElement: { duration: 50, currentTime: 50 } },
+    } as any;
+
+    component.onExerciseSubmit();
+
+    expect(pauseAudio).toHaveBeenCalled();
+    expect(resetAudioToStart).toHaveBeenCalled();
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).toHaveBeenCalledWith({
+      propositionId: 60,
+      userText: 'submitted text',
+    });
+  });
+
+  it('should not pause or reset audio when submit opens the warning modal', () => {
+    const pauseAudio = jasmine.createSpy('pauseAudio');
+    const resetAudioToStart = jasmine.createSpy('resetAudioToStart');
+    component.exerciseId = 61;
+    component.proposition.set({ id: 61, title: 'Exercise 61' } as any);
+    component.exerciseSectionComponent = {
+      text: () => 'draft text',
+    } as any;
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio,
+      resetAudioToStart,
+      audioRef: { nativeElement: { duration: 50, currentTime: 5 } },
+    } as any;
+
+    component.onExerciseSubmit();
+
+    expect(pauseAudio).not.toHaveBeenCalled();
+    expect(resetAudioToStart).not.toHaveBeenCalled();
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).not.toHaveBeenCalled();
+  });
+
   it('should render inline progress sync toast when tracking service exposes one', () => {
     progressSyncNotificationSignal.set({
       id: 1,
@@ -947,13 +995,16 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
     window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
+    const pauseAudio = jasmine.createSpy('pauseAudio');
+    const resetAudioToStart = jasmine.createSpy('resetAudioToStart');
     component.exerciseId = 44;
     component.exerciseState.set('intro');
     component.proposition.set({ id: 44, title: 'Exercise 44' } as any);
     component.exerciseAudioUrl.set('https://minio.test/propositions/audio.mp3?signature=test');
     component.newsAudioComponent = {
       audioEnded: false,
-      pauseAudio: jasmine.createSpy('pauseAudio'),
+      pauseAudio,
+      resetAudioToStart,
       playAudio: jasmine.createSpy('playAudio'),
       audioRef: { nativeElement: { currentTime: 0 } },
     } as any;
@@ -962,9 +1013,78 @@ describe('ListenAndWriteComponent', () => {
     component.beginExercise();
 
     expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+    expect(pauseAudio).toHaveBeenCalled();
+    expect(resetAudioToStart).toHaveBeenCalled();
     expect(component.exerciseState()).toBe('exercise');
     expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
       jasmine.objectContaining({ id: 44 }),
+    );
+  });
+
+  it('should show listen-first prompt before first-time users start without completing audio', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
+    const pauseAudio = jasmine.createSpy('pauseAudio');
+    const resetAudioToStart = jasmine.createSpy('resetAudioToStart');
+    const playAudio = jasmine.createSpy('playAudio');
+    component.exerciseId = 45;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 45, title: 'Exercise 45' } as any);
+    component.exerciseAudioUrl.set('https://minio.test/propositions/audio.mp3?signature=test');
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio,
+      resetAudioToStart,
+      playAudio,
+      audioRef: { nativeElement: { currentTime: 12 } },
+    } as any;
+    const listenFirstTour = (component as any).listenFirstTourService;
+    const promptSpy = spyOn(listenFirstTour, 'prompt').and.callFake((
+      _anchor: string,
+      onListen: () => void,
+      _onSkip: () => void,
+    ) => onListen());
+
+    component.beginExercise();
+
+    expect(pauseAudio).toHaveBeenCalled();
+    expect(resetAudioToStart).toHaveBeenCalled();
+    expect(promptSpy).toHaveBeenCalledWith('#newsAudio', jasmine.any(Function), jasmine.any(Function));
+    expect(playAudio).toHaveBeenCalled();
+    expect(component.exerciseState()).toBe('intro');
+    expect(exerciseProgressTrackingMock.trackStart).not.toHaveBeenCalled();
+  });
+
+  it('should start the exercise when first-time users skip the listen-first prompt', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
+    window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
+    component.exerciseId = 46;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 46, title: 'Exercise 46' } as any);
+    component.exerciseAudioUrl.set('https://minio.test/propositions/audio.mp3?signature=test');
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio: jasmine.createSpy('pauseAudio'),
+      resetAudioToStart: jasmine.createSpy('resetAudioToStart'),
+      playAudio: jasmine.createSpy('playAudio'),
+      audioRef: { nativeElement: { currentTime: 8 } },
+    } as any;
+    const listenFirstTour = (component as any).listenFirstTourService;
+    spyOn(listenFirstTour, 'prompt').and.callFake((
+      _anchor: string,
+      _onListen: () => void,
+      onSkip: () => void,
+    ) => onSkip());
+
+    component.beginExercise();
+
+    expect(component.exerciseState()).toBe('exercise');
+    expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
+      jasmine.objectContaining({ id: 46 }),
     );
   });
 
