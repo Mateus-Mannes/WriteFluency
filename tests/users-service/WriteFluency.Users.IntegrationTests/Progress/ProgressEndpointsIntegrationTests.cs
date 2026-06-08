@@ -5,7 +5,8 @@ using WriteFluency.Users.IntegrationTests.Infrastructure;
 
 namespace WriteFluency.Users.IntegrationTests.Progress;
 
-public class ProgressEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFixture>
+[Collection(UsersApiIntegrationCollection.Name)]
+public class ProgressEndpointsIntegrationTests
 {
     private readonly UsersApiIntegrationFixture _fixture;
 

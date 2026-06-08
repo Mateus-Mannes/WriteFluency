@@ -11,7 +11,8 @@ using WriteFluency.Users.WebApi.Data;
 
 namespace WriteFluency.Users.IntegrationTests.Authentication;
 
-public class AuthEndpointsIntegrationTests : IClassFixture<UsersApiIntegrationFixture>
+[Collection(UsersApiIntegrationCollection.Name)]
+public class AuthEndpointsIntegrationTests
 {
     private readonly UsersApiIntegrationFixture _fixture;
 

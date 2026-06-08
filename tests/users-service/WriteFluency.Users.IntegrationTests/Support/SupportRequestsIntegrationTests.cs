@@ -11,7 +11,8 @@ using WriteFluency.Users.WebApi.Data;
 
 namespace WriteFluency.Users.IntegrationTests.Support;
 
-public class SupportRequestsIntegrationTests : IClassFixture<UsersApiIntegrationFixture>
+[Collection(UsersApiIntegrationCollection.Name)]
+public class SupportRequestsIntegrationTests
 {
     private readonly UsersApiIntegrationFixture _fixture;
 
