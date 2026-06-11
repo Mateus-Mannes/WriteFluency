@@ -261,6 +261,24 @@ The application includes:
 - **Aspire Dashboard**: Service orchestration and monitoring
 - **Hot Reload**: Both .NET and Angular support hot reload during development
 
+### Copy a production exercise locally
+
+With the local Aspire environment running, copy a production proposition and
+its MinIO audio/image assets into the local environment:
+
+```bash
+dotnet run \
+  --project src/tools/WriteFluency.ExerciseTransfer \
+  -- \
+  --id 2708 \
+  --context writefluency-prod
+```
+
+The tool preserves the production exercise ID. Pass `--replace` to overwrite an
+exercise that already exists locally. See
+`src/tools/WriteFluency.ExerciseTransfer/README.md` for prerequisites and
+configuration overrides.
+
 ## 🤝 Contributing
 
 1. Fork the repository

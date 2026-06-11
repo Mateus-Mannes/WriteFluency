@@ -47,12 +47,22 @@ public class TextComparisonResult
     public string UserText { get; set; }
     public List<TextComparison> Comparisons { get; set; }
     public double AccuracyPercentage { get; set; }
+    public string CorrectionMode { get; set; }
+    public bool AiAttempted { get; set; }
 
-    public TextComparisonResult(string originalText, string userText, double accuracyPercentage, List<TextComparison> comparisons)
+    public TextComparisonResult(
+        string originalText,
+        string userText,
+        double accuracyPercentage,
+        List<TextComparison> comparisons,
+        string correctionMode = CorrectionModes.Static,
+        bool aiAttempted = false)
     {
         OriginalText = originalText;
         UserText = userText;
         AccuracyPercentage = accuracyPercentage;
         Comparisons = comparisons;
+        CorrectionMode = correctionMode;
+        AiAttempted = aiAttempted;
     }
 }

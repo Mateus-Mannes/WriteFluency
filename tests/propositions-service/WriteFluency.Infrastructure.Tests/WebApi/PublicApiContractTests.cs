@@ -59,6 +59,12 @@ public class PublicApiContractTests
 
         var components = root.GetProperty("components");
         components.TryGetProperty("securitySchemes", out _).ShouldBeFalse();
+        var textComparisonResult = components
+            .GetProperty("schemas")
+            .GetProperty("TextComparisonResult")
+            .GetProperty("properties");
+        textComparisonResult.TryGetProperty("correctionMode", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("aiAttempted", out _).ShouldBeTrue();
         root.TryGetProperty("security", out _).ShouldBeFalse();
     }
 

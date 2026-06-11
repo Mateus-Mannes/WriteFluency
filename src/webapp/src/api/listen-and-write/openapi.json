@@ -713,6 +713,19 @@
           "accuracyPercentage": {
             "type": "number",
             "format": "double"
+          },
+          "correctionMode": {
+            "enum": [
+              "static",
+              "normalized",
+              "ai_refined",
+              "fallback"
+            ],
+            "type": "string",
+            "nullable": true
+          },
+          "aiAttempted": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
