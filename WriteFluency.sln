@@ -57,6 +57,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "users-progress-service", "u
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.UsersProgressService.Tests", "tests\users-progress-service\WriteFluency.UsersProgressService.Tests\WriteFluency.UsersProgressService.Tests.csproj", "{FEA75EB9-A7C6-4235-8468-015E9491963A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{DCB6FCB8-FF92-AC57-0842-1F72A354D6B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.ExerciseTransfer", "src\tools\WriteFluency.ExerciseTransfer\WriteFluency.ExerciseTransfer.csproj", "{9075A54A-753A-40CD-8665-1642ADFD1C1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -283,6 +287,18 @@ Global
 		{FEA75EB9-A7C6-4235-8468-015E9491963A}.Release|x64.Build.0 = Release|Any CPU
 		{FEA75EB9-A7C6-4235-8468-015E9491963A}.Release|x86.ActiveCfg = Release|Any CPU
 		{FEA75EB9-A7C6-4235-8468-015E9491963A}.Release|x86.Build.0 = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|x64.Build.0 = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Debug|x86.Build.0 = Debug|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x64.ActiveCfg = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x64.Build.0 = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x86.ActiveCfg = Release|Any CPU
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -313,5 +329,7 @@ Global
 		{57D24439-D12B-4DD8-B1C5-7C7DC47451E0} = {22EFAFB0-15C7-620A-05BC-08E27D81A9BD}
 		{3DBF861F-5C39-48DA-EA6F-5B71D7324ED9} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{FEA75EB9-A7C6-4235-8468-015E9491963A} = {3DBF861F-5C39-48DA-EA6F-5B71D7324ED9}
+		{DCB6FCB8-FF92-AC57-0842-1F72A354D6B1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{9075A54A-753A-40CD-8665-1642ADFD1C1A} = {DCB6FCB8-FF92-AC57-0842-1F72A354D6B1}
 	EndGlobalSection
 EndGlobal

@@ -15,5 +15,6 @@ export interface TextComparisonResult {
     userText?: string | null;
     comparisons?: Array<TextComparison> | null;
     accuracyPercentage?: number;
+    correctionMode?: 'static' | 'normalized' | 'ai_refined' | 'fallback' | string | null;
+    aiAttempted?: boolean;
 }
-

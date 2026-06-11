@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using WriteFluency.Endpoints;
 using WriteFluency.Propositions;
 using WriteFluency.WebApi.Users;
@@ -28,12 +29,13 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         [FromBody] CompareTextsDto compareTextsDto,
         HttpRequest request,
         HttpResponse response,
-        TextComparisonService textComparisonService,
+        CorrectionOrchestrationService correctionOrchestrationService,
         PropositionService propositionService,
         IUsersSessionClient usersSessionClient,
         ILogger<TextComparisonEndpointGroup> logger,
         CancellationToken cancellationToken)
     {
+        var stopwatch = Stopwatch.StartNew();
         response.Headers.CacheControl = NoStoreCacheControl;
 
         if (compareTextsDto.PropositionId <= 0)
@@ -64,18 +66,22 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                 return ProRequired(accessResult.Metadata);
             }
 
-            logger.LogInformation(
-                "Comparing text for proposition {PropositionId}",
-                compareTextsDto.PropositionId);
+            var orchestrationResult = correctionOrchestrationService.CompareTexts(
+                accessResult.OriginalText,
+                compareTextsDto.UserText,
+                isPro);
+            var result = orchestrationResult.Result;
 
-            var result = textComparisonService
-                .CompareTexts(accessResult.OriginalText, compareTextsDto.UserText);
-
             logger.LogInformation(
-                "Comparison result for proposition {PropositionId}: Accuracy={AccuracyPercentage}, Comparisons={Comparisons}",
+                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
+                isPro,
+                result.CorrectionMode,
+                orchestrationResult.StaticComparisonCount,
+                orchestrationResult.RemovedComparisonCount,
+                result.Comparisons.Count,
                 result.AccuracyPercentage,
-                result.Comparisons.Count);
+                stopwatch.ElapsedMilliseconds);
 
             return TypedResults.Ok(result);
         }

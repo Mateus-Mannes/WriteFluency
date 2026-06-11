@@ -26,4 +26,9 @@
     <ProjectReference Include="../../../src/propositions-service/WriteFluency.Application/WriteFluency.Application.csproj" />
     <ProjectReference Include="../../../src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="TextComparisons/Fixtures/deterministic-equivalence-cases.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
