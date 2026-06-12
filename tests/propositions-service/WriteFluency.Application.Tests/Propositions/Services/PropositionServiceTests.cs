@@ -223,6 +223,7 @@ public class PropositionServiceTests : ApplicationTestBase
         metadata.Title.ShouldBe("Exercise 1");
         metadata.NewsUrl.ShouldBe(propositions[0].NewsInfo.Url);
         metadata.RequiresPro.ShouldBeTrue();
+        metadata.OriginalWordCount.ShouldBe(3);
     }
 
     [Fact]

@@ -410,8 +410,14 @@ public class PropositionService
             proposition.Title,
             proposition.ImageFileId,
             proposition.NewsUrl,
-            requiresPro);
+            requiresPro,
+            CountWords(proposition.Text));
     }
+
+    private static int CountWords(string? text) =>
+        string.IsNullOrWhiteSpace(text)
+            ? 0
+            : text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 
     private static bool CanAccessExercise(bool requiresPro, bool isPro) => !requiresPro || isPro;
 

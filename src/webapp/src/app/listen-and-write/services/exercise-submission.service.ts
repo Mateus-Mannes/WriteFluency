@@ -39,13 +39,22 @@ export class ExerciseSubmissionService {
     });
   }
 
-  getSubmitWarningMessage(audioState: SubmitAudioState): string | null {
+  getSubmitWarningMessage(
+    audioState: SubmitAudioState,
+    originalWordCount: number | null | undefined,
+    userWordCount: number,
+  ): string | null {
     const warnings: string[] = [];
 
     if (!this.hasCompletedAudioPlayback(audioState)) {
       warnings.push('We strongly recommend listening through the audio before submitting. You can skip words or write what you think you heard.');
       warnings.push('If you submit too early, the accuracy percentage can be less precise and you may lose points.');
       warnings.push('If auto-pause is enabled, press play again after each pause using Ctrl/Cmd + Enter.');
+    }
+
+    const minimumWords = this.getMinimumWordsForSubmit(originalWordCount);
+    if (minimumWords > 0 && userWordCount < minimumWords) {
+      warnings.push(`Your text is still short (${userWordCount} words). Partial answers can reduce correction accuracy.`);
     }
 
     if (warnings.length === 0) {
@@ -177,6 +186,14 @@ export class ExerciseSubmissionService {
 
     const currentTime = audioState.currentTime ?? 0;
     return currentTime >= Math.max(0, duration! - constants.submitAudioRemainingToleranceSeconds);
+  }
+
+  private getMinimumWordsForSubmit(originalWordCount: number | null | undefined): number {
+    if (!Number.isFinite(originalWordCount) || (originalWordCount ?? 0) <= 0) {
+      return 0;
+    }
+
+    return Math.max(3, Math.ceil(originalWordCount! * 0.2));
   }
 
   private isProRequiredError(error: unknown): boolean {

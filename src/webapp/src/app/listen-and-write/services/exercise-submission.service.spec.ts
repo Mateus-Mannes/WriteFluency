@@ -67,7 +67,7 @@ describe('ExerciseSubmissionService', () => {
       audioEnded: false,
       currentTime: 20,
       duration: 50,
-    });
+    }, 5, 5);
 
     expect(warning).toContain('Goal: write as much of the full audio text as you can.');
 
@@ -75,9 +75,39 @@ describe('ExerciseSubmissionService', () => {
       audioEnded: false,
       currentTime: 40,
       duration: 50,
-    });
+    }, 5, 5);
 
     expect(noWarning).toBeNull();
+  });
+
+  it('should return submit warning when completed audio has fewer than 20 percent of original words', () => {
+    const warning = service.getSubmitWarningMessage({
+      audioEnded: true,
+      currentTime: 50,
+      duration: 50,
+    }, 20, 3);
+
+    expect(warning).toContain('Your text is still short (3 words). Partial answers can reduce correction accuracy.');
+  });
+
+  it('should require at least three words for short original text', () => {
+    const warning = service.getSubmitWarningMessage({
+      audioEnded: true,
+      currentTime: 10,
+      duration: 10,
+    }, 5, 2);
+
+    expect(warning).toContain('Your text is still short (2 words). Partial answers can reduce correction accuracy.');
+  });
+
+  it('should not return submit warning when audio and word-count requirements are met', () => {
+    const warning = service.getSubmitWarningMessage({
+      audioEnded: true,
+      currentTime: 50,
+      duration: 50,
+    }, 20, 4);
+
+    expect(warning).toBeNull();
   });
 
   it('should submit text, keep minimum loading state, track telemetry, and call success', fakeAsync(() => {
