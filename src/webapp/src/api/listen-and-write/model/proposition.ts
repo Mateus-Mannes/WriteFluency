@@ -21,7 +21,7 @@ export interface Proposition {
     imageFileId?: string | null;
     newsUrl?: string | null;
     requiresPro?: boolean;
+    originalWordCount?: number;
 }
 export namespace Proposition {
 }
-

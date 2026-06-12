@@ -582,6 +582,10 @@
           },
           "requiresPro": {
             "type": "boolean"
+          },
+          "originalWordCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

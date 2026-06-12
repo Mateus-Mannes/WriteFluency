@@ -66,4 +66,33 @@ describe('ExerciseSectionComponent', () => {
     expect(tooltipDirective.message).toBe('In doubt? Watch the quick tutorial video');
   });
 
+  it('should render user and original word counts', () => {
+    fixture.componentRef.setInput('proposition', { originalWordCount: 131 });
+    component.text.set('one two three');
+    fixture.detectChanges();
+
+    const wordCounter = fixture.nativeElement.querySelector('#exercise-word-count');
+
+    expect(wordCounter.textContent).toContain('Word Count:');
+    expect(wordCounter.textContent).toContain('3/131');
+  });
+
+  [
+    { words: 50, expectedClass: 'word-count-highlight' },
+    { words: 51, expectedClass: 'word-count-primary' },
+    { words: 90, expectedClass: 'word-count-success' },
+    { words: 111, expectedClass: 'word-count-primary' },
+    { words: 151, expectedClass: 'word-count-highlight' },
+  ].forEach(({ words, expectedClass }) => {
+    it(`should use ${expectedClass} at ${words} percent of the original word count`, () => {
+      fixture.componentRef.setInput('proposition', { originalWordCount: 100 });
+      component.text.set(Array.from({ length: words }, (_, index) => `word${index}`).join(' '));
+      fixture.detectChanges();
+
+      const count: HTMLElement = fixture.nativeElement.querySelector('#exercise-word-count b');
+
+      expect(count.classList.contains(expectedClass)).toBeTrue();
+    });
+  });
+
 });

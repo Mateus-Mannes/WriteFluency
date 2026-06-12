@@ -9,4 +9,5 @@ public record PropositionMetadataDto(
     string Title,
     string? ImageFileId,
     string? NewsUrl,
-    bool RequiresPro);
+    bool RequiresPro,
+    int OriginalWordCount);

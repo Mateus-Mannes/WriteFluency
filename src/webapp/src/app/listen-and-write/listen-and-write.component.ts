@@ -589,7 +589,11 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private getSubmitWarningMessage(): string | null {
-    return this.exerciseSubmission.getSubmitWarningMessage(this.getSubmitAudioState());
+    return this.exerciseSubmission.getSubmitWarningMessage(
+      this.getSubmitAudioState(),
+      this.proposition()?.originalWordCount,
+      this.exerciseSectionComponent?.wordCount ?? 0,
+    );
   }
 
   private hasCompletedAudioPlayback(): boolean {
