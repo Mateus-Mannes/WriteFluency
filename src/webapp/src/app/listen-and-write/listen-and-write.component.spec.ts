@@ -767,6 +767,35 @@ describe('ListenAndWriteComponent', () => {
     expect(exerciseProgressTrackingMock.loadState).toHaveBeenCalledWith(77);
   });
 
+  it('should reset the rendered state before restoring a different exercise route', async () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(false);
+    const browserService = (component as any).browserService;
+    spyOn(browserService, 'getItem').and.callFake((key: string) => {
+      if (key === 'listen-write-state-1') {
+        return 'exercise';
+      }
+
+      return null;
+    });
+    spyOn(component, 'loadProposition').and.stub();
+
+    routeParams$.next({ id: '1' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.exerciseState()).toBe('exercise');
+    expect(fixture.nativeElement.querySelector('app-exercise-section')).toBeTruthy();
+
+    routeParams$.next({ id: '2' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.exerciseState()).toBe('intro');
+    expect(fixture.nativeElement.querySelector('app-exercise-intro-section')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-exercise-section')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-exercise-results-section')).toBeNull();
+  });
+
   it('should render login CTA on results when user is not authenticated', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     component.exerciseState.set('results');

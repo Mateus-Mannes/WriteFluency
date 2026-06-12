@@ -95,6 +95,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private newsAudioComponentRef: NewsAudioComponent | null = null;
   private pendingPausedTimeSeconds: number | null = null;
   private restoreRequestToken = 0;
+  private hasCompletedInitialBrowserRender = false;
 
   @ViewChild(NewsAudioComponent)
   set newsAudioComponent(component: NewsAudioComponent | undefined) {
@@ -189,9 +190,15 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.exerciseStartedAtMs = null;
         this.shouldSyncCompletedResultAfterRestore = false;
         this.shouldResetCompletedStateOnNextStart = false;
+        this.exerciseState.set('intro');
+        this.stateAnimOn.set(false);
+        this.isSubmitting.set(false);
+        this.isRestoringExercise.set(false);
         this.initialText.set(null);
         this.initialAutoPause.set(null);
+        this.userText.set('');
         this.result.set(null);
+        this.pendingPausedTimeSeconds = null;
         if(this.browserService.isBrowserEnvironment()) {
           const initialProposition = this.getInitialPropositionFromState();
           if (initialProposition && initialProposition.id === this.exerciseId) {
@@ -201,7 +208,9 @@ export class ListenAndWriteComponent implements OnDestroy {
           }
         }
         this.loadProposition(this.exerciseId);
-        void this.restoreExerciseState();
+        if (!this.browserService.isBrowserEnvironment() || this.hasCompletedInitialBrowserRender) {
+          void this.restoreExerciseState();
+        }
       }
     });
 
@@ -224,8 +233,10 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
 
     afterNextRender(() => {
+      this.hasCompletedInitialBrowserRender = true;
       this.applyPendingPausedTimeIfNeeded();
       queueMicrotask(() => this.stateAnimEnabled.set(true));
+      void this.restoreExerciseState();
     });
   }
 
@@ -254,6 +265,10 @@ export class ListenAndWriteComponent implements OnDestroy {
   loadProposition(id: number): void {
     this.propositionsService.apiPropositionIdGet(id).subscribe({
       next: (data) => {
+        if (this.exerciseId !== id) {
+          return;
+        }
+
         this.proposition.set(data);
         this.exerciseSessionTracking.updateSessionContext({
           exerciseId: id
@@ -312,6 +327,10 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.syncCompletedResultAfterRestoreIfNeeded(data);
       },
       error: (error) => {
+        if (this.exerciseId !== id) {
+          return;
+        }
+
         console.error('Error loading proposition:', error);
         // notify the user and back to the home page
         alert('Error loading exercise. Returning to home page.');

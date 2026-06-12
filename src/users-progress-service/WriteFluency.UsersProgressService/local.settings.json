@@ -6,7 +6,7 @@
   },
   "Host": {
     "LocalHttpPort": 7200,
-    "CORS": "http://localhost:4200,https://localhost:4200",
+    "CORS": "http://localhost:4000,http://localhost:4200,https://localhost:4200",
     "CORSCredentials": true
   }
 }
