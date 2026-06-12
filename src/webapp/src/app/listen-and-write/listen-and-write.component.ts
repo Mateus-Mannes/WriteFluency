@@ -166,12 +166,10 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.userText.set('');
-        this.pendingPausedTimeSeconds = null;
         this.exerciseAudioController.reset();
         this.exerciseAudioAccess.reset();
         this.exerciseStateRestore.resetForExercise(this.exerciseId);
         this.result.set(null);
-        this.pendingPausedTimeSeconds = null;
         if(this.browserService.isBrowserEnvironment()) {
           const initialProposition = this.getInitialPropositionFromState();
           if (initialProposition && initialProposition.id === this.exerciseId) {
@@ -263,7 +261,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         if (this.exerciseId !== id) {
           return;
         }
-
+        
         console.error('Error loading proposition:', error);
         // notify the user and back to the home page
         alert('Error loading exercise. Returning to home page.');
