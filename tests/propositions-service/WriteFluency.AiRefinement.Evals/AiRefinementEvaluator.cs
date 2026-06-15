@@ -22,24 +22,46 @@ public sealed class AiRefinementEvaluator
     public async Task<EvaluationSummary> EvaluateAsync(
         IReadOnlyList<EvaluationCase> cases,
         int runs,
+        int concurrency,
         CancellationToken cancellationToken)
     {
-        var results = new List<EvaluationCaseResult>(cases.Count * runs);
+        var workItems = Enumerable.Range(1, runs)
+            .SelectMany(run => cases.Select((evaluationCase, caseIndex) =>
+                new EvaluationWorkItem(
+                    ((run - 1) * cases.Count) + caseIndex,
+                    run,
+                    evaluationCase)))
+            .ToList();
+        var results = new EvaluationCaseResult[workItems.Count];
+        var completedCount = 0;
 
-        for (var run = 1; run <= runs; run++)
-        {
-            foreach (var evaluationCase in cases)
+        await Parallel.ForEachAsync(
+            workItems,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = concurrency,
+                CancellationToken = cancellationToken
+            },
+            async (workItem, token) =>
             {
                 Console.WriteLine(
-                    $"[{run}/{runs}] Evaluating {evaluationCase.CaseId}...");
-                results.Add(await EvaluateCaseAsync(
-                    evaluationCase,
-                    cancellationToken));
-            }
-        }
+                    $"[{workItem.Run}/{runs}] Evaluating {workItem.Case.CaseId}...");
+                results[workItem.ResultIndex] = await EvaluateCaseAsync(
+                    workItem.Case,
+                    token);
+
+                var completed = Interlocked.Increment(ref completedCount);
+                Console.WriteLine(
+                    $"Completed {completed}/{workItems.Count}: {workItem.Case.CaseId}");
+            });
 
         return CreateSummary(results);
     }
+
+    private sealed record EvaluationWorkItem(
+        int ResultIndex,
+        int Run,
+        EvaluationCase Case);
 
     private async Task<EvaluationCaseResult> EvaluateCaseAsync(
         EvaluationCase evaluationCase,
