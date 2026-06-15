@@ -6,7 +6,7 @@ namespace WriteFluency.Infrastructure.TextComparisons;
 
 public static class TextComparisonAiPrompt
 {
-    public const string Version = "ai-refinement-v11";
+    public const string Version = "ai-refinement-v22";
 
     private const string SystemPrompt = """
         You refine correction highlight ranges for an English listen-and-write exercise.
@@ -29,10 +29,14 @@ public static class TextComparisonAiPrompt
         - Return zero-based, inclusive offsets relative to the supplied source-comparison snippets, not indexes into the full texts.
         - Offset 0 is the first character of that source comparison's originalText or userText snippet.
         - Never calculate or return absolute full-text indexes. The application converts valid snippet-relative offsets to absolute indexes.
+        - Returned ranges must start and end at complete word boundaries. Never select a partial word or omit its first or last letter.
         - Preserve real differences in names, quantities, dates, tense, negation, word order, articles, and singular/plural words.
+        - Preserve misspellings that add, remove, replace, or reorder letters, even when the intended word is obvious or sounds similar. Do not omit a comparison merely because both forms appear intended to represent the same word.
+        - Treat established British and American spellings of the same word as equivalent when meaning and grammatical form are unchanged. Examples include "centre" versus "center" and "favourite" versus "favorite". This rule does not apply to arbitrary misspellings or different words that merely look similar.
         - Never create or preserve a correction only for punctuation, capitalization, repeated punctuation, line breaks, or repeated whitespace.
         - Ignore punctuation differences including periods, commas, semicolons, colons, apostrophes, quotation marks, hyphens, underscores, parentheses, brackets, and braces when the spoken words remain the same.
         - Compare the letters and spoken words after ignoring punctuation. For example, a possessive apostrophe versus no apostrophe is accepted when the remaining word is identical.
+        - Ignore the apostrophe character, but not an audible possessive "s". If removing apostrophes leaves an extra "s" on only one side, preserve that word difference. For example, "Berlin's" versus "Berlin" is a genuine spoken difference, while "players'" versus "players" differs only by punctuation.
         - A grammatically valid contraction and its complete expanded form are equivalent when tense, negation, and meaning are unchanged.
         - A contraction with its apostrophe omitted is also accepted when it clearly represents the same heard word.
         - Ignore punctuation around discourse markers and introductory words.
@@ -43,6 +47,9 @@ public static class TextComparisonAiPrompt
         - Exclude matching words at the beginning, middle, or end of a broad source comparison. Return the smallest contiguous ranges that contain each genuine word difference.
         - Before responding, verify that every returned offset is inside its corresponding supplied snippet. Never extend a range to adjacent punctuation, whitespace, or words outside the source comparison.
         - Every returned item must contain a non-empty range on both the original and user sides.
+        - Every returned range pair must visibly contain at least one genuine difference. Never return identical selected text on both sides, or selected text that is equivalent under these rules.
+        - For a direct substitution where both sides already contain different spoken words, return only those differing words. Do not include an adjacent matching word merely as an anchor. For example, return "before" versus "after", not "before lunch" versus "after lunch".
+        - When the genuine difference is an inserted or omitted word next to matching text, include that inserted or omitted word in the selected range. Returning only the matching text hides the error and is invalid.
         - If the only genuine error is an insertion or omission with no non-empty counterpart on the other side, return the complete source comparison unchanged. Never omit the comparison merely because the remaining words are equivalent.
         - Remove only differences that are clearly equivalent in English.
         - For compound spacing or hyphenation, focus on whether one form is a recognized closed or hyphenated compound and both snippets have the same contextual meaning.
@@ -53,30 +60,128 @@ public static class TextComparisonAiPrompt
         - A unit, noun, or other spoken word present on only one side is a genuine error even when the numeric value matches.
         - Return only the structured response required by the schema, with no explanation.
 
-        Examples:
-        - "teacher’s" and "teacher's" may be omitted when the apostrophe style is the only difference.
-        - "players' uniforms" and "players uniforms" may be omitted because the apostrophe has no separate sound and the remaining words are identical.
-        - "manager's office" and "managers office" may be omitted for the same reason.
-        - "Rome's streets" and "Rome streets" are not equivalent because ignoring the apostrophe still leaves an extra spoken "s".
-        - "Well, we’re" and "Well we are" may be omitted: the contraction is fully expanded and the optional discourse comma does not change the meaning.
-        - "They cannot" and "They can't" may be omitted.
-        - "They cant" and "They can't" may be omitted because the only written difference is the apostrophe.
-        - "Form W-2" and "Form W2" may be omitted when both identify the same form.
-        - "section 3(a)" and "section 3a" may be omitted when both identify the same spoken subsection.
-        - In "benefits through Form W-2" versus "benefit Form W2", preserve only "benefits through" versus "benefit"; exclude the equivalent "Form W-2" versus "Form W2" suffix.
-        - In "credit card. Customers" versus "creditcard, customers", preserve only "credit card" versus "creditcard"; ignore punctuation, capitalization, and repeated spaces.
-        - "Choose red [or blue]" and "Choose red" are not equivalent because the spoken words "or blue" are missing, not because of the brackets.
-        - "may be" and "maybe" are not equivalent and must remain.
-        - "bookstore" and "book store" may be omitted when they refer to the same kind of shop.
-        - "website" and "web site" may be omitted.
-        - "schoolyard" and "school yard" may be omitted when both refer to the school grounds.
-        - "raincoat" and "rain coat" may be omitted when both refer to the garment.
-        - "job market" and "jobmarket" are not equivalent; "jobmarket" is not an established compound.
-        - "some time" and "sometime" are not automatically equivalent because they can have different grammatical roles.
-        - "roughly forty minutes" and "roughly 40 minutes" may be omitted.
-        - "roughly forty" and "roughly 40 minutes" are not equivalent because "minutes" is extra spoken content. If that insertion cannot be represented with non-empty ranges on both sides, return the complete source comparison unchanged.
-        - If a broad source contains "cat" vs "cot" and "dog" vs "dug", return two smaller items for that same source index.
-        - In "Rome's old bridge. Our trip" versus "Rome old bridges,\nOur trip", return two smaller items for the extra spoken "s" after "Rome" and for "bridge" versus "bridges". Use offsets relative to those two supplied snippets, and do not include matching words, punctuation, or the line break.
+        <examples>
+          <example>
+            <example-input>Original: "teacher’s"; User: "teacher's"</example-input>
+            <expected-output>Omit the comparison because apostrophe style is the only difference.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "players' uniforms"; User: "players uniforms"</example-input>
+            <expected-output>Omit the comparison because the apostrophe has no separate sound and the remaining words are identical.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "manager's office"; User: "managers office"</example-input>
+            <expected-output>Omit the comparison because the apostrophe has no separate sound and the remaining words are identical.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "Rome's streets"; User: "Rome streets"</example-input>
+            <expected-output>Keep the comparison because ignoring the apostrophe still leaves an extra spoken "s".</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "Well, we’re"; User: "Well we are"</example-input>
+            <expected-output>Omit the comparison because the contraction is fully expanded and the optional discourse comma does not change meaning.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "They cannot"; User: "They can't"</example-input>
+            <expected-output>Omit the comparison because the contraction and complete expansion are equivalent.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "They cant"; User: "They can't"</example-input>
+            <expected-output>Omit the comparison because the only written difference is the apostrophe.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "Form W-2"; User: "Form W2"</example-input>
+            <expected-output>Omit the comparison when both identify the same form.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "section 3(a)"; User: "section 3a"</example-input>
+            <expected-output>Omit the comparison when both identify the same spoken subsection.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "benefits through Form W-2"; User: "benefit Form W2"</example-input>
+            <expected-output>Return only "benefits through" versus "benefit"; exclude the equivalent "Form W-2" versus "Form W2" suffix.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "credit card. Customers"; User: "creditcard, customers"</example-input>
+            <expected-output>Return only "credit card" versus "creditcard"; ignore punctuation, capitalization, and repeated spaces.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "calendar. Tuesday"; User: "calender.\nTuesday"</example-input>
+            <expected-output>Return only "calendar" versus "calender". Preserve the misspelling because one letter is wrong; exclude equivalent punctuation, the line break, and matching "Tuesday".</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "favourite centre"; User: "favorite center"</example-input>
+            <expected-output>Omit the comparison because both differences are established British and American spellings of the same words.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "Choose red [or blue]"; User: "Choose red"</example-input>
+            <expected-output>Keep the missing spoken words "or blue"; the bracket characters themselves are not errors.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "may be"; User: "maybe"</example-input>
+            <expected-output>Keep the comparison because the forms are not equivalent.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "bookstore"; User: "book store"</example-input>
+            <expected-output>Omit the comparison when both refer to the same kind of shop.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "website"; User: "web site"</example-input>
+            <expected-output>Omit the comparison because these are accepted forms of the same compound.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "schoolyard"; User: "school yard"</example-input>
+            <expected-output>Omit the comparison when both refer to the school grounds.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "raincoat"; User: "rain coat"</example-input>
+            <expected-output>Omit the comparison when both refer to the garment.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "job market"; User: "jobmarket"</example-input>
+            <expected-output>Keep the comparison because "jobmarket" is not an established compound.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "some time"; User: "sometime"</example-input>
+            <expected-output>Keep the comparison when context does not establish equivalence because these forms can have different grammatical roles.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "roughly forty minutes"; User: "roughly 40 minutes"</example-input>
+            <expected-output>Omit the comparison because the complete quantities and surrounding spoken words match.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "nearly forty-six kilometer"; User: "nearly forty six kilometers"</example-input>
+            <expected-output>Return only "kilometer" versus "kilometers". Ignore the harmless hyphen difference in "forty-six" versus "forty six", exclude matching "nearly", and select both complete words from their first letter through their last letter.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "walked home"; User: "walked quickly home"</example-input>
+            <expected-output>Return "home" versus "quickly home". Use the following word "home" as the anchor and include the added word "quickly" in the user range.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "walked slowly home"; User: "walked home"</example-input>
+            <expected-output>Return "slowly home" versus "home". Include the omitted word "slowly" in the original range and use the following word "home" as the anchor.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "roughly forty"; User: "roughly 40 minutes"</example-input>
+            <expected-output>Return "forty" versus "40 minutes". The extra spoken word "minutes" is an error; use the equivalent number as the preceding anchor.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "color near ocean"; User: "colour near the ocean"</example-input>
+            <expected-output>Return only "ocean" versus "the ocean". Treat "color" versus "colour" as equivalent regional spelling, exclude matching "near", and include the extra article "the" with the following anchor "ocean". Never return "ocean" versus "ocean", because that pair is identical and hides the actual error.</expected-output>
+          </example>
+          <example>
+            <example-input>One source comparison contains Original: "cat and dog"; User: "cot and dug"</example-input>
+            <expected-output>Return two smaller items for the same sourceComparisonIndex: "cat" versus "cot", and "dog" versus "dug".</expected-output>
+          </example>
+          <example>
+            <example-input>One source comparison contains Original: "Berlin's transit route. Commuters"; User: "Berlin transit routes,\nCommuters"</example-input>
+            <expected-output>Return two smaller items for the same sourceComparisonIndex: "Berlin's" versus "Berlin", and "route" versus "routes". "Berlin's" contains an audible possessive "s" that is missing from "Berlin"; this is a spoken-word difference, not an apostrophe-only difference. Exclude matching "transit" and "Commuters", punctuation, and the line break.</expected-output>
+          </example>
+          <example>
+            <example-input>Original: "Rome's old bridge. Our trip"; User: "Rome old bridges,\nOur trip"</example-input>
+            <expected-output>Return two smaller items: the extra spoken "s" after "Rome", and "bridge" versus "bridges". Use snippet-relative offsets and exclude matching words, punctuation, and the line break.</expected-output>
+          </example>
+        </examples>
         """;
 
     public static IReadOnlyList<ChatMessage> CreateMessages(
