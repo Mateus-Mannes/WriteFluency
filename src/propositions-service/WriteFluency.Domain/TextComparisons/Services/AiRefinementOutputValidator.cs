@@ -22,21 +22,29 @@ public sealed class AiRefinementOutputValidator
                 return AiRefinementValidationResult.Failure("unknown_source_comparison");
             }
 
-            var originalRange = new TextRange(
+            var candidateOriginalRange = new TextRange(
                 candidate.OriginalTextInitialIndex,
                 candidate.OriginalTextFinalIndex);
-            var userRange = new TextRange(
+            var candidateUserRange = new TextRange(
                 candidate.UserTextInitialIndex,
                 candidate.UserTextFinalIndex);
 
-            if (!IsValidRange(originalRange, request.OriginalText.Length)
-                || !IsValidRange(userRange, request.UserText.Length))
+            if (!IsValidRange(candidateOriginalRange, request.OriginalText.Length)
+                || !IsValidRange(candidateUserRange, request.UserText.Length))
             {
                 return AiRefinementValidationResult.Failure("invalid_range");
             }
 
-            if (!IsContainedBy(originalRange, source.OriginalTextRange)
-                || !IsContainedBy(userRange, source.UserTextRange))
+            if (!TryNormalizeToSource(
+                    candidateOriginalRange,
+                    source.OriginalTextRange,
+                    request.OriginalText,
+                    out var originalRange)
+                || !TryNormalizeToSource(
+                    candidateUserRange,
+                    source.UserTextRange,
+                    request.UserText,
+                    out var userRange))
             {
                 return AiRefinementValidationResult.Failure("range_outside_source");
             }
@@ -71,6 +79,67 @@ public sealed class AiRefinementOutputValidator
     private static bool IsContainedBy(TextRange candidate, TextRange source) =>
         candidate.InitialIndex >= source.InitialIndex
         && candidate.FinalIndex <= source.FinalIndex;
+
+    private static bool TryNormalizeToSource(
+        TextRange candidate,
+        TextRange source,
+        string fullText,
+        out TextRange normalized)
+    {
+        normalized = candidate;
+        if (IsContainedBy(candidate, source))
+        {
+            return true;
+        }
+
+        if (candidate.InitialIndex < source.InitialIndex
+            && !ContainsOnlyIgnorableBoundaryCharacters(
+                fullText,
+                candidate.InitialIndex,
+                Math.Min(candidate.FinalIndex, source.InitialIndex - 1)))
+        {
+            return false;
+        }
+
+        if (candidate.FinalIndex > source.FinalIndex
+            && !ContainsOnlyIgnorableBoundaryCharacters(
+                fullText,
+                Math.Max(candidate.InitialIndex, source.FinalIndex + 1),
+                candidate.FinalIndex))
+        {
+            return false;
+        }
+
+        normalized = new TextRange(
+            Math.Max(candidate.InitialIndex, source.InitialIndex),
+            Math.Min(candidate.FinalIndex, source.FinalIndex));
+
+        return normalized.FinalIndex >= normalized.InitialIndex
+            && IsContainedBy(normalized, source);
+    }
+
+    private static bool ContainsOnlyIgnorableBoundaryCharacters(
+        string text,
+        int initialIndex,
+        int finalIndex)
+    {
+        if (finalIndex < initialIndex)
+        {
+            return true;
+        }
+
+        for (var index = initialIndex; index <= finalIndex; index++)
+        {
+            var character = text[index];
+            if (!char.IsWhiteSpace(character)
+                && !char.IsPunctuation(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private static bool TrySlice(string text, TextRange range, out string snippet)
     {

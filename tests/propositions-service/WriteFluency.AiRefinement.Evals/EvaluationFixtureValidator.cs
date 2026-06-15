@@ -12,6 +12,12 @@ public static class EvaluationFixtureValidator
 
     private static void Validate(EvaluationCase evaluationCase)
     {
+        if (string.IsNullOrWhiteSpace(evaluationCase.Expectation))
+        {
+            throw new InvalidOperationException(
+                $"Evaluation case '{evaluationCase.CaseId}' must explain its expected behavior.");
+        }
+
         var source = evaluationCase.SourceComparison;
         var originalSnippet = Slice(
             evaluationCase.OriginalText,

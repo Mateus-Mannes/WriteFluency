@@ -22,7 +22,7 @@
             "program": "${workspaceFolder}/tests/propositions-service/WriteFluency.AiRefinement.Evals/bin/Debug/net10.0/WriteFluency.AiRefinement.Evals.dll",
             "args": [
                 "--case",
-                "real-retirement-mixed-range",
+                "real-regional-spelling-with-article",
                 "--report-only"
             ],
             "cwd": "${workspaceFolder}",

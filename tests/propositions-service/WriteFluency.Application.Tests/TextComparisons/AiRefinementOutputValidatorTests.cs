@@ -55,6 +55,77 @@ public class AiRefinementOutputValidatorTests
         result.Comparisons[1].OriginalText.ShouldBe("dog");
     }
 
+    [Fact]
+    public void Validate_WhenRangeExceedsSourceByWhitespace_ShouldTrimToSource()
+    {
+        var result = _validator.Validate(
+            CreateRequest(),
+            [new AiRefinedComparison(0, 2, 15, 2, 15)]);
+
+        result.IsValid.ShouldBeTrue();
+        var comparison = result.Comparisons.Single();
+        comparison.OriginalTextRange.ShouldBe(new TextRange(2, 14));
+        comparison.UserTextRange.ShouldBe(new TextRange(2, 14));
+        comparison.OriginalText.ShouldBe("cat and a dog");
+        comparison.UserText.ShouldBe("cot and a dug");
+    }
+
+    [Fact]
+    public void Validate_WhenRangeExceedsSourceByPunctuation_ShouldTrimToSource()
+    {
+        const string originalText = "A (cat), runs.";
+        const string userText = "A [cot]; runs.";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(3, 5),
+                    "cat",
+                    new TextRange(3, 5),
+                    "cot")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 2, 7, 2, 7)]);
+
+        result.IsValid.ShouldBeTrue();
+        var comparison = result.Comparisons.Single();
+        comparison.OriginalText.ShouldBe("cat");
+        comparison.UserText.ShouldBe("cot");
+    }
+
+    [Theory]
+    [InlineData("A catx runs.", "A cotx runs.")]
+    [InlineData("A cat1 runs.", "A cot1 runs.")]
+    [InlineData("A cat$ runs.", "A cot$ runs.")]
+    public void Validate_WhenOverflowContainsMeaningfulCharacter_ShouldRejectEntireOutput(
+        string originalText,
+        string userText)
+    {
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(2, 4),
+                    originalText[2..5],
+                    new TextRange(2, 4),
+                    userText[2..5])
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 2, 5, 2, 5)]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("range_outside_source");
+        result.Comparisons.ShouldBeEmpty();
+    }
+
     [Theory]
     [InlineData(-1, 4, 2, 4, "invalid_range")]
     [InlineData(4, 2, 2, 4, "invalid_range")]

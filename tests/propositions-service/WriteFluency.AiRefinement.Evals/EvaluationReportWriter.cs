@@ -1,12 +1,14 @@
 using System.Text;
 using System.Text.Json;
+using WriteFluency.TextComparisons;
 
 namespace WriteFluency.AiRefinement.Evals;
 
 public static class EvaluationReportWriter
 {
-    public static async Task<string> WriteAsync(
+    public static async Task<EvaluationReportPaths> WriteAsync(
         EvaluationSummary summary,
+        IReadOnlyList<EvaluationCase> evaluationCases,
         CancellationToken cancellationToken)
     {
         var outputDirectory = Path.Combine(
@@ -30,7 +32,114 @@ public static class EvaluationReportWriter
             CreateMarkdown(summary),
             cancellationToken);
 
-        return markdownPath;
+        var highlightsPath = Path.Combine(outputDirectory, "highlights.json");
+        var indentedJsonContext = new EvaluationJsonContext(
+            new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(
+            highlightsPath,
+            JsonSerializer.Serialize(
+                CreateHighlightsReport(summary, evaluationCases),
+                indentedJsonContext.EvaluationHighlightsReport),
+            cancellationToken);
+
+        return new EvaluationReportPaths(
+            markdownPath,
+            jsonPath,
+            highlightsPath);
+    }
+
+    private static EvaluationHighlightsReport CreateHighlightsReport(
+        EvaluationSummary summary,
+        IReadOnlyList<EvaluationCase> evaluationCases)
+    {
+        var casesById = evaluationCases.ToDictionary(
+            evaluationCase => evaluationCase.CaseId);
+
+        var results = summary.Cases
+            .Select(result => CreateCaseHighlights(
+                result,
+                casesById[result.CaseId]))
+            .ToList();
+
+        return new EvaluationHighlightsReport(
+            summary.Model,
+            summary.PromptVersion,
+            summary.ExecutedAtUtc,
+            results);
+    }
+
+    private static EvaluationCaseHighlights CreateCaseHighlights(
+        EvaluationCaseResult result,
+        EvaluationCase evaluationCase)
+    {
+        var expectedHighlights = CreateHighlights(
+            result.ExpectedRanges,
+            evaluationCase);
+        var aiHighlights = CreateHighlights(
+            result.ActualRanges,
+            evaluationCase);
+        var sourceComparison = CreateSourceComparison(evaluationCase);
+
+        return new EvaluationCaseHighlights(
+            result.CaseId,
+            evaluationCase.Expectation,
+            evaluationCase.OriginalText,
+            evaluationCase.UserText,
+            sourceComparison,
+            result.ExpectedAction,
+            result.ActualAction,
+            result.IsExactMatch,
+            result.Error,
+            expectedHighlights,
+            aiHighlights);
+    }
+
+    private static EvaluationHighlight CreateSourceComparison(
+        EvaluationCase evaluationCase) =>
+        new(
+            evaluationCase.SourceComparison.SourceComparisonIndex,
+            CreateHighlightedText(
+                evaluationCase.OriginalText,
+                evaluationCase.SourceComparison.OriginalTextRange.InitialIndex,
+                evaluationCase.SourceComparison.OriginalTextRange.FinalIndex),
+            CreateHighlightedText(
+                evaluationCase.UserText,
+                evaluationCase.SourceComparison.UserTextRange.InitialIndex,
+                evaluationCase.SourceComparison.UserTextRange.FinalIndex));
+
+    private static IReadOnlyList<EvaluationHighlight>? CreateHighlights(
+        IReadOnlyList<AiRefinedComparison> ranges,
+        EvaluationCase evaluationCase) =>
+        ranges.Count == 0
+            ? null
+            : ranges
+                .Select(range => new EvaluationHighlight(
+                    range.SourceComparisonIndex,
+                    CreateHighlightedText(
+                        evaluationCase.OriginalText,
+                        range.OriginalTextInitialIndex,
+                        range.OriginalTextFinalIndex),
+                    CreateHighlightedText(
+                        evaluationCase.UserText,
+                        range.UserTextInitialIndex,
+                        range.UserTextFinalIndex)))
+                .ToList();
+
+    private static EvaluationHighlightedText CreateHighlightedText(
+        string fullText,
+        int initialIndex,
+        int finalIndex)
+    {
+        var highlightedText = initialIndex >= 0
+            && finalIndex >= initialIndex
+            && finalIndex < fullText.Length
+                ? fullText.Substring(initialIndex, finalIndex - initialIndex + 1)
+                : null;
+
+        return new EvaluationHighlightedText(
+            initialIndex,
+            finalIndex,
+            highlightedText);
     }
 
     private static string CreateMarkdown(EvaluationSummary summary)
@@ -87,3 +196,8 @@ public static class EvaluationReportWriter
         return Directory.GetCurrentDirectory();
     }
 }
+
+public sealed record EvaluationReportPaths(
+    string Markdown,
+    string Json,
+    string Highlights);
