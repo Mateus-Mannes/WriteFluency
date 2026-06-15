@@ -30,11 +30,14 @@ public sealed record AiRefinementResult(
 public sealed record AiRefinementValidationResult(
     bool IsValid,
     IReadOnlyList<TextComparison> Comparisons,
+    IReadOnlyList<AiRefinedComparison> NormalizedRanges,
     string? FailureReason)
 {
-    public static AiRefinementValidationResult Success(IReadOnlyList<TextComparison> comparisons) =>
-        new(true, comparisons, null);
+    public static AiRefinementValidationResult Success(
+        IReadOnlyList<TextComparison> comparisons,
+        IReadOnlyList<AiRefinedComparison> normalizedRanges) =>
+        new(true, comparisons, normalizedRanges, null);
 
     public static AiRefinementValidationResult Failure(string reason) =>
-        new(false, [], reason);
+        new(false, [], [], reason);
 }

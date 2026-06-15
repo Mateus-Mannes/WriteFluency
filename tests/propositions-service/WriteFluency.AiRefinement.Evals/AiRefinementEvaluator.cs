@@ -96,7 +96,9 @@ public sealed class AiRefinementEvaluator
         {
             var refinement = await _refiner.RefineAsync(request, cancellationToken);
             var validation = _validator.Validate(request, refinement.Comparisons);
-            var actualRanges = refinement.Comparisons
+            var actualRanges = (validation.IsValid
+                    ? validation.NormalizedRanges
+                    : refinement.Comparisons)
                 .OrderBy(range => range.OriginalTextInitialIndex)
                 .ThenBy(range => range.UserTextInitialIndex)
                 .ToList();
@@ -149,6 +151,8 @@ public sealed class AiRefinementEvaluator
             && result.Error != "unknown_source_comparison"
             && result.Error != "invalid_range"
             && result.Error != "range_outside_source"
+            && result.Error != "partial_word_range"
+            && result.Error != "empty_range_after_normalization"
             && result.Error != "unsafe_text_slice");
 
         var removalPrecision = actualRemovals == 0

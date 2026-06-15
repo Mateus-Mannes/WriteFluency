@@ -174,6 +174,51 @@ public class AiRefinementOutputValidatorTests
         result.FailureReason.ShouldBe("missing_comparisons");
     }
 
+    [Theory]
+    [InlineData(3, 4, 2, 4)]
+    [InlineData(2, 3, 2, 4)]
+    [InlineData(2, 4, 3, 4)]
+    [InlineData(2, 4, 2, 3)]
+    public void Validate_WhenRangeCutsThroughWord_ShouldExpandToWordBoundaries(
+        int originalStart,
+        int originalEnd,
+        int userStart,
+        int userEnd)
+    {
+        var result = _validator.Validate(
+            CreateRequest(),
+            [
+                new AiRefinedComparison(
+                    0,
+                    originalStart,
+                    originalEnd,
+                    userStart,
+                    userEnd)
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        var comparison = result.Comparisons.Single();
+        comparison.OriginalText.ShouldBe("cat");
+        comparison.UserText.ShouldBe("cot");
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 2, 4, 2, 4));
+    }
+
+    [Fact]
+    public void Validate_WhenRangeIncludesBoundaryWhitespace_ShouldTrimWhitespace()
+    {
+        var result = _validator.Validate(
+            CreateRequest(),
+            [new AiRefinedComparison(0, 1, 5, 1, 5)]);
+
+        result.IsValid.ShouldBeTrue();
+        var comparison = result.Comparisons.Single();
+        comparison.OriginalText.ShouldBe("cat");
+        comparison.UserText.ShouldBe("cot");
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 2, 4, 2, 4));
+    }
+
     private static AiRefinementRequest CreateRequest()
     {
         const string originalText = "A cat and a dog run.";

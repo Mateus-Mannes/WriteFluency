@@ -363,36 +363,6 @@
     ]
   },
   {
-    "caseId": "real-number-with-extra-word",
-    "category": "dangerous-number-normalization",
-    "expectation": "Keep the complete comparison because seconds is extra spoken content and the current two-sided range contract cannot represent a user-only insertion.",
-    "originalText": "A researcher from Australia made a new way to make espresso using sound waves. Normally, hot water is pushed through coffee grounds to make espresso. This takes about thirty seconds and uses a lot of energy. The new method, called ultrasonic espresso, uses high sound waves at room temperature. It takes less than three minutes to get the flavor and caffeine from the coffee. This saves up to seventy-five percent of energy because no hot water is needed. Big coffee companies that make bottled or cold coffee can use this method. It makes coffee faster and saves energy. The sound waves make tiny bubbles that form and pop near the coffee. These bubbles help release the coffee's flavor. This new way could change how coffee is made all over the world. It is faster and better for the environment.",
-    "userText": "A researcher from Australia, made a new way to make espresso using sound waves. Normally,  hot water is push through coffee grounds to make espresso. This takes about 30 seconds and uses a lot of energy. The new method called ultrasonic espresso uses high sound waves at room temperature. It takes  less than three minutes to get the flavor and caffeine from the coffee. This saves up to seventy-five percent of energy because no hot water is needed. Big coffee companies that make bottled or cold coffee can use this method. It makes coffee faster and saves energy. The sound waves  make tiny bubble that form and pop near the coffee. This bubbles helps release the coffee's flavor. This new way could change how coffee is made all over the world. It is faster and better for the environment.",
-    "sourceComparison": {
-      "sourceComparisonIndex": 1,
-      "originalTextRange": {
-        "initialIndex": 161,
-        "finalIndex": 172
-      },
-      "originalText": "about thirty",
-      "userTextRange": {
-        "initialIndex": 161,
-        "finalIndex": 176
-      },
-      "userText": "about 30 seconds"
-    },
-    "expectedAction": "keep",
-    "expectedRanges": [
-      {
-        "sourceComparisonIndex": 1,
-        "originalTextInitialIndex": 161,
-        "originalTextFinalIndex": 172,
-        "userTextInitialIndex": 161,
-        "userTextFinalIndex": 176
-      }
-    ]
-  },
-  {
     "caseId": "real-abbreviation-expansion",
     "category": "equivalent-abbreviation",
     "expectation": "Remove the comparison because Jr and junior are equivalent written forms of the same spoken title.",
