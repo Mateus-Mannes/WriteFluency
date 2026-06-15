@@ -80,6 +80,7 @@ try
     var summary = await evaluator.EvaluateAsync(
         cases,
         arguments.Runs,
+        arguments.Concurrency,
         cancellation.Token);
     var reportPaths = await EvaluationReportWriter.WriteAsync(
         summary,

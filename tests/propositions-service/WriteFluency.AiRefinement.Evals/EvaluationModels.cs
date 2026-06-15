@@ -104,6 +104,7 @@ public sealed class EvaluationArguments
 {
     public string? Model { get; private set; }
     public int Runs { get; private set; } = 1;
+    public int Concurrency { get; private set; } = 1;
     public string? CaseId { get; private set; }
     public bool ReportOnly { get; private set; }
     public bool ValidateOnly { get; private set; }
@@ -122,6 +123,10 @@ public sealed class EvaluationArguments
                 case "--runs":
                     result.Runs = int.Parse(NextValue(args, ref index, "--runs"));
                     break;
+                case "--concurrency":
+                    result.Concurrency = int.Parse(
+                        NextValue(args, ref index, "--concurrency"));
+                    break;
                 case "--case":
                     result.CaseId = NextValue(args, ref index, "--case");
                     break;
@@ -139,6 +144,12 @@ public sealed class EvaluationArguments
         if (result.Runs <= 0)
         {
             throw new ArgumentException("--runs must be greater than zero.");
+        }
+
+        if (result.Concurrency <= 0)
+        {
+            throw new ArgumentException(
+                "--concurrency must be greater than zero.");
         }
 
         return result;
