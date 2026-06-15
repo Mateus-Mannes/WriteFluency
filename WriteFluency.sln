@@ -61,6 +61,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{DCB6FCB8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.ExerciseTransfer", "src\tools\WriteFluency.ExerciseTransfer\WriteFluency.ExerciseTransfer.csproj", "{9075A54A-753A-40CD-8665-1642ADFD1C1A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriteFluency.AiRefinement.Evals", "tests\propositions-service\WriteFluency.AiRefinement.Evals\WriteFluency.AiRefinement.Evals.csproj", "{68AE462A-E2EB-479B-8841-05002645EA78}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -299,6 +301,18 @@ Global
 		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x64.Build.0 = Release|Any CPU
 		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x86.ActiveCfg = Release|Any CPU
 		{9075A54A-753A-40CD-8665-1642ADFD1C1A}.Release|x86.Build.0 = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|x64.Build.0 = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Debug|x86.Build.0 = Debug|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|x64.ActiveCfg = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|x64.Build.0 = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|x86.ActiveCfg = Release|Any CPU
+		{68AE462A-E2EB-479B-8841-05002645EA78}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -331,5 +345,6 @@ Global
 		{FEA75EB9-A7C6-4235-8468-015E9491963A} = {3DBF861F-5C39-48DA-EA6F-5B71D7324ED9}
 		{DCB6FCB8-FF92-AC57-0842-1F72A354D6B1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9075A54A-753A-40CD-8665-1642ADFD1C1A} = {DCB6FCB8-FF92-AC57-0842-1F72A354D6B1}
+		{68AE462A-E2EB-479B-8841-05002645EA78} = {B11390B1-C489-9B8F-C9B1-D8AA5079857B}
 	EndGlobalSection
 EndGlobal

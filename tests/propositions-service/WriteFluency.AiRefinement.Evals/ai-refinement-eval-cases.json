@@ -1,0 +1,387 @@
+[
+  {
+    "caseId": "real-exact-whitespace-duplicate",
+    "category": "equivalent-whitespace",
+    "originalText": "A house fire happened in Gisborne on George Street in the Mangapapa area. Emergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what caused the fire and think it might have been intentional. They said one person is helping with the investigation. This event reminds local residents how important it is to stay safe and watch out for each other.",
+    "userText": "A house fire happened in Gisborne on George Street, in the Mangapapa area. \n\nEmergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what cause they fire and thinking it might had been intentional. They said one person is helping with the investigation. \n\nThis event reminds local residents how important it is to stay safe and watch out for each other.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 0,
+      "originalTextRange": {
+        "initialIndex": 74,
+        "finalIndex": 82
+      },
+      "originalText": "Emergency",
+      "userTextRange": {
+        "initialIndex": 75,
+        "finalIndex": 85
+      },
+      "userText": "\n\nEmergency"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-smart-apostrophe",
+    "category": "equivalent-typography",
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "sourceComparison": {
+      "sourceComparisonIndex": 10,
+      "originalTextRange": {
+        "initialIndex": 619,
+        "finalIndex": 624
+      },
+      "originalText": "Kate’s",
+      "userTextRange": {
+        "initialIndex": 612,
+        "finalIndex": 617
+      },
+      "userText": "Kate's"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-regional-spelling",
+    "category": "equivalent-regional-spelling",
+    "originalText": "Some of the most stunning log homes can be found in places like Colorado and California. One charming house in Colorado sits on a peninsula surrounded by a lake, featuring huge log beams and a cozy antler chandelier. It comes with a guesthouse, a barn, and even a greenhouse dome, all on over forty-five acres of land. Meanwhile, on the California coast, a log house built in the style of a mountain cabin has a dramatic two-story living room with a large stone fireplace and a staircase made of logs. These unique homes showcase the beauty and craftsmanship of traditional log construction, making them truly special places to live or visit.",
+    "userText": "Some of the stunning log homes can be found in places like Colorado and California. One charming house in Colorado sets on a penninsula surrounded by a lake, featuring huge log beams and a cosy antler chandelier. It comes with a guessed house, a barnand even a green house stone. All an over forty-five hecars of land. Meanwhile on the California coast a log house built in a style of a mountain cabin, has a dramatic two store, living room with a large stone fireplace and a staircase made of logs. These unique homes showcase the beauty and crossmentship of traditional log construction,making them truly special places to live or visit",
+    "sourceComparison": {
+      "sourceComparisonIndex": 3,
+      "originalTextRange": {
+        "initialIndex": 193,
+        "finalIndex": 196
+      },
+      "originalText": "cozy",
+      "userTextRange": {
+        "initialIndex": 189,
+        "finalIndex": 192
+      },
+      "userText": "cosy"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-compound-spacing",
+    "category": "equivalent-compound",
+    "originalText": "In central London, there is a old neighborhood called Holborn. It is known for its special pubs. One pub is Ye Olde Mitre. It has been open since the 1500s. It has small rooms and an outdoor area. It has been in famous movies. It shows history. Another pub is the Princess Louise. It was built in the late 1800s. It is known for its woodwork and old style features. Many visitors like to spend time in these pubs. They try traditional British drinks and food. The area is good for walking. Many pubs are close to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay. It is a short walk from these old pubs.",
+    "userText": "In central London there is a old neighbourhood called Holborn. It is known for  its special pubs. One pub is the Ye olde Mitre. It has been opened since the 1500's. It has small rooms and an outdoor area. It has been in famous movies, it shows history. Another pub is the Princess Louise, it was built in the late 1800's. It is known for its wood work and old style features. Many visitors like to spend time in these pubs. They try traditional British  drinks and food. The area is good for walking, many pubs are closed to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay, it's a short walk from these old pubs.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 5,
+      "originalTextRange": {
+        "initialIndex": 329,
+        "finalIndex": 340
+      },
+      "originalText": "its woodwork",
+      "userTextRange": {
+        "initialIndex": 338,
+        "finalIndex": 350
+      },
+      "userText": "its wood work"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-year-number-words",
+    "category": "equivalent-number",
+    "originalText": "In Mount Isa, Ishani Harney makes cakes for birthdays, weddings, and events. She started her business in 2022. Many people like her cakes. But her shop has been vandalized many times in the past three years. The damage includes break-ins, graffiti, and a broken glass door. These events make her sad and cause money problems. She finds it hard to get help through grants. She tries to fix her shop, but she feels sad and thinks reporting vandalism might not help. The police tell shop owners to report damage. When they do not report, it is harder to find and stop the vandals.",
+    "userText": "in mount Isa, ishani harney makes cakes for birthdays, weddings and events. she started her business in twenty twenty two. many people like her cakes but her shop has been vandalise many times in the past three years.  the damage include break in grafity and a broken glass door. this events make her sad and cost money problems. she find she hard to get a help. she tried to fix her shop but she feels sad and thinks reporting vandalism might not help. the police tell shop owner to report damage. where they do not report it is harder to find and stop the vandal.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 0,
+      "originalTextRange": {
+        "initialIndex": 102,
+        "finalIndex": 108
+      },
+      "originalText": "in 2022",
+      "userTextRange": {
+        "initialIndex": 101,
+        "finalIndex": 120
+      },
+      "userText": "in twenty twenty two"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-contraction-and-punctuation",
+    "category": "equivalent-contraction",
+    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
+    "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
+    "sourceComparison": {
+      "sourceComparisonIndex": 10,
+      "originalTextRange": {
+        "initialIndex": 749,
+        "finalIndex": 756
+      },
+      "originalText": "So, it’s",
+      "userTextRange": {
+        "initialIndex": 715,
+        "finalIndex": 722
+      },
+      "userText": "So it is"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-possessive-meaning",
+    "category": "equivalent-unspoken-punctuation",
+    "originalText": "Jesy Nelson, a well-known singer, recently shared a heartfelt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis, Jesy noticed unusual signs in their movement and breathing, but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seemed to breathe from their bellies. Over time, these signs worsened, and Jesy realized her daughters might have a serious condition called Spinal Muscular Atrophy. After a diagnosis, she became an advocate, speaking openly about her daughters' health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
+    "userText": "Jessy Nelson a well know singer, recently shared a heart-felt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis Jessy noticed unusual signs in their movements and breathing but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seem to breathe from their bellies. Over time, this signs worsten and just she realized her daughters might have a serious condition called spinal muscular atrophy after a diagnosis she became an advocate speaking openly about her daughters health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 9,
+      "originalTextRange": {
+        "initialIndex": 641,
+        "finalIndex": 650
+      },
+      "originalText": "daughters'",
+      "userTextRange": {
+        "initialIndex": 637,
+        "finalIndex": 645
+      },
+      "userText": "daughters"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-every-day-everyday",
+    "category": "dangerous-word-boundary",
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "sourceComparison": {
+      "sourceComparisonIndex": 2,
+      "originalTextRange": {
+        "initialIndex": 156,
+        "finalIndex": 169
+      },
+      "originalText": "Every day, she",
+      "userTextRange": {
+        "initialIndex": 156,
+        "finalIndex": 167
+      },
+      "userText": "Everyday she"
+    },
+    "expectedAction": "shrink",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextInitialIndex": 156,
+        "originalTextFinalIndex": 164,
+        "userTextInitialIndex": 156,
+        "userTextFinalIndex": 163
+      }
+    ]
+  },
+  {
+    "caseId": "real-invalid-compound",
+    "category": "dangerous-compound",
+    "originalText": "SpaceX is a rocket company led by Elon Musk. It wants to go public and have a big stock sale. They plan to raise seventy-five billion dollars by selling over half a million shares at one hundred thirty-five dollars each. This would beat the record of Saudi Aramco, which raised twenty-nine billion dollars. Musk will still control most of the company, holding about eighty-two percent of the voting shares. This is important because SpaceX is about to start trading on the stock market. Many investors and tech fans want to see how this big IPO will turn out.",
+    "userText": "SpaceX its a rocket company lead by elon musk. it want to go public and have a big stocksale,  they plan to raise seventy five billion dollar by selling over half a million shares at one hundred thrity five dollar age. this would be the record by of saudi Aramco. which raise twenty nine billion dollars. musk will still control most of the company. holding about eighty two percents of the voting shares. this is important because SpaceX is about to start trading on the stock market. many investors and tech fans wanna see how this big IPO would turn out.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 3,
+      "originalTextRange": {
+        "initialIndex": 82,
+        "finalIndex": 97
+      },
+      "originalText": "stock sale. They",
+      "userTextRange": {
+        "initialIndex": 83,
+        "finalIndex": 98
+      },
+      "userText": "stocksale,  they"
+    },
+    "expectedAction": "shrink",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextInitialIndex": 82,
+        "originalTextFinalIndex": 91,
+        "userTextInitialIndex": 83,
+        "userTextFinalIndex": 91
+      }
+    ]
+  },
+  {
+    "caseId": "real-healthcare-mixed-range",
+    "category": "shrink-mixed-equivalence",
+    "originalText": "Recent world politics have changed financial markets. As conflicts in the Middle East grow, the economy might change. When inflation goes up and growth slows, some stocks do better. Experts say investors should look at value stocks in energy, healthcare, and everyday goods. These areas did well in past high inflation times. With oil prices rising and inflation high, different companies might lead the market now. This change could create new chances for investors who watch carefully.",
+    "userText": "Recent World Politics have changed financial market. As conflicts in the Middle East grow, the economy might change. When inflation goes up and growth slows, some stocks do better. Experts say investors should look at value stocks and energy, health care, and everyday goods. These areas did well in past high inflation times. With oil prices rising, inflation high, different companies might lead the market now. This change could create new chances for investors who watch carefully.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 1,
+      "originalTextRange": {
+        "initialIndex": 232,
+        "finalIndex": 257
+      },
+      "originalText": "in energy, healthcare, and",
+      "userTextRange": {
+        "initialIndex": 231,
+        "finalIndex": 258
+      },
+      "userText": "and energy, health care, and"
+    },
+    "expectedAction": "shrink",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextInitialIndex": 232,
+        "originalTextFinalIndex": 233,
+        "userTextInitialIndex": 231,
+        "userTextFinalIndex": 233
+      }
+    ]
+  },
+  {
+    "caseId": "real-large-number-equivalence",
+    "category": "equivalent-number",
+    "originalText": "A new study shows that changing how parents introduce peanuts to babies has made a big difference. Since health officials in 2015 recommended giving infants peanut products starting at around four months, about sixty thousand children have avoided developing peanut allergies. Before that, doctors advised waiting until children were three years old, but the new guidance helped many kids stay allergy-free. Researchers from the Children's Hospital of Philadelphia looked at health records and found that peanut allergies in children under three dropped by more than a quarter after the new advice. They saw even bigger drops after the guidelines were expanded in 2017. Experts say this is a major success that has helped prevent serious food allergies in thousands of children.",
+    "userText": "A new study shows that changing how parent introduce peanut to baby had made a big differences. Since health officials in 2015 recommended, giving peanut product storing around 4 months, about 60000 children have avoided deloping peanut allergies. Before that, doctor advice waiting until childrens were 3 years old, but the new guide in health many kids stay out allergy free. Researcher from children's hospital of philadephia looked at health records and found that peanut allergy in children under 3 dropped more than a quarter after a new advice. They saw even bigger drops after the guiline was expanded in 2017. Experts say it is a major success the help prevent serious food allergy in thousands of children",
+    "sourceComparison": {
+      "sourceComparisonIndex": 5,
+      "originalTextRange": {
+        "initialIndex": 205,
+        "finalIndex": 233
+      },
+      "originalText": "about sixty thousand children",
+      "userTextRange": {
+        "initialIndex": 187,
+        "finalIndex": 206
+      },
+      "userText": "about 60000 children"
+    },
+    "expectedAction": "remove",
+    "expectedRanges": []
+  },
+  {
+    "caseId": "real-retirement-mixed-range",
+    "category": "shrink-mixed-formatting",
+    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
+    "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
+    "sourceComparison": {
+      "sourceComparisonIndex": 5,
+      "originalTextRange": {
+        "initialIndex": 439,
+        "finalIndex": 480
+      },
+      "originalText": "advantage of their employer’s 401(k) match",
+      "userTextRange": {
+        "initialIndex": 417,
+        "finalIndex": 453
+      },
+      "userText": "advantages their employers 401k match"
+    },
+    "expectedAction": "split",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextInitialIndex": 439,
+        "originalTextFinalIndex": 447,
+        "userTextInitialIndex": 417,
+        "userTextFinalIndex": 426
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextInitialIndex": 449,
+        "originalTextFinalIndex": 456,
+        "userTextInitialIndex": 428,
+        "userTextFinalIndex": 432
+      }
+    ]
+  },
+  {
+    "caseId": "real-newline-with-misspelling",
+    "category": "shrink-line-break",
+    "originalText": "As summer gets closer, many people think about changing their hair color, especially to blonde. Celebrity colorist Tauni Dawson, who works with famous celebrities, says that the popular shade this season is Hot Honey Blonde. It is a warm and rich color that looks natural and effortless. She recommends that if you want a brighter blonde, use special shampoos and conditioners to keep the color bright. For warmer blondes, it is better to avoid purple shampoo and instead use nourishing masks and water filters. Dawson says the best time to go blonde is when you feel ready and willing to take care of the color, not just because it is summer. She suggests starting with a softer, multi-dimensional shade like honey or caramel before going all the way to platinum. This makes the change look more natural and easier to maintain. Summer is a common time to try blonde hair because of the sun and the lively feel, but the most important thing is to pick a shade that fits your lifestyle and makes you feel confident.",
+    "userText": "As summer gets closer, many people think about changing their hair color, especially to blonde. \n\nCelebrity colorist Tauni Dawson, who works with famous celebrities, says that the popular shade this season is hot hunny blonde. It is a warm and rich color that looks natural end effortless. \n\nShe recommends that if you want a brighter blonde, use especial shampoos and conditioners to keep the color bright. For warmer blondes it is better to avoid purple shampoo and instead use nourishing masks and  water filters. Dawson says the best time to go blonde is when you feel ready and willing to take care of the color, not just because it is summer. \n\nShe suggests starting with a softer, multidimensional shade like honey or caramel before going all the way to platinum. This makes the change look more natural and easier to mantain. \n\nSummer is a common time to try blonde hair because of the sun and the light we feel. But the most important thing, is to pick a shade that fits your lifestyle and makes you feel confident.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 7,
+      "originalTextRange": {
+        "initialIndex": 819,
+        "finalIndex": 834
+      },
+      "originalText": "maintain. Summer",
+      "userTextRange": {
+        "initialIndex": 825,
+        "finalIndex": 841
+      },
+      "userText": "mantain. \n\nSummer"
+    },
+    "expectedAction": "shrink",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextInitialIndex": 819,
+        "originalTextFinalIndex": 826,
+        "userTextInitialIndex": 825,
+        "userTextFinalIndex": 831
+      }
+    ]
+  },
+  {
+    "caseId": "real-possessive-and-plural-split",
+    "category": "split-mixed-range",
+    "originalText": "In central London, there is an interesting area that many visitors overlook. The Inns of Court, such as Gray’s Inn and Lincoln’s Inn, are old places where lawyers learn and work. These sites are close to the Royal Courts of Justice and have impressive buildings, green gardens, and stories from long ago. A local guide offers a free walking tour that shows you these hidden places and explains their history and role in London's legal system. The tour begins near Temple station and goes past beautiful structures and quiet streets, giving you a look into a part of the city that has been there for many years. Before going, it is good to check the opening times because some places are only open at certain times. This walk is a great way for history fans and curious visitors to learn about London's special heritage.",
+    "userText": "In central London there is an interesting area that many visitors overlook, the Inns of Court such as Gray's Inn and Lincoln's Inn are all places where lawyers learn and work. These sides are close to the Royal courts of Justice and have impressive buildings, green gardens and stories from long ago. Our local guide offers a free walking tour that shows all these descent places and explains the history and role in London legal systems.\nThe tour begins near Temple station and goes past beautiful structures and quiet streets. Giving you a look into the part of the city that has been there for many years.\nBefore going, it is good to check the opening times because some places are only opened at certain times. This walk is a great way for history fans and curious visitors to learn about London special heritage.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 7,
+      "originalTextRange": {
+        "initialIndex": 420,
+        "finalIndex": 450
+      },
+      "originalText": "London's legal system. The tour",
+      "userTextRange": {
+        "initialIndex": 417,
+        "finalIndex": 446
+      },
+      "userText": "London legal systems.\nThe tour"
+    },
+    "expectedAction": "split",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextInitialIndex": 420,
+        "originalTextFinalIndex": 427,
+        "userTextInitialIndex": 417,
+        "userTextFinalIndex": 422
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextInitialIndex": 435,
+        "originalTextFinalIndex": 440,
+        "userTextInitialIndex": 430,
+        "userTextFinalIndex": 436
+      }
+    ]
+  },
+  {
+    "caseId": "real-number-with-extra-word",
+    "category": "dangerous-number-normalization",
+    "originalText": "A researcher from Australia made a new way to make espresso using sound waves. Normally, hot water is pushed through coffee grounds to make espresso. This takes about thirty seconds and uses a lot of energy. The new method, called ultrasonic espresso, uses high sound waves at room temperature. It takes less than three minutes to get the flavor and caffeine from the coffee. This saves up to seventy-five percent of energy because no hot water is needed. Big coffee companies that make bottled or cold coffee can use this method. It makes coffee faster and saves energy. The sound waves make tiny bubbles that form and pop near the coffee. These bubbles help release the coffee's flavor. This new way could change how coffee is made all over the world. It is faster and better for the environment.",
+    "userText": "A researcher from Australia, made a new way to make espresso using sound waves. Normally,  hot water is push through coffee grounds to make espresso. This takes about 30 seconds and uses a lot of energy. The new method called ultrasonic espresso uses high sound waves at room temperature. It takes  less than three minutes to get the flavor and caffeine from the coffee. This saves up to seventy-five percent of energy because no hot water is needed. Big coffee companies that make bottled or cold coffee can use this method. It makes coffee faster and saves energy. The sound waves  make tiny bubble that form and pop near the coffee. This bubbles helps release the coffee's flavor. This new way could change how coffee is made all over the world. It is faster and better for the environment.",
+    "sourceComparison": {
+      "sourceComparisonIndex": 1,
+      "originalTextRange": {
+        "initialIndex": 161,
+        "finalIndex": 172
+      },
+      "originalText": "about thirty",
+      "userTextRange": {
+        "initialIndex": 161,
+        "finalIndex": 176
+      },
+      "userText": "about 30 seconds"
+    },
+    "expectedAction": "keep",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextInitialIndex": 161,
+        "originalTextFinalIndex": 172,
+        "userTextInitialIndex": 161,
+        "userTextFinalIndex": 176
+      }
+    ]
+  }
+]

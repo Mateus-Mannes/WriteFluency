@@ -1,5 +1,34 @@
 {
+    "version": "0.2.0",
     "configurations": [
+        {
+            "name": "C#: Debug AI Refinement All Cases",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-ai-refinement-evals",
+            "program": "${workspaceFolder}/tests/propositions-service/WriteFluency.AiRefinement.Evals/bin/Debug/net10.0/WriteFluency.AiRefinement.Evals.dll",
+            "args": [
+                "--report-only"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
+        {
+            "name": "C#: Debug AI Refinement Case",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-ai-refinement-evals",
+            "program": "${workspaceFolder}/tests/propositions-service/WriteFluency.AiRefinement.Evals/bin/Debug/net10.0/WriteFluency.AiRefinement.Evals.dll",
+            "args": [
+                "--case",
+                "real-retirement-mixed-range",
+                "--report-only"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        },
         {
             "name": "Launch Chrome",
             "request": "launch",

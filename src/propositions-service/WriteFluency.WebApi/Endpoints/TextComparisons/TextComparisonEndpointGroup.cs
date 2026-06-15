@@ -66,24 +66,37 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                 return ProRequired(accessResult.Metadata);
             }
 
-            var orchestrationResult = correctionOrchestrationService.CompareTexts(
+            var orchestrationResult = await correctionOrchestrationService.CompareTextsAsync(
                 accessResult.OriginalText,
                 compareTextsDto.UserText,
-                isPro);
+                isPro,
+                cancellationToken);
             var result = orchestrationResult.Result;
 
             logger.LogInformation(
-                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
+                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, AiInputComparisons={AiInputComparisons}, AiOutputComparisons={AiOutputComparisons}, FinalComparisons={FinalComparisons}, AiModel={AiModel}, AiPromptVersion={AiPromptVersion}, AiDurationMs={AiDurationMs}, AiInputTokens={AiInputTokens}, AiOutputTokens={AiOutputTokens}, AiValidationFailureReason={AiValidationFailureReason}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
                 isPro,
                 result.CorrectionMode,
                 orchestrationResult.StaticComparisonCount,
                 orchestrationResult.RemovedComparisonCount,
+                orchestrationResult.AiInputComparisonCount,
+                orchestrationResult.AiOutputComparisonCount,
                 result.Comparisons.Count,
+                orchestrationResult.AiModel,
+                orchestrationResult.AiPromptVersion,
+                orchestrationResult.AiDurationMilliseconds,
+                orchestrationResult.AiInputTokenCount,
+                orchestrationResult.AiOutputTokenCount,
+                orchestrationResult.AiValidationFailureReason,
                 result.AccuracyPercentage,
                 stopwatch.ElapsedMilliseconds);
 
             return TypedResults.Ok(result);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception e)
         {
