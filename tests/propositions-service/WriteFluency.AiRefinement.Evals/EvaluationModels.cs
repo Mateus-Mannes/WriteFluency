@@ -7,6 +7,7 @@ public sealed class EvaluationCase
 {
     public required string CaseId { get; init; }
     public required string Category { get; init; }
+    public required string Expectation { get; init; }
     public required string OriginalText { get; init; }
     public required string UserText { get; init; }
     public required EvaluationSourceComparison SourceComparison { get; init; }
@@ -70,6 +71,35 @@ public sealed record EvaluationSummary(
     bool Passed,
     IReadOnlyList<EvaluationCaseResult> Cases);
 
+public sealed record EvaluationHighlightsReport(
+    string Model,
+    string PromptVersion,
+    DateTimeOffset ExecutedAtUtc,
+    IReadOnlyList<EvaluationCaseHighlights> Cases);
+
+public sealed record EvaluationCaseHighlights(
+    string CaseId,
+    string Expectation,
+    string OriginalText,
+    string UserText,
+    EvaluationHighlight SourceComparison,
+    string ExpectedAction,
+    string ActualAction,
+    bool IsExactMatch,
+    string? Error,
+    IReadOnlyList<EvaluationHighlight>? ExpectedHighlights,
+    IReadOnlyList<EvaluationHighlight>? AiHighlights);
+
+public sealed record EvaluationHighlight(
+    int SourceComparisonIndex,
+    EvaluationHighlightedText OriginalText,
+    EvaluationHighlightedText UserText);
+
+public sealed record EvaluationHighlightedText(
+    int InitialIndex,
+    int FinalIndex,
+    string? Text);
+
 public sealed class EvaluationArguments
 {
     public string? Model { get; private set; }
@@ -128,4 +158,5 @@ public sealed class EvaluationArguments
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(List<EvaluationCase>))]
 [JsonSerializable(typeof(EvaluationSummary))]
+[JsonSerializable(typeof(EvaluationHighlightsReport))]
 public partial class EvaluationJsonContext : JsonSerializerContext;

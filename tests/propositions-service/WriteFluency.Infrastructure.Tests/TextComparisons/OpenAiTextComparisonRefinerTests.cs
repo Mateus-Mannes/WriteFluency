@@ -159,7 +159,7 @@ public class OpenAiTextComparisonRefinerTests
         var messages = TextComparisonAiPrompt.CreateMessages(CreateRequest());
         var systemPrompt = messages.First().Text;
 
-        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v11");
+        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v12");
         systemPrompt.ShouldContain("\"teacher’s\" and \"teacher's\" may be omitted");
         systemPrompt.ShouldContain("\"players' uniforms\" and \"players uniforms\" may be omitted");
         systemPrompt.ShouldContain("\"Rome's streets\" and \"Rome streets\" are not equivalent");
@@ -174,9 +174,17 @@ public class OpenAiTextComparisonRefinerTests
         systemPrompt.ShouldContain("offsets relative to the supplied source-comparison snippets");
         systemPrompt.ShouldContain("Never calculate or return absolute full-text indexes");
         systemPrompt.ShouldContain("verify that every returned offset is inside");
-        systemPrompt.ShouldContain("only genuine error is an insertion or omission");
+        systemPrompt.ShouldContain("represent that one-sided error with the nearest matching spoken word as an anchor");
+        systemPrompt.ShouldContain("Prefer the nearest following matching word as the anchor");
+        systemPrompt.ShouldContain("For a word added by the user");
+        systemPrompt.ShouldContain("For a word omitted by the user");
+        systemPrompt.ShouldContain("Never return matching anchor text alone");
+        systemPrompt.ShouldContain("\"walked home\" versus \"walked quickly home\"");
+        systemPrompt.ShouldContain("\"walked slowly home\" versus \"walked home\"");
+        systemPrompt.ShouldContain("Never return \"home\" versus \"home\"");
         systemPrompt.ShouldContain("same complete quantity");
         systemPrompt.ShouldContain("\"roughly forty\" and \"roughly 40 minutes\" are not equivalent");
+        systemPrompt.ShouldContain("Return \"forty\" versus \"40 minutes\"");
         systemPrompt.ShouldContain("\"credit card. Customers\" versus \"creditcard, customers\"");
         systemPrompt.ShouldContain("\"Rome's old bridge. Our trip\"");
         systemPrompt.ShouldContain("\"Choose red [or blue]\" and \"Choose red\" are not equivalent");

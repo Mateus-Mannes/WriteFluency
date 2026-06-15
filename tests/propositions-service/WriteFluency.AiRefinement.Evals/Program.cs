@@ -81,8 +81,9 @@ try
         cases,
         arguments.Runs,
         cancellation.Token);
-    var reportPath = await EvaluationReportWriter.WriteAsync(
+    var reportPaths = await EvaluationReportWriter.WriteAsync(
         summary,
+        cases,
         cancellation.Token);
 
     Console.WriteLine();
@@ -91,7 +92,8 @@ try
     Console.WriteLine($"Removal precision: {summary.EquivalentRemovalPrecision:P1}");
     Console.WriteLine($"Removal recall: {summary.EquivalentRemovalRecall:P1}");
     Console.WriteLine($"Mean span F1: {summary.MeanSpanF1:F3}");
-    Console.WriteLine($"Report: {reportPath}");
+    Console.WriteLine($"Report: {reportPaths.Markdown}");
+    Console.WriteLine($"Highlights: {reportPaths.Highlights}");
 
     return summary.Passed || arguments.ReportOnly ? 0 : 1;
 }

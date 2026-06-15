@@ -30,9 +30,17 @@ Optional arguments:
 ```
 
 The evaluator exits with code `1` when quality thresholds fail, unless
-`--report-only` is used. JSON and Markdown reports are written under the ignored
-`artifacts/ai-evals/` directory. Reports contain case identifiers, indexes,
-metrics, latency, and token usage, but not full user attempts.
+`--report-only` is used. Reports are written under the ignored
+`artifacts/ai-evals/` directory:
+
+- `report.md` contains the evaluation summary and per-case metrics.
+- `report.json` contains the structured evaluation result.
+- `highlights.json` contains each AI-selected range and the exact original and
+  user snippets represented by that range. Removed corrections have
+  `highlights: null`.
+
+Reports contain case identifiers, indexes, selected snippets, metrics, latency,
+and token usage, but not full user attempts.
 
 Use `--validate-only` to verify manifest deserialization and range consistency
 without requiring an API key or making OpenAI calls.
