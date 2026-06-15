@@ -7,6 +7,7 @@ using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
 using WriteFluency.Infrastructure.FileStorage;
+using WriteFluency.Infrastructure.TextComparisons;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
@@ -23,6 +24,18 @@ builder.Services.AddAppSwagger();
 // Options configuration
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<AiRefinementOptions>()
+    .Bind(builder.Configuration.GetSection(AiRefinementOptions.Section))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Model), "AI refinement model is required.")
+    .Validate(
+        options => new[] { "low", "medium", "high" }.Contains(
+            options.ReasoningEffort,
+            StringComparer.OrdinalIgnoreCase),
+        "AI refinement reasoning effort must be low, medium, or high.")
+    .Validate(
+        options => options.MaxOutputTokens > 0,
+        "AI refinement max output tokens must be greater than zero.")
+    .ValidateOnStart();
 builder.Services.AddOptions<UsersServiceOptions>()
     .Bind(builder.Configuration.GetSection(UsersServiceOptions.Section))
     .Validate(options => options.HasValidBaseUrl(), "UsersService:BaseUrl must be an absolute HTTP(S) URL.")
@@ -50,6 +63,7 @@ builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<EnglishNumberNormalizer>();
 builder.Services.AddTransient<DeterministicTextEquivalenceService>();
+builder.Services.AddTransient<AiRefinementOutputValidator>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
@@ -84,6 +98,26 @@ builder.Services.AddChatClient(services =>
         // TODO: Add logging and telemetry
         .Build();
 }, ServiceLifetime.Scoped);
+
+builder.Services.AddKeyedScoped<IChatClient>(
+    AiRefinementOptions.ChatClientKey,
+    (serviceProvider, _) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<AiRefinementOptions>>()
+            .Value;
+
+        return new OpenAI.OpenAIClient(openAIOptions.Key)
+            .GetChatClient(options.Model)
+            .AsIChatClient();
+    });
+
+builder.Services.AddScoped<ITextComparisonAiRefiner>(serviceProvider =>
+    new OpenAiTextComparisonRefiner(
+        serviceProvider.GetRequiredKeyedService<IChatClient>(
+            AiRefinementOptions.ChatClientKey),
+        serviceProvider.GetRequiredService<IOptions<AiRefinementOptions>>(),
+        serviceProvider.GetRequiredService<ILogger<OpenAiTextComparisonRefiner>>()));
 
 builder.Services.AddCors();
 

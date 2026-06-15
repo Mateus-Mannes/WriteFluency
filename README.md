@@ -191,6 +191,18 @@ dotnet test tests/WriteFluency.Application.Tests
 dotnet test tests/WriteFluency.Infrastructure.Tests
 ```
 
+Run the local US-010 AI refinement evaluator:
+
+```bash
+dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals -- \
+  --dataset corrections.json
+```
+
+The evaluator uses the real OpenAI API and is intentionally excluded from
+`dotnet test` and GitHub workflows. See its
+[README](tests/propositions-service/WriteFluency.AiRefinement.Evals/README.md)
+for configuration, grading thresholds, and optional arguments.
+
 ## 📝 Database Migrations
 
 ### Create a new migration
