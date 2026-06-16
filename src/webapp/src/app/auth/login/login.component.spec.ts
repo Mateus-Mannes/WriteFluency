@@ -30,7 +30,7 @@ describe('LoginComponent', () => {
     authApiServiceSpy.loginPassword.and.returnValue(of({}));
     authApiServiceSpy.register.and.returnValue(of({}));
     authApiServiceSpy.requestOtp.and.returnValue(of({ message: 'Code sent.' }));
-    authApiServiceSpy.verifyOtp.and.returnValue(of({}));
+    authApiServiceSpy.verifyOtp.and.returnValue(of({ isNewUser: false }));
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
     routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
     window.sessionStorage.removeItem('wf.auth.post-login-return-url.v1');
@@ -98,6 +98,37 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
 
     expect(component.otpError()).toBe('That code did not work. 4 attempt(s) left.');
+  });
+
+  it('should track signup conversion when OTP verification creates a new user', async () => {
+    authApiServiceSpy.verifyOtp.and.returnValue(of({ isNewUser: true }));
+    component.otpForm.patchValue({
+      email: 'new@test.com',
+    });
+    await component.requestOtp();
+    component.otpForm.patchValue({
+      code: '123456',
+    });
+
+    await component.verifyOtp();
+
+    expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('new@test.com');
+    expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
+  });
+
+  it('should not track signup conversion when OTP verification signs in an existing user', async () => {
+    component.otpForm.patchValue({
+      email: 'existing@test.com',
+    });
+    await component.requestOtp();
+    component.otpForm.patchValue({
+      code: '123456',
+    });
+
+    await component.verifyOtp();
+
+    expect(googleAdsConversionServiceSpy.trackSignup).not.toHaveBeenCalled();
   });
 
   it('should return to OTP request phase after max verify attempts', async () => {

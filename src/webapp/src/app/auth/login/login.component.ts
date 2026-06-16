@@ -319,7 +319,10 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.otpError.set(null);
 
     try {
-      await firstValueFrom(this.authApiService.verifyOtp(email, code));
+      const verifyResponse = await firstValueFrom(this.authApiService.verifyOtp(email, code));
+      if (verifyResponse.isNewUser) {
+        this.googleAdsConversionService.trackSignup(email);
+      }
       this.trackAuthEvent('auth_login_succeeded', {
         method: 'otp',
         source: this.loginSource,

@@ -45,6 +45,18 @@ describe('AuthApiService', () => {
     request.flush([]);
   });
 
+  it('should call passwordless verify endpoint and return new-user flag', () => {
+    service.verifyOtp('user@test.com', '123456').subscribe((response) => {
+      expect(response.isNewUser).toBeTrue();
+    });
+
+    const request = httpMock.expectOne(`${authBaseUrl}/passwordless/verify`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    expect(request.request.body).toEqual({ email: 'user@test.com', code: '123456' });
+    request.flush({ isNewUser: true });
+  });
+
   it('should call tutorial mark-completed endpoint', () => {
     service.markListenWriteTutorialCompleted().subscribe();
 

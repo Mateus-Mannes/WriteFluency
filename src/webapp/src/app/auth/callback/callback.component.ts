@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { AuthSessionStore } from '../services/auth-session.store';
 import { Insights, InsightsMeasurements } from '../../../telemetry/insights.service';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 const postLoginReturnUrlStorageKey = 'wf.auth.post-login-return-url.v1';
 const postLoginSourceStorageKey = 'wf.auth.post-login-source.v1';
@@ -38,6 +39,7 @@ export class CallbackComponent implements OnInit {
   private readonly authSessionStore = inject(AuthSessionStore);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly insights = inject(Insights, { optional: true });
+  private readonly googleAdsConversionService = inject(GoogleAdsConversionService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private callbackSource = 'direct';
 
@@ -55,23 +57,25 @@ export class CallbackComponent implements OnInit {
     const auth = this.route.snapshot.queryParamMap.get('auth');
     const provider = this.route.snapshot.queryParamMap.get('provider');
     const code = this.route.snapshot.queryParamMap.get('code');
+    const isNewUser = this.route.snapshot.queryParamMap.get('newUser') === 'true';
     this.callbackSource = this.consumePostLoginSource();
     this.trackAuthEvent('auth_callback_page_viewed', {
       auth,
       provider,
       code,
+      is_new_user: isNewUser,
       source: this.callbackSource,
     });
 
     if (auth === 'success') {
-      await this.handleSuccess(provider);
+      await this.handleSuccess(provider, isNewUser);
       return;
     }
 
     this.handleError(code, provider);
   }
 
-  private async handleSuccess(provider: string | null): Promise<void> {
+  private async handleSuccess(provider: string | null, isNewUser: boolean): Promise<void> {
     this.isSuccess.set(true);
     this.title.set('Login Successful');
     this.message.set(`Logged in${provider ? ` with ${provider}` : ''}. Redirecting...`);
@@ -85,6 +89,11 @@ export class CallbackComponent implements OnInit {
     } catch {
       this.handleError('session_refresh_failed', provider);
       return;
+    }
+
+    const email = this.authSessionStore.email();
+    if (isNewUser && email) {
+      this.googleAdsConversionService.trackSignup(email);
     }
 
     this.isBusy.set(false);

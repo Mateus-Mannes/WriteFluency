@@ -58,44 +58,46 @@ public class PasswordlessOtpService
         _logger.LogInformation("Passwordless OTP issued for {NormalizedEmail}", normalizedEmail);
     }
 
-    public async Task<bool> VerifyOtpAndSignInAsync(string email, string code, CancellationToken cancellationToken = default)
+    public async Task<PasswordlessOtpVerificationResult> VerifyOtpAndSignInAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return false;
+            return PasswordlessOtpVerificationResult.Failed;
         }
 
         if (await _userManager.IsLockedOutAsync(user))
         {
-            return false;
+            return PasswordlessOtpVerificationResult.Failed;
         }
 
         var normalizedEmail = _userManager.NormalizeEmail(email);
         if (string.IsNullOrWhiteSpace(normalizedEmail))
         {
-            return false;
+            return PasswordlessOtpVerificationResult.Failed;
         }
 
         var validCode = await _otpStore.ValidateCodeAsync(normalizedEmail, code);
         if (!validCode)
         {
-            return false;
+            return PasswordlessOtpVerificationResult.Failed;
         }
 
-        if (!await _userManager.IsEmailConfirmedAsync(user))
+        var wasEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
+        var isNewPasswordlessUser = !wasEmailConfirmed && string.IsNullOrEmpty(user.PasswordHash);
+        if (!wasEmailConfirmed)
         {
             var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             var confirmResult = await _userManager.ConfirmEmailAsync(user, confirmToken);
             if (!confirmResult.Succeeded)
             {
-                return false;
+                return PasswordlessOtpVerificationResult.Failed;
             }
         }
 
         await _signInManager.SignInAsync(user, isPersistent: false, authenticationMethod: "passwordless_email_otp");
         _logger.LogInformation("Passwordless OTP sign-in succeeded for {NormalizedEmail}", normalizedEmail);
-        return true;
+        return new PasswordlessOtpVerificationResult(true, isNewPasswordlessUser);
     }
 
     private async Task<ApplicationUser?> EnsureUserForPasswordlessAsync(string email)
@@ -123,4 +125,9 @@ public class PasswordlessOtpService
             string.Join(", ", createResult.Errors.Select(e => $"{e.Code}:{e.Description}")));
         return null;
     }
+}
+
+public sealed record PasswordlessOtpVerificationResult(bool Succeeded, bool IsNewUser)
+{
+    public static PasswordlessOtpVerificationResult Failed { get; } = new(false, false);
 }

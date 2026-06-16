@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CallbackComponent } from './callback.component';
 import { AuthSessionStore } from '../services/auth-session.store';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 const postLoginReturnUrlStorageKey = 'wf.auth.post-login-return-url.v1';
 
@@ -10,11 +12,16 @@ describe('CallbackComponent', () => {
   let fixture: ComponentFixture<CallbackComponent>;
   let authSessionStoreSpy: jasmine.SpyObj<AuthSessionStore>;
   let routerSpy: jasmine.SpyObj<Router>;
+  let googleAdsConversionServiceSpy: jasmine.SpyObj<GoogleAdsConversionService>;
 
   async function setupWithQuery(query: Record<string, string>): Promise<void> {
     authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+    googleAdsConversionServiceSpy = jasmine.createSpyObj<GoogleAdsConversionService>('GoogleAdsConversionService', ['trackSignup']);
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
+    Object.defineProperty(authSessionStoreSpy, 'email', {
+      value: signal<string | null>('social@test.com'),
+    });
     routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
     window.sessionStorage.removeItem(postLoginReturnUrlStorageKey);
 
@@ -24,6 +31,7 @@ describe('CallbackComponent', () => {
       providers: [
         { provide: AuthSessionStore, useValue: authSessionStoreSpy },
         { provide: Router, useValue: routerSpy },
+        { provide: GoogleAdsConversionService, useValue: googleAdsConversionServiceSpy },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -59,6 +67,24 @@ describe('CallbackComponent', () => {
 
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/english-writing-exercise/10');
     expect(window.sessionStorage.getItem(postLoginReturnUrlStorageKey)).toBeNull();
+  });
+
+  it('should track signup conversion when social callback creates a new user', async () => {
+    await setupWithQuery({ auth: 'success', provider: 'google', newUser: 'true' });
+
+    await component.ngOnInit();
+
+    expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
+    expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('social@test.com');
+    expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
+  });
+
+  it('should not track signup conversion for existing social users', async () => {
+    await setupWithQuery({ auth: 'success', provider: 'google' });
+
+    await component.ngOnInit();
+
+    expect(googleAdsConversionServiceSpy.trackSignup).not.toHaveBeenCalled();
   });
 
   it('should render error message on callback failure', async () => {

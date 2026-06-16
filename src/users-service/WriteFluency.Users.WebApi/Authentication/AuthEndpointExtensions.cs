@@ -377,8 +377,10 @@ public static class AuthEndpointExtensions
         PasswordlessOtpService passwordlessOtpService,
         CancellationToken cancellationToken)
     {
-        var verified = await passwordlessOtpService.VerifyOtpAndSignInAsync(request.Email, request.Code, cancellationToken);
-        return verified ? Results.Ok() : Results.Unauthorized();
+        var verificationResult = await passwordlessOtpService.VerifyOtpAndSignInAsync(request.Email, request.Code, cancellationToken);
+        return verificationResult.Succeeded
+            ? Results.Ok(new PasswordlessVerifyResponse(verificationResult.IsNewUser))
+            : Results.Unauthorized();
     }
 
     private static async Task<IResult> GetExternalProvidersAsync(IAuthenticationSchemeProvider authenticationSchemeProvider)
@@ -561,7 +563,11 @@ public static class AuthEndpointExtensions
         await signInManager.UpdateExternalAuthenticationTokensAsync(externalLoginInfo);
         await httpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-        return Results.Redirect(BuildRedirectResult(resolvedReturnUrl, providerDefinition.Id, isSuccess: true));
+        return Results.Redirect(BuildRedirectResult(
+            resolvedReturnUrl,
+            providerDefinition.Id,
+            isSuccess: true,
+            isNewUser: userCreatedInThisFlow));
     }
 
     private static bool TryGetProvider(string provider, out ExternalProviderDefinition providerDefinition)
@@ -634,7 +640,7 @@ public static class AuthEndpointExtensions
         return QueryHelpers.AddQueryString(returnUrl, queryValues!);
     }
 
-    private static string BuildRedirectResult(string returnUrl, string providerId, bool isSuccess)
+    private static string BuildRedirectResult(string returnUrl, string providerId, bool isSuccess, bool isNewUser = false)
     {
         var queryValues = new Dictionary<string, string?>
         {
@@ -642,12 +648,19 @@ public static class AuthEndpointExtensions
             ["provider"] = providerId
         };
 
+        if (isSuccess && isNewUser)
+        {
+            queryValues["newUser"] = "true";
+        }
+
         return QueryHelpers.AddQueryString(returnUrl, queryValues!);
     }
 
     public record PasswordlessRequest([Required, EmailAddress] string Email);
 
     public record PasswordlessVerifyRequest([Required, EmailAddress] string Email, [Required] string Code);
+
+    public record PasswordlessVerifyResponse(bool IsNewUser);
 
     private sealed record ExternalProviderDefinition(string Id, string SchemeName, string DisplayName);
 

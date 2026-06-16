@@ -5,6 +5,10 @@ import { AuthSession, ExternalProvider } from '../models/auth-session.model';
 import { environment } from '../../../enviroments/enviroment';
 import { FeedbackPromptStatusResponse } from '../models/feedback-prompt.model';
 
+export interface PasswordlessVerifyResponse {
+  isNewUser: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   private readonly usersApiUrl = environment.usersApiUrl.replace(/\/$/, '');
@@ -61,8 +65,8 @@ export class AuthApiService {
     return this.http.post<{ message: string }>(`${this.basePath}/passwordless/request`, { email }, { withCredentials: true });
   }
 
-  verifyOtp(email: string, code: string): Observable<unknown> {
-    return this.http.post(`${this.basePath}/passwordless/verify`, { email, code }, { withCredentials: true });
+  verifyOtp(email: string, code: string): Observable<PasswordlessVerifyResponse> {
+    return this.http.post<PasswordlessVerifyResponse>(`${this.basePath}/passwordless/verify`, { email, code }, { withCredentials: true });
   }
 
   externalProviders(): Observable<ExternalProvider[]> {

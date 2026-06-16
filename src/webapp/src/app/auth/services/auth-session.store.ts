@@ -354,6 +354,7 @@ export class AuthSessionStore {
   }
 
   private clearSession(): void {
+    this.refreshRequestCounter += 1;
     this.clearRefreshTimer();
     this.patchState({
       isAuthenticated: false,

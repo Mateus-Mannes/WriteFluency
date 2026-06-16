@@ -133,6 +133,32 @@ describe('AuthSessionStore', () => {
     expect(store.state().isPro).toBeFalse();
   });
 
+  it('should ignore in-flight refresh responses after logout clears the session', async () => {
+    const staleSessionResponse = new Subject<AuthSession>();
+    authApiServiceSpy.session.and.returnValue(staleSessionResponse.asObservable());
+    authApiServiceSpy.logout.and.returnValue(of({}));
+
+    store.refreshSessionInBackground();
+    await store.logout();
+
+    staleSessionResponse.next(authenticatedSession({
+      userId: 'old-user',
+      email: 'old@test.com',
+    }));
+    staleSessionResponse.complete();
+    await Promise.resolve();
+
+    expect(store.state().isAuthenticated).toBeFalse();
+    expect(store.state().userId).toBeNull();
+    expect(store.state().email).toBeNull();
+
+    const snapshotRaw = window.localStorage.getItem('wf.auth.session.snapshot.v1');
+    expect(snapshotRaw).not.toBeNull();
+    const snapshot = JSON.parse(snapshotRaw as string) as { userId?: string | null; email?: string | null };
+    expect(snapshot.userId).toBeNull();
+    expect(snapshot.email).toBeNull();
+  });
+
   it('should restore cached session state from localStorage snapshot', () => {
     const issuedAtUtc = new Date('2026-01-01T00:00:00.000Z').toISOString();
     const expiresAtUtc = new Date('2026-01-01T01:00:00.000Z').toISOString();
