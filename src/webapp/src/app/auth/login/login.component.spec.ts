@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { LoginComponent } from './login.component';
 import { AuthApiService } from '../services/auth-api.service';
 import { AuthSessionStore } from '../services/auth-session.store';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -11,6 +12,7 @@ describe('LoginComponent', () => {
   let authApiServiceSpy: jasmine.SpyObj<AuthApiService>;
   let authSessionStoreSpy: jasmine.SpyObj<AuthSessionStore>;
   let routerSpy: jasmine.SpyObj<Router>;
+  let googleAdsConversionServiceSpy: jasmine.SpyObj<GoogleAdsConversionService>;
 
   beforeEach(async () => {
     authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', [
@@ -22,6 +24,7 @@ describe('LoginComponent', () => {
     ]);
     authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+    googleAdsConversionServiceSpy = jasmine.createSpyObj<GoogleAdsConversionService>('GoogleAdsConversionService', ['trackSignup']);
 
     authApiServiceSpy.externalProviders.and.returnValue(of([]));
     authApiServiceSpy.loginPassword.and.returnValue(of({}));
@@ -38,6 +41,7 @@ describe('LoginComponent', () => {
         { provide: AuthApiService, useValue: authApiServiceSpy },
         { provide: AuthSessionStore, useValue: authSessionStoreSpy },
         { provide: Router, useValue: routerSpy },
+        { provide: GoogleAdsConversionService, useValue: googleAdsConversionServiceSpy },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -125,6 +129,7 @@ describe('LoginComponent', () => {
 
     expect(authApiServiceSpy.loginPassword).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
     expect(authApiServiceSpy.register).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
+    expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('new@test.com');
     expect(component.passwordSuccessMessage()).toContain('Account created');
     expect(component.awaitingEmailConfirmation()).toBe('new@test.com');
     expect(component.passwordForm.controls.password.getRawValue()).toBe('Passw0rd!');

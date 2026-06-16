@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { firstValueFrom } from 'rxjs';
 import { AuthApiService } from '../services/auth-api.service';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 @Component({
   selector: 'app-register',
@@ -27,6 +28,7 @@ import { AuthApiService } from '../services/auth-api.service';
 export class RegisterComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApiService = inject(AuthApiService);
+  private readonly googleAdsConversionService = inject(GoogleAdsConversionService);
 
   readonly isBusy = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -57,6 +59,7 @@ export class RegisterComponent {
 
     try {
       await firstValueFrom(this.authApiService.register(email, password));
+      this.googleAdsConversionService.trackSignup(email);
       this.successMessage.set('Registration successful. Please check your email to confirm your account.');
       this.registerForm.reset();
     } catch {

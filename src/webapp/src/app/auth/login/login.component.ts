@@ -15,6 +15,7 @@ import { AuthApiService } from '../services/auth-api.service';
 import { AuthSessionStore } from '../services/auth-session.store';
 import { environment } from '../../../enviroments/enviroment';
 import { Insights, InsightsMeasurements } from '../../../telemetry/insights.service';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 type OtpPhase = 'request' | 'verify';
 
@@ -59,6 +60,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly insights = inject(Insights, { optional: true });
+  private readonly googleAdsConversionService = inject(GoogleAdsConversionService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private postLoginReturnUrl: string | null = null;
   private loginSource = 'direct';
@@ -178,6 +180,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
       try {
         await firstValueFrom(this.authApiService.register(email, password));
+        this.googleAdsConversionService.trackSignup(email);
         this.trackAuthEvent('auth_auto_registration_created', {
           source: this.loginSource,
         });

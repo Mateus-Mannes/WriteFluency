@@ -3,20 +3,24 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { RegisterComponent } from './register.component';
 import { AuthApiService } from '../services/auth-api.service';
+import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
   let fixture: ComponentFixture<RegisterComponent>;
   let authApiServiceSpy: jasmine.SpyObj<AuthApiService>;
+  let googleAdsConversionServiceSpy: jasmine.SpyObj<GoogleAdsConversionService>;
 
   beforeEach(async () => {
     authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', ['register']);
+    googleAdsConversionServiceSpy = jasmine.createSpyObj<GoogleAdsConversionService>('GoogleAdsConversionService', ['trackSignup']);
     authApiServiceSpy.register.and.returnValue(of({}));
 
     await TestBed.configureTestingModule({
       imports: [RegisterComponent],
       providers: [
         { provide: AuthApiService, useValue: authApiServiceSpy },
+        { provide: GoogleAdsConversionService, useValue: googleAdsConversionServiceSpy },
         provideRouter([]),
       ],
     }).compileComponents();
@@ -49,6 +53,7 @@ describe('RegisterComponent', () => {
     await component.submit();
 
     expect(authApiServiceSpy.register).toHaveBeenCalledWith('user@test.com', 'Passw0rd!');
+    expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('user@test.com');
     expect(component.successMessage()).toContain('Registration successful');
   });
 });
