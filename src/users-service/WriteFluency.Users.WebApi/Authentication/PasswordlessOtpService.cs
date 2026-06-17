@@ -26,28 +26,28 @@ public class PasswordlessOtpService
         _logger = logger;
     }
 
-    public async Task RequestOtpAsync(string email, string ipAddress, CancellationToken cancellationToken = default)
+    public async Task<bool> RequestOtpAsync(string email, string ipAddress, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = _userManager.NormalizeEmail(email);
         if (string.IsNullOrWhiteSpace(normalizedEmail))
         {
-            return;
+            return false;
         }
 
         if (!await _otpStore.CanRequestAsync(normalizedEmail, ipAddress))
         {
-            return;
+            return false;
         }
 
         var user = await EnsureUserForPasswordlessAsync(email);
         if (user is null)
         {
-            return;
+            return false;
         }
 
         if (await _userManager.IsLockedOutAsync(user))
         {
-            return;
+            return false;
         }
 
         var code = await _otpStore.IssueCodeAsync(normalizedEmail);
@@ -56,6 +56,7 @@ public class PasswordlessOtpService
 
         await _emailSender.SendAsync(email, "Your WriteFluency sign-in code", content.HtmlBody, content.TextBody, cancellationToken);
         _logger.LogInformation("Passwordless OTP issued for {NormalizedEmail}", normalizedEmail);
+        return true;
     }
 
     public async Task<PasswordlessOtpVerificationResult> VerifyOtpAndSignInAsync(string email, string code, CancellationToken cancellationToken = default)

@@ -111,12 +111,17 @@
         }
 
         @if (passwordSuccessMessage(); as success) {
-          <p class="success text-body">{{ success }}</p>
+          <p
+            class="password-message text-body"
+            [class.password-message--success]="passwordMessageTone() === 'success'"
+            [class.password-message--warning]="passwordMessageTone() === 'warning'">
+            {{ success }}
+          </p>
         }
 
         @if (isAwaitingEmailConfirmationForCurrentEmail()) {
           <button mat-flat-button class="primary-cta" type="button" (click)="continueAfterConfirmation()" [disabled]="isBusy()">
-            Continue after confirmation
+            I confirmed, continue
           </button>
         } @else {
           <button mat-flat-button class="primary-cta" type="submit" [disabled]="isBusy()">Continue</button>

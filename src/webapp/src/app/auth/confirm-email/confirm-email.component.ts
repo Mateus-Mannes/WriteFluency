@@ -23,6 +23,12 @@ export class ConfirmEmailComponent implements OnInit {
   readonly helperMessage = signal<string | null>(null);
 
   async ngOnInit(): Promise<void> {
+    const passwordSetupToken = this.route.snapshot.queryParamMap.get('passwordSetupToken');
+    if (passwordSetupToken) {
+      await this.confirmPasswordSetup(passwordSetupToken);
+      return;
+    }
+
     const userId = this.route.snapshot.queryParamMap.get('userId');
     const code = this.route.snapshot.queryParamMap.get('code');
 
@@ -41,6 +47,21 @@ export class ConfirmEmailComponent implements OnInit {
     } catch {
       this.isSuccess.set(false);
       this.message.set('This confirmation link is invalid or expired. Please request a new confirmation email.');
+      this.helperMessage.set(null);
+    } finally {
+      this.isBusy.set(false);
+    }
+  }
+
+  private async confirmPasswordSetup(token: string): Promise<void> {
+    try {
+      await firstValueFrom(this.authApiService.confirmPasswordSetup(token));
+      this.isSuccess.set(true);
+      this.message.set('Password sign-in is ready. You can now sign in.');
+      this.helperMessage.set('If you started from another tab, go back there and continue.');
+    } catch {
+      this.isSuccess.set(false);
+      this.message.set('This password setup link is invalid or expired. Please request a new link.');
       this.helperMessage.set(null);
     } finally {
       this.isBusy.set(false);

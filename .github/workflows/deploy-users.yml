@@ -71,6 +71,7 @@ jobs:
           USERS_API_AZURE_CLIENT_SECRET \
           SharedDataProtection__BlobUri \
           SharedDataProtection__KeyIdentifier \
+          Authentication__ConfirmationRedirectUrl \
           Authentication__ExternalRedirect__AllowedReturnUrls__0
 
     - name: Install .NET

@@ -18,6 +18,7 @@ describe('LoginComponent', () => {
     authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', [
       'loginPassword',
       'register',
+      'continueWithPassword',
       'requestOtp',
       'verifyOtp',
       'externalProviders',
@@ -29,6 +30,7 @@ describe('LoginComponent', () => {
     authApiServiceSpy.externalProviders.and.returnValue(of([]));
     authApiServiceSpy.loginPassword.and.returnValue(of({}));
     authApiServiceSpy.register.and.returnValue(of({}));
+    authApiServiceSpy.continueWithPassword.and.returnValue(of({ status: 'signed_in', isNewUser: false }));
     authApiServiceSpy.requestOtp.and.returnValue(of({ message: 'Code sent.' }));
     authApiServiceSpy.verifyOtp.and.returnValue(of({ isNewUser: false }));
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
@@ -68,7 +70,7 @@ describe('LoginComponent', () => {
 
     await component.submitPasswordLogin();
 
-    expect(authApiServiceSpy.loginPassword).toHaveBeenCalledWith('user@test.com', 'Passw0rd!');
+    expect(authApiServiceSpy.continueWithPassword).toHaveBeenCalledWith('user@test.com', 'Passw0rd!', true);
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
   });
@@ -150,7 +152,7 @@ describe('LoginComponent', () => {
 
   it('should register automatically when password login fails for first-time user', async () => {
     component.toggleLoginMode();
-    authApiServiceSpy.loginPassword.and.returnValue(throwError(() => ({ status: 401 })));
+    authApiServiceSpy.continueWithPassword.and.returnValue(of({ status: 'confirmation_required', isNewUser: true }));
     component.passwordForm.setValue({
       email: 'new@test.com',
       password: 'Passw0rd!',
@@ -158,8 +160,8 @@ describe('LoginComponent', () => {
 
     await component.submitPasswordLogin();
 
-    expect(authApiServiceSpy.loginPassword).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
-    expect(authApiServiceSpy.register).toHaveBeenCalledWith('new@test.com', 'Passw0rd!');
+    expect(authApiServiceSpy.continueWithPassword).toHaveBeenCalledWith('new@test.com', 'Passw0rd!', true);
+    expect(authApiServiceSpy.register).not.toHaveBeenCalled();
     expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('new@test.com');
     expect(component.passwordSuccessMessage()).toContain('Account created');
     expect(component.awaitingEmailConfirmation()).toBe('new@test.com');
@@ -168,9 +170,9 @@ describe('LoginComponent', () => {
 
   it('should retry login without re-registering when continuing after confirmation', async () => {
     component.toggleLoginMode();
-    authApiServiceSpy.loginPassword.and.returnValues(
-      throwError(() => ({ status: 401 })),
-      throwError(() => ({ status: 401 })),
+    authApiServiceSpy.continueWithPassword.and.returnValues(
+      of({ status: 'confirmation_required', isNewUser: true }),
+      of({ status: 'confirmation_required', isNewUser: false }),
     );
     component.passwordForm.setValue({
       email: 'new@test.com',
@@ -180,15 +182,17 @@ describe('LoginComponent', () => {
     await component.submitPasswordLogin();
     await component.continueAfterConfirmation();
 
-    expect(authApiServiceSpy.register).toHaveBeenCalledTimes(1);
-    expect(component.passwordError()).toBe('Not confirmed yet. Confirm your email and click "Continue after confirmation".');
+    expect(authApiServiceSpy.register).not.toHaveBeenCalled();
+    expect(authApiServiceSpy.continueWithPassword.calls.argsFor(1)).toEqual(['new@test.com', 'Passw0rd!', false]);
+    expect(component.passwordSuccessMessage()).toContain('already sent');
+    expect(component.passwordMessageTone()).toBe('warning');
   });
 
   it('should complete login after confirmation and navigate home', async () => {
     component.toggleLoginMode();
-    authApiServiceSpy.loginPassword.and.returnValues(
-      throwError(() => ({ status: 401 })),
-      of({}),
+    authApiServiceSpy.continueWithPassword.and.returnValues(
+      of({ status: 'confirmation_required', isNewUser: true }),
+      of({ status: 'signed_in', isNewUser: false }),
     );
     component.passwordForm.setValue({
       email: 'new@test.com',
@@ -198,7 +202,7 @@ describe('LoginComponent', () => {
     await component.submitPasswordLogin();
     await component.continueAfterConfirmation();
 
-    expect(authApiServiceSpy.register).toHaveBeenCalledTimes(1);
+    expect(authApiServiceSpy.register).not.toHaveBeenCalled();
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalledTimes(1);
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
     expect(component.awaitingEmailConfirmation()).toBeNull();
@@ -206,8 +210,7 @@ describe('LoginComponent', () => {
 
   it('should show password policy validation errors when auto-registration fails', async () => {
     component.toggleLoginMode();
-    authApiServiceSpy.loginPassword.and.returnValue(throwError(() => ({ status: 401 })));
-    authApiServiceSpy.register.and.returnValue(throwError(() => ({
+    authApiServiceSpy.continueWithPassword.and.returnValue(throwError(() => ({
       status: 400,
       error: {
         errors: {
@@ -232,7 +235,7 @@ describe('LoginComponent', () => {
 
   it('should not auto-register when password login fails with non-401 error', async () => {
     component.toggleLoginMode();
-    authApiServiceSpy.loginPassword.and.returnValue(throwError(() => ({ status: 500 })));
+    authApiServiceSpy.continueWithPassword.and.returnValue(throwError(() => ({ status: 500 })));
     component.passwordForm.setValue({
       email: 'user@test.com',
       password: 'Passw0rd!',
@@ -241,6 +244,56 @@ describe('LoginComponent', () => {
     await component.submitPasswordLogin();
 
     expect(authApiServiceSpy.register).not.toHaveBeenCalled();
-    expect(component.passwordError()).toBe('Could not sign in right now. Please try again.');
+    expect(component.passwordError()).toBe('Could not continue right now. Please try again.');
+  });
+
+  it('should show setup message when password is not set for an existing account', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.continueWithPassword.and.returnValue(of({ status: 'password_setup_required', isNewUser: false }));
+    component.passwordForm.setValue({
+      email: 'social@test.com',
+      password: 'Passw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+
+    expect(component.passwordSuccessMessage()).toContain('confirm this email and add password sign-in');
+    expect(component.passwordMessageTone()).toBe('success');
+    expect(component.usePasswordLogin()).toBeTrue();
+    expect(component.awaitingEmailConfirmation()).toBe('social@test.com');
+    expect(googleAdsConversionServiceSpy.trackSignup).not.toHaveBeenCalled();
+  });
+
+  it('should show pending password setup check as warning', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.continueWithPassword.and.returnValues(
+      of({ status: 'password_setup_required', isNewUser: false }),
+      of({ status: 'password_setup_required', isNewUser: false }),
+    );
+    component.passwordForm.setValue({
+      email: 'social@test.com',
+      password: 'Passw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+    await component.continueAfterConfirmation();
+
+    expect(authApiServiceSpy.continueWithPassword.calls.argsFor(1)).toEqual(['social@test.com', 'Passw0rd!', false]);
+    expect(component.passwordSuccessMessage()).toContain('still not confirmed');
+    expect(component.passwordMessageTone()).toBe('warning');
+  });
+
+  it('should show wrong password message without registering', async () => {
+    component.toggleLoginMode();
+    authApiServiceSpy.continueWithPassword.and.returnValue(of({ status: 'wrong_password', isNewUser: false }));
+    component.passwordForm.setValue({
+      email: 'existing@test.com',
+      password: 'WrongPassw0rd!',
+    });
+
+    await component.submitPasswordLogin();
+
+    expect(authApiServiceSpy.register).not.toHaveBeenCalled();
+    expect(component.passwordError()).toBe('Wrong password. Try again or use email code instead.');
   });
 });

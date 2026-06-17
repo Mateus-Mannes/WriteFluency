@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using WriteFluency.Users.WebApi.Data;
+using WriteFluency.Users.WebApi.Email;
 using WriteFluency.Users.WebApi.Options;
 
 namespace WriteFluency.Users.WebApi.Authentication;
@@ -58,6 +60,10 @@ public static class AuthEndpointExtensions
         authGroup.MapPost("/passwordless/request", RequestPasswordlessOtpAsync);
 
         authGroup.MapPost("/passwordless/verify", VerifyPasswordlessOtpAsync);
+
+        authGroup.MapPost("/password/continue", ContinueWithPasswordAsync);
+
+        authGroup.MapPost("/password/setup/confirm", ConfirmPasswordSetupAsync);
 
         authGroup.MapGet("/external/providers", GetExternalProvidersAsync)
             .WithSummary("List available social login providers")
@@ -536,7 +542,11 @@ public static class AuthEndpointExtensions
         }
         else if (!user.EmailConfirmed)
         {
-            return Results.Redirect(BuildRedirectResult(resolvedReturnUrl, providerDefinition.Id, "linking_denied"));
+            var confirmResult = await ConfirmUserEmailAsync(userManager, user);
+            if (!confirmResult.Succeeded)
+            {
+                return Results.Redirect(BuildRedirectResult(resolvedReturnUrl, providerDefinition.Id, "email_confirmation_failed"));
+            }
         }
 
         var loginOwner = await userManager.FindByLoginAsync(externalLoginInfo.LoginProvider, externalLoginInfo.ProviderKey);
@@ -568,6 +578,181 @@ public static class AuthEndpointExtensions
             providerDefinition.Id,
             isSuccess: true,
             isNewUser: userCreatedInThisFlow));
+    }
+
+    private static async Task<IResult> ContinueWithPasswordAsync(
+        PasswordContinueRequest request,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IEmailSender<ApplicationUser> emailSender,
+        IAppEmailSender appEmailSender,
+        PasswordSetupService passwordSetupService,
+        IOptions<ExternalAuthenticationOptions> externalAuthenticationOptions)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email)
+            || !new EmailAddressAttribute().IsValid(request.Email)
+            || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return Results.BadRequest(new { Error = "invalid_password_continue_request" });
+        }
+
+        var email = request.Email.Trim();
+        var password = request.Password;
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            if (!request.SendEmail)
+            {
+                return Results.Ok(new PasswordContinueResponse("confirmation_required", false));
+            }
+
+            user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email
+            };
+
+            var createResult = await userManager.CreateAsync(user, password);
+            if (!createResult.Succeeded)
+            {
+                return Results.ValidationProblem(BuildIdentityErrorDictionary(createResult));
+            }
+
+            await SendConfirmationEmailAsync(userManager, emailSender, user, email);
+            return Results.Ok(new PasswordContinueResponse("confirmation_required", true));
+        }
+
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            return Results.Ok(new PasswordContinueResponse("account_locked", false));
+        }
+
+        if (string.IsNullOrEmpty(user.PasswordHash))
+        {
+            if (!user.EmailConfirmed)
+            {
+                if (request.SendEmail)
+                {
+                    await SendConfirmationEmailAsync(userManager, emailSender, user, email);
+                }
+
+                return Results.Ok(new PasswordContinueResponse("confirmation_required", false));
+            }
+
+            if (request.SendEmail)
+            {
+                await SendPasswordSetupEmailAsync(
+                    passwordSetupService,
+                    appEmailSender,
+                    externalAuthenticationOptions.Value,
+                    user,
+                    email,
+                    password);
+            }
+
+            return Results.Ok(new PasswordContinueResponse("password_setup_required", false));
+        }
+
+        var passwordMatches = await userManager.CheckPasswordAsync(user, password);
+        if (!passwordMatches)
+        {
+            await userManager.AccessFailedAsync(user);
+            return Results.Ok(new PasswordContinueResponse("wrong_password", false));
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            if (request.SendEmail)
+            {
+                await SendConfirmationEmailAsync(userManager, emailSender, user, email);
+            }
+
+            return Results.Ok(new PasswordContinueResponse("confirmation_required", false));
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user);
+        await signInManager.SignInAsync(user, isPersistent: false, authenticationMethod: "password");
+        return Results.Ok(new PasswordContinueResponse("signed_in", false));
+    }
+
+    private static async Task<IResult> ConfirmPasswordSetupAsync(
+        PasswordSetupConfirmRequest request,
+        PasswordSetupService passwordSetupService)
+    {
+        var succeeded = await passwordSetupService.ConfirmSetupAsync(request.Token);
+        return succeeded
+            ? Results.Ok(new PasswordSetupConfirmResponse("confirmed"))
+            : Results.BadRequest(new { Error = "invalid_password_setup_token" });
+    }
+
+    private static async Task SendConfirmationEmailAsync(
+        UserManager<ApplicationUser> userManager,
+        IEmailSender<ApplicationUser> emailSender,
+        ApplicationUser user,
+        string email)
+    {
+        var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var confirmationLink = QueryHelpers.AddQueryString(
+            "/users/auth/confirmEmail",
+            new Dictionary<string, string?>
+            {
+                ["userId"] = user.Id,
+                ["code"] = encodedCode
+            });
+
+        await emailSender.SendConfirmationLinkAsync(user, email, confirmationLink);
+    }
+
+    private static async Task SendPasswordSetupEmailAsync(
+        PasswordSetupService passwordSetupService,
+        IAppEmailSender emailSender,
+        ExternalAuthenticationOptions externalAuthenticationOptions,
+        ApplicationUser user,
+        string email,
+        string password)
+    {
+        var setupToken = await passwordSetupService.CreateSetupTokenAsync(user, password);
+        var setupLink = QueryHelpers.AddQueryString(
+            BuildWebAppAuthUrl(externalAuthenticationOptions.ConfirmationRedirectUrl, "/auth/confirm-email"),
+            new Dictionary<string, string?>
+            {
+                ["passwordSetupToken"] = setupToken
+            });
+
+        var content = EmailTemplateBuilder.BuildPasswordSetupLinkEmail(setupLink);
+        await emailSender.SendAsync(email, "Set your WriteFluency password", content.HtmlBody, content.TextBody);
+    }
+
+    private static async Task<IdentityResult> ConfirmUserEmailAsync(
+        UserManager<ApplicationUser> userManager,
+        ApplicationUser user)
+    {
+        var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        return await userManager.ConfirmEmailAsync(user, code);
+    }
+
+    private static Dictionary<string, string[]> BuildIdentityErrorDictionary(IdentityResult result)
+    {
+        return result.Errors
+            .GroupBy(error => error.Code)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(error => error.Description).ToArray());
+    }
+
+    private static string BuildWebAppAuthUrl(string confirmationRedirectUrl, string path)
+    {
+        var confirmationUri = new Uri(confirmationRedirectUrl, UriKind.Absolute);
+        var builder = new UriBuilder(confirmationUri)
+        {
+            Path = path,
+            Query = string.Empty,
+            Fragment = string.Empty
+        };
+
+        return builder.Uri.ToString();
     }
 
     private static bool TryGetProvider(string provider, out ExternalProviderDefinition providerDefinition)
@@ -661,6 +846,23 @@ public static class AuthEndpointExtensions
     public record PasswordlessVerifyRequest([Required, EmailAddress] string Email, [Required] string Code);
 
     public record PasswordlessVerifyResponse(bool IsNewUser);
+
+    public sealed record PasswordContinueRequest
+    {
+        [Required, EmailAddress]
+        public required string Email { get; init; }
+
+        [Required]
+        public required string Password { get; init; }
+
+        public bool SendEmail { get; init; } = true;
+    }
+
+    public record PasswordContinueResponse(string Status, bool IsNewUser);
+
+    public record PasswordSetupConfirmRequest([Required] string Token);
+
+    public record PasswordSetupConfirmResponse(string Status);
 
     private sealed record ExternalProviderDefinition(string Id, string SchemeName, string DisplayName);
 

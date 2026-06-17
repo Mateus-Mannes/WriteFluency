@@ -622,6 +622,118 @@ public class AuthEndpointsIntegrationTests
     }
 
     [Fact]
+    public async Task PasswordContinue_ForNewUser_ShouldCreateAccountAndRequireConfirmation()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"password-continue-new-{Guid.NewGuid():N}@writefluency.test";
+        var response = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/password/continue", new
+        {
+            Email = email,
+            Password = "Passw0rd!123"
+        });
+
+        response.IsSuccessStatusCode.ShouldBeTrue();
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        document.RootElement.GetProperty("status").GetString().ShouldBe("confirmation_required");
+        document.RootElement.GetProperty("isNewUser").GetBoolean().ShouldBeTrue();
+
+        var confirmationEmail = _fixture.EmailSender.FindLastBySubjectContains("Confirm your WriteFluency email");
+        confirmationEmail.ShouldNotBeNull();
+        ExtractWebappLinkPath(confirmationEmail!.HtmlBody).ShouldBe("/auth/confirm-email");
+
+        var emailCountAfterFirstAttempt = _fixture.EmailSender.Messages.Count;
+        var checkOnlyResponse = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/password/continue", new
+        {
+            Email = email,
+            Password = "Passw0rd!123",
+            SendEmail = false
+        });
+
+        checkOnlyResponse.IsSuccessStatusCode.ShouldBeTrue();
+        using var checkOnlyDocument = await JsonDocument.ParseAsync(await checkOnlyResponse.Content.ReadAsStreamAsync());
+        checkOnlyDocument.RootElement.GetProperty("status").GetString().ShouldBe("confirmation_required");
+        checkOnlyDocument.RootElement.GetProperty("isNewUser").GetBoolean().ShouldBeFalse();
+        _fixture.EmailSender.Messages.Count.ShouldBe(emailCountAfterFirstAttempt);
+    }
+
+    [Fact]
+    public async Task PasswordContinue_ForPasswordlessUser_ShouldSendSetupLink_AndAllowPasswordLoginAfterReset()
+    {
+        if (!CanRunIntegration())
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        using var client = _fixture.CreateClient();
+
+        var email = $"passwordless-to-password-{Guid.NewGuid():N}@writefluency.test";
+        await CreateConfirmedPasswordlessUserAsync(email);
+
+        var setupResponse = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/password/continue", new
+        {
+            Email = email,
+            Password = "Passw0rd!123"
+        });
+
+        setupResponse.IsSuccessStatusCode.ShouldBeTrue();
+        using (var setupDocument = await JsonDocument.ParseAsync(await setupResponse.Content.ReadAsStreamAsync()))
+        {
+            setupDocument.RootElement.GetProperty("status").GetString().ShouldBe("password_setup_required");
+            setupDocument.RootElement.GetProperty("isNewUser").GetBoolean().ShouldBeFalse();
+        }
+
+        var setupEmail = _fixture.EmailSender.FindLastBySubjectContains("Set your WriteFluency password");
+        setupEmail.ShouldNotBeNull();
+        setupEmail!.HtmlBody.ShouldContain("If the button does not work");
+        setupEmail.TextBody.ShouldContain("Confirm and add password");
+        setupEmail.TextBody.ShouldContain("account already exists");
+        setupEmail.TextBody.ShouldNotContain("Reset your password", Case.Insensitive);
+        ExtractWebappLinkPath(setupEmail.HtmlBody).ShouldBe("/auth/confirm-email");
+
+        var emailCountAfterSetupAttempt = _fixture.EmailSender.Messages.Count;
+        var checkOnlySetupResponse = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/password/continue", new
+        {
+            Email = email,
+            Password = "Passw0rd!123",
+            SendEmail = false
+        });
+
+        checkOnlySetupResponse.IsSuccessStatusCode.ShouldBeTrue();
+        using (var checkOnlySetupDocument = await JsonDocument.ParseAsync(await checkOnlySetupResponse.Content.ReadAsStreamAsync()))
+        {
+            checkOnlySetupDocument.RootElement.GetProperty("status").GetString().ShouldBe("password_setup_required");
+            checkOnlySetupDocument.RootElement.GetProperty("isNewUser").GetBoolean().ShouldBeFalse();
+        }
+        _fixture.EmailSender.Messages.Count.ShouldBe(emailCountAfterSetupAttempt);
+
+        var confirmSetup = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/password/setup/confirm", new
+        {
+            Token = ExtractQueryParamFromWebappLink(setupEmail.HtmlBody, "passwordSetupToken")
+        });
+        confirmSetup.IsSuccessStatusCode.ShouldBeTrue();
+
+        using var loginClient = _fixture.CreateClient();
+        var login = await PostAsJsonWithAllowedOriginAsync(loginClient, "/users/auth/password/continue", new
+        {
+            Email = email,
+            Password = "Passw0rd!123"
+        });
+
+        login.IsSuccessStatusCode.ShouldBeTrue();
+        using var loginDocument = await JsonDocument.ParseAsync(await login.Content.ReadAsStreamAsync());
+        loginDocument.RootElement.GetProperty("status").GetString().ShouldBe("signed_in");
+        loginDocument.RootElement.GetProperty("isNewUser").GetBoolean().ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task ManageEndpoints_ShouldBeReachableForAuthenticatedUser()
     {
         if (!CanRunIntegration())
@@ -878,6 +990,48 @@ public class AuthEndpointsIntegrationTests
         login.IsSuccessStatusCode.ShouldBeTrue();
     }
 
+    private async Task RequestAndVerifyOtpAsync(HttpClient client, string email)
+    {
+        var requestOtp = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/request", new
+        {
+            Email = email
+        });
+        requestOtp.IsSuccessStatusCode.ShouldBeTrue();
+
+        var otpEmail = _fixture.EmailSender.FindLastBySubjectContains("sign-in code");
+        otpEmail.ShouldNotBeNull();
+
+        var otpCode = ExtractCode(otpEmail!.HtmlBody);
+        var verify = await PostAsJsonWithAllowedOriginAsync(client, "/users/auth/passwordless/verify", new
+        {
+            Email = email,
+            Code = otpCode
+        });
+
+        verify.IsSuccessStatusCode.ShouldBeTrue();
+    }
+
+    private async Task CreateConfirmedPasswordlessUserAsync(string email)
+    {
+        _fixture.Factory.ShouldNotBeNull();
+
+        using var scope = _fixture.Factory!.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
+        var normalizedEmail = email.ToUpperInvariant();
+        db.Users.Add(new ApplicationUser
+        {
+            UserName = email,
+            NormalizedUserName = normalizedEmail,
+            Email = email,
+            NormalizedEmail = normalizedEmail,
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            ConcurrencyStamp = Guid.NewGuid().ToString("N")
+        });
+
+        await db.SaveChangesAsync();
+    }
+
     private static string ExtractHref(string html)
     {
         var escapedHref = Regex.Match(html, "href=\\\\\\\"([^\\\\\\\"]+)\\\\\\\"", RegexOptions.IgnoreCase);
@@ -916,6 +1070,25 @@ public class AuthEndpointsIntegrationTests
             ["userId"] = userId.ToString(),
             ["code"] = code.ToString()
         });
+    }
+
+    private static string ExtractWebappLinkPath(string html)
+    {
+        var url = ExtractHref(html);
+        var decodedUrl = WebUtility.HtmlDecode(url);
+        var uri = new Uri(decodedUrl, UriKind.Absolute);
+        return uri.AbsolutePath;
+    }
+
+    private static string ExtractQueryParamFromWebappLink(string html, string key)
+    {
+        var url = ExtractHref(html);
+        var decodedUrl = WebUtility.HtmlDecode(url);
+        var uri = new Uri(decodedUrl, UriKind.Absolute);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        query.TryGetValue(key, out var value).ShouldBeTrue($"Expected {key} query parameter in {uri}");
+        value.ToString().ShouldNotBeNullOrWhiteSpace();
+        return value.ToString();
     }
 
     private static string ExtractCode(string html)

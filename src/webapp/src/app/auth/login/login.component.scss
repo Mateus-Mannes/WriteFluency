@@ -205,8 +205,13 @@ mat-form-field {
   color: vars.$color-primary-dark;
 }
 
-.success {
+.success,
+.password-message--success {
   color: vars.$color-accent-success;
+}
+
+.password-message--warning {
+  color: vars.$color-accent-warning;
 }
 
 .busy-indicator {

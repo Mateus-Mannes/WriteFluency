@@ -9,6 +9,18 @@ export interface PasswordlessVerifyResponse {
   isNewUser: boolean;
 }
 
+export type PasswordContinueStatus =
+  | 'signed_in'
+  | 'confirmation_required'
+  | 'wrong_password'
+  | 'password_setup_required'
+  | 'account_locked';
+
+export interface PasswordContinueResponse {
+  status: PasswordContinueStatus;
+  isNewUser: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   private readonly usersApiUrl = environment.usersApiUrl.replace(/\/$/, '');
@@ -23,6 +35,14 @@ export class AuthApiService {
   loginPassword(email: string, password: string): Observable<unknown> {
     const params = new HttpParams().set('useCookies', 'true');
     return this.http.post(`${this.basePath}/login`, { email, password }, { params, withCredentials: true });
+  }
+
+  continueWithPassword(email: string, password: string, sendEmail = true): Observable<PasswordContinueResponse> {
+    return this.http.post<PasswordContinueResponse>(
+      `${this.basePath}/password/continue`,
+      { email, password, sendEmail },
+      { withCredentials: true },
+    );
   }
 
   logout(): Observable<unknown> {
@@ -83,6 +103,18 @@ export class AuthApiService {
       withCredentials: true,
       responseType: 'text',
     });
+  }
+
+  confirmPasswordSetup(token: string): Observable<{ status: string }> {
+    return this.http.post<{ status: string }>(`${this.basePath}/password/setup/confirm`, { token }, { withCredentials: true });
+  }
+
+  resetPassword(email: string, resetCode: string, newPassword: string): Observable<unknown> {
+    return this.http.post(`${this.basePath}/resetPassword`, {
+      email,
+      resetCode,
+      newPassword,
+    }, { withCredentials: true });
   }
 
   private markFeedbackPrompt(

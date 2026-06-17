@@ -28,4 +28,19 @@ public class EmailTemplateBuilderTests
         content.TextBody.ShouldContain(code);
         content.TextBody.ShouldContain("expires in 10 minutes");
     }
+
+    [Fact]
+    public void BuildPasswordSetupLinkEmail_ShouldUseSetupLanguage()
+    {
+        const string link = "https://writefluency.com/auth/confirm-email?passwordSetupToken=abc";
+
+        var content = EmailTemplateBuilder.BuildPasswordSetupLinkEmail(link);
+
+        content.HtmlBody.ShouldContain(link);
+        content.TextBody.ShouldContain(link);
+        content.HtmlBody.ShouldContain("If the button does not work");
+        content.TextBody.ShouldContain("Confirm and add password");
+        content.TextBody.ShouldContain("account already exists");
+        content.TextBody.ShouldNotContain("Reset your password", Case.Insensitive);
+    }
 }

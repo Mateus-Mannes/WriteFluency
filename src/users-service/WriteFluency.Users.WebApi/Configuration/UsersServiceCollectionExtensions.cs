@@ -179,6 +179,7 @@ public static class UsersServiceCollectionExtensions
 
         services.AddScoped<PasswordlessOtpStore>();
         services.AddScoped<PasswordlessOtpService>();
+        services.AddScoped<PasswordSetupService>();
         services.AddScoped<IExternalLoginInfoResolver, DefaultExternalLoginInfoResolver>();
         services.AddScoped<ILoginActivityRecorder, LoginActivityRecorder>();
         services.AddSingleton<IClientIpResolver, ClientIpResolver>();

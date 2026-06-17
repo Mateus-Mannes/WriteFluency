@@ -53,6 +53,37 @@ public static class EmailTemplateBuilder
             contentText: contentText);
     }
 
+    public static EmailContent BuildPasswordSetupLinkEmail(string setupLink)
+    {
+        var contentHtml = $"""
+                           <p style="margin:0 0 16px 0;">Your WriteFluency account already exists. Confirm this email address to add password sign-in to your account.</p>
+                           {BuildPrimaryButton(setupLink, "Confirm and add password")}
+                           <p style="margin:0;color:#4B5563;font-size:14px;line-height:1.5;">
+                             If the button does not work, copy and paste this link in your browser:<br />
+                             <a href="{setupLink}" style="color:#3A7DFF;word-break:break-all;">{setupLink}</a>
+                           </p>
+                           <p style="margin:16px 0 0 0;color:#4B5563;font-size:14px;line-height:1.5;">
+                             If you did not request this, you can ignore this email.
+                           </p>
+                           """;
+
+        var contentText = $"""
+                          Your WriteFluency account already exists. Confirm this email address to add password sign-in to your account.
+
+                          Confirm and add password:
+                          {setupLink}
+
+                          If you did not request this, you can ignore this email.
+                          """;
+
+        return BuildLayout(
+            title: "Confirm email to add password",
+            subtitle: "One quick step to enable password sign-in",
+            contentHtml: contentHtml,
+            contentText: contentText);
+    }
+
+
     public static EmailContent BuildPasswordResetCodeEmail(string resetCode)
     {
         var contentHtml = $"""

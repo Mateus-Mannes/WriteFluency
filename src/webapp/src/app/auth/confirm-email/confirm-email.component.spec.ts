@@ -10,8 +10,9 @@ describe('ConfirmEmailComponent', () => {
   let authApiServiceSpy: jasmine.SpyObj<AuthApiService>;
 
   beforeEach(async () => {
-    authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', ['confirmEmail']);
+    authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', ['confirmEmail', 'confirmPasswordSetup']);
     authApiServiceSpy.confirmEmail.and.returnValue(of({}));
+    authApiServiceSpy.confirmPasswordSetup.and.returnValue(of({ status: 'confirmed' }));
 
     await TestBed.configureTestingModule({
       imports: [ConfirmEmailComponent],
@@ -51,6 +52,37 @@ describe('ConfirmEmailComponent', () => {
     expect(component.isSuccess()).toBeFalse();
     expect(component.message()).toBe('This confirmation link is invalid or expired. Please request a new confirmation email.');
     expect(component.helperMessage()).toBeNull();
+  });
+
+  it('should confirm password setup successfully', async () => {
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [ConfirmEmailComponent],
+        providers: [
+          { provide: AuthApiService, useValue: authApiServiceSpy },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                queryParamMap: {
+                  get: (key: string) => (key === 'passwordSetupToken' ? 'setup-token' : null),
+                },
+              },
+            },
+          },
+        ],
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(ConfirmEmailComponent);
+    component = fixture.componentInstance;
+
+    await component.ngOnInit();
+
+    expect(authApiServiceSpy.confirmPasswordSetup).toHaveBeenCalledWith('setup-token');
+    expect(authApiServiceSpy.confirmEmail).not.toHaveBeenCalled();
+    expect(component.isSuccess()).toBeTrue();
+    expect(component.message()).toBe('Password sign-in is ready. You can now sign in.');
   });
 
   it('should show invalid-link message when query parameters are missing', async () => {

@@ -305,6 +305,9 @@ Run AppHost and validate users-service foundation:
 
 Google and Microsoft login are exposed by `users-service` under `/users/auth/external/*`.
 
+The full custom login/sign-up flow is documented in
+[`AUTHENTICATION_FLOWS.md`](src/users-service/WriteFluency.Users.WebApi/Authentication/AUTHENTICATION_FLOWS.md).
+
 ### Required local user secrets
 
 `users-service` and `propositions-service` share the same `UserSecretsId`, so set credentials once (for example from `src/propositions-service/WriteFluency.WebApi`):

@@ -36,6 +36,32 @@ describe('AuthApiService', () => {
     request.flush({});
   });
 
+  it('should call password continue endpoint', () => {
+    service.continueWithPassword('user@test.com', 'Passw0rd!').subscribe((response) => {
+      expect(response.status).toBe('signed_in');
+      expect(response.isNewUser).toBeFalse();
+    });
+
+    const request = httpMock.expectOne(`${authBaseUrl}/password/continue`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    expect(request.request.body).toEqual({ email: 'user@test.com', password: 'Passw0rd!', sendEmail: true });
+    request.flush({ status: 'signed_in', isNewUser: false });
+  });
+
+  it('should call password continue endpoint without sending email when requested', () => {
+    service.continueWithPassword('user@test.com', 'Passw0rd!', false).subscribe((response) => {
+      expect(response.status).toBe('confirmation_required');
+      expect(response.isNewUser).toBeFalse();
+    });
+
+    const request = httpMock.expectOne(`${authBaseUrl}/password/continue`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    expect(request.request.body).toEqual({ email: 'user@test.com', password: 'Passw0rd!', sendEmail: false });
+    request.flush({ status: 'confirmation_required', isNewUser: false });
+  });
+
   it('should call external providers endpoint', () => {
     service.externalProviders().subscribe();
 
@@ -64,5 +90,31 @@ describe('AuthApiService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.withCredentials).toBeTrue();
     request.flush({ listenWriteTutorialCompleted: true });
+  });
+
+  it('should call reset password endpoint', () => {
+    service.resetPassword('user@test.com', 'reset-code', 'NewPassw0rd!').subscribe();
+
+    const request = httpMock.expectOne(`${authBaseUrl}/resetPassword`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    expect(request.request.body).toEqual({
+      email: 'user@test.com',
+      resetCode: 'reset-code',
+      newPassword: 'NewPassw0rd!',
+    });
+    request.flush({});
+  });
+
+  it('should call password setup confirmation endpoint', () => {
+    service.confirmPasswordSetup('setup-token').subscribe((response) => {
+      expect(response.status).toBe('confirmed');
+    });
+
+    const request = httpMock.expectOne(`${authBaseUrl}/password/setup/confirm`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBeTrue();
+    expect(request.request.body).toEqual({ token: 'setup-token' });
+    request.flush({ status: 'confirmed' });
   });
 });

@@ -18,6 +18,7 @@ import { Insights, InsightsMeasurements } from '../../../telemetry/insights.serv
 import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
 
 type OtpPhase = 'request' | 'verify';
+type PasswordMessageTone = 'success' | 'warning';
 
 const otpUiLimits = {
   ttlMinutes: 10,
@@ -71,6 +72,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   readonly externalProviders = signal<ExternalProvider[]>([]);
   readonly passwordError = signal<string | null>(null);
   readonly passwordSuccessMessage = signal<string | null>(null);
+  readonly passwordMessageTone = signal<PasswordMessageTone>('success');
   readonly awaitingEmailConfirmation = signal<string | null>(null);
   readonly otpRequestMessage = signal<string | null>(null);
   readonly otpError = signal<string | null>(null);
@@ -136,7 +138,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     const email = emailControl.getRawValue().trim();
     const password = passwordControl.getRawValue();
     emailControl.setValue(email);
-    this.trackAuthEvent('auth_password_login_attempted', {
+    this.trackAuthEvent('auth_password_continue_attempted', {
       source: this.loginSource,
       allow_auto_registration: allowAutoRegistration,
     });
@@ -145,57 +147,98 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.passwordError.set(null);
     if (allowAutoRegistration) {
       this.passwordSuccessMessage.set(null);
+      this.passwordMessageTone.set('success');
     }
 
     try {
-      await firstValueFrom(this.authApiService.loginPassword(email, password));
-      this.awaitingEmailConfirmation.set(null);
-      this.passwordSuccessMessage.set(null);
-      this.trackAuthEvent('auth_login_succeeded', {
-        method: 'password',
-        source: this.loginSource,
-      });
-      await this.authSessionStore.refreshSession();
-      await this.navigateAfterSuccessfulLogin();
+      const response = await firstValueFrom(this.authApiService.continueWithPassword(email, password, allowAutoRegistration));
+      switch (response.status) {
+        case 'signed_in':
+          this.awaitingEmailConfirmation.set(null);
+          this.passwordSuccessMessage.set(null);
+          this.trackAuthEvent('auth_login_succeeded', {
+            method: 'password',
+            source: this.loginSource,
+          });
+          await this.authSessionStore.refreshSession();
+          await this.navigateAfterSuccessfulLogin();
+          return;
+        case 'confirmation_required':
+          if (response.isNewUser) {
+            this.googleAdsConversionService.trackSignup(email);
+            this.trackAuthEvent('auth_auto_registration_created', {
+              source: this.loginSource,
+            });
+            this.passwordSuccessMessage.set('Account created. We sent a link to confirm your email. After opening the link, return here and click "I confirmed, continue".');
+            this.passwordMessageTone.set('success');
+          } else if (allowAutoRegistration) {
+            this.trackAuthEvent('auth_password_confirmation_required', {
+              source: this.loginSource,
+            });
+            this.passwordSuccessMessage.set('We sent a link to confirm your email. After opening the link, return here and click "I confirmed, continue".');
+            this.passwordMessageTone.set('success');
+          } else {
+            this.trackAuthEvent('auth_password_confirmation_required', {
+              source: this.loginSource,
+            });
+            this.passwordSuccessMessage.set('Your email is still not confirmed. Open the confirmation link we already sent, then click "I confirmed, continue".');
+            this.passwordMessageTone.set('warning');
+          }
+          this.setAwaitingEmailConfirmation(email);
+          this.otpForm.controls.email.setValue(email);
+          this.passwordError.set(null);
+          return;
+        case 'password_setup_required':
+          this.trackAuthEvent('auth_password_setup_required', {
+            source: this.loginSource,
+          });
+          this.awaitingEmailConfirmation.set(null);
+          this.setAwaitingEmailConfirmation(email);
+          this.passwordSuccessMessage.set(allowAutoRegistration
+            ? 'Your account already exists. We sent a link to confirm this email and add password sign-in. After opening the link, return here and click "I confirmed, continue".'
+            : 'Password sign-in is still not confirmed. Open the setup link we already sent, then click "I confirmed, continue".');
+          this.passwordMessageTone.set(allowAutoRegistration ? 'success' : 'warning');
+          this.passwordError.set(null);
+          return;
+        case 'wrong_password':
+          this.trackAuthEvent('auth_password_login_failed', {
+            source: this.loginSource,
+            reason: 'wrong_password',
+          });
+          this.passwordSuccessMessage.set(null);
+          this.passwordMessageTone.set('success');
+          this.passwordError.set('Wrong password. Try again or use email code instead.');
+          return;
+        case 'account_locked':
+          this.trackAuthEvent('auth_password_login_failed', {
+            source: this.loginSource,
+            reason: 'account_locked',
+          });
+          this.passwordSuccessMessage.set(null);
+          this.passwordMessageTone.set('success');
+          this.passwordError.set('This account is temporarily locked. Use email code or try again later.');
+          return;
+      }
     } catch (error: unknown) {
-      const loginStatus = this.getErrorStatus(error);
-      if (loginStatus !== 401) {
-        this.trackAuthEvent('auth_password_login_failed', {
+      const status = this.getErrorStatus(error);
+      if (status === 400) {
+        this.trackAuthEvent('auth_password_continue_failed', {
+          source: this.loginSource,
+          reason: 'validation_failed',
+        }, {
+          status_code: status,
+        });
+        this.passwordError.set(this.buildRegistrationErrorMessage(error));
+        return;
+      }
+
+      this.trackAuthEvent('auth_password_continue_failed', {
           source: this.loginSource,
           reason: 'unexpected_status',
         }, {
-          status_code: loginStatus ?? 0,
+          status_code: status ?? 0,
         });
-        this.passwordError.set('Could not sign in right now. Please try again.');
-        return;
-      }
-
-      if (!allowAutoRegistration || this.isAwaitingEmailConfirmationForEmail(email)) {
-        this.trackAuthEvent('auth_password_login_requires_confirmation', {
-          source: this.loginSource,
-        });
-        this.passwordError.set('Not confirmed yet. Confirm your email and click "Continue after confirmation".');
-        return;
-      }
-
-      try {
-        await firstValueFrom(this.authApiService.register(email, password));
-        this.googleAdsConversionService.trackSignup(email);
-        this.trackAuthEvent('auth_auto_registration_created', {
-          source: this.loginSource,
-        });
-        this.setAwaitingEmailConfirmation(email);
-        this.passwordSuccessMessage.set('Account created. We sent a confirmation link to your email. After confirming, return here and click "Continue after confirmation".');
-        this.otpForm.controls.email.setValue(email);
-      } catch (registrationError: unknown) {
-        const registrationStatus = this.getErrorStatus(registrationError);
-        this.trackAuthEvent('auth_auto_registration_failed', {
-          source: this.loginSource,
-        }, {
-          status_code: registrationStatus ?? 0,
-        });
-        this.passwordError.set(this.buildRegistrationErrorMessage(registrationError));
-      }
+      this.passwordError.set('Could not continue right now. Please try again.');
     } finally {
       this.isBusy.set(false);
     }
@@ -231,6 +274,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     this.passwordError.set(null);
     this.passwordSuccessMessage.set(null);
+    this.passwordMessageTone.set('success');
     this.otpError.set(null);
     this.otpRequestMessage.set(null);
   }
