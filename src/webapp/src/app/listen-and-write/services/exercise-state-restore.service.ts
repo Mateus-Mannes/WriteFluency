@@ -3,15 +3,15 @@ import { TextComparisonResult } from 'src/api/listen-and-write';
 import { Proposition } from '../../../api/listen-and-write/model/proposition';
 import { AuthSessionStore } from '../../auth/services/auth-session.store';
 import { BrowserService } from '../../core/services/browser.service';
+import { GuestExerciseProgressTransferService } from '../../core/services/guest-exercise-progress-transfer.service';
 import { ProgressStateResponse } from '../../user/models/user-progress.model';
+import { ExerciseLocalStateStorageService } from './exercise-local-state-storage.service';
 import { ExerciseProgressTrackingService } from './exercise-progress-tracking.service';
 import * as constants from '../listen-and-write.constants';
 import * as models from '../listen-and-write.models';
 
 export interface RestoreExerciseStateRequest {
   exerciseId: number | null;
-  getStateKey(exerciseId: number): string | null;
-  getExerciseStateKey(exerciseId: number): string | null;
   applySnapshot(snapshot: models.RestoredExerciseSnapshot): void;
   resetPendingPausedTime(): void;
 }
@@ -27,6 +27,8 @@ export class ExerciseStateRestoreService {
   constructor(
     private authSessionStore: AuthSessionStore,
     private browserService: BrowserService,
+    private localStateStorage: ExerciseLocalStateStorageService,
+    private guestProgressTransfer: GuestExerciseProgressTransferService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
   ) {}
 
@@ -61,14 +63,15 @@ export class ExerciseStateRestoreService {
         return;
       }
 
-      const localSnapshot = this.readLocalExerciseSnapshot(exerciseId, request);
-      const shouldSyncCompletedAfterLogin = this.consumePendingCompletedSyncRequest(exerciseId, localSnapshot);
-      if (shouldSyncCompletedAfterLogin) {
-        request.applySnapshot(this.toRestoredSnapshot(localSnapshot!));
+      const transferredGuestSnapshot = this.readAuthorizedGuestCompletedSnapshot(exerciseId);
+      if (transferredGuestSnapshot) {
+        this.migrateGuestSnapshotToCurrentUser(exerciseId);
+        request.applySnapshot(this.toRestoredSnapshot(transferredGuestSnapshot));
         this.shouldSyncCompletedResultAfterRestore = true;
         return;
       }
 
+      const localSnapshot = this.readCurrentLocalExerciseSnapshot(exerciseId);
       if (this.shouldPreferLocalCompletedState(serverState, localSnapshot)) {
         request.applySnapshot(this.toRestoredSnapshot(localSnapshot!));
         this.shouldSyncCompletedResultAfterRestore = false;
@@ -92,23 +95,6 @@ export class ExerciseStateRestoreService {
       if (this.isRestoreTokenActive(restoreToken, exerciseId)) {
         this.isRestoring.set(false);
       }
-    }
-  }
-
-  setPendingCompletedSyncRequest(exerciseId: number | null): void {
-    if (!exerciseId || !this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem(
-        constants.postLoginCompleteSyncStorageKey,
-        JSON.stringify({
-          exerciseId,
-          createdAtUtc: new Date().toISOString(),
-        }));
-    } catch {
-      // noop
     }
   }
 
@@ -161,7 +147,7 @@ export class ExerciseStateRestoreService {
       return;
     }
 
-    const localSnapshot = this.readLocalExerciseSnapshot(exerciseId, request);
+    const localSnapshot = this.readCurrentLocalExerciseSnapshot(exerciseId);
     if (!localSnapshot) {
       return;
     }
@@ -169,16 +155,28 @@ export class ExerciseStateRestoreService {
     request.applySnapshot(this.toRestoredSnapshot(localSnapshot));
   }
 
+  private readCurrentLocalExerciseSnapshot(exerciseId: number): models.LocalExerciseSnapshot | null {
+    return this.readLocalExerciseSnapshot(
+      this.localStateStorage.getCurrentStateKey(exerciseId),
+      this.localStateStorage.getCurrentSnapshotKey(exerciseId),
+    );
+  }
+
+  private readGuestLocalExerciseSnapshot(exerciseId: number): models.LocalExerciseSnapshot | null {
+    return this.readLocalExerciseSnapshot(
+      this.localStateStorage.getGuestStateKey(exerciseId),
+      this.localStateStorage.getGuestSnapshotKey(exerciseId),
+    );
+  }
+
   private readLocalExerciseSnapshot(
-    exerciseId: number,
-    request: RestoreExerciseStateRequest,
+    stateKey: string | null,
+    exerciseStateKey: string | null,
   ): models.LocalExerciseSnapshot | null {
-    const stateKey = request.getStateKey(exerciseId);
     const exerciseState = stateKey
       ? this.normalizeExerciseState(this.browserService.getItem(stateKey))
       : null;
 
-    const exerciseStateKey = request.getExerciseStateKey(exerciseId);
     if (!exerciseStateKey) {
       return null;
     }
@@ -262,40 +260,39 @@ export class ExerciseStateRestoreService {
     return !serverHasRestorableDraft;
   }
 
-  private consumePendingCompletedSyncRequest(
-    exerciseId: number,
-    localSnapshot: models.LocalExerciseSnapshot | null,
-  ): boolean {
-    if (!this.browserService.isBrowserEnvironment()) {
-      return false;
+  private readAuthorizedGuestCompletedSnapshot(exerciseId: number): models.LocalExerciseSnapshot | null {
+    const userId = this.authSessionStore.userId();
+    if (!this.guestProgressTransfer.consumeAuthorizedTransfer(exerciseId, userId)) {
+      return null;
     }
 
-    let pendingExerciseId: number | null = null;
-    try {
-      const rawValue = window.sessionStorage.getItem(constants.postLoginCompleteSyncStorageKey);
-      if (!rawValue) {
-        return false;
-      }
+    const guestSnapshot = this.readGuestLocalExerciseSnapshot(exerciseId);
+    return guestSnapshot?.state === 'results' && guestSnapshot.result
+      ? guestSnapshot
+      : null;
+  }
 
-      const parsed = JSON.parse(rawValue) as { exerciseId?: unknown };
-      if (typeof parsed.exerciseId === 'number' && Number.isFinite(parsed.exerciseId)) {
-        pendingExerciseId = parsed.exerciseId;
-      }
-    } catch {
-      // noop
+  private migrateGuestSnapshotToCurrentUser(exerciseId: number): void {
+    const guestStateKey = this.localStateStorage.getGuestStateKey(exerciseId);
+    const guestSnapshotKey = this.localStateStorage.getGuestSnapshotKey(exerciseId);
+    const currentStateKey = this.localStateStorage.getCurrentStateKey(exerciseId);
+    const currentSnapshotKey = this.localStateStorage.getCurrentSnapshotKey(exerciseId);
+
+    if (!currentStateKey || !currentSnapshotKey) {
+      return;
     }
 
-    if (pendingExerciseId !== exerciseId) {
-      return false;
+    const state = this.browserService.getItem(guestStateKey);
+    const snapshot = this.browserService.getItem(guestSnapshotKey);
+    if (state) {
+      this.browserService.setItem(currentStateKey, state);
+    }
+    if (snapshot) {
+      this.browserService.setItem(currentSnapshotKey, snapshot);
     }
 
-    try {
-      window.sessionStorage.removeItem(constants.postLoginCompleteSyncStorageKey);
-    } catch {
-      // noop
-    }
-
-    return localSnapshot?.state === 'results' && localSnapshot.result !== null;
+    this.browserService.removeItem(guestStateKey);
+    this.browserService.removeItem(guestSnapshotKey);
   }
 
   private toRestoredServerSnapshot(serverState: ProgressStateResponse): models.RestoredExerciseSnapshot {

@@ -7,6 +7,7 @@ import { ListenAndWriteComponent } from './listen-and-write.component';
 import { ExerciseProgressTrackingService } from './services/exercise-progress-tracking.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
+import { GuestExerciseProgressTransferService } from '../core/services/guest-exercise-progress-transfer.service';
 import { FeedbackService } from './services/feedback.service';
 import { TextComparisonsService } from 'src/api/listen-and-write';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
@@ -52,7 +53,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
-    authSessionStoreMock.userId.and.returnValue(null);
+    authSessionStoreMock.userId.and.returnValue('user-1');
     feedbackServiceMock = jasmine.createSpyObj<FeedbackService>(
       'FeedbackService',
       ['shouldShowPrompt', 'consumePromptOpportunity', 'markDismissed', 'submitFeedback'],
@@ -545,11 +546,11 @@ describe('ListenAndWriteComponent', () => {
     exerciseProgressTrackingMock.loadState.and.resolveTo(null);
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-10') {
+      if (key === 'wf.listen-write.state.v2:user:user-1:10') {
         return 'exercise';
       }
 
-      if (key === 'exercise-section-state-10') {
+      if (key === 'wf.listen-write.snapshot.v2:user:user-1:10') {
         return JSON.stringify({
           userText: 'local draft',
           autoPause: 3,
@@ -576,11 +577,11 @@ describe('ListenAndWriteComponent', () => {
     exerciseProgressTrackingMock.loadState.and.returnValue(new Promise(() => {}));
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-12') {
+      if (key === 'wf.listen-write.state.v2:user:user-1:12') {
         return 'exercise';
       }
 
-      if (key === 'exercise-section-state-12') {
+      if (key === 'wf.listen-write.snapshot.v2:user:user-1:12') {
         return JSON.stringify({
           userText: 'timeout fallback',
           autoPause: 2,
@@ -612,11 +613,11 @@ describe('ListenAndWriteComponent', () => {
     component.exerciseId = 15;
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-15') {
+      if (key === 'wf.listen-write.state.v2:guest:15') {
         return 'exercise';
       }
 
-      if (key === 'exercise-section-state-15') {
+      if (key === 'wf.listen-write.snapshot.v2:guest:15') {
         return JSON.stringify({
           userText: 'unauthenticated local',
           autoPause: 2,
@@ -706,11 +707,11 @@ describe('ListenAndWriteComponent', () => {
 
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-16') {
+      if (key === 'wf.listen-write.state.v2:user:user-1:16') {
         return 'results';
       }
 
-      if (key === 'exercise-section-state-16') {
+      if (key === 'wf.listen-write.snapshot.v2:user:user-1:16') {
         return JSON.stringify({
           userText: 'final local submission',
           autoPause: 2,
@@ -797,11 +798,11 @@ describe('ListenAndWriteComponent', () => {
 
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-17') {
+      if (key === 'wf.listen-write.state.v2:guest:17') {
         return 'results';
       }
 
-      if (key === 'exercise-section-state-17') {
+      if (key === 'wf.listen-write.snapshot.v2:guest:17') {
         return JSON.stringify({
           userText: 'typed answer',
           autoPause: 2,
@@ -818,10 +819,9 @@ describe('ListenAndWriteComponent', () => {
       return null;
     });
 
-    window.sessionStorage.setItem(
-      'wf.auth.post-login-complete-sync.v1',
-      JSON.stringify({ exerciseId: 17, createdAtUtc: '2026-04-20T20:01:00.000Z' }),
-    );
+    const guestProgressTransfer = TestBed.inject(GuestExerciseProgressTransferService);
+    guestProgressTransfer.request(17);
+    guestProgressTransfer.resolveSuccessfulLogin('results_save_cta', true, 'user-1');
 
     await component.restoreExerciseState();
 
@@ -829,7 +829,6 @@ describe('ListenAndWriteComponent', () => {
       jasmine.objectContaining({ id: 17 }),
       jasmine.objectContaining({ accuracyPercentage: 0.6 }),
     );
-    expect(window.sessionStorage.getItem('wf.auth.post-login-complete-sync.v1')).toBeNull();
   });
 
   it('should restore only once on route load', async () => {
@@ -850,7 +849,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(false);
     const browserService = (component as any).browserService;
     spyOn(browserService, 'getItem').and.callFake((key: string) => {
-      if (key === 'listen-write-state-1') {
+      if (key === 'wf.listen-write.state.v2:guest:1') {
         return 'exercise';
       }
 

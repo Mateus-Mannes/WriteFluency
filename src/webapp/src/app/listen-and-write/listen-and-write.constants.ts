@@ -9,6 +9,5 @@ export const submitTelemetryTextMaxLength = 4000;
 export const submitTextSnapshotMaxLength = 1200;
 export const submitAudioRemainingToleranceSeconds = 10;
 export const submitMinLoadingMs = 2000;
-export const postLoginCompleteSyncStorageKey = 'wf.auth.post-login-complete-sync.v1';
 export const proRequiredAccess = 'pro_required';
 export const accessGranted = 'granted';

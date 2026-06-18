@@ -16,6 +16,7 @@ import { AuthSessionStore } from '../services/auth-session.store';
 import { environment } from '../../../enviroments/enviroment';
 import { Insights, InsightsMeasurements } from '../../../telemetry/insights.service';
 import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
+import { GuestExerciseProgressTransferService } from '../../core/services/guest-exercise-progress-transfer.service';
 
 type OtpPhase = 'request' | 'verify';
 type PasswordMessageTone = 'success' | 'warning';
@@ -62,6 +63,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly insights = inject(Insights, { optional: true });
   private readonly googleAdsConversionService = inject(GoogleAdsConversionService);
+  private readonly guestProgressTransfer = inject(GuestExerciseProgressTransferService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private postLoginReturnUrl: string | null = null;
   private loginSource = 'direct';
@@ -161,10 +163,16 @@ export class LoginComponent implements OnInit, OnDestroy {
             source: this.loginSource,
           });
           await this.authSessionStore.refreshSession();
+          this.guestProgressTransfer.resolveSuccessfulLogin(
+            this.loginSource,
+            response.isNewUser,
+            this.authSessionStore.userId(),
+          );
           await this.navigateAfterSuccessfulLogin();
           return;
         case 'confirmation_required':
           if (response.isNewUser) {
+            this.guestProgressTransfer.markAccountCreationStarted(this.loginSource);
             this.googleAdsConversionService.trackSignup(email);
             this.trackAuthEvent('auth_auto_registration_created', {
               source: this.loginSource,
@@ -372,6 +380,11 @@ export class LoginComponent implements OnInit, OnDestroy {
         source: this.loginSource,
       });
       await this.authSessionStore.refreshSession();
+      this.guestProgressTransfer.resolveSuccessfulLogin(
+        this.loginSource,
+        verifyResponse.isNewUser,
+        this.authSessionStore.userId(),
+      );
       await this.navigateAfterSuccessfulLogin();
     } catch (error: unknown) {
       const verifyStatus = this.getErrorStatus(error);
