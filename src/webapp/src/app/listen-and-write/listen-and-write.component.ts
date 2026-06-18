@@ -15,11 +15,13 @@ import { PropositionsService } from '../../api/listen-and-write/api/propositions
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult } from 'src/api/listen-and-write';
 import { BrowserService } from '../core/services/browser.service';
+import { GuestExerciseProgressTransferService } from '../core/services/guest-exercise-progress-transfer.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
 import { ExerciseAudioControllerService } from './services/exercise-audio-controller.service';
 import { ExerciseFeedbackFlowService } from './services/exercise-feedback-flow.service';
+import { ExerciseLocalStateStorageService } from './services/exercise-local-state-storage.service';
 import { ExerciseSeoService } from './services/exercise-seo.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
@@ -61,9 +63,11 @@ export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
   private readonly exerciseAudioController = inject(ExerciseAudioControllerService);
   private readonly exerciseFeedbackFlow = inject(ExerciseFeedbackFlowService);
+  private readonly exerciseLocalStateStorage = inject(ExerciseLocalStateStorageService);
   private readonly exerciseSeo = inject(ExerciseSeoService);
   private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
+  private readonly guestProgressTransfer = inject(GuestExerciseProgressTransferService);
   private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
@@ -226,13 +230,11 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private getExerciseStateKey(exerciseId: number | null = this.exerciseId): string | null {
-    if (!exerciseId) return null;
-    return `exercise-section-state-${exerciseId}`;
+    return this.exerciseLocalStateStorage.getCurrentSnapshotKey(exerciseId);
   }
 
   private getStateKey(exerciseId: number | null = this.exerciseId): string | null {
-    if (!exerciseId) return null;
-    return `listen-write-state-${exerciseId}`;
+    return this.exerciseLocalStateStorage.getCurrentStateKey(exerciseId);
   }
 
   loadProposition(id: number): void {
@@ -273,8 +275,6 @@ export class ListenAndWriteComponent implements OnDestroy {
   async restoreExerciseState(): Promise<void> {
     await this.exerciseStateRestore.restore({
       exerciseId: this.exerciseId,
-      getStateKey: (exerciseId) => this.getStateKey(exerciseId),
-      getExerciseStateKey: (exerciseId) => this.getExerciseStateKey(exerciseId),
       applySnapshot: (snapshot) => this.applyRestoredExerciseSnapshot(snapshot),
       resetPendingPausedTime: () => this.exerciseAudioController.resetPendingPausedTime(),
     });
@@ -649,7 +649,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onSignInToSaveProgress(): void {
     const returnUrl = this.getPostLoginReturnUrl();
-    this.exerciseStateRestore.setPendingCompletedSyncRequest(this.exerciseId);
+    this.guestProgressTransfer.request(this.exerciseId);
     this.exerciseSessionTracking.trackEvent('results_login_cta_clicked', {
       return_url: returnUrl,
       exercise_id: String(this.exerciseId ?? ''),
