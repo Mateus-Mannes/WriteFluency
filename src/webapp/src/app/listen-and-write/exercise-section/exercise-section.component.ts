@@ -42,10 +42,11 @@ export class ExerciseSectionComponent implements OnInit {
   private isMobileMode = false;
   private lastDesktopAutoPause = 2;
   selectedAutoPause = signal(2);
-  shortcutSeekSeconds = computed(() => {
+  forwardSeekSeconds = computed(() => {
     const selected = this.selectedAutoPause();
-    return selected > 0 ? selected : 3;
+    return selected > 0 ? selected : 2;
   });
+  rewindSeekSeconds = computed(() => this.forwardSeekSeconds() + 1);
 
   maxWords = computed(() => {
     const originalWordCount = this.proposition()?.originalWordCount;

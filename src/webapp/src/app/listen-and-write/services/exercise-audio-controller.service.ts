@@ -209,7 +209,7 @@ export class ExerciseAudioControllerService {
     context: ExerciseAudioControlContext,
     action: 'rewind' | 'forward',
   ): void {
-    const seekSeconds = this.getShortcutSeekSeconds(context.section);
+    const seekSeconds = this.getShortcutSeekSeconds(context.section, action);
     event.preventDefault();
 
     this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
@@ -227,9 +227,13 @@ export class ExerciseAudioControllerService {
     context.audio?.forwardAudio(seekSeconds);
   }
 
-  private getShortcutSeekSeconds(section: ExerciseAudioSectionControl | null): number {
+  private getShortcutSeekSeconds(
+    section: ExerciseAudioSectionControl | null,
+    action: 'rewind' | 'forward',
+  ): number {
     const selectedAutoPause = section?.selectedAutoPause?.() ?? 0;
-    return selectedAutoPause > 0 ? selectedAutoPause : 3;
+    const forwardSeconds = selectedAutoPause > 0 ? selectedAutoPause : 2;
+    return action === 'rewind' ? forwardSeconds + 1 : forwardSeconds;
   }
 
   private markNextAudioPlaySource(source: models.AudioPlaySource): void {

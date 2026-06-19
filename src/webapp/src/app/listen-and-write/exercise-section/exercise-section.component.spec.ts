@@ -30,20 +30,22 @@ describe('ExerciseSectionComponent', () => {
     expect(component.selectedAutoPause()).toBe(0);
   });
 
-  it('should match shortcut seek seconds to auto-pause when enabled', () => {
+  it('should derive forward and rewind seconds from auto-pause when enabled', () => {
     fixture.detectChanges();
 
     component.selectAutoPause(5);
 
-    expect(component.shortcutSeekSeconds()).toBe(5);
+    expect(component.forwardSeekSeconds()).toBe(5);
+    expect(component.rewindSeekSeconds()).toBe(6);
   });
 
-  it('should keep shortcut seek seconds at 3 when auto-pause is off', () => {
+  it('should use the fallback plus one for rewind when auto-pause is off', () => {
     fixture.detectChanges();
 
     component.selectAutoPause(0);
 
-    expect(component.shortcutSeekSeconds()).toBe(3);
+    expect(component.forwardSeekSeconds()).toBe(2);
+    expect(component.rewindSeekSeconds()).toBe(3);
   });
 
   it('should emit tutorialVideoRequested when help icon is clicked', () => {

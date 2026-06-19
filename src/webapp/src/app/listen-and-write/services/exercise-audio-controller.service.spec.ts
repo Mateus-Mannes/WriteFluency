@@ -117,7 +117,7 @@ describe('ExerciseAudioControllerService', () => {
     expect(audio.pauseAudio).toHaveBeenCalledTimes(1);
   }));
 
-  it('should use the selected auto-pause seconds for rewind shortcuts', () => {
+  it('should use the selected auto-pause seconds plus one for rewind shortcuts', () => {
     section.selectedAutoPause.and.returnValue(5);
     const event = {
       ctrlKey: true,
@@ -130,7 +130,7 @@ describe('ExerciseAudioControllerService', () => {
     service.handleKeyboardEvent(event, createContext());
 
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(audio.rewindAudio).toHaveBeenCalledWith(5);
+    expect(audio.rewindAudio).toHaveBeenCalledWith(6);
     expect(trackingMock.trackEvent).toHaveBeenCalledWith(
       'audio_shortcut_used',
       jasmine.objectContaining({
@@ -138,12 +138,27 @@ describe('ExerciseAudioControllerService', () => {
         action: 'rewind',
       }),
       jasmine.objectContaining({
-        seek_seconds: 5,
+        seek_seconds: 6,
       }),
     );
   });
 
-  it('should use three seconds for forward shortcuts when auto-pause is off', () => {
+  it('should use three seconds for rewind shortcuts when auto-pause is off', () => {
+    section.selectedAutoPause.and.returnValue(0);
+    const event = {
+      ctrlKey: true,
+      metaKey: false,
+      key: 'ArrowLeft',
+      code: 'ArrowLeft',
+      preventDefault: jasmine.createSpy('preventDefault'),
+    } as unknown as KeyboardEvent;
+
+    service.handleKeyboardEvent(event, createContext());
+
+    expect(audio.rewindAudio).toHaveBeenCalledWith(3);
+  });
+
+  it('should use two seconds for forward shortcuts when auto-pause is off', () => {
     section.selectedAutoPause.and.returnValue(0);
     const event = {
       ctrlKey: true,
@@ -156,7 +171,7 @@ describe('ExerciseAudioControllerService', () => {
     service.handleKeyboardEvent(event, createContext());
 
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(audio.forwardAudio).toHaveBeenCalledWith(3);
+    expect(audio.forwardAudio).toHaveBeenCalledWith(2);
   });
 
   it('should pause audio after the selected auto-pause duration', fakeAsync(() => {

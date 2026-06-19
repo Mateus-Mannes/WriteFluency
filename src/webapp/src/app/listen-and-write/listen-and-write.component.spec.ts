@@ -267,7 +267,7 @@ describe('ListenAndWriteComponent', () => {
     expect(exerciseProgressTrackingMock.saveState).not.toHaveBeenCalled();
   });
 
-  it('should use auto-pause value for rewind shortcut when enabled', () => {
+  it('should use auto-pause value plus one for rewind shortcut when enabled', () => {
     const rewindAudio = jasmine.createSpy('rewindAudio');
 
     component.exerciseState.set('exercise');
@@ -291,10 +291,10 @@ describe('ListenAndWriteComponent', () => {
     component.handleKeyboardEvent(event);
 
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(rewindAudio).toHaveBeenCalledWith(5);
+    expect(rewindAudio).toHaveBeenCalledWith(6);
   });
 
-  it('should use 3 seconds for forward shortcut when auto-pause is off', () => {
+  it('should use 2 seconds for forward shortcut when auto-pause is off', () => {
     const forwardAudio = jasmine.createSpy('forwardAudio');
 
     component.exerciseState.set('exercise');
@@ -318,7 +318,7 @@ describe('ListenAndWriteComponent', () => {
     component.handleKeyboardEvent(event);
 
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(forwardAudio).toHaveBeenCalledWith(3);
+    expect(forwardAudio).toHaveBeenCalledWith(2);
   });
 
   it('should save progress state when audio starts during exercise', () => {
