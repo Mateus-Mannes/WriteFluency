@@ -143,6 +143,56 @@ public class CorrectionOrchestrationServiceTests
     }
 
     [Fact]
+    public async Task CompareTextsAsync_WhenOneAiSourceIsInvalid_ShouldKeepValidAiWorkAndFallbackOnlyRejectedSource()
+    {
+        var aiRefiner = CreateAiRefiner();
+        aiRefiner
+            .RefineAsync(Arg.Any<AiRefinementRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var request = call.Arg<AiRefinementRequest>();
+                request.Comparisons.Count.ShouldBe(2);
+                var first = request.Comparisons[0];
+                var second = request.Comparisons[1];
+
+                return CreateRefinement(
+                [
+                    new AiRefinedComparison(
+                        first.SourceComparisonIndex,
+                        first.OriginalTextRange.InitialIndex,
+                        first.OriginalTextRange.FinalIndex,
+                        first.UserTextRange.InitialIndex,
+                        first.UserTextRange.FinalIndex),
+                    new AiRefinedComparison(
+                        second.SourceComparisonIndex,
+                        0,
+                        request.OriginalText.Length - 1,
+                        0,
+                        request.UserText.Length - 1)
+                ]);
+            });
+
+        var service = CreateService(aiRefiner);
+        var result = await service.CompareTextsAsync(
+            "A cat rests while a dog runs",
+            "A cot rests while a dug runs",
+            isPro: true,
+            CancellationToken.None);
+
+        result.Result.CorrectionMode.ShouldBe(CorrectionModes.AiRefined);
+        result.Result.AiAttempted.ShouldBeTrue();
+        result.Result.Comparisons.Count.ShouldBe(2);
+        result.AiRejectedSourceComparisonCount.ShouldBe(1);
+        result.AiValidationFailureReason.ShouldBe("range_outside_source");
+        result.Result.Comparisons.ShouldContain(comparison =>
+            comparison.OriginalText!.Contains("cat")
+            && comparison.UserText!.Contains("cot"));
+        result.Result.Comparisons.ShouldContain(comparison =>
+            comparison.OriginalText!.Contains("dog")
+            && comparison.UserText!.Contains("dug"));
+    }
+
+    [Fact]
     public async Task CompareTextsAsync_WhenAiThrows_ShouldReturnFallback()
     {
         var aiRefiner = CreateAiRefiner();

@@ -27,17 +27,33 @@ public sealed record AiRefinementResult(
     long? InputTokenCount = null,
     long? OutputTokenCount = null);
 
+public sealed record AiRefinementValidationIssue(
+    int SourceComparisonIndex,
+    string Reason);
+
 public sealed record AiRefinementValidationResult(
     bool IsValid,
     IReadOnlyList<TextComparison> Comparisons,
     IReadOnlyList<AiRefinedComparison> NormalizedRanges,
-    string? FailureReason)
+    string? FailureReason,
+    IReadOnlyList<AiRefinementValidationIssue> RejectedSources)
 {
+    public int RejectedSourceComparisonCount => RejectedSources.Count;
+
     public static AiRefinementValidationResult Success(
         IReadOnlyList<TextComparison> comparisons,
-        IReadOnlyList<AiRefinedComparison> normalizedRanges) =>
-        new(true, comparisons, normalizedRanges, null);
+        IReadOnlyList<AiRefinedComparison> normalizedRanges,
+        IReadOnlyList<AiRefinementValidationIssue>? rejectedSources = null)
+    {
+        var issues = rejectedSources ?? [];
+        return new(
+            true,
+            comparisons,
+            normalizedRanges,
+            issues.FirstOrDefault()?.Reason,
+            issues);
+    }
 
     public static AiRefinementValidationResult Failure(string reason) =>
-        new(false, [], [], reason);
+        new(false, [], [], reason, []);
 }

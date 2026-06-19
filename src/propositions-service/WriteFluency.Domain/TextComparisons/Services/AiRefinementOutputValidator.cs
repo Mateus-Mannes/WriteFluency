@@ -13,93 +13,176 @@ public sealed class AiRefinementOutputValidator
 
         var sources = request.Comparisons.ToDictionary(
             comparison => comparison.SourceComparisonIndex);
-        var validatedComparisons = new List<TextComparison>(refinedComparisons.Count);
-        var normalizedRanges = new List<AiRefinedComparison>(refinedComparisons.Count);
 
         foreach (var candidate in refinedComparisons)
         {
-            if (!sources.TryGetValue(candidate.SourceComparisonIndex, out var source))
+            if (!sources.ContainsKey(candidate.SourceComparisonIndex))
             {
                 return AiRefinementValidationResult.Failure("unknown_source_comparison");
             }
+        }
 
-            var candidateOriginalRange = new TextRange(
-                candidate.OriginalTextInitialIndex,
-                candidate.OriginalTextFinalIndex);
-            var candidateUserRange = new TextRange(
-                candidate.UserTextInitialIndex,
-                candidate.UserTextFinalIndex);
+        var validatedEntries = new List<ValidatedEntry>(refinedComparisons.Count);
+        var rejectedSources = new List<AiRefinementValidationIssue>();
+        var acceptedCandidateCount = 0;
 
-            if (!IsValidRange(candidateOriginalRange, request.OriginalText.Length)
-                || !IsValidRange(candidateUserRange, request.UserText.Length))
+        foreach (var candidateGroup in refinedComparisons.GroupBy(
+                     candidate => candidate.SourceComparisonIndex))
+        {
+            var source = sources[candidateGroup.Key];
+            var sourceEntries = new List<ValidatedEntry>();
+            string? sourceFailureReason = null;
+
+            foreach (var candidate in candidateGroup)
             {
-                return AiRefinementValidationResult.Failure("invalid_range");
+                if (!TryValidateCandidate(
+                        request,
+                        source,
+                        candidate,
+                        out var entry,
+                        out sourceFailureReason))
+                {
+                    break;
+                }
+
+                sourceEntries.Add(entry);
             }
 
-            if (!TryNormalizeToSource(
-                    candidateOriginalRange,
-                    source.OriginalTextRange,
-                    request.OriginalText,
-                    out var originalRange)
-                || !TryNormalizeToSource(
-                    candidateUserRange,
-                    source.UserTextRange,
-                    request.UserText,
-                    out var userRange))
+            if (sourceFailureReason is not null)
             {
-                return AiRefinementValidationResult.Failure("range_outside_source");
+                rejectedSources.Add(new AiRefinementValidationIssue(
+                    source.SourceComparisonIndex,
+                    sourceFailureReason));
+                validatedEntries.Add(CreateSourceFallbackEntry(source));
+                continue;
             }
 
-            if (!TryNormalizeBoundaries(
-                    request.OriginalText,
-                    source.OriginalTextRange,
-                    originalRange,
-                    out originalRange)
-                || !TryNormalizeBoundaries(
-                    request.UserText,
-                    source.UserTextRange,
-                    userRange,
-                    out userRange))
-            {
-                return AiRefinementValidationResult.Failure(
-                    "empty_range_after_normalization");
-            }
+            acceptedCandidateCount += sourceEntries.Count;
+            validatedEntries.AddRange(sourceEntries);
+        }
 
-            if (!TrySlice(request.OriginalText, originalRange, out var originalSnippet)
-                || !TrySlice(request.UserText, userRange, out var userSnippet))
-            {
-                return AiRefinementValidationResult.Failure("unsafe_text_slice");
-            }
+        var omittedSourceCount = sources.Keys.Except(
+            refinedComparisons.Select(candidate => candidate.SourceComparisonIndex)).Count();
 
-            if (!HasCompleteWordBoundaries(request.OriginalText, originalRange)
-                || !HasCompleteWordBoundaries(request.UserText, userRange))
-            {
-                return AiRefinementValidationResult.Failure("partial_word_range");
-            }
+        if (rejectedSources.Count > 0
+            && acceptedCandidateCount == 0
+            && omittedSourceCount == 0)
+        {
+            return AiRefinementValidationResult.Failure(rejectedSources[0].Reason);
+        }
 
-            validatedComparisons.Add(new TextComparison(
+        var orderedResults = validatedEntries
+            .OrderBy(result => result.Comparison.OriginalTextRange.InitialIndex)
+            .ThenBy(result => result.Comparison.UserTextRange.InitialIndex)
+            .ToList();
+
+        return AiRefinementValidationResult.Success(
+            orderedResults.Select(result => result.Comparison).ToList(),
+            orderedResults.Select(result => result.Range).ToList(),
+            rejectedSources);
+    }
+
+    private static bool TryValidateCandidate(
+        AiRefinementRequest request,
+        AiRefinementSourceComparison source,
+        AiRefinedComparison candidate,
+        out ValidatedEntry entry,
+        out string? failureReason)
+    {
+        entry = default!;
+        failureReason = null;
+
+        var candidateOriginalRange = new TextRange(
+            candidate.OriginalTextInitialIndex,
+            candidate.OriginalTextFinalIndex);
+        var candidateUserRange = new TextRange(
+            candidate.UserTextInitialIndex,
+            candidate.UserTextFinalIndex);
+
+        if (!IsValidRange(candidateOriginalRange, request.OriginalText.Length)
+            || !IsValidRange(candidateUserRange, request.UserText.Length))
+        {
+            failureReason = "invalid_range";
+            return false;
+        }
+
+        if (!TryNormalizeToSource(
+                candidateOriginalRange,
+                source.OriginalTextRange,
+                request.OriginalText,
+                out var originalRange)
+            || !TryNormalizeToSource(
+                candidateUserRange,
+                source.UserTextRange,
+                request.UserText,
+                out var userRange))
+        {
+            failureReason = "range_outside_source";
+            return false;
+        }
+
+        if (!TryNormalizeBoundaries(
+                request.OriginalText,
+                source.OriginalTextRange,
+                originalRange,
+                out originalRange)
+            || !TryNormalizeBoundaries(
+                request.UserText,
+                source.UserTextRange,
+                userRange,
+                out userRange))
+        {
+            failureReason = "empty_range_after_normalization";
+            return false;
+        }
+
+        if (!TrySlice(request.OriginalText, originalRange, out var originalSnippet)
+            || !TrySlice(request.UserText, userRange, out var userSnippet))
+        {
+            failureReason = "unsafe_text_slice";
+            return false;
+        }
+
+        if (!HasCompleteWordBoundaries(request.OriginalText, originalRange)
+            || !HasCompleteWordBoundaries(request.UserText, userRange))
+        {
+            failureReason = "partial_word_range";
+            return false;
+        }
+
+        entry = new ValidatedEntry(
+            new TextComparison(
                 originalRange,
                 originalSnippet,
                 userRange,
-                userSnippet));
-            normalizedRanges.Add(new AiRefinedComparison(
+                userSnippet),
+            new AiRefinedComparison(
                 candidate.SourceComparisonIndex,
                 originalRange.InitialIndex,
                 originalRange.FinalIndex,
                 userRange.InitialIndex,
                 userRange.FinalIndex));
-        }
-
-        var orderedResults = validatedComparisons
-            .Zip(normalizedRanges)
-            .OrderBy(result => result.First.OriginalTextRange.InitialIndex)
-            .ThenBy(result => result.First.UserTextRange.InitialIndex)
-            .ToList();
-
-        return AiRefinementValidationResult.Success(
-            orderedResults.Select(result => result.First).ToList(),
-            orderedResults.Select(result => result.Second).ToList());
+        return true;
     }
+
+    private static ValidatedEntry CreateSourceFallbackEntry(
+        AiRefinementSourceComparison source) =>
+        new(
+            new TextComparison(
+                source.OriginalTextRange,
+                source.OriginalText,
+                source.UserTextRange,
+                source.UserText),
+            new AiRefinedComparison(
+                source.SourceComparisonIndex,
+                source.OriginalTextRange.InitialIndex,
+                source.OriginalTextRange.FinalIndex,
+                source.UserTextRange.InitialIndex,
+                source.UserTextRange.FinalIndex));
+
+    private sealed record ValidatedEntry(
+        TextComparison Comparison,
+        AiRefinedComparison Range);
 
     private static bool IsValidRange(TextRange range, int textLength) =>
         textLength > 0

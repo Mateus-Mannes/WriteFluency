@@ -96,7 +96,9 @@ public sealed class AiRefinementEvaluator
         {
             var refinement = await _refiner.RefineAsync(request, cancellationToken);
             var validation = _validator.Validate(request, refinement.Comparisons);
-            var actualRanges = (validation.IsValid
+            var isFullyValid = validation.IsValid
+                && validation.RejectedSourceComparisonCount == 0;
+            var actualRanges = (isFullyValid
                     ? validation.NormalizedRanges
                     : refinement.Comparisons)
                 .OrderBy(range => range.OriginalTextInitialIndex)
@@ -112,12 +114,12 @@ public sealed class AiRefinementEvaluator
                 evaluationCase.CaseId,
                 evaluationCase.Category,
                 evaluationCase.ExpectedAction,
-                validation.IsValid
+                isFullyValid
                     ? DetermineAction(actualRanges, sourceComparison)
                     : "error",
-                validation.IsValid,
-                validation.IsValid && expectedRanges.SequenceEqual(actualRanges),
-                validation.IsValid ? CalculateSpanF1(expectedRanges, actualRanges) : 0,
+                isFullyValid,
+                isFullyValid && expectedRanges.SequenceEqual(actualRanges),
+                isFullyValid ? CalculateSpanF1(expectedRanges, actualRanges) : 0,
                 refinement.DurationMilliseconds,
                 refinement.InputTokenCount,
                 refinement.OutputTokenCount,

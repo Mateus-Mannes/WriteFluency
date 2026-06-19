@@ -56,6 +56,52 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
+    public void Validate_WhenOneSourceFails_ShouldKeepValidSourcesAndRestoreRejectedSource()
+    {
+        var request = CreateRequestWithSeparateSources();
+
+        var result = _validator.Validate(
+            request,
+            [
+                new AiRefinedComparison(0, 2, 4, 2, 4),
+                new AiRefinedComparison(1, 12, 18, 12, 18)
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.FailureReason.ShouldBe("range_outside_source");
+        result.RejectedSourceComparisonCount.ShouldBe(1);
+        result.RejectedSources.Single().ShouldBe(
+            new AiRefinementValidationIssue(1, "range_outside_source"));
+        result.Comparisons.Count.ShouldBe(2);
+        result.Comparisons[0].OriginalText.ShouldBe("cat");
+        result.Comparisons[0].UserText.ShouldBe("cot");
+        result.Comparisons[1].OriginalText.ShouldBe("dog");
+        result.Comparisons[1].UserText.ShouldBe("dug");
+    }
+
+    [Fact]
+    public void Validate_WhenOneCandidateInASplitSourceFails_ShouldRestoreThatWholeSource()
+    {
+        var request = CreateRequestWithSeparateSources();
+
+        var result = _validator.Validate(
+            request,
+            [
+                new AiRefinedComparison(0, 2, 4, 2, 4),
+                new AiRefinedComparison(1, 12, 14, 12, 14),
+                new AiRefinedComparison(1, 12, 18, 12, 18)
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.RejectedSourceComparisonCount.ShouldBe(1);
+        result.Comparisons.Count.ShouldBe(2);
+        result.Comparisons.Count(comparison => comparison.OriginalText == "dog").ShouldBe(1);
+        result.NormalizedRanges.Count(range => range.SourceComparisonIndex == 1).ShouldBe(1);
+        result.NormalizedRanges.Single(range => range.SourceComparisonIndex == 1).ShouldBe(
+            new AiRefinedComparison(1, 12, 14, 12, 14));
+    }
+
+    [Fact]
     public void Validate_WhenRangeExceedsSourceByWhitespace_ShouldTrimToSource()
     {
         var result = _validator.Validate(
@@ -234,6 +280,30 @@ public class AiRefinementOutputValidatorTests
                     originalText[2..15],
                     new TextRange(2, 14),
                     userText[2..15])
+            ]);
+    }
+
+    private static AiRefinementRequest CreateRequestWithSeparateSources()
+    {
+        const string originalText = "A cat and a dog run.";
+        const string userText = "A cot and a dug run.";
+
+        return new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(2, 4),
+                    "cat",
+                    new TextRange(2, 4),
+                    "cot"),
+                new AiRefinementSourceComparison(
+                    1,
+                    new TextRange(12, 14),
+                    "dog",
+                    new TextRange(12, 14),
+                    "dug")
             ]);
     }
 }

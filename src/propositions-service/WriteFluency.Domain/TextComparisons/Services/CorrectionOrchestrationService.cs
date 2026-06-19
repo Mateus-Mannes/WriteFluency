@@ -88,7 +88,9 @@ public sealed class CorrectionOrchestrationService
                 removedComparisonCount,
                 request.Comparisons.Count,
                 finalComparisons.Count,
-                refinement);
+                refinement,
+                validation.FailureReason,
+                validation.RejectedSourceComparisonCount);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -156,7 +158,8 @@ public sealed class CorrectionOrchestrationService
         int aiInputComparisonCount = 0,
         int aiOutputComparisonCount = 0,
         AiRefinementResult? refinement = null,
-        string? validationFailureReason = null) =>
+        string? validationFailureReason = null,
+        int aiRejectedSourceComparisonCount = 0) =>
         new(
             result,
             staticComparisonCount,
@@ -168,7 +171,8 @@ public sealed class CorrectionOrchestrationService
             refinement?.OutputTokenCount,
             result.AiAttempted ? _aiRefiner.Model : null,
             result.AiAttempted ? _aiRefiner.PromptVersion : null,
-            validationFailureReason);
+            validationFailureReason,
+            aiRejectedSourceComparisonCount);
 
     private static double CalculateAccuracy(
         string originalText,
@@ -195,4 +199,5 @@ public sealed record CorrectionOrchestrationResult(
     long? AiOutputTokenCount,
     string? AiModel,
     string? AiPromptVersion,
-    string? AiValidationFailureReason);
+    string? AiValidationFailureReason,
+    int AiRejectedSourceComparisonCount);

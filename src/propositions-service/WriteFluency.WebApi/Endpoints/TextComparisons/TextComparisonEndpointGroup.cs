@@ -74,7 +74,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
             var result = orchestrationResult.Result;
 
             logger.LogInformation(
-                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, AiInputComparisons={AiInputComparisons}, AiOutputComparisons={AiOutputComparisons}, FinalComparisons={FinalComparisons}, AiModel={AiModel}, AiPromptVersion={AiPromptVersion}, AiDurationMs={AiDurationMs}, AiInputTokens={AiInputTokens}, AiOutputTokens={AiOutputTokens}, AiValidationFailureReason={AiValidationFailureReason}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
+                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, AiInputComparisons={AiInputComparisons}, AiOutputComparisons={AiOutputComparisons}, AiRejectedSourceComparisons={AiRejectedSourceComparisons}, FinalComparisons={FinalComparisons}, AiModel={AiModel}, AiPromptVersion={AiPromptVersion}, AiDurationMs={AiDurationMs}, AiInputTokens={AiInputTokens}, AiOutputTokens={AiOutputTokens}, AiValidationFailureReason={AiValidationFailureReason}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
                 isPro,
                 result.CorrectionMode,
@@ -82,6 +82,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                 orchestrationResult.RemovedComparisonCount,
                 orchestrationResult.AiInputComparisonCount,
                 orchestrationResult.AiOutputComparisonCount,
+                orchestrationResult.AiRejectedSourceComparisonCount,
                 result.Comparisons.Count,
                 orchestrationResult.AiModel,
                 orchestrationResult.AiPromptVersion,
