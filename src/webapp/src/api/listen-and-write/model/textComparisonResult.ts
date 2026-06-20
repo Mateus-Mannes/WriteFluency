@@ -8,6 +8,7 @@
  * Do not edit the class manually.
  */
 import { TextComparison } from './textComparison';
+import { CorrectionTraceEntry } from './correctionTraceEntry';
 
 
 export interface TextComparisonResult { 
@@ -17,4 +18,5 @@ export interface TextComparisonResult {
     accuracyPercentage?: number;
     correctionMode?: 'static' | 'normalized' | 'ai_refined' | 'fallback' | string | null;
     aiAttempted?: boolean;
+    correctionTrace?: Array<CorrectionTraceEntry> | null;
 }

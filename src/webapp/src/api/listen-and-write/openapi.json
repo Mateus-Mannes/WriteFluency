@@ -679,6 +679,16 @@
       "TextComparison": {
         "type": "object",
         "properties": {
+          "sourceComparisonIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDeterministicallyRefined": {
+            "type": "boolean"
+          },
+          "isAiRefined": {
+            "type": "boolean"
+          },
           "originalTextRange": {
             "$ref": "#/components/schemas/TextRange"
           },
@@ -692,6 +702,81 @@
           "userText": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ComparisonSnapshot": {
+        "type": "object",
+        "properties": {
+          "originalTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "originalText": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "userText": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectionStageTrace": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "nullable": true
+          },
+          "reasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSnapshot"
+            },
+            "nullable": true
+          },
+          "validationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "proposedOutput": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSnapshot"
+            },
+            "nullable": true
+          },
+          "validationFailureReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectionTraceEntry": {
+        "type": "object",
+        "properties": {
+          "sourceComparisonIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "initial": {
+            "$ref": "#/components/schemas/ComparisonSnapshot"
+          },
+          "deterministic": {
+            "$ref": "#/components/schemas/CorrectionStageTrace"
+          },
+          "ai": {
+            "$ref": "#/components/schemas/CorrectionStageTrace"
           }
         },
         "additionalProperties": false
@@ -730,6 +815,13 @@
           },
           "aiAttempted": {
             "type": "boolean"
+          },
+          "correctionTrace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorrectionTraceEntry"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

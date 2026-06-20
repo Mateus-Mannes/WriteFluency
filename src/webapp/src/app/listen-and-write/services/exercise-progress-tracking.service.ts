@@ -97,6 +97,9 @@ export class ExerciseProgressTrackingService {
       userText: result?.userText ?? null,
       originalText: result?.originalText ?? null,
       comparisons: result?.comparisons ?? null,
+      correctionMode: result?.correctionMode ?? null,
+      aiAttempted: result?.aiAttempted ?? null,
+      correctionTrace: result?.correctionTrace ?? null,
       ...metadata,
     })
       .pipe(catchError((error) => this.handleProgressApiError('complete', exerciseId, error)))

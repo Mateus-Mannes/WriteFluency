@@ -47,15 +47,15 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
             }
 
             if (!response.TryGetResult(out var structuredResponse)
-                || structuredResponse?.Comparisons is null)
+                || structuredResponse?.Decisions is null)
             {
                 throw new InvalidOperationException(
                     "The AI refinement response did not match the required schema.");
             }
 
             return new AiRefinementResult(
-                structuredResponse.Comparisons
-                    .Select(comparison => ToAbsoluteComparison(request, comparison))
+                structuredResponse.Decisions
+                    .Select(decision => ToDecision(request, decision))
                     .ToList(),
                 response.ModelId ?? Model,
                 PromptVersion,
@@ -101,17 +101,32 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
                 $"Unsupported AI refinement reasoning effort '{reasoningEffort}'.")
         };
 
+    private static AiRefinementDecision ToDecision(
+        AiRefinementRequest request,
+        StructuredRefinementDecision decision) =>
+        new(
+            decision.SourceComparisonIndex,
+            decision.Action ?? string.Empty,
+            decision.ReasonCode ?? string.Empty,
+            (decision.Comparisons ?? [])
+                .Select(comparison => ToAbsoluteComparison(
+                    request,
+                    decision.SourceComparisonIndex,
+                    comparison))
+                .ToList());
+
     private static AiRefinedComparison ToAbsoluteComparison(
         AiRefinementRequest request,
+        int sourceComparisonIndex,
         StructuredRefinedComparison comparison)
     {
         var source = request.Comparisons.FirstOrDefault(
-            candidate => candidate.SourceComparisonIndex == comparison.SourceComparisonIndex);
+            candidate => candidate.SourceComparisonIndex == sourceComparisonIndex);
 
         if (source is null)
         {
             return new AiRefinedComparison(
-                comparison.SourceComparisonIndex,
+                sourceComparisonIndex,
                 -1,
                 -1,
                 -1,
@@ -119,7 +134,7 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
         }
 
         return new AiRefinedComparison(
-            comparison.SourceComparisonIndex,
+            sourceComparisonIndex,
             AddOffset(source.OriginalTextRange.InitialIndex, comparison.OriginalTextStartOffset),
             AddOffset(source.OriginalTextRange.InitialIndex, comparison.OriginalTextEndOffset),
             AddOffset(source.UserTextRange.InitialIndex, comparison.UserTextStartOffset),
@@ -139,12 +154,19 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
 
     public sealed class StructuredRefinementResponse
     {
-        public required List<StructuredRefinedComparison> Comparisons { get; init; }
+        public required List<StructuredRefinementDecision> Decisions { get; init; }
+    }
+
+    public sealed class StructuredRefinementDecision
+    {
+        public required int SourceComparisonIndex { get; init; }
+        public string? Action { get; init; }
+        public string? ReasonCode { get; init; }
+        public List<StructuredRefinedComparison>? Comparisons { get; init; }
     }
 
     public sealed class StructuredRefinedComparison
     {
-        public required int SourceComparisonIndex { get; init; }
         public required int OriginalTextStartOffset { get; init; }
         public required int OriginalTextEndOffset { get; init; }
         public required int UserTextStartOffset { get; init; }

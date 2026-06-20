@@ -85,7 +85,32 @@ public class UserProgressTrackingServiceTests
                         new ProgressTextRange(0, 8),
                         "original",
                         new ProgressTextRange(0, 9),
-                        "submitted")
+                        "submitted",
+                        SourceComparisonIndex: 3,
+                        IsAiRefined: true)
+                ],
+                CorrectionMode: "ai_refined",
+                AiAttempted: true,
+                CorrectionTrace:
+                [
+                    new ProgressCorrectionTraceEntry(
+                        3,
+                        new ProgressComparisonSnapshot(
+                            new ProgressTextRange(0, 8),
+                            "original",
+                            new ProgressTextRange(0, 9),
+                            "submitted"),
+                        Ai: new ProgressCorrectionStageTrace(
+                            "refine",
+                            "word_substitution",
+                            [
+                                new ProgressComparisonSnapshot(
+                                    new ProgressTextRange(0, 8),
+                                    "original",
+                                    new ProgressTextRange(0, 9),
+                                    "submitted")
+                            ],
+                            ValidationStatus: "accepted"))
                 ]),
             CancellationToken.None);
 
@@ -109,6 +134,22 @@ public class UserProgressTrackingServiceTests
         state.OriginalText.ShouldBe("original exercise text");
         state.Comparisons.ShouldNotBeNull();
         state.Comparisons.Count.ShouldBe(1);
+        state.Comparisons.Single().SourceComparisonIndex.ShouldBe(3);
+        state.Comparisons.Single().IsAiRefined.ShouldBeTrue();
+        state.CorrectionMode.ShouldBe("ai_refined");
+        state.AiAttempted.ShouldBe(true);
+        state.CorrectionTrace.ShouldNotBeNull();
+        state.CorrectionTrace.Single().Ai.ShouldNotBeNull();
+
+        var attempts = await repository.GetAttemptsAsync(
+            userId,
+            13,
+            CancellationToken.None);
+        var attempt = attempts.Single();
+        attempt.CorrectionMode.ShouldBe("ai_refined");
+        attempt.AiAttempted.ShouldBe(true);
+        attempt.Comparisons.ShouldNotBeNull();
+        attempt.CorrectionTrace.ShouldNotBeNull();
 
         var progressAfterStart = await repository.GetProgressAsync(userId, 13, CancellationToken.None);
         progressAfterStart.ShouldNotBeNull();

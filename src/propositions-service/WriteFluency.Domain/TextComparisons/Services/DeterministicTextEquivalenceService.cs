@@ -216,21 +216,28 @@ public sealed partial class DeterministicTextEquivalenceService
     }
 
     public bool AreEquivalent(string? originalText, string? userText)
+        => Evaluate(originalText, userText).IsEquivalent;
+
+    public DeterministicEquivalenceResult Evaluate(string? originalText, string? userText)
     {
         if (originalText is null || userText is null)
         {
-            return false;
+            return DeterministicEquivalenceResult.NotEquivalent;
         }
 
         if (string.Equals(originalText, userText, StringComparison.Ordinal))
         {
-            return true;
+            return new DeterministicEquivalenceResult(true, "exact_duplicate");
         }
 
-        return string.Equals(
+        var isEquivalent = string.Equals(
             Normalize(originalText),
             Normalize(userText),
             StringComparison.Ordinal);
+
+        return isEquivalent
+            ? new DeterministicEquivalenceResult(true, "normalized_equivalence")
+            : DeterministicEquivalenceResult.NotEquivalent;
     }
 
     private string Normalize(string value)
@@ -362,4 +369,12 @@ public sealed partial class DeterministicTextEquivalenceService
 
     [GeneratedRegex(@"\p{L}+(?:'\p{L}+|')?", RegexOptions.CultureInvariant)]
     private static partial Regex WordRegex();
+}
+
+public sealed record DeterministicEquivalenceResult(
+    bool IsEquivalent,
+    string? ReasonCode)
+{
+    public static DeterministicEquivalenceResult NotEquivalent { get; } =
+        new(false, null);
 }

@@ -18,7 +18,10 @@ public sealed record CompleteProgressRequest(
     string? Complexity,
     string? UserText = null,
     string? OriginalText = null,
-    IReadOnlyList<ProgressTextComparison>? Comparisons = null);
+    IReadOnlyList<ProgressTextComparison>? Comparisons = null,
+    string? CorrectionMode = null,
+    bool? AiAttempted = null,
+    IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace = null);
 
 public sealed record ProgressOperationResponse(
     bool TrackingEnabled,
@@ -50,17 +53,43 @@ public sealed record ProgressStateResponse(
     DateTimeOffset? UpdatedAtUtc,
     double? AccuracyPercentage = null,
     string? OriginalText = null,
-    IReadOnlyList<ProgressTextComparison>? Comparisons = null);
+    IReadOnlyList<ProgressTextComparison>? Comparisons = null,
+    string? CorrectionMode = null,
+    bool? AiAttempted = null,
+    IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace = null);
 
 public sealed record ProgressTextComparison(
     ProgressTextRange? OriginalTextRange,
     string? OriginalText,
     ProgressTextRange? UserTextRange,
-    string? UserText);
+    string? UserText,
+    int? SourceComparisonIndex = null,
+    bool IsDeterministicallyRefined = false,
+    bool IsAiRefined = false);
 
 public sealed record ProgressTextRange(
     int? InitialIndex,
     int? FinalIndex);
+
+public sealed record ProgressComparisonSnapshot(
+    ProgressTextRange? OriginalTextRange,
+    string? OriginalText,
+    ProgressTextRange? UserTextRange,
+    string? UserText);
+
+public sealed record ProgressCorrectionStageTrace(
+    string? Action,
+    string? ReasonCode,
+    IReadOnlyList<ProgressComparisonSnapshot>? Output,
+    string? ValidationStatus = null,
+    IReadOnlyList<ProgressComparisonSnapshot>? ProposedOutput = null,
+    string? ValidationFailureReason = null);
+
+public sealed record ProgressCorrectionTraceEntry(
+    int? SourceComparisonIndex,
+    ProgressComparisonSnapshot? Initial,
+    ProgressCorrectionStageTrace? Deterministic = null,
+    ProgressCorrectionStageTrace? Ai = null);
 
 public sealed record ProgressSummaryResponse(
     bool TrackingEnabled,

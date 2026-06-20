@@ -1,4 +1,7 @@
 export * from './compareTextsDto';
+export * from './comparisonSnapshot';
+export * from './correctionStageTrace';
+export * from './correctionTraceEntry';
 export * from './beginExerciseResultDto';
 export * from './complexity';
 export * from './complexityEnum';

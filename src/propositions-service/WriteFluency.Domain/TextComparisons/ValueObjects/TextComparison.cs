@@ -2,13 +2,26 @@ namespace WriteFluency.TextComparisons;
 
 public class TextComparison
 {
+    public int SourceComparisonIndex { get; set; }
+    public bool IsDeterministicallyRefined { get; set; }
+    public bool IsAiRefined { get; set; }
     public TextRange OriginalTextRange { get; set; }
     public string? OriginalText { get; set; }
     public TextRange UserTextRange { get; set; }
     public string? UserText { get; set; }
 
-    public TextComparison(TextRange originalTextRange, string originalText, TextRange userTextRange, string userText)
+    public TextComparison(
+        TextRange originalTextRange,
+        string originalText,
+        TextRange userTextRange,
+        string userText,
+        int sourceComparisonIndex = -1,
+        bool isDeterministicallyRefined = false,
+        bool isAiRefined = false)
     {
+        SourceComparisonIndex = sourceComparisonIndex;
+        IsDeterministicallyRefined = isDeterministicallyRefined;
+        IsAiRefined = isAiRefined;
         OriginalTextRange = originalTextRange;
         OriginalText = originalText;
         UserTextRange = userTextRange;
@@ -49,6 +62,7 @@ public class TextComparisonResult
     public double AccuracyPercentage { get; set; }
     public string CorrectionMode { get; set; }
     public bool AiAttempted { get; set; }
+    public IReadOnlyList<CorrectionTraceEntry>? CorrectionTrace { get; set; }
 
     public TextComparisonResult(
         string originalText,
@@ -56,7 +70,8 @@ public class TextComparisonResult
         double accuracyPercentage,
         List<TextComparison> comparisons,
         string correctionMode = CorrectionModes.Static,
-        bool aiAttempted = false)
+        bool aiAttempted = false,
+        IReadOnlyList<CorrectionTraceEntry>? correctionTrace = null)
     {
         OriginalText = originalText;
         UserText = userText;
@@ -64,5 +79,26 @@ public class TextComparisonResult
         Comparisons = comparisons;
         CorrectionMode = correctionMode;
         AiAttempted = aiAttempted;
+        CorrectionTrace = correctionTrace;
     }
 }
+
+public sealed record ComparisonSnapshot(
+    TextRange OriginalTextRange,
+    string OriginalText,
+    TextRange UserTextRange,
+    string UserText);
+
+public sealed record CorrectionStageTrace(
+    string Action,
+    string ReasonCode,
+    IReadOnlyList<ComparisonSnapshot> Output,
+    string? ValidationStatus = null,
+    IReadOnlyList<ComparisonSnapshot>? ProposedOutput = null,
+    string? ValidationFailureReason = null);
+
+public sealed record CorrectionTraceEntry(
+    int SourceComparisonIndex,
+    ComparisonSnapshot Initial,
+    CorrectionStageTrace? Deterministic = null,
+    CorrectionStageTrace? Ai = null);

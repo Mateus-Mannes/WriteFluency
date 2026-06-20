@@ -319,6 +319,9 @@ export class ExerciseStateRestoreService {
       userText: serverState.userText,
       comparisons: serverState.comparisons ?? [],
       accuracyPercentage: serverState.accuracyPercentage ?? 0,
+      correctionMode: serverState.correctionMode ?? null,
+      aiAttempted: serverState.aiAttempted ?? false,
+      correctionTrace: serverState.correctionTrace ?? null,
     };
   }
 

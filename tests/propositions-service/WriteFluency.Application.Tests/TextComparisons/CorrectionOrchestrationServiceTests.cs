@@ -41,6 +41,13 @@ public class CorrectionOrchestrationServiceTests
         result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
         result.AiAttempted.ShouldBeFalse();
         result.Comparisons.ShouldBeEmpty();
+        result.CorrectionTrace.ShouldNotBeNull();
+        var trace = result.CorrectionTrace.Single();
+        trace.SourceComparisonIndex.ShouldBe(0);
+        trace.Initial.OriginalText.ShouldNotBeEmpty();
+        trace.Deterministic.ShouldNotBeNull();
+        trace.Deterministic.Action.ShouldBe(AiRefinementActions.Remove);
+        trace.Ai.ShouldBeNull();
         orchestrationResult.StaticComparisonCount.ShouldBe(1);
         orchestrationResult.RemovedComparisonCount.ShouldBe(1);
         result.AccuracyPercentage.ShouldBe(1);
@@ -79,6 +86,8 @@ public class CorrectionOrchestrationServiceTests
         result.CorrectionMode.ShouldBe(CorrectionModes.AiRefined);
         result.AiAttempted.ShouldBeTrue();
         result.Comparisons.Count.ShouldBe(1);
+        result.Comparisons[0].SourceComparisonIndex.ShouldBe(0);
+        result.Comparisons[0].IsDeterministicallyRefined.ShouldBeFalse();
         result.Comparisons[0].OriginalText.ShouldNotBeNull();
         result.Comparisons[0].UserText.ShouldNotBeNull();
         result.Comparisons[0].OriginalText!.ShouldContain("may be");
@@ -93,7 +102,16 @@ public class CorrectionOrchestrationServiceTests
         var aiRefiner = CreateAiRefiner();
         aiRefiner
             .RefineAsync(Arg.Any<AiRefinementRequest>(), Arg.Any<CancellationToken>())
-            .Returns(CreateRefinement([]));
+            .Returns(call =>
+            {
+                var request = call.Arg<AiRefinementRequest>();
+                return CreateRefinement(request.Comparisons.Select(source =>
+                    new AiRefinementDecision(
+                        source.SourceComparisonIndex,
+                        AiRefinementActions.Remove,
+                        "equivalent_transcription",
+                        [])).ToList());
+            });
 
         var service = CreateService(aiRefiner);
         var result = (await service.CompareTextsAsync(
@@ -106,6 +124,12 @@ public class CorrectionOrchestrationServiceTests
         result.AiAttempted.ShouldBeTrue();
         result.Comparisons.ShouldBeEmpty();
         result.AccuracyPercentage.ShouldBe(1);
+        result.CorrectionTrace.ShouldNotBeNull();
+        var trace = result.CorrectionTrace.Single();
+        trace.Deterministic.ShouldBeNull();
+        trace.Ai.ShouldNotBeNull();
+        trace.Ai.Action.ShouldBe(AiRefinementActions.Remove);
+        trace.Ai.Output.ShouldBeEmpty();
     }
 
     [Fact]
@@ -244,8 +268,19 @@ public class CorrectionOrchestrationServiceTests
 
     private static AiRefinementResult CreateRefinement(
         IReadOnlyList<AiRefinedComparison> comparisons) =>
+        CreateRefinement(comparisons
+            .GroupBy(comparison => comparison.SourceComparisonIndex)
+            .Select(group => new AiRefinementDecision(
+                group.Key,
+                AiRefinementActions.Refine,
+                "refined_genuine_error",
+                group.ToList()))
+            .ToList());
+
+    private static AiRefinementResult CreateRefinement(
+        IReadOnlyList<AiRefinementDecision> decisions) =>
         new(
-            comparisons,
+            decisions,
             "test-model",
             "test-prompt",
             DurationMilliseconds: 10,

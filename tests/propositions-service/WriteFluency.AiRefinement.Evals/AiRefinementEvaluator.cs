@@ -95,11 +95,11 @@ public sealed class AiRefinementEvaluator
         try
         {
             var refinement = await _refiner.RefineAsync(request, cancellationToken);
-            var validation = _validator.Validate(request, refinement.Comparisons);
+            var validation = _validator.ValidateDecisions(request, refinement.Decisions);
             var isFullyValid = validation.IsValid
                 && validation.RejectedSourceComparisonCount == 0;
             var actualRanges = (isFullyValid
-                    ? validation.NormalizedRanges
+                    ? validation.Comparisons.Select(ToRange)
                     : refinement.Comparisons)
                 .OrderBy(range => range.OriginalTextInitialIndex)
                 .ThenBy(range => range.UserTextInitialIndex)
@@ -238,6 +238,14 @@ public sealed class AiRefinementEvaluator
                 ? "keep"
                 : "shrink";
     }
+
+    private static AiRefinedComparison ToRange(TextComparison comparison) =>
+        new(
+            comparison.SourceComparisonIndex,
+            comparison.OriginalTextRange.InitialIndex,
+            comparison.OriginalTextRange.FinalIndex,
+            comparison.UserTextRange.InitialIndex,
+            comparison.UserTextRange.FinalIndex);
 
     private static double CalculateSpanF1(
         IReadOnlyList<AiRefinedComparison> expected,

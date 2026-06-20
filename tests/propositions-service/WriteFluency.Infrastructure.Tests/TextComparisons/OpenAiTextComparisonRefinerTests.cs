@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using OpenAI.Chat;
 using Shouldly;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using WriteFluency.Infrastructure.TextComparisons;
 using WriteFluency.TextComparisons;
 using AiChatMessage = Microsoft.Extensions.AI.ChatMessage;
@@ -26,13 +28,19 @@ public class OpenAiTextComparisonRefinerTests
                 Arg.Any<CancellationToken>())
             .Returns(CreateChatResponse("""
                 {
-                  "comparisons": [
+                  "decisions": [
                     {
                       "sourceComparisonIndex": 0,
-                      "originalTextStartOffset": 0,
-                      "originalTextEndOffset": 2,
-                      "userTextStartOffset": 0,
-                      "userTextEndOffset": 2
+                      "action": "refine",
+                      "reasonCode": "word_substitution",
+                      "comparisons": [
+                        {
+                          "originalTextStartOffset": 0,
+                          "originalTextEndOffset": 2,
+                          "userTextStartOffset": 0,
+                          "userTextEndOffset": 2
+                        }
+                      ]
                     }
                   ]
                 }
@@ -41,6 +49,7 @@ public class OpenAiTextComparisonRefinerTests
         var refiner = CreateRefiner(chatClient);
         var result = await refiner.RefineAsync(CreateRequest(), CancellationToken.None);
 
+        result.Decisions.Single().Action.ShouldBe(AiRefinementActions.Refine);
         result.Comparisons.Single().ShouldBe(
             new AiRefinedComparison(0, 2, 4, 2, 4));
         result.Model.ShouldBe("gpt-test");
@@ -120,7 +129,18 @@ public class OpenAiTextComparisonRefinerTests
                 Arg.Any<IEnumerable<AiChatMessage>>(),
                 Arg.Any<ChatOptions>(),
                 Arg.Do<CancellationToken>(token => capturedToken = token))
-            .Returns(CreateChatResponse("""{"comparisons":[]}"""));
+            .Returns(CreateChatResponse("""
+                {
+                  "decisions": [
+                    {
+                      "sourceComparisonIndex": 0,
+                      "action": "remove",
+                      "reasonCode": "equivalent_transcription",
+                      "comparisons": []
+                    }
+                  ]
+                }
+                """));
 
         var refiner = CreateRefiner(chatClient);
         await refiner.RefineAsync(CreateRequest(), cancellation.Token);
@@ -154,75 +174,66 @@ public class OpenAiTextComparisonRefinerTests
     }
 
     [Fact]
-    public void CreateMessages_ShouldDistinguishEstablishedCompoundsFromInvalidJoins()
+    public void CreateMessages_ShouldDefineStructuredDecisionProcedureAndRuleCoverage()
     {
         var messages = TextComparisonAiPrompt.CreateMessages(CreateRequest());
         var systemPrompt = messages.First().Text;
 
-        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v22");
+        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v28");
+
+        systemPrompt.ShouldContain("<role>");
+        systemPrompt.ShouldContain("<objective>");
+        systemPrompt.ShouldContain("<input-boundary>");
+        systemPrompt.ShouldContain("<decision-process>");
+        systemPrompt.ShouldContain("<equivalence-rules>");
+        systemPrompt.ShouldContain("<genuine-error-rules>");
+        systemPrompt.ShouldContain("<range-rules>");
+        systemPrompt.ShouldContain("<output-contract>");
+        systemPrompt.ShouldContain("<validation-checklist>");
         systemPrompt.ShouldContain("<examples>");
-        systemPrompt.ShouldContain("<example-input>");
-        systemPrompt.ShouldContain("<expected-output>");
-        systemPrompt.ShouldContain("Original: \"teacher’s\"; User: \"teacher's\"");
-        systemPrompt.ShouldContain("Original: \"players' uniforms\"; User: \"players uniforms\"");
-        systemPrompt.ShouldContain("Original: \"Rome's streets\"; User: \"Rome streets\"");
-        systemPrompt.ShouldContain("Ignore the apostrophe character, but not an audible possessive \"s\"");
-        systemPrompt.ShouldContain("\"Berlin's\" versus \"Berlin\" is a genuine spoken difference");
-        systemPrompt.ShouldContain("\"players'\" versus \"players\" differs only by punctuation");
-        systemPrompt.ShouldContain("Never create or preserve a correction only for punctuation");
-        systemPrompt.ShouldContain("A grammatically valid contraction and its complete expanded form are equivalent");
-        systemPrompt.ShouldContain("Original: \"Well, we’re\"; User: \"Well we are\"");
-        systemPrompt.ShouldContain("Original: \"They cant\"; User: \"They can't\"");
-        systemPrompt.ShouldContain("Ignore formatting punctuation inside identifiers");
-        systemPrompt.ShouldContain("Original: \"Form W-2\"; User: \"Form W2\"");
-        systemPrompt.ShouldContain("return ranges covering only the genuine error");
-        systemPrompt.ShouldContain("Return the smallest contiguous ranges");
-        systemPrompt.ShouldContain("offsets relative to the supplied source-comparison snippets");
-        systemPrompt.ShouldContain("Never calculate or return absolute full-text indexes");
-        systemPrompt.ShouldContain("verify that every returned offset is inside");
-        systemPrompt.ShouldContain("Returned ranges must start and end at complete word boundaries");
-        systemPrompt.ShouldContain("Never select a partial word");
-        systemPrompt.ShouldContain("Every returned range pair must visibly contain at least one genuine difference");
-        systemPrompt.ShouldContain("Never return identical selected text on both sides");
-        systemPrompt.ShouldContain("For a direct substitution where both sides already contain different spoken words");
-        systemPrompt.ShouldContain("return \"before\" versus \"after\", not \"before lunch\" versus \"after lunch\"");
-        systemPrompt.ShouldNotContain("\"in energy\" versus \"and energy\"");
-        systemPrompt.ShouldContain("include that inserted or omitted word in the selected range");
-        systemPrompt.ShouldContain("Original: \"walked home\"; User: \"walked quickly home\"");
-        systemPrompt.ShouldContain("Original: \"walked slowly home\"; User: \"walked home\"");
-        systemPrompt.ShouldContain("include the added word \"quickly\"");
-        systemPrompt.ShouldContain("Include the omitted word \"slowly\"");
-        systemPrompt.ShouldContain("same complete quantity");
-        systemPrompt.ShouldContain("Original: \"nearly forty-six kilometer\"; User: \"nearly forty six kilometers\"");
-        systemPrompt.ShouldContain("Return only \"kilometer\" versus \"kilometers\"");
-        systemPrompt.ShouldContain("select both complete words from their first letter through their last letter");
-        systemPrompt.ShouldContain("Original: \"roughly forty\"; User: \"roughly 40 minutes\"");
-        systemPrompt.ShouldContain("Return \"forty\" versus \"40 minutes\"");
-        systemPrompt.ShouldContain("Original: \"color near ocean\"; User: \"colour near the ocean\"");
-        systemPrompt.ShouldContain("Return only \"ocean\" versus \"the ocean\"");
-        systemPrompt.ShouldContain("Treat \"color\" versus \"colour\" as equivalent regional spelling");
-        systemPrompt.ShouldContain("Never return \"ocean\" versus \"ocean\"");
-        systemPrompt.ShouldContain("Original: \"credit card. Customers\"; User: \"creditcard, customers\"");
-        systemPrompt.ShouldContain("Preserve misspellings that add, remove, replace, or reorder letters");
-        systemPrompt.ShouldContain("Original: \"calendar. Tuesday\"; User: \"calender.\\nTuesday\"");
-        systemPrompt.ShouldContain("Return only \"calendar\" versus \"calender\"");
-        systemPrompt.ShouldContain("Treat established British and American spellings of the same word as equivalent");
-        systemPrompt.ShouldContain("\"centre\" versus \"center\"");
-        systemPrompt.ShouldContain("\"favourite\" versus \"favorite\"");
-        systemPrompt.ShouldContain("Original: \"favourite centre\"; User: \"favorite center\"");
-        systemPrompt.ShouldContain("established British and American spellings");
-        systemPrompt.ShouldContain("Original: \"Berlin's transit route. Commuters\"");
-        systemPrompt.ShouldContain("\"Berlin's\" versus \"Berlin\", and \"route\" versus \"routes\"");
-        systemPrompt.ShouldContain("contains an audible possessive \"s\" that is missing");
-        systemPrompt.ShouldContain("Original: \"Rome's old bridge. Our trip\"");
-        systemPrompt.ShouldContain("Original: \"Choose red [or blue]\"; User: \"Choose red\"");
-        systemPrompt.ShouldContain("preserve a spacing difference when it changes word identity");
-        systemPrompt.ShouldContain("Original: \"bookstore\"; User: \"book store\"");
-        systemPrompt.ShouldContain("Original: \"schoolyard\"; User: \"school yard\"");
-        systemPrompt.ShouldContain("Original: \"job market\"; User: \"jobmarket\"");
-        systemPrompt.ShouldContain("A spaced transcription of a recognized closed compound may be equivalent");
-        systemPrompt.ShouldContain("never accept an invented closed form");
-        systemPrompt.ShouldContain("When uncertain");
+        systemPrompt.ShouldContain("<example-group name=\"apostrophes-and-contractions\">");
+        systemPrompt.ShouldContain("<example-group name=\"compounds\">");
+        systemPrompt.ShouldContain("<example-group name=\"numbers-and-insertions\">");
+        systemPrompt.ShouldContain("<input>{");
+        systemPrompt.ShouldContain("<output>{\"action\":");
+        (systemPrompt.Split("<example>").Length - 1).ShouldBe(31);
+
+        systemPrompt.ShouldContain("Decision priority is remove, then refine, then keep");
+        systemPrompt.ShouldContain("A genuine error does not by itself justify \"keep\"");
+        systemPrompt.ShouldContain("If no genuine difference remains, choose action \"remove\"");
+        systemPrompt.ShouldContain("choose action \"refine\"");
+        systemPrompt.ShouldContain("choose action \"keep\" only when");
+
+        systemPrompt.ShouldContain("Return exactly one decision for every supplied sourceComparisonIndex");
+        systemPrompt.ShouldContain("\"remove\": the complete snippets are equivalent");
+        systemPrompt.ShouldContain("\"refine\": replace the source with one or more smaller ranges");
+        systemPrompt.ShouldContain("\"keep\": preserve the complete source unchanged");
+        systemPrompt.ShouldContain("Return response data that conforms to the provided structured-output schema");
+        systemPrompt.ShouldContain("Never return schema-definition keys");
+        systemPrompt.ShouldContain("\"decisions\":[");
+        messages.Last().Text.ShouldContain("<task>");
+        messages.Last().Text.ShouldContain("Do not return reasoning, prose, or a JSON Schema");
+
+        systemPrompt.ShouldContain("<formatting>");
+        systemPrompt.ShouldContain("<apostrophes-and-contractions>");
+        systemPrompt.ShouldContain("<regional-spelling>");
+        systemPrompt.ShouldContain("<compounds-and-spacing>");
+        systemPrompt.ShouldContain("<numbers>");
+        systemPrompt.ShouldContain("complete word boundaries");
+        systemPrompt.ShouldContain("smallest contiguous range");
+        systemPrompt.ShouldContain("nearest necessary matching anchor");
+        systemPrompt.ShouldContain("Never return equivalent or identical selected text");
+
+        systemPrompt.ShouldContain("\"originalText\":\"teacher’s\",\"userText\":\"teacher's\"");
+        systemPrompt.ShouldContain("\"originalText\":\"Rome's streets\",\"userText\":\"Rome streets\"");
+        systemPrompt.ShouldContain("\"originalText\":\"calendar. Tuesday\",\"userText\":\"calender.\\nTuesday\"");
+        systemPrompt.ShouldContain("\"originalText\":\"favourite centre\",\"userText\":\"favorite center\"");
+        systemPrompt.ShouldContain("\"originalText\":\"some time, they\",\"userText\":\"sometime they\"");
+        systemPrompt.ShouldContain("\"originalText\":\"color near ocean\",\"userText\":\"colour near the ocean\"");
+        systemPrompt.ShouldContain("\"originalText\":\"cat and dog\",\"userText\":\"cot and dug\"");
+
+        AssertExamplesContainValidContractJson(systemPrompt);
+
         systemPrompt.ShouldNotContain("Kate");
         systemPrompt.ShouldNotContain("daughters");
         systemPrompt.ShouldNotContain("So, it’s");
@@ -232,6 +243,75 @@ public class OpenAiTextComparisonRefinerTests
         systemPrompt.ShouldNotContain("stocksale");
         systemPrompt.ShouldNotContain("2022");
         systemPrompt.ShouldNotContain("401(k)");
+    }
+
+    private static void AssertExamplesContainValidContractJson(string systemPrompt)
+    {
+        var inputs = Regex.Matches(
+            systemPrompt,
+            "<input>(.*?)</input>",
+            RegexOptions.Singleline);
+        var outputs = Regex.Matches(
+            systemPrompt,
+            "<output>(.*?)</output>",
+            RegexOptions.Singleline);
+
+        inputs.Count.ShouldBe(31);
+        outputs.Count.ShouldBe(inputs.Count);
+
+        for (var index = 0; index < inputs.Count; index++)
+        {
+            using var input = JsonDocument.Parse(inputs[index].Groups[1].Value);
+            using var output = JsonDocument.Parse(outputs[index].Groups[1].Value);
+
+            var inputRoot = input.RootElement;
+            var originalText = inputRoot.GetProperty("originalText").GetString()!;
+            var userText = inputRoot.GetProperty("userText").GetString()!;
+            inputRoot.GetProperty("sourceComparisonIndex").GetInt32()
+                .ShouldBeGreaterThanOrEqualTo(0);
+
+            var decision = output.RootElement;
+            var action = decision.GetProperty("action").GetString();
+            decision.GetProperty("reasonCode").GetString().ShouldNotBeNullOrWhiteSpace();
+            var comparisons = decision.GetProperty("comparisons");
+
+            if (action is AiRefinementActions.Keep or AiRefinementActions.Remove)
+            {
+                comparisons.GetArrayLength().ShouldBe(0);
+                continue;
+            }
+
+            action.ShouldBe(AiRefinementActions.Refine);
+            comparisons.GetArrayLength().ShouldBeGreaterThan(0);
+
+            foreach (var comparison in comparisons.EnumerateArray())
+            {
+                AssertRangeIsWithinSnippet(
+                    comparison,
+                    "originalTextStartOffset",
+                    "originalTextEndOffset",
+                    originalText);
+                AssertRangeIsWithinSnippet(
+                    comparison,
+                    "userTextStartOffset",
+                    "userTextEndOffset",
+                    userText);
+            }
+        }
+    }
+
+    private static void AssertRangeIsWithinSnippet(
+        JsonElement comparison,
+        string startProperty,
+        string endProperty,
+        string text)
+    {
+        var start = comparison.GetProperty(startProperty).GetInt32();
+        var end = comparison.GetProperty(endProperty).GetInt32();
+
+        start.ShouldBeGreaterThanOrEqualTo(0);
+        end.ShouldBeGreaterThanOrEqualTo(start);
+        end.ShouldBeLessThan(text.Length);
     }
 
     [Fact]
@@ -245,13 +325,19 @@ public class OpenAiTextComparisonRefinerTests
                 Arg.Any<CancellationToken>())
             .Returns(CreateChatResponse("""
                 {
-                  "comparisons": [
+                  "decisions": [
                     {
                       "sourceComparisonIndex": 3,
-                      "originalTextStartOffset": 2,
-                      "originalTextEndOffset": 4,
-                      "userTextStartOffset": 1,
-                      "userTextEndOffset": 3
+                      "action": "refine",
+                      "reasonCode": "word_substitution",
+                      "comparisons": [
+                        {
+                          "originalTextStartOffset": 2,
+                          "originalTextEndOffset": 4,
+                          "userTextStartOffset": 1,
+                          "userTextEndOffset": 3
+                        }
+                      ]
                     }
                   ]
                 }

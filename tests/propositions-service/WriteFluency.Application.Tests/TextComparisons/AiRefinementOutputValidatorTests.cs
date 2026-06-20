@@ -8,6 +8,74 @@ public class AiRefinementOutputValidatorTests
     private readonly AiRefinementOutputValidator _validator = new();
 
     [Fact]
+    public void ValidateDecisions_ShouldApplyKeepRemoveAndRefineIndependently()
+    {
+        var request = CreateRequestWithSeparateSources();
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Remove,
+                    "equivalent_transcription",
+                    []),
+                new AiRefinementDecision(
+                    1,
+                    AiRefinementActions.Refine,
+                    "word_substitution",
+                    [new AiRefinedComparison(1, 12, 14, 12, 14)])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().SourceComparisonIndex.ShouldBe(1);
+        result.Comparisons.Single().IsAiRefined.ShouldBeFalse();
+        result.Decisions.Count.ShouldBe(2);
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 0)
+            .IsEffectiveChange.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenDecisionIsMissing_ShouldFallbackOnlyMissingSource()
+    {
+        var request = CreateRequestWithSeparateSources();
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Remove,
+                    "equivalent_transcription",
+                    [])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().SourceComparisonIndex.ShouldBe(1);
+        result.RejectedSources.Single().Reason.ShouldBe("missing_source_decision");
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenRefinementShrinksSource_ShouldMarkFinalComparisonAsAiRefined()
+    {
+        var request = CreateRequest();
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Refine,
+                    "split_genuine_differences",
+                    [new AiRefinedComparison(0, 2, 4, 2, 4)])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().IsAiRefined.ShouldBeTrue();
+        result.Decisions.Single().IsEffectiveChange.ShouldBeTrue();
+    }
+
+    [Fact]
     public void Validate_WhenOutputIsEmpty_ShouldRemoveAllComparisons()
     {
         var result = _validator.Validate(CreateRequest(), []);

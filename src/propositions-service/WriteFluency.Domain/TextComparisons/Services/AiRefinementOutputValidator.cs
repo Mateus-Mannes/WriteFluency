@@ -2,6 +2,155 @@ namespace WriteFluency.TextComparisons;
 
 public sealed class AiRefinementOutputValidator
 {
+    public AiRefinementDecisionValidationResult ValidateDecisions(
+        AiRefinementRequest request,
+        IReadOnlyList<AiRefinementDecision>? decisions)
+    {
+        if (decisions is null)
+        {
+            return AiRefinementDecisionValidationResult.Failure("missing_decisions");
+        }
+
+        var sources = request.Comparisons.ToDictionary(
+            comparison => comparison.SourceComparisonIndex);
+
+        if (decisions.Any(decision => !sources.ContainsKey(decision.SourceComparisonIndex)))
+        {
+            return AiRefinementDecisionValidationResult.Failure("unknown_source_comparison");
+        }
+
+        var validatedDecisions = new List<AiRefinementDecisionValidation>(sources.Count);
+        var rejectedSources = new List<AiRefinementValidationIssue>();
+        var outputComparisons = new List<TextComparison>();
+        var acceptedDecisionCount = 0;
+
+        foreach (var source in request.Comparisons)
+        {
+            var sourceDecisions = decisions
+                .Where(decision => decision.SourceComparisonIndex == source.SourceComparisonIndex)
+                .ToList();
+
+            if (sourceDecisions.Count != 1)
+            {
+                AddRejectedDecision(
+                    source,
+                    sourceDecisions.FirstOrDefault(),
+                    sourceDecisions.Count == 0
+                        ? "missing_source_decision"
+                        : "duplicate_source_decision",
+                    validatedDecisions,
+                    rejectedSources,
+                    outputComparisons);
+                continue;
+            }
+
+            var decision = sourceDecisions[0];
+            var action = decision.Action.Trim().ToLowerInvariant();
+
+            switch (action)
+            {
+                case AiRefinementActions.Keep when decision.Comparisons.Count == 0:
+                {
+                    var sourceComparison = CreateSourceComparison(source);
+                    outputComparisons.Add(sourceComparison);
+                    validatedDecisions.Add(new AiRefinementDecisionValidation(
+                        source.SourceComparisonIndex,
+                        action,
+                        decision.ReasonCode,
+                        decision.Comparisons,
+                        [sourceComparison],
+                        "accepted",
+                        null));
+                    acceptedDecisionCount++;
+                    break;
+                }
+                case AiRefinementActions.Remove when decision.Comparisons.Count == 0:
+                    validatedDecisions.Add(new AiRefinementDecisionValidation(
+                        source.SourceComparisonIndex,
+                        action,
+                        decision.ReasonCode,
+                        decision.Comparisons,
+                        [],
+                        "accepted",
+                        null)
+                    {
+                        IsEffectiveChange = true
+                    });
+                    acceptedDecisionCount++;
+                    break;
+                case AiRefinementActions.Refine when decision.Comparisons.Count > 0:
+                {
+                    var sourceRequest = request with { Comparisons = [source] };
+                    var validation = Validate(sourceRequest, decision.Comparisons);
+                    if (!validation.IsValid || validation.RejectedSourceComparisonCount > 0)
+                    {
+                        AddRejectedDecision(
+                            source,
+                            decision,
+                            validation.FailureReason ?? "invalid_refinement",
+                            validatedDecisions,
+                            rejectedSources,
+                            outputComparisons);
+                        break;
+                    }
+
+                    var isEffectiveChange = !MatchesSource(
+                        source,
+                        validation.Comparisons);
+                    var refined = validation.Comparisons
+                        .Select(comparison => ApplyProvenance(
+                            comparison,
+                            source.SourceComparisonIndex,
+                            isAiRefined: isEffectiveChange))
+                        .ToList();
+                    outputComparisons.AddRange(refined);
+                    validatedDecisions.Add(new AiRefinementDecisionValidation(
+                        source.SourceComparisonIndex,
+                        action,
+                        decision.ReasonCode,
+                        decision.Comparisons,
+                        refined,
+                        "accepted",
+                        null)
+                    {
+                        IsEffectiveChange = isEffectiveChange
+                    });
+                    acceptedDecisionCount++;
+                    break;
+                }
+                default:
+                    AddRejectedDecision(
+                        source,
+                        decision,
+                        IsKnownAction(action)
+                            ? "invalid_action_ranges"
+                            : "invalid_action",
+                        validatedDecisions,
+                        rejectedSources,
+                        outputComparisons);
+                    break;
+            }
+        }
+
+        if (rejectedSources.Count > 0 && acceptedDecisionCount == 0)
+        {
+            return AiRefinementDecisionValidationResult.Failure(
+                rejectedSources[0].Reason);
+        }
+
+        var ordered = outputComparisons
+            .OrderBy(comparison => comparison.OriginalTextRange.InitialIndex)
+            .ThenBy(comparison => comparison.UserTextRange.InitialIndex)
+            .ToList();
+
+        return new AiRefinementDecisionValidationResult(
+            true,
+            ordered,
+            validatedDecisions,
+            rejectedSources.FirstOrDefault()?.Reason,
+            rejectedSources);
+    }
+
     public AiRefinementValidationResult Validate(
         AiRefinementRequest request,
         IReadOnlyList<AiRefinedComparison>? refinedComparisons)
@@ -155,7 +304,9 @@ public sealed class AiRefinementOutputValidator
                 originalRange,
                 originalSnippet,
                 userRange,
-                userSnippet),
+                userSnippet,
+                candidate.SourceComparisonIndex,
+                isAiRefined: true),
             new AiRefinedComparison(
                 candidate.SourceComparisonIndex,
                 originalRange.InitialIndex,
@@ -168,11 +319,7 @@ public sealed class AiRefinementOutputValidator
     private static ValidatedEntry CreateSourceFallbackEntry(
         AiRefinementSourceComparison source) =>
         new(
-            new TextComparison(
-                source.OriginalTextRange,
-                source.OriginalText,
-                source.UserTextRange,
-                source.UserText),
+            CreateSourceComparison(source),
             new AiRefinedComparison(
                 source.SourceComparisonIndex,
                 source.OriginalTextRange.InitialIndex,
@@ -183,6 +330,60 @@ public sealed class AiRefinementOutputValidator
     private sealed record ValidatedEntry(
         TextComparison Comparison,
         AiRefinedComparison Range);
+
+    private static void AddRejectedDecision(
+        AiRefinementSourceComparison source,
+        AiRefinementDecision? decision,
+        string reason,
+        ICollection<AiRefinementDecisionValidation> validatedDecisions,
+        ICollection<AiRefinementValidationIssue> rejectedSources,
+        ICollection<TextComparison> outputComparisons)
+    {
+        var fallback = CreateSourceComparison(source);
+        outputComparisons.Add(fallback);
+        rejectedSources.Add(new AiRefinementValidationIssue(
+            source.SourceComparisonIndex,
+            reason));
+        validatedDecisions.Add(new AiRefinementDecisionValidation(
+            source.SourceComparisonIndex,
+            decision?.Action ?? AiRefinementActions.Keep,
+            decision?.ReasonCode ?? "validation_fallback",
+            decision?.Comparisons ?? [],
+            [fallback],
+            "rejected",
+            reason));
+    }
+
+    private static TextComparison CreateSourceComparison(
+        AiRefinementSourceComparison source) =>
+        new(
+            source.OriginalTextRange,
+            source.OriginalText,
+            source.UserTextRange,
+            source.UserText,
+            source.SourceComparisonIndex);
+
+    private static TextComparison ApplyProvenance(
+        TextComparison comparison,
+        int sourceComparisonIndex,
+        bool isAiRefined)
+    {
+        comparison.SourceComparisonIndex = sourceComparisonIndex;
+        comparison.IsAiRefined = isAiRefined;
+        return comparison;
+    }
+
+    private static bool MatchesSource(
+        AiRefinementSourceComparison source,
+        IReadOnlyList<TextComparison> comparisons) =>
+        comparisons.Count == 1
+        && comparisons[0].OriginalTextRange == source.OriginalTextRange
+        && comparisons[0].UserTextRange == source.UserTextRange;
+
+    private static bool IsKnownAction(string action) =>
+        action is AiRefinementActions.Keep
+            or AiRefinementActions.Remove
+            or AiRefinementActions.Refine;
 
     private static bool IsValidRange(TextRange range, int textLength) =>
         textLength > 0
