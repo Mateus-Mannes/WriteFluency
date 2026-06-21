@@ -48,6 +48,7 @@ public sealed class AiRefinementEvaluator
                     $"[{workItem.Run}/{runs}] Evaluating {workItem.Case.CaseId}...");
                 results[workItem.ResultIndex] = await EvaluateCaseAsync(
                     workItem.Case,
+                    workItem.Run,
                     token);
 
                 var completed = Interlocked.Increment(ref completedCount);
@@ -65,86 +66,117 @@ public sealed class AiRefinementEvaluator
 
     private async Task<EvaluationCaseResult> EvaluateCaseAsync(
         EvaluationCase evaluationCase,
+        int runNumber,
         CancellationToken cancellationToken)
     {
-        var sourceComparison = evaluationCase.SourceComparison.ToDomain();
+        var sourceComparisons = evaluationCase.GetSourceComparisons()
+            .Select(source => source.ToDomain())
+            .ToList();
+        var expectedDecisions = evaluationCase.GetExpectedDecisions();
 
-        if (!TrySlice(
-                evaluationCase.OriginalText,
-                sourceComparison.OriginalTextRange,
-                out var originalSnippet)
-            || !TrySlice(
-                evaluationCase.UserText,
-                sourceComparison.UserTextRange,
-                out var userSnippet))
+        if (sourceComparisons.Any(source =>
+                !TrySlice(
+                    evaluationCase.OriginalText,
+                    source.OriginalTextRange,
+                    out var originalSnippet)
+                || !TrySlice(
+                    evaluationCase.UserText,
+                    source.UserTextRange,
+                    out var userSnippet)
+                || originalSnippet != source.OriginalText
+                || userSnippet != source.UserText))
         {
-            return Failure(evaluationCase, "Source comparison ranges cannot be sliced safely.");
-        }
-
-        if (originalSnippet != sourceComparison.OriginalText
-            || userSnippet != sourceComparison.UserText)
-        {
-            return Failure(evaluationCase, "Source comparison snippets do not match their ranges.");
+            return Failure(
+                evaluationCase,
+                runNumber,
+                "Source comparison snippets do not match their ranges.");
         }
 
         var request = new AiRefinementRequest(
             evaluationCase.OriginalText,
             evaluationCase.UserText,
-            [sourceComparison]);
+            sourceComparisons);
 
         try
         {
             var refinement = await _refiner.RefineAsync(request, cancellationToken);
             var validation = _validator.ValidateDecisions(request, refinement.Decisions);
+            var sourceResults = CreateSourceResults(
+                sourceComparisons,
+                expectedDecisions,
+                refinement,
+                validation);
+            var expectedRanges = sourceResults
+                .SelectMany(result => result.ExpectedRanges)
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
+            var actualRanges = sourceResults
+                .SelectMany(result => result.ActualRanges)
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
             var isFullyValid = validation.IsValid
-                && validation.RejectedSourceComparisonCount == 0;
-            var actualRanges = (isFullyValid
-                    ? validation.Comparisons.Select(ToRange)
-                    : refinement.Comparisons)
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
-
-            var expectedRanges = evaluationCase.ExpectedRanges
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
+                && sourceResults.All(result => result.IsSafe);
 
             return new EvaluationCaseResult(
                 evaluationCase.CaseId,
                 evaluationCase.Category,
-                evaluationCase.ExpectedAction,
-                isFullyValid
-                    ? DetermineAction(actualRanges, sourceComparison)
-                    : "error",
+                runNumber,
+                evaluationCase.GetFocusSourceComparisonIndex(),
+                SummarizeActions(sourceResults.Select(result => result.ExpectedAction)),
+                SummarizeActions(sourceResults.Select(result => result.ActualAction)),
                 isFullyValid,
-                isFullyValid && expectedRanges.SequenceEqual(actualRanges),
-                isFullyValid ? CalculateSpanF1(expectedRanges, actualRanges) : 0,
+                isFullyValid && sourceResults.All(result => result.IsExactMatch),
+                isFullyValid ? sourceResults.Average(result => result.SpanF1) : 0,
                 refinement.DurationMilliseconds,
                 refinement.InputTokenCount,
                 refinement.OutputTokenCount,
                 validation.FailureReason,
                 expectedRanges,
-                actualRanges);
+                actualRanges,
+                sourceResults);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Failure(evaluationCase, exception.GetType().Name);
+            return Failure(
+                evaluationCase,
+                runNumber,
+                exception.GetType().Name);
         }
     }
 
     private EvaluationSummary CreateSummary(
         IReadOnlyList<EvaluationCaseResult> results)
     {
-        var expectedRemovals = results.Count(result => result.ExpectedAction == "remove");
-        var actualRemovals = results.Count(result => result.ActualAction == "remove");
-        var correctRemovals = results.Count(result =>
+        var sourceResults = results.SelectMany(result => result.Sources).ToList();
+        var expectedRemovals = sourceResults.Count(result => result.ExpectedAction == "remove");
+        var actualRemovals = sourceResults.Count(result => result.ActualAction == "remove");
+        var correctRemovals = sourceResults.Count(result =>
             result.ExpectedAction == "remove"
             && result.ActualAction == "remove");
-        var genuineErrorRemovals = results.Count(result =>
+        var genuineErrorRemovals = sourceResults.Count(result =>
             result.ExpectedAction != "remove"
             && result.ActualAction == "remove");
         var exactPassCount = results.Count(result => result.IsExactMatch);
+        var exactComparisonCount = sourceResults.Count(result => result.IsExactMatch);
+        var focusResults = results
+            .Select(result => result.Sources.Single(source =>
+                source.SourceComparisonIndex
+                == result.FocusSourceComparisonIndex))
+            .ToList();
+        var exactFocusComparisonCount =
+            focusResults.Count(result => result.IsExactMatch);
+        var safeComparisonCount = sourceResults.Count(result => result.IsSafe);
+        var meanComparisonSpanF1 = sourceResults.Count == 0
+            ? 0
+            : sourceResults.Average(result => result.SpanF1);
+        var flakyCaseCount = results
+            .GroupBy(result => result.CaseId)
+            .Count(group => group
+                .Select(result => result.IsExactMatch)
+                .Distinct()
+                .Count() > 1);
         var invalidOutputCount = results.Count(result => !result.IsSafe && result.Error is not null);
         var modelFailureCount = results.Count(result =>
             !result.IsSafe
@@ -153,7 +185,9 @@ public sealed class AiRefinementEvaluator
             && result.Error != "unknown_source_comparison"
             && result.Error != "invalid_range"
             && result.Error != "range_outside_source"
+            && result.Error != "crossing_ranges"
             && result.Error != "partial_word_range"
+            && result.Error != "identical_selected_text"
             && result.Error != "empty_range_after_normalization"
             && result.Error != "unsafe_text_slice");
 
@@ -182,9 +216,20 @@ public sealed class AiRefinementEvaluator
             _refiner.Model,
             _refiner.PromptVersion,
             DateTimeOffset.UtcNow,
+            results.Select(result => result.RunNumber).DefaultIfEmpty().Max(),
+            results.Select(result => result.CaseId).Distinct().Count(),
             results.Count,
             exactPassCount,
             exactPassRate,
+            sourceResults.Count,
+            exactComparisonCount,
+            CalculateRate(exactComparisonCount, sourceResults.Count),
+            focusResults.Count,
+            exactFocusComparisonCount,
+            CalculateRate(exactFocusComparisonCount, focusResults.Count),
+            safeComparisonCount,
+            meanComparisonSpanF1,
+            flakyCaseCount,
             invalidOutputCount,
             modelFailureCount,
             genuineErrorRemovals,
@@ -200,11 +245,15 @@ public sealed class AiRefinementEvaluator
 
     private static EvaluationCaseResult Failure(
         EvaluationCase evaluationCase,
+        int runNumber,
         string error) =>
         new(
             evaluationCase.CaseId,
             evaluationCase.Category,
-            evaluationCase.ExpectedAction,
+            runNumber,
+            evaluationCase.GetFocusSourceComparisonIndex(),
+            SummarizeActions(evaluationCase.GetExpectedDecisions()
+                .Select(decision => decision.ExpectedAction)),
             "error",
             IsSafe: false,
             IsExactMatch: false,
@@ -213,8 +262,88 @@ public sealed class AiRefinementEvaluator
             InputTokenCount: null,
             OutputTokenCount: null,
             Error: error,
-            evaluationCase.ExpectedRanges,
-            ActualRanges: []);
+            evaluationCase.GetExpectedDecisions()
+                .SelectMany(decision => decision.ExpectedRanges)
+                .ToList(),
+            ActualRanges: [],
+            Sources: evaluationCase.GetExpectedDecisions()
+                .Select(decision => new EvaluationSourceResult(
+                    decision.SourceComparisonIndex,
+                    decision.ExpectedAction,
+                    "error",
+                    IsSafe: false,
+                    IsExactMatch: false,
+                    SpanF1: 0,
+                    Error: error,
+                    decision.ExpectedRanges,
+                    ActualRanges: []))
+                .ToList());
+
+    private static double CalculateRate(int numerator, int denominator) =>
+        denominator == 0 ? 0 : (double)numerator / denominator;
+
+    private static IReadOnlyList<EvaluationSourceResult> CreateSourceResults(
+        IReadOnlyList<AiRefinementSourceComparison> sources,
+        IReadOnlyList<EvaluationExpectedDecision> expectedDecisions,
+        AiRefinementResult refinement,
+        AiRefinementDecisionValidationResult validation)
+    {
+        var expectedBySource = expectedDecisions.ToDictionary(
+            decision => decision.SourceComparisonIndex);
+        var proposedBySource = refinement.Decisions
+            .GroupBy(decision => decision.SourceComparisonIndex)
+            .ToDictionary(group => group.Key, group => group.First());
+        var validatedBySource = validation.Decisions.ToDictionary(
+            decision => decision.SourceComparisonIndex);
+
+        return sources.Select(source =>
+        {
+            var expected = expectedBySource[source.SourceComparisonIndex];
+            validatedBySource.TryGetValue(
+                source.SourceComparisonIndex,
+                out var validated);
+            proposedBySource.TryGetValue(
+                source.SourceComparisonIndex,
+                out var proposed);
+
+            var isSafe = validation.IsValid
+                && validated is not null
+                && validated.ValidationStatus == "accepted";
+            var actualRanges = isSafe
+                ? validated!.OutputComparisons.Select(ToRange).ToList()
+                : proposed?.Comparisons.ToList() ?? [];
+            var actualAction = isSafe
+                ? DetermineAction(actualRanges, source)
+                : "error";
+            var expectedRanges = expected.ExpectedRanges
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
+            var orderedActualRanges = actualRanges
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
+
+            return new EvaluationSourceResult(
+                source.SourceComparisonIndex,
+                expected.ExpectedAction,
+                actualAction,
+                isSafe,
+                isSafe
+                && expected.ExpectedAction == actualAction
+                && expectedRanges.SequenceEqual(orderedActualRanges),
+                isSafe ? CalculateSpanF1(expectedRanges, orderedActualRanges) : 0,
+                validated?.ValidationFailureReason ?? validation.FailureReason,
+                expectedRanges,
+                orderedActualRanges);
+        }).ToList();
+    }
+
+    private static string SummarizeActions(IEnumerable<string> actions)
+    {
+        var values = actions.Distinct(StringComparer.Ordinal).ToList();
+        return values.Count == 1 ? values[0] : "mixed";
+    }
 
     private static string DetermineAction(
         IReadOnlyList<AiRefinedComparison> ranges,

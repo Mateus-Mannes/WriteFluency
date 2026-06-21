@@ -8,6 +8,80 @@ public class AiRefinementOutputValidatorTests
     private readonly AiRefinementOutputValidator _validator = new();
 
     [Fact]
+    public void ValidateDecisions_WhenDecisionsAreNull_ShouldRejectOutput()
+    {
+        var result = _validator.ValidateDecisions(CreateRequest(), null);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("missing_decisions");
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenSourceIndexIsUnknown_ShouldRejectOutput()
+    {
+        var result = _validator.ValidateDecisions(
+            CreateRequest(),
+            [
+                new AiRefinementDecision(
+                    99,
+                    AiRefinementActions.Keep,
+                    "source_range_already_minimal",
+                    [])
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("unknown_source_comparison");
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenSourceHasDuplicateDecisions_ShouldRejectThatSource()
+    {
+        var result = _validator.ValidateDecisions(
+            CreateRequest(),
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Keep,
+                    "source_range_already_minimal",
+                    []),
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Remove,
+                    "equivalent_formatting",
+                    [])
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("duplicate_source_decision");
+    }
+
+    [Theory]
+    [InlineData(AiRefinementActions.Keep, true, "invalid_action_ranges")]
+    [InlineData(AiRefinementActions.Remove, true, "invalid_action_ranges")]
+    [InlineData(AiRefinementActions.Refine, false, "invalid_action_ranges")]
+    [InlineData("replace", false, "invalid_action")]
+    public void ValidateDecisions_WhenActionShapeIsInvalid_ShouldRejectSource(
+        string action,
+        bool includeRange,
+        string expectedReason)
+    {
+        var result = _validator.ValidateDecisions(
+            CreateRequest(),
+            [
+                new AiRefinementDecision(
+                    0,
+                    action,
+                    "test",
+                    includeRange
+                        ? [new AiRefinedComparison(0, 2, 4, 2, 4)]
+                        : [])
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe(expectedReason);
+    }
+
+    [Fact]
     public void ValidateDecisions_ShouldApplyKeepRemoveAndRefineIndependently()
     {
         var request = CreateRequestWithSeparateSources();
@@ -333,6 +407,536 @@ public class AiRefinementOutputValidatorTests
             new AiRefinedComparison(0, 2, 4, 2, 4));
     }
 
+    [Theory]
+    [InlineData("sun", "SUN", 0, 2, 0, 2)]
+    [InlineData(" sun ", " SUN ", 0, 4, 0, 4)]
+    [InlineData("sun", "the sun", 0, 2, 4, 6)]
+    public void Validate_WhenSelectedTextMatchesAfterTrimAndCase_ShouldRejectOutput(
+        string originalText,
+        string userText,
+        int originalStart,
+        int originalEnd,
+        int userStart,
+        int userEnd)
+    {
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, originalText.Length - 1),
+                    originalText,
+                    new TextRange(0, userText.Length - 1),
+                    userText)
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [
+                new AiRefinedComparison(
+                    0,
+                    originalStart,
+                    originalEnd,
+                    userStart,
+                    userEnd)
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("identical_selected_text");
+        result.Comparisons.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenOneSelectionIsIdentical_ShouldFallbackOnlyThatSource()
+    {
+        const string originalText = "sun cat";
+        const string userText = "the sun cot";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, 2),
+                    "sun",
+                    new TextRange(0, 6),
+                    "the sun"),
+                new AiRefinementSourceComparison(
+                    1,
+                    new TextRange(4, 6),
+                    "cat",
+                    new TextRange(8, 10),
+                    "cot")
+            ]);
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Refine,
+                    "genuine_insertion_or_omission",
+                    [new AiRefinedComparison(0, 0, 2, 4, 6)]),
+                new AiRefinementDecision(
+                    1,
+                    AiRefinementActions.Refine,
+                    "genuine_word_difference",
+                    [new AiRefinedComparison(1, 4, 6, 8, 10)])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.RejectedSources.Single().ShouldBe(
+            new AiRefinementValidationIssue(0, "identical_selected_text"));
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 0)
+            .ValidationStatus.ShouldBe("rejected");
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 1)
+            .ValidationStatus.ShouldBe("accepted");
+        result.Comparisons.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHidesPrecedingInsertion_ShouldExpandInsertedSide()
+    {
+        const string originalText = "aging without sun";
+        const string userText = "ageing without the sun";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    7,
+                    new TextRange(0, originalText.Length - 1),
+                    originalText,
+                    new TextRange(0, userText.Length - 1),
+                    userText)
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [
+                new AiRefinedComparison(
+                    7,
+                    originalText.LastIndexOf("sun", StringComparison.Ordinal),
+                    originalText.Length - 1,
+                    userText.LastIndexOf("sun", StringComparison.Ordinal),
+                    userText.Length - 1)
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        var comparison = result.Comparisons.Single();
+        comparison.OriginalText.ShouldBe("sun");
+        comparison.UserText.ShouldBe("the sun");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHasDifferentPreviousWords_ShouldNotGuessInsertion()
+    {
+        const string originalText = "cat sun";
+        const string userText = "dog sun";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, originalText.Length - 1),
+                    originalText,
+                    new TextRange(0, userText.Length - 1),
+                    userText)
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [
+                new AiRefinedComparison(
+                    0,
+                    4,
+                    6,
+                    4,
+                    6)
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("identical_selected_text");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHidesFollowingUserInsertion_ShouldExpandUserSide()
+    {
+        var request = CreateSingleSourceRequest(
+            "sun protection",
+            "sun extra protection");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "sun", "sun")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().OriginalText.ShouldBe("sun");
+        result.Comparisons.Single().UserText.ShouldBe("sun extra");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHidesPrecedingOriginalInsertion_ShouldExpandOriginalSide()
+    {
+        var request = CreateSingleSourceRequest(
+            "without the sun",
+            "without sun");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "sun", "sun")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().OriginalText.ShouldBe("the sun");
+        result.Comparisons.Single().UserText.ShouldBe("sun");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHidesFollowingOriginalInsertion_ShouldExpandOriginalSide()
+    {
+        var request = CreateSingleSourceRequest(
+            "sun extra protection",
+            "sun protection");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "sun", "sun")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().OriginalText.ShouldBe("sun extra");
+        result.Comparisons.Single().UserText.ShouldBe("sun");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHidesMultipleInsertedWords_ShouldNotGuess()
+    {
+        var request = CreateSingleSourceRequest(
+            "without sun",
+            "without very bright sun");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "sun", "sun")]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("identical_selected_text");
+    }
+
+    [Fact]
+    public void Validate_WhenIdenticalSelectionHasNoSharedAnchor_ShouldNotGuess()
+    {
+        var request = CreateSingleSourceRequest("sun", "the sun");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "sun", "sun")]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("identical_selected_text");
+    }
+
+    [Fact]
+    public void Validate_WhenInsertionRepairUsesAbsoluteOffsets_ShouldReturnAbsoluteRanges()
+    {
+        const string originalText = "prefix aging without sun suffix";
+        const string userText = "prefix ageing without the sun suffix";
+        var originalSourceStart = originalText.IndexOf(
+            "aging",
+            StringComparison.Ordinal);
+        var originalSourceEnd = originalText.IndexOf(
+            " suffix",
+            StringComparison.Ordinal) - 1;
+        var userSourceStart = userText.IndexOf(
+            "ageing",
+            StringComparison.Ordinal);
+        var userSourceEnd = userText.IndexOf(
+            " suffix",
+            StringComparison.Ordinal) - 1;
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    7,
+                    new TextRange(originalSourceStart, originalSourceEnd),
+                    originalText[originalSourceStart..(originalSourceEnd + 1)],
+                    new TextRange(userSourceStart, userSourceEnd),
+                    userText[userSourceStart..(userSourceEnd + 1)])
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 7, "sun", "sun")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 7, "sun", "the sun"));
+    }
+
+    [Fact]
+    public void ValidateDecisions_WhenInsertionIsRepaired_ShouldPreserveProposalAndMarkEffectiveOutput()
+    {
+        var request = CreateSingleSourceRequest(
+            "aging without sun",
+            "ageing without the sun",
+            sourceComparisonIndex: 7);
+        var proposed = CreateRange(request, 7, "sun", "sun");
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    7,
+                    AiRefinementActions.Refine,
+                    "genuine_insertion_or_omission",
+                    [proposed])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        var decision = result.Decisions.Single();
+        decision.ValidationStatus.ShouldBe("accepted");
+        decision.IsEffectiveChange.ShouldBeTrue();
+        decision.ProposedRanges.Single().ShouldBe(proposed);
+        decision.OutputComparisons.Single().OriginalText.ShouldBe("sun");
+        decision.OutputComparisons.Single().UserText.ShouldBe("the sun");
+    }
+
+    [Fact]
+    public void Validate_WhenRangeIncludesMatchingTrailingWord_ShouldTrimIt()
+    {
+        var request = CreateRetirementRequest();
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(
+                    request,
+                    "advantage of their",
+                    "advantages their")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, "advantage of", "advantages"));
+    }
+
+    [Fact]
+    public void Validate_WhenRangeIncludesMatchingLeadingWord_ShouldTrimIt()
+    {
+        var request = CreateSingleSourceRequest(
+            "their advantage of",
+            "their advantages");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "their advantage of", "their advantages")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "advantage of", "advantages"));
+    }
+
+    [Fact]
+    public void Validate_WhenRangeIncludesMultipleMatchingBoundaryWords_ShouldTrimBothSides()
+    {
+        var request = CreateSingleSourceRequest(
+            "the advantage of their",
+            "the advantages their");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "the advantage of their", "the advantages their")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "advantage of", "advantages"));
+    }
+
+    [Fact]
+    public void Validate_WhenAdjacentErrorsAreSplit_ShouldMergeAndTrimThem()
+    {
+        var request = CreateRetirementRequest();
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, "advantage", "advantages"),
+                CreateRange(request, "of their", "their")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, "advantage of", "advantages"));
+    }
+
+    [Fact]
+    public void Validate_WhenThreeAdjacentErrorsAreSplit_ShouldMergeAllRanges()
+    {
+        var request = CreateSingleSourceRequest(
+            "bad old road",
+            "sad new roads");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "bad", "sad"),
+                CreateRange(request, 0, "old", "new"),
+                CreateRange(request, 0, "road", "roads")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "bad old road", "sad new roads"));
+    }
+
+    [Fact]
+    public void Validate_WhenErrorsAreSeparatedByMatchingWord_ShouldNotMerge()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat and dog",
+            "cot and dug");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Validate_WhenRangesOverlapMonotonically_ShouldMergeTheirUnion()
+    {
+        var request = CreateSingleSourceRequest(
+            "bad road",
+            "sad roads");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "bad road", "sad roads"),
+                CreateRange(request, 0, "road", "roads")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "bad road", "sad roads"));
+    }
+
+    [Fact]
+    public void Validate_WhenRangesCrossBetweenOriginalAndUser_ShouldRejectSource()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat dog",
+            "dug cot");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("crossing_ranges");
+    }
+
+    [Fact]
+    public void Validate_WhenSplitContainsPunctuationDifference_ShouldPreserveIt()
+    {
+        var request = CreateRetirementRequest();
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, "advantage of", "advantages"),
+                CreateRange(request, "employer’s", "employers")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+        [
+            CreateRange(request, "advantage of", "advantages"),
+            CreateRange(request, "employer’s", "employers")
+        ]);
+    }
+
+    [Fact]
+    public void Validate_WhenOneSplitRangeIsIdentical_ShouldKeepOtherValidRange()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat and sun",
+            "cot and sun");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "sun", "sun")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.RejectedSourceComparisonCount.ShouldBe(0);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "cat", "cot"));
+    }
+
+    [Fact]
+    public void ValidateDecisions_WithRepairedAcceptedAndRejectedSources_ShouldIsolateEachOutcome()
+    {
+        const string originalText = "without sun | cat | dog sun";
+        const string userText = "without the sun | cot | fox sun";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                CreateSource(
+                    originalText,
+                    userText,
+                    0,
+                    "without sun",
+                    "without the sun"),
+                CreateSource(originalText, userText, 1, "cat", "cot"),
+                CreateSource(originalText, userText, 2, "dog sun", "fox sun")
+            ]);
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Refine,
+                    "genuine_insertion_or_omission",
+                    [CreateRange(request, 0, "sun", "sun")]),
+                new AiRefinementDecision(
+                    1,
+                    AiRefinementActions.Refine,
+                    "genuine_word_difference",
+                    [CreateRange(request, 1, "cat", "cot")]),
+                new AiRefinementDecision(
+                    2,
+                    AiRefinementActions.Refine,
+                    "genuine_word_difference",
+                    [CreateRange(request, 2, "sun", "sun")])
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.RejectedSources.Single().ShouldBe(
+            new AiRefinementValidationIssue(2, "identical_selected_text"));
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 0)
+            .ValidationStatus.ShouldBe("accepted");
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 1)
+            .ValidationStatus.ShouldBe("accepted");
+        result.Decisions.Single(decision => decision.SourceComparisonIndex == 2)
+            .ValidationStatus.ShouldBe("rejected");
+        result.Comparisons.Count.ShouldBe(3);
+    }
+
     private static AiRefinementRequest CreateRequest()
     {
         const string originalText = "A cat and a dog run.";
@@ -373,5 +977,105 @@ public class AiRefinementOutputValidatorTests
                     new TextRange(12, 14),
                     "dug")
             ]);
+    }
+
+    private static AiRefinementRequest CreateRetirementRequest()
+    {
+        const string originalText =
+            "advantage of their employer’s 401(k) match";
+        const string userText =
+            "advantages their employers 401k match";
+
+        return new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    5,
+                    new TextRange(0, originalText.Length - 1),
+                    originalText,
+                    new TextRange(0, userText.Length - 1),
+                    userText)
+            ]);
+    }
+
+    private static AiRefinementRequest CreateSingleSourceRequest(
+        string originalText,
+        string userText,
+        int sourceComparisonIndex = 0) =>
+        new(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    sourceComparisonIndex,
+                    new TextRange(0, originalText.Length - 1),
+                    originalText,
+                    new TextRange(0, userText.Length - 1),
+                    userText)
+            ]);
+
+    private static AiRefinementSourceComparison CreateSource(
+        string originalText,
+        string userText,
+        int sourceComparisonIndex,
+        string originalSnippet,
+        string userSnippet)
+    {
+        var originalStart = originalText.IndexOf(
+            originalSnippet,
+            StringComparison.Ordinal);
+        var userStart = userText.IndexOf(
+            userSnippet,
+            StringComparison.Ordinal);
+
+        return new AiRefinementSourceComparison(
+            sourceComparisonIndex,
+            new TextRange(
+                originalStart,
+                originalStart + originalSnippet.Length - 1),
+            originalSnippet,
+            new TextRange(
+                userStart,
+                userStart + userSnippet.Length - 1),
+            userSnippet);
+    }
+
+    private static AiRefinedComparison CreateRange(
+        AiRefinementRequest request,
+        string originalText,
+        string userText) =>
+        CreateRange(request, 5, originalText, userText);
+
+    private static AiRefinedComparison CreateRange(
+        AiRefinementRequest request,
+        int sourceComparisonIndex,
+        string originalText,
+        string userText)
+    {
+        var source = request.Comparisons.Single(
+            comparison =>
+                comparison.SourceComparisonIndex == sourceComparisonIndex);
+        var originalStart = request.OriginalText.IndexOf(
+            originalText,
+            source.OriginalTextRange.InitialIndex,
+            source.OriginalTextRange.FinalIndex
+            - source.OriginalTextRange.InitialIndex
+            + 1,
+            StringComparison.Ordinal);
+        var userStart = request.UserText.IndexOf(
+            userText,
+            source.UserTextRange.InitialIndex,
+            source.UserTextRange.FinalIndex
+            - source.UserTextRange.InitialIndex
+            + 1,
+            StringComparison.Ordinal);
+
+        return new AiRefinedComparison(
+            sourceComparisonIndex,
+            originalStart,
+            originalStart + originalText.Length - 1,
+            userStart,
+            userStart + userText.Length - 1);
     }
 }

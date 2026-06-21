@@ -10,7 +10,44 @@ public sealed class EvaluationCase
     public required string Expectation { get; init; }
     public required string OriginalText { get; init; }
     public required string UserText { get; init; }
-    public required EvaluationSourceComparison SourceComparison { get; init; }
+    public EvaluationSourceComparison? SourceComparison { get; init; }
+    public string? ExpectedAction { get; init; }
+    public List<AiRefinedComparison>? ExpectedRanges { get; init; }
+    public List<EvaluationSourceComparison>? SourceComparisons { get; init; }
+    public List<EvaluationExpectedDecision>? ExpectedDecisions { get; init; }
+    public int? FocusSourceComparisonIndex { get; init; }
+
+    public IReadOnlyList<EvaluationSourceComparison> GetSourceComparisons() =>
+        SourceComparisons is { Count: > 0 }
+            ? SourceComparisons
+            : SourceComparison is not null
+                ? [SourceComparison]
+                : [];
+
+    public IReadOnlyList<EvaluationExpectedDecision> GetExpectedDecisions() =>
+        ExpectedDecisions is { Count: > 0 }
+            ? ExpectedDecisions
+            : SourceComparison is not null && ExpectedAction is not null
+                ?
+                [
+                    new EvaluationExpectedDecision
+                    {
+                        SourceComparisonIndex = SourceComparison.SourceComparisonIndex,
+                        ExpectedAction = ExpectedAction,
+                        ExpectedRanges = ExpectedRanges ?? []
+                    }
+                ]
+                : [];
+
+    public int GetFocusSourceComparisonIndex() =>
+        FocusSourceComparisonIndex
+        ?? SourceComparison?.SourceComparisonIndex
+        ?? GetSourceComparisons().First().SourceComparisonIndex;
+}
+
+public sealed class EvaluationExpectedDecision
+{
+    public required int SourceComparisonIndex { get; init; }
     public required string ExpectedAction { get; init; }
     public required List<AiRefinedComparison> ExpectedRanges { get; init; }
 }
@@ -40,6 +77,8 @@ public sealed record EvaluationTextRange(int InitialIndex, int FinalIndex)
 public sealed record EvaluationCaseResult(
     string CaseId,
     string Category,
+    int RunNumber,
+    int FocusSourceComparisonIndex,
     string ExpectedAction,
     string ActualAction,
     bool IsSafe,
@@ -50,15 +89,38 @@ public sealed record EvaluationCaseResult(
     long? OutputTokenCount,
     string? Error,
     IReadOnlyList<AiRefinedComparison> ExpectedRanges,
+    IReadOnlyList<AiRefinedComparison> ActualRanges,
+    IReadOnlyList<EvaluationSourceResult> Sources);
+
+public sealed record EvaluationSourceResult(
+    int SourceComparisonIndex,
+    string ExpectedAction,
+    string ActualAction,
+    bool IsSafe,
+    bool IsExactMatch,
+    double SpanF1,
+    string? Error,
+    IReadOnlyList<AiRefinedComparison> ExpectedRanges,
     IReadOnlyList<AiRefinedComparison> ActualRanges);
 
 public sealed record EvaluationSummary(
     string Model,
     string PromptVersion,
     DateTimeOffset ExecutedAtUtc,
+    int RunCount,
+    int DefinitionCount,
     int CaseCount,
     int ExactPassCount,
     double ExactPassRate,
+    int ComparisonCount,
+    int ExactComparisonCount,
+    double ExactComparisonRate,
+    int FocusComparisonCount,
+    int ExactFocusComparisonCount,
+    double FocusExactRate,
+    int SafeComparisonCount,
+    double MeanComparisonSpanF1,
+    int FlakyCaseCount,
     int InvalidOutputCount,
     int ModelFailureCount,
     int GenuineErrorRemovalCount,
@@ -79,13 +141,29 @@ public sealed record EvaluationHighlightsReport(
 
 public sealed record EvaluationCaseHighlights(
     string CaseId,
+    int RunNumber,
     string Expectation,
+    int FocusSourceComparisonIndex,
     string OriginalText,
     string UserText,
-    EvaluationHighlight SourceComparison,
+    IReadOnlyList<EvaluationHighlight> SourceComparisons,
     string ExpectedAction,
     string ActualAction,
     bool IsExactMatch,
+    string? Error,
+    IReadOnlyList<EvaluationHighlight>? ExpectedHighlights,
+    IReadOnlyList<EvaluationHighlight>? AiHighlights,
+    IReadOnlyList<EvaluationSourceHighlights> Sources);
+
+public sealed record EvaluationSourceHighlights(
+    int SourceComparisonIndex,
+    bool IsFocus,
+    EvaluationHighlight SourceComparison,
+    string ExpectedAction,
+    string ActualAction,
+    bool IsSafe,
+    bool IsExactMatch,
+    double SpanF1,
     string? Error,
     IReadOnlyList<EvaluationHighlight>? ExpectedHighlights,
     IReadOnlyList<EvaluationHighlight>? AiHighlights);

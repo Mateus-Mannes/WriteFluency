@@ -6,7 +6,7 @@ namespace WriteFluency.Infrastructure.TextComparisons;
 
 public static class TextComparisonAiPrompt
 {
-    public const string Version = "ai-refinement-v28";
+    public const string Version = "ai-refinement-v30";
 
     private const string SystemPrompt = """
         <role>
@@ -91,10 +91,13 @@ public static class TextComparisonAiPrompt
           - Offset 0 is the first character of that snippet. Never return absolute full-text indexes.
           - Return the smallest contiguous range for each genuine difference.
           - Exclude matching words and equivalent formatting at the beginning, middle, and end.
-          - Split separate genuine differences into separate comparison items with the same sourceComparisonIndex.
+          - Keep adjacent genuine word differences together as one contiguous range.
+          - Split genuine differences only when one or more matching or equivalent words occur between them.
           - Start and end at complete word boundaries. Never select a partial word.
           - Every item must have a non-empty original range and a non-empty user range.
           - Every selected pair must visibly contain a genuine difference. Never return equivalent or identical selected text.
+          - After trimming boundary whitespace and ignoring letter case, the selected original and user text must not be equal.
+            Equal selected text hides the real error and is invalid; expand the side containing an inserted word or choose "keep".
           - For a direct substitution, select only the differing words, without a matching anchor.
           - For an inserted or omitted word, include that word and the nearest necessary matching anchor so both ranges remain non-empty.
           - If a one-sided insertion or omission cannot be represented by smaller non-empty two-sided ranges, choose "keep".
@@ -134,7 +137,8 @@ public static class TextComparisonAiPrompt
         <validation-checklist>
           Before responding, verify that every source index appears once, each action has the required
           comparisons shape, all offsets satisfy <range-rules>, no smaller valid range exists, and no
-          genuine spoken-word error was removed. Return only the response data object.
+          genuine spoken-word error was removed. Confirm that no selected pair becomes identical after
+          trimming boundary whitespace and ignoring case. Return only the response data object.
         </validation-checklist>
 
         <examples>
@@ -267,6 +271,11 @@ public static class TextComparisonAiPrompt
           </example-group>
 
           <example-group name="mixed-and-split-ranges">
+          <example>
+            <input>{"sourceComparisonIndex":0,"originalText":"quiet roads","userText":"quite rows"}</input>
+            <output>{"action":"keep","reasonCode":"adjacent_genuine_differences","comparisons":[]}</output>
+            <note>Both adjacent words are wrong, so the complete source is already one minimal contiguous correction.</note>
+          </example>
           <example>
             <input>{"sourceComparisonIndex":0,"originalText":"color near ocean","userText":"colour near the ocean"}</input>
             <output>{"action":"refine","reasonCode":"mixed_equivalent_and_genuine_differences","comparisons":[{"originalTextStartOffset":11,"originalTextEndOffset":15,"userTextStartOffset":12,"userTextEndOffset":20}]}</output>

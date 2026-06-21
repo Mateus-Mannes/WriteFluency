@@ -10,6 +10,12 @@ contains the original text, user text, source comparison, and human-reviewed
 expected ranges required by each case. The evaluator does not read
 `corrections.json` or any external dataset.
 
+Cases can contain either one source comparison or a full attempt with multiple
+source comparisons. Full-attempt cases are sent to the model in one request and
+graded independently per source comparison. The original edge case remains the
+focus comparison while the other comparisons provide realistic request context.
+`report.json` and `highlights.json` include the source-level results.
+
 ## Run
 
 Set `ExternalApis:OpenAI:Key` in the shared WriteFluency user secrets or export
@@ -47,6 +53,9 @@ The evaluator exits with code `1` when quality thresholds fail, unless
 `artifacts/ai-evals/` directory:
 
 - `report.md` contains the evaluation summary and per-case metrics.
+- `report.html` is the primary interactive report. It groups repeated runs by
+  case, lists failed comparisons first, supports search and status/category
+  filters, and provides expected-versus-AI text and range drilldowns.
 - `report.json` contains the structured evaluation result.
 - `highlights.json` contains the full original and user text, source
   comparison, expected highlights, and AI-selected highlights for each case.

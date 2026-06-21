@@ -179,7 +179,7 @@ public class OpenAiTextComparisonRefinerTests
         var messages = TextComparisonAiPrompt.CreateMessages(CreateRequest());
         var systemPrompt = messages.First().Text;
 
-        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v28");
+        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v30");
 
         systemPrompt.ShouldContain("<role>");
         systemPrompt.ShouldContain("<objective>");
@@ -188,6 +188,12 @@ public class OpenAiTextComparisonRefinerTests
         systemPrompt.ShouldContain("<equivalence-rules>");
         systemPrompt.ShouldContain("<genuine-error-rules>");
         systemPrompt.ShouldContain("<range-rules>");
+        systemPrompt.ShouldContain(
+            "Keep adjacent genuine word differences together as one contiguous range.");
+        systemPrompt.ShouldContain(
+            "Split genuine differences only when one or more matching or equivalent words occur between them.");
+        systemPrompt.ShouldContain(
+            "After trimming boundary whitespace and ignoring letter case, the selected original and user text must not be equal.");
         systemPrompt.ShouldContain("<output-contract>");
         systemPrompt.ShouldContain("<validation-checklist>");
         systemPrompt.ShouldContain("<examples>");
@@ -196,7 +202,7 @@ public class OpenAiTextComparisonRefinerTests
         systemPrompt.ShouldContain("<example-group name=\"numbers-and-insertions\">");
         systemPrompt.ShouldContain("<input>{");
         systemPrompt.ShouldContain("<output>{\"action\":");
-        (systemPrompt.Split("<example>").Length - 1).ShouldBe(31);
+        (systemPrompt.Split("<example>").Length - 1).ShouldBe(32);
 
         systemPrompt.ShouldContain("Decision priority is remove, then refine, then keep");
         systemPrompt.ShouldContain("A genuine error does not by itself justify \"keep\"");
@@ -256,7 +262,7 @@ public class OpenAiTextComparisonRefinerTests
             "<output>(.*?)</output>",
             RegexOptions.Singleline);
 
-        inputs.Count.ShouldBe(31);
+        inputs.Count.ShouldBe(32);
         outputs.Count.ShouldBe(inputs.Count);
 
         for (var index = 0; index < inputs.Count; index++)

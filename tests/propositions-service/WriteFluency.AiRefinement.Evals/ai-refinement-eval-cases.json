@@ -3,23 +3,127 @@
     "caseId": "real-exact-whitespace-duplicate",
     "category": "equivalent-whitespace",
     "expectation": "Remove the comparison because leading line breaks and repeated whitespace do not represent spoken-word errors.",
+    "focusSourceComparisonIndex": 0,
     "originalText": "A house fire happened in Gisborne on George Street in the Mangapapa area. Emergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what caused the fire and think it might have been intentional. They said one person is helping with the investigation. This event reminds local residents how important it is to stay safe and watch out for each other.",
     "userText": "A house fire happened in Gisborne on George Street, in the Mangapapa area. \n\nEmergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what cause they fire and thinking it might had been intentional. They said one person is helping with the investigation. \n\nThis event reminds local residents how important it is to stay safe and watch out for each other.",
-    "sourceComparison": {
-      "sourceComparisonIndex": 0,
-      "originalTextRange": {
-        "initialIndex": 74,
-        "finalIndex": 82
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 74,
+          "finalIndex": 82
+        },
+        "originalText": "Emergency",
+        "userTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 85
+        },
+        "userText": "\n\nEmergency"
       },
-      "originalText": "Emergency",
-      "userTextRange": {
-        "initialIndex": 75,
-        "finalIndex": 85
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 240,
+          "finalIndex": 249
+        },
+        "originalText": "caused the",
+        "userTextRange": {
+          "initialIndex": 243,
+          "finalIndex": 252
+        },
+        "userText": "cause they"
       },
-      "userText": "\n\nEmergency"
-    },
-    "expectedAction": "remove",
-    "expectedRanges": []
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 260,
+          "finalIndex": 264
+        },
+        "originalText": "think",
+        "userTextRange": {
+          "initialIndex": 263,
+          "finalIndex": 270
+        },
+        "userText": "thinking"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 275,
+          "finalIndex": 278
+        },
+        "originalText": "have",
+        "userTextRange": {
+          "initialIndex": 281,
+          "finalIndex": 283
+        },
+        "userText": "had"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 354,
+          "finalIndex": 357
+        },
+        "originalText": "This",
+        "userTextRange": {
+          "initialIndex": 359,
+          "finalIndex": 364
+        },
+        "userText": "\n\nThis"
+      }
+    ],
+    "expectedDecisions": [
+      {
+        "sourceComparisonIndex": 0,
+        "expectedAction": "remove",
+        "expectedRanges": []
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 1,
+            "originalTextInitialIndex": 240,
+            "originalTextFinalIndex": 249,
+            "userTextInitialIndex": 243,
+            "userTextFinalIndex": 252
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 2,
+            "originalTextInitialIndex": 260,
+            "originalTextFinalIndex": 264,
+            "userTextInitialIndex": 263,
+            "userTextFinalIndex": 270
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 3,
+            "originalTextInitialIndex": 275,
+            "originalTextFinalIndex": 278,
+            "userTextInitialIndex": 281,
+            "userTextFinalIndex": 283
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "expectedAction": "remove",
+        "expectedRanges": []
+      }
+    ]
   },
   {
     "caseId": "real-smart-apostrophe",

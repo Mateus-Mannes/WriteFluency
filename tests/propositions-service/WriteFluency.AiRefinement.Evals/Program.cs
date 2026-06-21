@@ -89,11 +89,17 @@ try
 
     Console.WriteLine();
     Console.WriteLine($"Passed: {summary.Passed}");
-    Console.WriteLine($"Exact: {summary.ExactPassCount}/{summary.CaseCount}");
+    Console.WriteLine(
+        $"Exact case runs: {summary.ExactPassCount}/{summary.CaseCount}");
+    Console.WriteLine(
+        $"Exact comparisons: {summary.ExactComparisonCount}/{summary.ComparisonCount}");
+    Console.WriteLine(
+        $"Exact focus comparisons: {summary.ExactFocusComparisonCount}/{summary.FocusComparisonCount}");
     Console.WriteLine($"Removal precision: {summary.EquivalentRemovalPrecision:P1}");
     Console.WriteLine($"Removal recall: {summary.EquivalentRemovalRecall:P1}");
-    Console.WriteLine($"Mean span F1: {summary.MeanSpanF1:F3}");
-    Console.WriteLine($"Report: {reportPaths.Markdown}");
+    Console.WriteLine($"Mean comparison span F1: {summary.MeanComparisonSpanF1:F3}");
+    Console.WriteLine($"HTML report: {reportPaths.Html}");
+    Console.WriteLine($"Markdown report: {reportPaths.Markdown}");
     Console.WriteLine($"Highlights: {reportPaths.Highlights}");
 
     return summary.Passed || arguments.ReportOnly ? 0 : 1;
