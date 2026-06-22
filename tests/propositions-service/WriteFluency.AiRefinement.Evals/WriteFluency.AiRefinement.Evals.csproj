@@ -19,5 +19,9 @@
     <None Update="ai-refinement-eval-cases.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="../../../src/propositions-service/WriteFluency.WebApi/appsettings.json"
+          Link="appsettings.webapi.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

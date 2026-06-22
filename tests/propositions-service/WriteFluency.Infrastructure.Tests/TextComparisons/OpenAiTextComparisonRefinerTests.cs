@@ -46,7 +46,10 @@ public class OpenAiTextComparisonRefinerTests
                 }
                 """));
 
-        var refiner = CreateRefiner(chatClient);
+        var refiner = CreateRefiner(
+            chatClient,
+            reasoningEffort: "high",
+            maxOutputTokens: 4321);
         var result = await refiner.RefineAsync(CreateRequest(), CancellationToken.None);
 
         result.Decisions.Single().Action.ShouldBe(AiRefinementActions.Refine);
@@ -71,13 +74,13 @@ public class OpenAiTextComparisonRefinerTests
 
         capturedOptions.ShouldNotBeNull();
         capturedOptions.ModelId.ShouldBe("gpt-test");
-        capturedOptions.MaxOutputTokens.ShouldBe(8000);
+        capturedOptions.MaxOutputTokens.ShouldBe(4321);
         capturedOptions.Temperature.ShouldBeNull();
 
         var providerOptions = capturedOptions.RawRepresentationFactory!(
             chatClient) as ChatCompletionOptions;
         providerOptions.ShouldNotBeNull();
-        providerOptions.ReasoningEffortLevel.ShouldBe(ChatReasoningEffortLevel.Medium);
+        providerOptions.ReasoningEffortLevel.ShouldBe(ChatReasoningEffortLevel.High);
     }
 
     [Fact]
@@ -109,15 +112,15 @@ public class OpenAiTextComparisonRefinerTests
             .Returns(CreateChatResponse(
                 string.Empty,
                 Microsoft.Extensions.AI.ChatFinishReason.Length,
-                outputTokenCount: 8000));
+                outputTokenCount: 1234));
 
-        var refiner = CreateRefiner(chatClient);
+        var refiner = CreateRefiner(chatClient, maxOutputTokens: 1234);
 
         var exception = await Should.ThrowAsync<InvalidOperationException>(() =>
             refiner.RefineAsync(CreateRequest(), CancellationToken.None));
 
         exception.Message.ShouldContain("truncated");
-        exception.Message.ShouldContain("8000-token output limit");
+        exception.Message.ShouldContain("1234-token output limit");
     }
 
     [Fact]
@@ -441,17 +444,32 @@ public class OpenAiTextComparisonRefinerTests
 
     private static OpenAiTextComparisonRefiner CreateRefiner(
         IChatClient chatClient,
-        int maxComparisonsPerRequest = 4) =>
-        new(
+        int maxComparisonsPerRequest = 4,
+        string? reasoningEffort = null,
+        int? maxOutputTokens = null)
+    {
+        var options = new AiRefinementOptions
+        {
+            Model = "gpt-test",
+            ReasoningEffort = "low",
+            MaxOutputTokens = 1000,
+            MaxComparisonsPerRequest = maxComparisonsPerRequest
+        };
+        if (reasoningEffort is not null)
+        {
+            options.ReasoningEffort = reasoningEffort;
+        }
+
+        if (maxOutputTokens is not null)
+        {
+            options.MaxOutputTokens = maxOutputTokens.Value;
+        }
+
+        return new OpenAiTextComparisonRefiner(
             chatClient,
-            Options.Create(new AiRefinementOptions
-            {
-                Model = "gpt-test",
-                ReasoningEffort = "medium",
-                MaxOutputTokens = 8000,
-                MaxComparisonsPerRequest = maxComparisonsPerRequest
-            }),
+            Options.Create(options),
             NullLogger<OpenAiTextComparisonRefiner>.Instance);
+    }
 
     private static AiRefinementRequest CreateRequest() =>
         new(

@@ -25,6 +25,11 @@ Set `ExternalApis:OpenAI:Key` in the shared WriteFluency user secrets or export
 dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals
 ```
 
+The evaluator and Web API both use the `TextComparison:AiRefinement` settings
+from `src/propositions-service/WriteFluency.WebApi/appsettings.json`. Change the
+model, reasoning effort, token limit, or batch size there. `--model` remains
+available as a temporary evaluator-only override.
+
 Optional arguments:
 
 ```text

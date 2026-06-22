@@ -38,6 +38,10 @@ if (arguments.ValidateOnly)
 }
 
 var builder = Host.CreateApplicationBuilder();
+builder.Configuration.AddJsonFile(
+    Path.Combine(AppContext.BaseDirectory, "appsettings.webapi.json"),
+    optional: false,
+    reloadOnChange: false);
 builder.Configuration.AddUserSecrets<Program>(optional: true);
 
 var apiKey = builder.Configuration["OPENAI_API_KEY"]
@@ -50,18 +54,26 @@ if (string.IsNullOrWhiteSpace(apiKey)
     return 2;
 }
 
-var options = new AiRefinementOptions
+if (!string.IsNullOrWhiteSpace(arguments.Model))
 {
-    Model = arguments.Model ?? "gpt-5.4-nano-2026-03-17",
-    ReasoningEffort = "medium",
-    MaxOutputTokens = 8000,
-    MaxComparisonsPerRequest = 4
-};
+    builder.Configuration[$"{AiRefinementOptions.Section}:Model"] =
+        arguments.Model;
+}
 
-builder.Services.AddSingleton<IOptions<AiRefinementOptions>>(Options.Create(options));
-builder.Services.AddSingleton<IChatClient>(_ =>
+builder.Services.AddOptions<AiRefinementOptions>()
+    .Bind(builder.Configuration.GetSection(AiRefinementOptions.Section))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Model))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.ReasoningEffort))
+    .Validate(options => options.MaxOutputTokens > 0)
+    .Validate(options => options.MaxComparisonsPerRequest > 0)
+    .ValidateOnStart();
+builder.Services.AddSingleton<IChatClient>(serviceProvider =>
     new OpenAI.OpenAIClient(apiKey)
-        .GetChatClient(options.Model)
+        .GetChatClient(
+            serviceProvider
+                .GetRequiredService<IOptions<AiRefinementOptions>>()
+                .Value
+                .Model)
         .AsIChatClient());
 builder.Services.AddSingleton<ITextComparisonAiRefiner, OpenAiTextComparisonRefiner>();
 builder.Services.AddSingleton<AiRefinementOutputValidator>();
