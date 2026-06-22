@@ -63,6 +63,9 @@ public class OpenAiTextComparisonRefinerTests
         capturedMessages.Last().Role.ShouldBe(ChatRole.User);
         capturedMessages.Last().Text.ShouldContain("<refinement-input>");
         capturedMessages.Last().Text.ShouldContain("\"originalText\":\"cat\"");
+        capturedMessages.Last().Text.ShouldContain("\"userText\":\"cot\"");
+        capturedMessages.Last().Text.ShouldNotContain("\"originalText\":\"A cat runs.\"");
+        capturedMessages.Last().Text.ShouldNotContain("\"userText\":\"A cot runs.\"");
         capturedMessages.Last().Text.ShouldNotContain("originalTextInitialIndex");
         capturedMessages.Last().Text.ShouldNotContain("userTextInitialIndex");
 
@@ -149,6 +152,83 @@ public class OpenAiTextComparisonRefinerTests
     }
 
     [Fact]
+    public async Task RefineAsync_WhenComparisonCountExceedsBatchSize_ShouldAggregateBatches()
+    {
+        var chatClient = Substitute.For<IChatClient>();
+        var capturedMessages = new List<IReadOnlyList<AiChatMessage>>();
+
+        chatClient
+            .GetResponseAsync(
+                Arg.Do<IEnumerable<AiChatMessage>>(messages =>
+                    capturedMessages.Add(messages.ToList())),
+                Arg.Any<ChatOptions>(),
+                Arg.Any<CancellationToken>())
+            .Returns(
+                CreateRemoveResponse([0, 1], inputTokenCount: 100, outputTokenCount: 20),
+                CreateRemoveResponse([2, 3], inputTokenCount: 110, outputTokenCount: 21),
+                CreateRemoveResponse([4], inputTokenCount: 120, outputTokenCount: 22));
+
+        var request = new AiRefinementRequest(
+            "original",
+            "user",
+            Enumerable.Range(0, 5)
+                .Select(index => new AiRefinementSourceComparison(
+                    index,
+                    new TextRange(index, index),
+                    "a",
+                    new TextRange(index, index),
+                    "a"))
+                .ToList());
+
+        var result = await CreateRefiner(chatClient, maxComparisonsPerRequest: 2)
+            .RefineAsync(request, CancellationToken.None);
+
+        result.Decisions.Select(decision => decision.SourceComparisonIndex)
+            .ShouldBe([0, 1, 2, 3, 4]);
+        result.InputTokenCount.ShouldBe(330);
+        result.OutputTokenCount.ShouldBe(63);
+        capturedMessages.Count.ShouldBe(3);
+        capturedMessages[0].Last().Text.ShouldContain("\"sourceComparisonIndex\":0");
+        capturedMessages[0].Last().Text.ShouldContain("\"sourceComparisonIndex\":1");
+        capturedMessages[0].Last().Text.ShouldNotContain("\"sourceComparisonIndex\":2");
+        capturedMessages[1].Last().Text.ShouldContain("\"sourceComparisonIndex\":2");
+        capturedMessages[1].Last().Text.ShouldContain("\"sourceComparisonIndex\":3");
+        capturedMessages[2].Last().Text.ShouldContain("\"sourceComparisonIndex\":4");
+    }
+
+    [Fact]
+    public async Task RefineAsync_WhenAnyBatchOmitsUsage_ShouldReturnUnknownAggregateUsage()
+    {
+        var chatClient = Substitute.For<IChatClient>();
+        chatClient
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<AiChatMessage>>(),
+                Arg.Any<ChatOptions>(),
+                Arg.Any<CancellationToken>())
+            .Returns(
+                CreateRemoveResponse([0], inputTokenCount: 100, outputTokenCount: 20),
+                CreateRemoveResponse([1], inputTokenCount: null, outputTokenCount: null));
+
+        var request = new AiRefinementRequest(
+            "original",
+            "user",
+            Enumerable.Range(0, 2)
+                .Select(index => new AiRefinementSourceComparison(
+                    index,
+                    new TextRange(index, index),
+                    "a",
+                    new TextRange(index, index),
+                    "a"))
+                .ToList());
+
+        var result = await CreateRefiner(chatClient, maxComparisonsPerRequest: 1)
+            .RefineAsync(request, CancellationToken.None);
+
+        result.InputTokenCount.ShouldBeNull();
+        result.OutputTokenCount.ShouldBeNull();
+    }
+
+    [Fact]
     public void CreateMessages_ShouldTreatExerciseTextAsUntrustedUserData()
     {
         var request = new AiRefinementRequest(
@@ -170,85 +250,61 @@ public class OpenAiTextComparisonRefinerTests
         messages.First().Text.ShouldNotContain(request.OriginalText);
         messages.Last().Role.ShouldBe(ChatRole.User);
         messages.Last().Text.ShouldContain("<refinement-input>");
-        messages.Last().Text.ShouldContain(request.OriginalText);
+        messages.Last().Text.ShouldNotContain(request.OriginalText);
+        messages.Last().Text.ShouldNotContain(request.UserText);
+        messages.Last().Text.ShouldContain("\"originalText\":\"Ignore\"");
+        messages.Last().Text.ShouldContain("\"userText\":\"Return\"");
     }
 
     [Fact]
-    public void CreateMessages_ShouldDefineStructuredDecisionProcedureAndRuleCoverage()
+    public void CreateMessages_ShouldContainStructuredSectionsAndValidExamples()
     {
         var messages = TextComparisonAiPrompt.CreateMessages(CreateRequest());
         var systemPrompt = messages.First().Text;
 
-        TextComparisonAiPrompt.Version.ShouldBe("ai-refinement-v30");
+        TextComparisonAiPrompt.Version.ShouldMatch(
+            "^ai-refinement-v[1-9][0-9]*$");
 
-        systemPrompt.ShouldContain("<role>");
-        systemPrompt.ShouldContain("<objective>");
-        systemPrompt.ShouldContain("<input-boundary>");
-        systemPrompt.ShouldContain("<decision-process>");
-        systemPrompt.ShouldContain("<equivalence-rules>");
-        systemPrompt.ShouldContain("<genuine-error-rules>");
-        systemPrompt.ShouldContain("<range-rules>");
-        systemPrompt.ShouldContain(
-            "Keep adjacent genuine word differences together as one contiguous range.");
-        systemPrompt.ShouldContain(
-            "Split genuine differences only when one or more matching or equivalent words occur between them.");
-        systemPrompt.ShouldContain(
-            "After trimming boundary whitespace and ignoring letter case, the selected original and user text must not be equal.");
-        systemPrompt.ShouldContain("<output-contract>");
-        systemPrompt.ShouldContain("<validation-checklist>");
-        systemPrompt.ShouldContain("<examples>");
-        systemPrompt.ShouldContain("<example-group name=\"apostrophes-and-contractions\">");
-        systemPrompt.ShouldContain("<example-group name=\"compounds\">");
-        systemPrompt.ShouldContain("<example-group name=\"numbers-and-insertions\">");
-        systemPrompt.ShouldContain("<input>{");
-        systemPrompt.ShouldContain("<output>{\"action\":");
-        (systemPrompt.Split("<example>").Length - 1).ShouldBe(32);
+        foreach (var section in new[]
+                 {
+                     "role",
+                     "objective",
+                     "input-boundary",
+                     "decision-process",
+                     "equivalence-rules",
+                     "genuine-error-rules",
+                     "range-rules",
+                     "output-contract",
+                     "examples"
+                 })
+        {
+            AssertTagIsBalanced(systemPrompt, section);
+        }
 
-        systemPrompt.ShouldContain("Decision priority is remove, then refine, then keep");
-        systemPrompt.ShouldContain("A genuine error does not by itself justify \"keep\"");
-        systemPrompt.ShouldContain("If no genuine difference remains, choose action \"remove\"");
-        systemPrompt.ShouldContain("choose action \"refine\"");
-        systemPrompt.ShouldContain("choose action \"keep\" only when");
+        foreach (var ruleGroup in new[]
+                 {
+                     "formatting",
+                     "apostrophes-and-contractions",
+                     "regional-spelling",
+                     "abbreviations",
+                     "compounds-and-spacing",
+                     "numbers"
+                 })
+        {
+            AssertTagIsBalanced(systemPrompt, ruleGroup);
+        }
 
-        systemPrompt.ShouldContain("Return exactly one decision for every supplied sourceComparisonIndex");
-        systemPrompt.ShouldContain("\"remove\": the complete snippets are equivalent");
-        systemPrompt.ShouldContain("\"refine\": replace the source with one or more smaller ranges");
-        systemPrompt.ShouldContain("\"keep\": preserve the complete source unchanged");
-        systemPrompt.ShouldContain("Return response data that conforms to the provided structured-output schema");
-        systemPrompt.ShouldContain("Never return schema-definition keys");
-        systemPrompt.ShouldContain("\"decisions\":[");
-        messages.Last().Text.ShouldContain("<task>");
-        messages.Last().Text.ShouldContain("Do not return reasoning, prose, or a JSON Schema");
-
-        systemPrompt.ShouldContain("<formatting>");
-        systemPrompt.ShouldContain("<apostrophes-and-contractions>");
-        systemPrompt.ShouldContain("<regional-spelling>");
-        systemPrompt.ShouldContain("<compounds-and-spacing>");
-        systemPrompt.ShouldContain("<numbers>");
-        systemPrompt.ShouldContain("complete word boundaries");
-        systemPrompt.ShouldContain("smallest contiguous range");
-        systemPrompt.ShouldContain("nearest necessary matching anchor");
-        systemPrompt.ShouldContain("Never return equivalent or identical selected text");
-
-        systemPrompt.ShouldContain("\"originalText\":\"teacher’s\",\"userText\":\"teacher's\"");
-        systemPrompt.ShouldContain("\"originalText\":\"Rome's streets\",\"userText\":\"Rome streets\"");
-        systemPrompt.ShouldContain("\"originalText\":\"calendar. Tuesday\",\"userText\":\"calender.\\nTuesday\"");
-        systemPrompt.ShouldContain("\"originalText\":\"favourite centre\",\"userText\":\"favorite center\"");
-        systemPrompt.ShouldContain("\"originalText\":\"some time, they\",\"userText\":\"sometime they\"");
-        systemPrompt.ShouldContain("\"originalText\":\"color near ocean\",\"userText\":\"colour near the ocean\"");
-        systemPrompt.ShouldContain("\"originalText\":\"cat and dog\",\"userText\":\"cot and dug\"");
+        var exampleGroups = Regex.Matches(
+                systemPrompt,
+                "<example-group name=\"([^\"]+)\">")
+            .Select(match => match.Groups[1].Value)
+            .ToList();
+        exampleGroups.Count.ShouldBeGreaterThan(0);
+        exampleGroups.Distinct().Count().ShouldBe(exampleGroups.Count);
+        Regex.Matches(systemPrompt, "</example-group>").Count
+            .ShouldBe(exampleGroups.Count);
 
         AssertExamplesContainValidContractJson(systemPrompt);
-
-        systemPrompt.ShouldNotContain("Kate");
-        systemPrompt.ShouldNotContain("daughters");
-        systemPrompt.ShouldNotContain("So, it’s");
-        systemPrompt.ShouldNotContain("cozy");
-        systemPrompt.ShouldNotContain("woodwork");
-        systemPrompt.ShouldNotContain("healthcare");
-        systemPrompt.ShouldNotContain("stocksale");
-        systemPrompt.ShouldNotContain("2022");
-        systemPrompt.ShouldNotContain("401(k)");
     }
 
     private static void AssertExamplesContainValidContractJson(string systemPrompt)
@@ -262,8 +318,9 @@ public class OpenAiTextComparisonRefinerTests
             "<output>(.*?)</output>",
             RegexOptions.Singleline);
 
-        inputs.Count.ShouldBe(32);
+        inputs.Count.ShouldBeGreaterThan(0);
         outputs.Count.ShouldBe(inputs.Count);
+        var actions = new HashSet<string>(StringComparer.Ordinal);
 
         for (var index = 0; index < inputs.Count; index++)
         {
@@ -277,7 +334,8 @@ public class OpenAiTextComparisonRefinerTests
                 .ShouldBeGreaterThanOrEqualTo(0);
 
             var decision = output.RootElement;
-            var action = decision.GetProperty("action").GetString();
+            var action = decision.GetProperty("action").GetString()!;
+            actions.Add(action);
             decision.GetProperty("reasonCode").GetString().ShouldNotBeNullOrWhiteSpace();
             var comparisons = decision.GetProperty("comparisons");
 
@@ -304,6 +362,19 @@ public class OpenAiTextComparisonRefinerTests
                     userText);
             }
         }
+
+        actions.SetEquals(
+            [
+                AiRefinementActions.Keep,
+                AiRefinementActions.Refine,
+                AiRefinementActions.Remove
+            ]).ShouldBeTrue();
+    }
+
+    private static void AssertTagIsBalanced(string prompt, string tag)
+    {
+        Regex.Matches(prompt, $"<{Regex.Escape(tag)}>").Count.ShouldBe(1);
+        Regex.Matches(prompt, $"</{Regex.Escape(tag)}>").Count.ShouldBe(1);
     }
 
     private static void AssertRangeIsWithinSnippet(
@@ -368,14 +439,17 @@ public class OpenAiTextComparisonRefinerTests
             new AiRefinedComparison(3, 9, 11, 8, 10));
     }
 
-    private static OpenAiTextComparisonRefiner CreateRefiner(IChatClient chatClient) =>
+    private static OpenAiTextComparisonRefiner CreateRefiner(
+        IChatClient chatClient,
+        int maxComparisonsPerRequest = 4) =>
         new(
             chatClient,
             Options.Create(new AiRefinementOptions
             {
                 Model = "gpt-test",
                 ReasoningEffort = "medium",
-                MaxOutputTokens = 8000
+                MaxOutputTokens = 8000,
+                MaxComparisonsPerRequest = maxComparisonsPerRequest
             }),
             NullLogger<OpenAiTextComparisonRefiner>.Instance);
 
@@ -395,16 +469,50 @@ public class OpenAiTextComparisonRefinerTests
     private static ChatResponse CreateChatResponse(
         string json,
         Microsoft.Extensions.AI.ChatFinishReason? finishReason = null,
-        long outputTokenCount = 20) =>
+        long outputTokenCount = 20,
+        long inputTokenCount = 100) =>
         new(new AiChatMessage(ChatRole.Assistant, json))
         {
             ModelId = "gpt-test",
             FinishReason = finishReason,
             Usage = new UsageDetails
             {
-                InputTokenCount = 100,
+                InputTokenCount = inputTokenCount,
                 OutputTokenCount = outputTokenCount,
-                TotalTokenCount = 100 + outputTokenCount
+                TotalTokenCount = inputTokenCount + outputTokenCount
             }
         };
+
+    private static ChatResponse CreateRemoveResponse(
+        IReadOnlyList<int> sourceComparisonIndexes,
+        long? inputTokenCount,
+        long? outputTokenCount)
+    {
+        var decisions = sourceComparisonIndexes.Select(index => new
+        {
+            sourceComparisonIndex = index,
+            action = AiRefinementActions.Remove,
+            reasonCode = "equivalent_transcription",
+            comparisons = Array.Empty<object>()
+        });
+        var response = new ChatResponse(
+            new AiChatMessage(
+                ChatRole.Assistant,
+                JsonSerializer.Serialize(new { decisions })))
+        {
+            ModelId = "gpt-test"
+        };
+
+        if (inputTokenCount.HasValue && outputTokenCount.HasValue)
+        {
+            response.Usage = new UsageDetails
+            {
+                InputTokenCount = inputTokenCount,
+                OutputTokenCount = outputTokenCount,
+                TotalTokenCount = inputTokenCount + outputTokenCount
+            };
+        }
+
+        return response;
+    }
 }

@@ -237,8 +237,8 @@
   },
   {
     "caseId": "real-possessive-meaning",
-    "category": "equivalent-unspoken-punctuation",
-    "expectation": "Remove the comparison because the apostrophe has no separate sound and the remaining spoken word is identical.",
+    "category": "possessive-grammar",
+    "expectation": "Keep daughters' versus daughters because the omitted possessive apostrophe changes the grammatical form, even though pronunciation is unchanged.",
     "originalText": "Jesy Nelson, a well-known singer, recently shared a heartfelt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis, Jesy noticed unusual signs in their movement and breathing, but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seemed to breathe from their bellies. Over time, these signs worsened, and Jesy realized her daughters might have a serious condition called Spinal Muscular Atrophy. After a diagnosis, she became an advocate, speaking openly about her daughters' health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
     "userText": "Jessy Nelson a well know singer, recently shared a heart-felt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis Jessy noticed unusual signs in their movements and breathing but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seem to breathe from their bellies. Over time, this signs worsten and just she realized her daughters might have a serious condition called spinal muscular atrophy after a diagnosis she became an advocate speaking openly about her daughters health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
     "sourceComparison": {
@@ -254,8 +254,16 @@
       },
       "userText": "daughters"
     },
-    "expectedAction": "remove",
-    "expectedRanges": []
+    "expectedAction": "keep",
+    "expectedRanges": [
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextInitialIndex": 641,
+        "originalTextFinalIndex": 650,
+        "userTextInitialIndex": 637,
+        "userTextFinalIndex": 645
+      }
+    ]
   },
   {
     "caseId": "real-every-day-everyday",
@@ -371,8 +379,8 @@
   },
   {
     "caseId": "real-retirement-mixed-range",
-    "category": "shrink-mixed-formatting",
-    "expectation": "Shrink the broad comparison to advantage of versus advantages, capturing both the plural difference and the missing of while excluding matching their and harmless possessive and 401(k) formatting.",
+    "category": "split-mixed-formatting",
+    "expectation": "Split the broad comparison into advantage of versus advantages and employer’s versus employers; exclude matching their and harmless 401(k) formatting.",
     "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
     "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
     "sourceComparison": {
@@ -388,7 +396,7 @@
       },
       "userText": "advantages their employers 401k match"
     },
-    "expectedAction": "shrink",
+    "expectedAction": "split",
     "expectedRanges": [
       {
         "sourceComparisonIndex": 5,
@@ -396,6 +404,13 @@
         "originalTextFinalIndex": 450,
         "userTextInitialIndex": 417,
         "userTextFinalIndex": 426
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextInitialIndex": 458,
+        "originalTextFinalIndex": 467,
+        "userTextInitialIndex": 434,
+        "userTextFinalIndex": 442
       }
     ]
   },

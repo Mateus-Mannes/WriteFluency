@@ -35,6 +35,9 @@ builder.Services.AddOptions<AiRefinementOptions>()
     .Validate(
         options => options.MaxOutputTokens > 0,
         "AI refinement max output tokens must be greater than zero.")
+    .Validate(
+        options => options.MaxComparisonsPerRequest > 0,
+        "AI refinement max comparisons per request must be greater than zero.")
     .ValidateOnStart();
 builder.Services.AddOptions<UsersServiceOptions>()
     .Bind(builder.Configuration.GetSection(UsersServiceOptions.Section))

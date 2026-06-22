@@ -447,6 +447,24 @@ public class AiRefinementOutputValidatorTests
         result.Comparisons.ShouldBeEmpty();
     }
 
+    [Theory]
+    [InlineData("daughters'", "daughters")]
+    [InlineData("employer\u2019s", "employers")]
+    public void Validate_WhenSelectionDiffersByPossessiveApostrophe_ShouldPreserveDifference(
+        string originalText,
+        string userText)
+    {
+        var request = CreateSingleSourceRequest(originalText, userText);
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, originalText, userText)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.Comparisons.Single().OriginalText.ShouldBe(originalText);
+        result.Comparisons.Single().UserText.ShouldBe(userText);
+    }
+
     [Fact]
     public void ValidateDecisions_WhenOneSelectionIsIdentical_ShouldFallbackOnlyThatSource()
     {

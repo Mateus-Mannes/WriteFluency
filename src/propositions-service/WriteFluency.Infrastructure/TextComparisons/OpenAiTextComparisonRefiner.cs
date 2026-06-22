@@ -34,34 +34,44 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
 
         try
         {
-            var response = await _chatClient.GetResponseAsync<StructuredRefinementResponse>(
-                TextComparisonAiPrompt.CreateMessages(request),
-                CreateChatOptions(),
-                useJsonSchemaResponseFormat: true,
-                cancellationToken: cancellationToken);
-
-            if (response.FinishReason == Microsoft.Extensions.AI.ChatFinishReason.Length)
+            if (request.Comparisons.Count == 0)
             {
-                throw new InvalidOperationException(
-                    $"The AI refinement response was truncated after reaching the {_options.MaxOutputTokens}-token output limit.");
+                return new AiRefinementResult(
+                    [],
+                    Model,
+                    PromptVersion,
+                    stopwatch.ElapsedMilliseconds,
+                    0,
+                    0);
             }
 
-            if (!response.TryGetResult(out var structuredResponse)
-                || structuredResponse?.Decisions is null)
+            var decisions = new List<AiRefinementDecision>(request.Comparisons.Count);
+            var inputTokenCount = 0L;
+            var outputTokenCount = 0L;
+            var hasCompleteUsage = true;
+            var responseModel = Model;
+
+            foreach (var comparisons in request.Comparisons.Chunk(
+                         _options.MaxComparisonsPerRequest))
             {
-                throw new InvalidOperationException(
-                    "The AI refinement response did not match the required schema.");
+                var batchRequest = request with { Comparisons = comparisons };
+                var batch = await RefineBatchAsync(batchRequest, cancellationToken);
+
+                decisions.AddRange(batch.Decisions);
+                responseModel = batch.Model;
+                hasCompleteUsage &= batch.InputTokenCount.HasValue
+                    && batch.OutputTokenCount.HasValue;
+                inputTokenCount += batch.InputTokenCount ?? 0;
+                outputTokenCount += batch.OutputTokenCount ?? 0;
             }
 
             return new AiRefinementResult(
-                structuredResponse.Decisions
-                    .Select(decision => ToDecision(request, decision))
-                    .ToList(),
-                response.ModelId ?? Model,
+                decisions,
+                responseModel,
                 PromptVersion,
                 stopwatch.ElapsedMilliseconds,
-                response.Usage?.InputTokenCount,
-                response.Usage?.OutputTokenCount);
+                hasCompleteUsage ? inputTokenCount : null,
+                hasCompleteUsage ? outputTokenCount : null);
         }
         catch (OperationCanceledException)
         {
@@ -78,6 +88,38 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
                 stopwatch.ElapsedMilliseconds);
             throw;
         }
+    }
+
+    private async Task<BatchRefinementResult> RefineBatchAsync(
+        AiRefinementRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _chatClient.GetResponseAsync<StructuredRefinementResponse>(
+            TextComparisonAiPrompt.CreateMessages(request),
+            CreateChatOptions(),
+            useJsonSchemaResponseFormat: true,
+            cancellationToken: cancellationToken);
+
+        if (response.FinishReason == Microsoft.Extensions.AI.ChatFinishReason.Length)
+        {
+            throw new InvalidOperationException(
+                $"The AI refinement response was truncated after reaching the {_options.MaxOutputTokens}-token output limit.");
+        }
+
+        if (!response.TryGetResult(out var structuredResponse)
+            || structuredResponse?.Decisions is null)
+        {
+            throw new InvalidOperationException(
+                "The AI refinement response did not match the required schema.");
+        }
+
+        return new BatchRefinementResult(
+            structuredResponse.Decisions
+                .Select(decision => ToDecision(request, decision))
+                .ToList(),
+            response.ModelId ?? Model,
+            response.Usage?.InputTokenCount,
+            response.Usage?.OutputTokenCount);
     }
 
     private ChatOptions CreateChatOptions() =>
@@ -172,4 +214,10 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
         public required int UserTextStartOffset { get; init; }
         public required int UserTextEndOffset { get; init; }
     }
+
+    private sealed record BatchRefinementResult(
+        IReadOnlyList<AiRefinementDecision> Decisions,
+        string Model,
+        long? InputTokenCount,
+        long? OutputTokenCount);
 }

@@ -52,9 +52,10 @@ if (string.IsNullOrWhiteSpace(apiKey)
 
 var options = new AiRefinementOptions
 {
-    Model = arguments.Model ?? "gpt-5.4-mini-2026-03-17",
+    Model = arguments.Model ?? "gpt-5.4-nano-2026-03-17",
     ReasoningEffort = "medium",
-    MaxOutputTokens = 8000
+    MaxOutputTokens = 8000,
+    MaxComparisonsPerRequest = 4
 };
 
 builder.Services.AddSingleton<IOptions<AiRefinementOptions>>(Options.Create(options));

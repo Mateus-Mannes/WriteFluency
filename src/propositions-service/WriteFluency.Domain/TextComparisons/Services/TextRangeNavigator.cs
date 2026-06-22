@@ -70,13 +70,13 @@ internal static class TextRangeNavigator
         }
 
         while (initialIndex <= finalIndex
-               && IsIgnorableCharacter(text[initialIndex]))
+               && IsIgnorableBoundaryCharacter(text[initialIndex]))
         {
             initialIndex++;
         }
 
         while (finalIndex >= initialIndex
-               && IsIgnorableCharacter(text[finalIndex]))
+               && IsIgnorableBoundaryCharacter(text[finalIndex]))
         {
             finalIndex--;
         }
@@ -298,6 +298,10 @@ internal static class TextRangeNavigator
     private static bool IsIgnorableCharacter(char character) =>
         char.IsWhiteSpace(character)
         || char.IsPunctuation(character);
+
+    private static bool IsIgnorableBoundaryCharacter(char character) =>
+        IsIgnorableCharacter(character)
+        && character is not '\'' and not '\u2018' and not '\u2019';
 
     private static string Slice(string text, TextRange range) =>
         text.Substring(
