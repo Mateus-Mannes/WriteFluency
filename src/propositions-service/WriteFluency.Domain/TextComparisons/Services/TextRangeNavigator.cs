@@ -8,44 +8,6 @@ internal static class TextRangeNavigator
         && range.FinalIndex >= range.InitialIndex
         && range.FinalIndex < textLength;
 
-    public static bool TryNormalizeToSource(
-        TextRange candidate,
-        TextRange source,
-        string fullText,
-        out TextRange normalized)
-    {
-        normalized = candidate;
-        if (IsContainedBy(candidate, source))
-        {
-            return true;
-        }
-
-        if (candidate.InitialIndex < source.InitialIndex
-            && !ContainsOnlyIgnorableCharacters(
-                fullText,
-                candidate.InitialIndex,
-                Math.Min(candidate.FinalIndex, source.InitialIndex - 1)))
-        {
-            return false;
-        }
-
-        if (candidate.FinalIndex > source.FinalIndex
-            && !ContainsOnlyIgnorableCharacters(
-                fullText,
-                Math.Max(candidate.InitialIndex, source.FinalIndex + 1),
-                candidate.FinalIndex))
-        {
-            return false;
-        }
-
-        normalized = new TextRange(
-            Math.Max(candidate.InitialIndex, source.InitialIndex),
-            Math.Min(candidate.FinalIndex, source.FinalIndex));
-
-        return normalized.FinalIndex >= normalized.InitialIndex
-            && IsContainedBy(normalized, source);
-    }
-
     public static bool TryNormalizeBoundaries(
         string text,
         TextRange source,
@@ -260,6 +222,39 @@ internal static class TextRangeNavigator
             Slice(userText, userWord),
             StringComparison.OrdinalIgnoreCase);
 
+    public static IReadOnlyList<TextRange> GetWords(
+        string text,
+        TextRange range)
+    {
+        var words = new List<TextRange>();
+        var index = range.InitialIndex;
+        while (index <= range.FinalIndex)
+        {
+            while (index <= range.FinalIndex
+                   && !IsWordCharacter(text[index]))
+            {
+                index++;
+            }
+
+            if (index > range.FinalIndex)
+            {
+                break;
+            }
+
+            var start = index;
+            while (index < range.FinalIndex
+                   && IsWordCharacter(text[index + 1]))
+            {
+                index++;
+            }
+
+            words.Add(new TextRange(start, index));
+            index++;
+        }
+
+        return words;
+    }
+
     public static TextRange TrimLeadingWord(
         string text,
         TextRange range,
@@ -292,10 +287,10 @@ internal static class TextRangeNavigator
         candidate.InitialIndex >= source.InitialIndex
         && candidate.FinalIndex <= source.FinalIndex;
 
-    private static bool IsWordCharacter(char character) =>
+    public static bool IsWordCharacter(char character) =>
         char.IsLetterOrDigit(character);
 
-    private static bool IsIgnorableCharacter(char character) =>
+    public static bool IsIgnorableCharacter(char character) =>
         char.IsWhiteSpace(character)
         || char.IsPunctuation(character);
 
@@ -303,7 +298,7 @@ internal static class TextRangeNavigator
         IsIgnorableCharacter(character)
         && character is not '\'' and not '\u2018' and not '\u2019';
 
-    private static string Slice(string text, TextRange range) =>
+    public static string Slice(string text, TextRange range) =>
         text.Substring(
             range.InitialIndex,
             range.FinalIndex - range.InitialIndex + 1);

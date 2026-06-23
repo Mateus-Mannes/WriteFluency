@@ -285,6 +285,135 @@ public class AiRefinementOutputValidatorTests
         comparison.UserText.ShouldBe("cot");
     }
 
+    [Fact]
+    public void Validate_WhenTrailingOverflowCutsIntoNextWord_ShouldClampToSource()
+    {
+        const string originalText = "sequins the";
+        const string userText = "sequence the";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, 6),
+                    "sequins",
+                    new TextRange(0, 7),
+                    "sequence")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 0, 8, 0, 8)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 0, 6, 0, 7));
+    }
+
+    [Fact]
+    public void Validate_WhenTrailingOverflowIncludesNextWord_ShouldClampToSource()
+    {
+        const string originalText = "embroidery a";
+        const string userText = "brodery a";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, 9),
+                    "embroidery",
+                    new TextRange(0, 6),
+                    "brodery")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 0, 10, 0, 8)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 0, 9, 0, 6));
+    }
+
+    [Fact]
+    public void Validate_WhenTrailingOverflowReachesTwoFollowingWords_ShouldReject()
+    {
+        const string originalText = "cat with two words";
+        const string userText = "cot with two words";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(0, 2),
+                    "cat",
+                    new TextRange(0, 2),
+                    "cot")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 0, 11, 0, 11)]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("range_outside_source");
+    }
+
+    [Fact]
+    public void Validate_WhenLeadingOverflowCutsIntoPreviousWord_ShouldClampToSource()
+    {
+        const string originalText = "the sequins";
+        const string userText = "the sequence";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(4, 10),
+                    "sequins",
+                    new TextRange(4, 11),
+                    "sequence")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 2, 10, 3, 11)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 4, 10, 4, 11));
+    }
+
+    [Fact]
+    public void Validate_WhenLeadingOverflowIncludesPreviousFunctionWord_ShouldClampToSource()
+    {
+        const string originalText = "a embroidery";
+        const string userText = "a brodery";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(2, 11),
+                    "embroidery",
+                    new TextRange(2, 8),
+                    "brodery")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 0, 11, 0, 8)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            new AiRefinedComparison(0, 2, 11, 2, 8));
+    }
+
     [Theory]
     [InlineData("A catx runs.", "A cotx runs.")]
     [InlineData("A cat1 runs.", "A cot1 runs.")]
@@ -317,7 +446,6 @@ public class AiRefinementOutputValidatorTests
     [Theory]
     [InlineData(-1, 4, 2, 4, "invalid_range")]
     [InlineData(4, 2, 2, 4, "invalid_range")]
-    [InlineData(0, 4, 2, 4, "range_outside_source")]
     [InlineData(2, 4, 2, 20, "invalid_range")]
     public void Validate_WhenRangeIsUnsafe_ShouldRejectEntireOutput(
         int originalStart,
@@ -339,6 +467,32 @@ public class AiRefinementOutputValidatorTests
 
         result.IsValid.ShouldBeFalse();
         result.FailureReason.ShouldBe(expectedReason);
+        result.Comparisons.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Validate_WhenLeadingOverflowIncludesPreviousContentWord_ShouldRejectEntireOutput()
+    {
+        const string originalText = "bright sequins";
+        const string userText = "bright sequence";
+        var request = new AiRefinementRequest(
+            originalText,
+            userText,
+            [
+                new AiRefinementSourceComparison(
+                    0,
+                    new TextRange(7, 13),
+                    "sequins",
+                    new TextRange(7, 14),
+                    "sequence")
+            ]);
+
+        var result = _validator.Validate(
+            request,
+            [new AiRefinedComparison(0, 0, 13, 0, 14)]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("range_outside_source");
         result.Comparisons.ShouldBeEmpty();
     }
 
@@ -825,6 +979,248 @@ public class AiRefinementOutputValidatorTests
 
         result.IsValid.ShouldBeTrue();
         result.NormalizedRanges.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasReliableFunctionWordAnchor_ShouldSplit()
+    {
+        var request = CreateSingleSourceRequest(
+            "her heritage from Hawaii",
+            "a hair teacher from a while");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(
+                    request,
+                    0,
+                    "her heritage from Hawaii",
+                    "a hair teacher from a while")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "her heritage", "a hair teacher"),
+                CreateRange(request, 0, "Hawaii", "a while")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasAmbiguousFunctionWordAnchor_ShouldKeepRange()
+    {
+        var request = CreateSingleSourceRequest(
+            "art shows a side of her",
+            "are a chose aside for");
+        var broadRange = CreateRange(
+            request,
+            0,
+            "art shows a side of her",
+            "are a chose aside for");
+
+        var result = _validator.Validate(request, [broadRange]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(broadRange);
+    }
+
+    [Fact]
+    public void Validate_WhenAmbiguousPhraseIsOverSplit_ShouldMergeToBroadRange()
+    {
+        var request = CreateSingleSourceRequest(
+            "art shows a side of her",
+            "are a chose aside for");
+        var broadRange = CreateRange(
+            request,
+            0,
+            "art shows a side of her",
+            "are a chose aside for");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(request, 0, "art", "are"),
+                CreateRange(request, 0, "shows", "chose"),
+                CreateRange(request, 0, "side of her", "aside for")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(broadRange);
+    }
+
+    [Fact]
+    public void Validate_WhenSplitBoundariesIncludeReliableAnchor_ShouldCanonicalize()
+    {
+        var request = CreateSingleSourceRequest(
+            "her heritage from Hawaii and",
+            "a hair teacher from a while and");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(
+                    request,
+                    0,
+                    "her heritage from",
+                    "a hair teacher"),
+                CreateRange(
+                    request,
+                    0,
+                    "Hawaii and",
+                    "a while")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "her heritage", "a hair teacher"),
+                CreateRange(request, 0, "Hawaii", "a while")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasSimpleParallelFunctionWordAnchor_ShouldSplit()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat and dog",
+            "cot and dug");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "cat and dog", "cot and dug")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasUniqueContentWordAnchor_ShouldSplit()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat near dog",
+            "cot near dug");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "cat near dog", "cot near dug")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasUniqueMultiWordAnchor_ShouldSplit()
+    {
+        var request = CreateSingleSourceRequest(
+            "cat near the house dog",
+            "cot near the house dug");
+
+        var result = _validator.Validate(
+            request,
+            [
+                CreateRange(
+                    request,
+                    0,
+                    "cat near the house dog",
+                    "cot near the house dug")
+            ]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenBroadRangeHasDuplicateMatchingAnchors_ShouldRemainUnsplit()
+    {
+        var request = CreateSingleSourceRequest(
+            "bad and old and road",
+            "sad and new and roads");
+        var broadRange = CreateRange(
+            request,
+            0,
+            "bad and old and road",
+            "sad and new and roads");
+
+        var result = _validator.Validate(request, [broadRange]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(broadRange);
+    }
+
+    [Theory]
+    [InlineData("and")]
+    [InlineData("from")]
+    [InlineData("in")]
+    [InlineData("of")]
+    [InlineData("the")]
+    public void Validate_WhenShortParallelPhraseUsesFunctionWordAnchor_ShouldSplit(
+        string anchor)
+    {
+        var originalText = $"cat {anchor} dog";
+        var userText = $"cot {anchor} dug";
+        var request = CreateSingleSourceRequest(originalText, userText);
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, originalText, userText)]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.ShouldBe(
+            [
+                CreateRange(request, 0, "cat", "cot"),
+                CreateRange(request, 0, "dog", "dug")
+            ]);
+    }
+
+    [Fact]
+    public void Validate_WhenCanonicalizedOutputIsValidatedAgain_ShouldBeIdempotent()
+    {
+        var request = CreateSingleSourceRequest(
+            "her heritage from Hawaii",
+            "a hair teacher from a while");
+        var first = _validator.Validate(
+            request,
+            [
+                CreateRange(
+                    request,
+                    0,
+                    "her heritage from Hawaii",
+                    "a hair teacher from a while")
+            ]);
+
+        var second = _validator.Validate(request, first.NormalizedRanges);
+
+        first.IsValid.ShouldBeTrue();
+        second.IsValid.ShouldBeTrue();
+        second.NormalizedRanges.ShouldBe(first.NormalizedRanges);
+    }
+
+    [Fact]
+    public void Validate_WhenOnlyUserRangeIncludesMatchingTrailingContext_ShouldTrimIt()
+    {
+        var request = CreateSingleSourceRequest(
+            "Every day, she",
+            "Everyday she");
+
+        var result = _validator.Validate(
+            request,
+            [CreateRange(request, 0, "Every day", "Everyday she")]);
+
+        result.IsValid.ShouldBeTrue();
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "Every day", "Everyday"));
     }
 
     [Fact]

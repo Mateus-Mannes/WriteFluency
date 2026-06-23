@@ -6,7 +6,7 @@ namespace WriteFluency.Infrastructure.TextComparisons;
 
 public static class TextComparisonAiPrompt
 {
-    public const string Version = "ai-refinement-v38";
+    public const string Version = "ai-refinement-v40";
 
     private const string SystemPrompt = """
         <role>
@@ -30,7 +30,6 @@ public static class TextComparisonAiPrompt
 
         <decision-process>
           For each source comparison:
-
           1. Classify every difference as either explicitly equivalent or a genuine written-word error.
           2. If all differences are explicitly equivalent, return "remove".
           3. Otherwise, identify the smallest ranges containing every genuine error while excluding equivalent and matching context.
@@ -101,23 +100,21 @@ public static class TextComparisonAiPrompt
 
         <range-rules>
           For action "refine":
-          - Return zero-based inclusive offsets relative to each source comparison snippet.
-          - Offset 0 is the first character of that snippet. Never return absolute full-text indexes.
-          - Return the smallest contiguous range for each genuine difference.
-          - Exclude matching words and equivalent formatting at the beginning, middle, and end.
-          - In mixed comparisons, exclude every difference covered by an equivalence rule;
-            highlight only the remaining genuine errors.
-          - Keep adjacent genuine word differences together as one contiguous range.
-          - Split genuine differences only when one or more matching or equivalent words occur between them.
-          - Start and end at complete word boundaries. Never select a partial word.
-          - Every item must have a non-empty original range and a non-empty user range.
-          - Every selected pair must visibly contain a genuine difference. Never return equivalent or identical selected text.
-          - After trimming boundary whitespace and ignoring letter case, the selected original and user text must not be equal.
-            Equal selected text hides the real error and is invalid; expand the side containing an inserted word or choose "keep".
-          - For a direct substitution, select only the differing words, without a matching anchor.
-          - For an inserted or omitted word, include that word and the nearest necessary matching anchor so both ranges remain non-empty.
-          - If a one-sided insertion or omission cannot be represented by smaller non-empty two-sided ranges, choose "keep".
-          - Never extend a range beyond its supplied source comparison.
+          - Use zero-based inclusive offsets relative to the supplied source snippets.
+          - Never select text outside the source comparison or part of a word.
+          - Group adjacent genuine errors into one contiguous comparison.
+          - Split only when unchanged or equivalent text gives an unambiguous alignment
+            between errors on both sides. A single function word may be enough in a short,
+            simple parallel phrase; in a longer or heavily changed phrase, keep one
+            contiguous comparison unless the alignment is clear.
+          - Preserve order: ranges ordered in the original text must have the same order in the user text.
+          - Never cross-pair reordered words. A reordered adjacent phrase is one contiguous word-order error.
+          - Trim matching words and equivalent formatting from range boundaries.
+          - For a direct substitution, select only the differing words.
+          - For an insertion or omission, include the changed word and only the nearest required matching anchor.
+          - Every comparison must contain non-empty ranges on both sides and visibly contain a genuine difference.
+          - After trimming whitespace and ignoring case, the selected texts must not be identical.
+          - If a valid smaller two-sided comparison cannot represent the error, return "keep".
         </range-rules>
 
         <output-contract>
@@ -274,6 +271,11 @@ public static class TextComparisonAiPrompt
             <note>Both adjacent words are wrong, so the complete source is already one minimal contiguous correction.</note>
           </example>
           <example>
+            <input>{"sourceComparisonIndex":0,"originalText":"She can","userText":"can she"}</input>
+            <output>{"action":"keep","reasonCode":"contiguous_word_order_error","comparisons":[]}</output>
+            <note>The words changed order, so the complete source is one correction.</note>
+          </example>
+          <example>
             <input>{"sourceComparisonIndex":0,"originalText":"color near ocean","userText":"colour near the ocean"}</input>
             <output>{"action":"refine","reasonCode":"mixed_equivalent_and_genuine_differences","comparisons":[{"originalTextStartOffset":11,"originalTextEndOffset":15,"userTextStartOffset":12,"userTextEndOffset":20}]}</output>
             <note>Regional spelling and matching context are excluded; the extra article remains visible.</note>
@@ -281,6 +283,12 @@ public static class TextComparisonAiPrompt
           <example>
             <input>{"sourceComparisonIndex":0,"originalText":"cat and dog","userText":"cot and dug"}</input>
             <output>{"action":"refine","reasonCode":"genuine_word_difference","comparisons":[{"originalTextStartOffset":0,"originalTextEndOffset":2,"userTextStartOffset":0,"userTextEndOffset":2},{"originalTextStartOffset":8,"originalTextEndOffset":10,"userTextStartOffset":8,"userTextEndOffset":10}]}</output>
+            <note>The short parallel structure makes "and" an unambiguous separator.</note>
+          </example>
+          <example>
+            <input>{"sourceComparisonIndex":0,"originalText":"craft reveals a part of history","userText":"crash a piece aside for mystery"}</input>
+            <output>{"action":"keep","reasonCode":"insufficient_split_context","comparisons":[]}</output>
+            <note>The matching article "a" does not establish a reliable alignment inside this heavily changed phrase.</note>
           </example>
           <example>
             <input>{"sourceComparisonIndex":0,"originalText":"Berlin's transit route. Commuters","userText":"Berlin transit routes,\nCommuters"}</input>

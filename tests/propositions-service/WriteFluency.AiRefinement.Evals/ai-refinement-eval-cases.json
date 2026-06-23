@@ -129,23 +129,316 @@
     "caseId": "real-smart-apostrophe",
     "category": "equivalent-typography",
     "expectation": "Remove the comparison because smart and straight apostrophes represent the same word.",
+    "focusSourceComparisonIndex": 10,
     "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
     "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
-    "sourceComparison": {
-      "sourceComparisonIndex": 10,
-      "originalTextRange": {
-        "initialIndex": 619,
-        "finalIndex": 624
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 63,
+          "finalIndex": 72
+        },
+        "originalText": "embroidery",
+        "userTextRange": {
+          "initialIndex": 63,
+          "finalIndex": 69
+        },
+        "userText": "brodery"
       },
-      "originalText": "Kate’s",
-      "userTextRange": {
-        "initialIndex": 612,
-        "finalIndex": 617
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 92,
+          "finalIndex": 124
+        },
+        "originalText": "says her heritage from Hawaii and",
+        "userTextRange": {
+          "initialIndex": 89,
+          "finalIndex": 124
+        },
+        "userText": "says a hair teacher from a while and"
       },
-      "userText": "Kate's"
-    },
-    "expectedAction": "remove",
-    "expectedRanges": []
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 156,
+          "finalIndex": 169
+        },
+        "originalText": "Every day, she",
+        "userTextRange": {
+          "initialIndex": 156,
+          "finalIndex": 167
+        },
+        "userText": "Everyday she"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 194,
+          "finalIndex": 197
+        },
+        "originalText": "sews",
+        "userTextRange": {
+          "initialIndex": 192,
+          "finalIndex": 195
+        },
+        "userText": "saws"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 204,
+          "finalIndex": 204
+        },
+        "originalText": "a",
+        "userTextRange": {
+          "initialIndex": 202,
+          "finalIndex": 204
+        },
+        "userText": "the"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 222,
+          "finalIndex": 226
+        },
+        "originalText": "beads",
+        "userTextRange": {
+          "initialIndex": 222,
+          "finalIndex": 225
+        },
+        "userText": "bits"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 232,
+          "finalIndex": 238
+        },
+        "originalText": "sequins",
+        "userTextRange": {
+          "initialIndex": 231,
+          "finalIndex": 238
+        },
+        "userText": "sequence"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 282,
+          "finalIndex": 286
+        },
+        "originalText": "Gaudi",
+        "userTextRange": {
+          "initialIndex": 282,
+          "finalIndex": 288
+        },
+        "userText": "'Gaudi'"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 289,
+          "finalIndex": 293
+        },
+        "originalText": "It is",
+        "userTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 294
+        },
+        "userText": "is it"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 548,
+          "finalIndex": 565
+        },
+        "originalText": "many young artists",
+        "userTextRange": {
+          "initialIndex": 548,
+          "finalIndex": 558
+        },
+        "userText": "many artist"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 619,
+          "finalIndex": 624
+        },
+        "originalText": "Kate’s",
+        "userTextRange": {
+          "initialIndex": 612,
+          "finalIndex": 617
+        },
+        "userText": "Kate's"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 665
+        },
+        "originalText": "art shows a side of her",
+        "userTextRange": {
+          "initialIndex": 636,
+          "finalIndex": 656
+        },
+        "userText": "are a chose aside for"
+      }
+    ],
+    "expectedDecisions": [
+      {
+        "sourceComparisonIndex": 0,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 0,
+            "originalTextInitialIndex": 63,
+            "originalTextFinalIndex": 72,
+            "userTextInitialIndex": 63,
+            "userTextFinalIndex": 69
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "expectedAction": "split",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 1,
+            "originalTextInitialIndex": 97,
+            "originalTextFinalIndex": 108,
+            "userTextInitialIndex": 94,
+            "userTextFinalIndex": 107
+          },
+          {
+            "sourceComparisonIndex": 1,
+            "originalTextInitialIndex": 115,
+            "originalTextFinalIndex": 120,
+            "userTextInitialIndex": 114,
+            "userTextFinalIndex": 120
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "expectedAction": "shrink",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 2,
+            "originalTextInitialIndex": 156,
+            "originalTextFinalIndex": 164,
+            "userTextInitialIndex": 156,
+            "userTextFinalIndex": 163
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 3,
+            "originalTextInitialIndex": 194,
+            "originalTextFinalIndex": 197,
+            "userTextInitialIndex": 192,
+            "userTextFinalIndex": 195
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 4,
+            "originalTextInitialIndex": 204,
+            "originalTextFinalIndex": 204,
+            "userTextInitialIndex": 202,
+            "userTextFinalIndex": 204
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 5,
+            "originalTextInitialIndex": 222,
+            "originalTextFinalIndex": 226,
+            "userTextInitialIndex": 222,
+            "userTextFinalIndex": 225
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 6,
+            "originalTextInitialIndex": 232,
+            "originalTextFinalIndex": 238,
+            "userTextInitialIndex": 231,
+            "userTextFinalIndex": 238
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "expectedAction": "remove",
+        "expectedRanges": []
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 8,
+            "originalTextInitialIndex": 289,
+            "originalTextFinalIndex": 293,
+            "userTextInitialIndex": 290,
+            "userTextFinalIndex": 294
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "expectedAction": "shrink",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 9,
+            "originalTextInitialIndex": 553,
+            "originalTextFinalIndex": 565,
+            "userTextInitialIndex": 553,
+            "userTextFinalIndex": 558
+          }
+        ]
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "expectedAction": "remove",
+        "expectedRanges": []
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "expectedAction": "keep",
+        "expectedRanges": [
+          {
+            "sourceComparisonIndex": 11,
+            "originalTextInitialIndex": 643,
+            "originalTextFinalIndex": 665,
+            "userTextInitialIndex": 636,
+            "userTextFinalIndex": 656
+          }
+        ]
+      }
+    ]
   },
   {
     "caseId": "real-regional-spelling",

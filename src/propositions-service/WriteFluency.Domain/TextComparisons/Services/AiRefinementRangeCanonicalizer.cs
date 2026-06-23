@@ -53,65 +53,6 @@ internal sealed class AiRefinementRangeCanonicalizer
         return merged;
     }
 
-    public void TrimMatchingBoundaryWords(
-        string originalText,
-        string userText,
-        ref TextRange originalRange,
-        ref TextRange userRange)
-    {
-        while (TextRangeNavigator.TryGetFirstWord(
-                   originalText,
-                   originalRange,
-                   out var originalWord)
-               && TextRangeNavigator.TryGetFirstWord(
-                   userText,
-                   userRange,
-                   out var userWord)
-               && TextRangeNavigator.AreMatchingWords(
-                   originalText,
-                   originalWord,
-                   userText,
-                   userWord)
-               && CanRemoveWord(originalRange, originalWord)
-               && CanRemoveWord(userRange, userWord))
-        {
-            originalRange = TextRangeNavigator.TrimLeadingWord(
-                originalText,
-                originalRange,
-                originalWord);
-            userRange = TextRangeNavigator.TrimLeadingWord(
-                userText,
-                userRange,
-                userWord);
-        }
-
-        while (TextRangeNavigator.TryGetLastWord(
-                   originalText,
-                   originalRange,
-                   out var originalWord)
-               && TextRangeNavigator.TryGetLastWord(
-                   userText,
-                   userRange,
-                   out var userWord)
-               && TextRangeNavigator.AreMatchingWords(
-                   originalText,
-                   originalWord,
-                   userText,
-                   userWord)
-               && CanRemoveWord(originalRange, originalWord)
-               && CanRemoveWord(userRange, userWord))
-        {
-            originalRange = TextRangeNavigator.TrimTrailingWord(
-                originalText,
-                originalRange,
-                originalWord);
-            userRange = TextRangeNavigator.TrimTrailingWord(
-                userText,
-                userRange,
-                userWord);
-        }
-    }
-
     private static bool CanMerge(
         AiRefinementRequest request,
         AiRefinedComparison current,
@@ -167,8 +108,4 @@ internal sealed class AiRefinementRangeCanonicalizer
             Math.Max(
                 current.UserTextFinalIndex,
                 next.UserTextFinalIndex));
-
-    private static bool CanRemoveWord(TextRange range, TextRange word) =>
-        word.InitialIndex > range.InitialIndex
-        || word.FinalIndex < range.FinalIndex;
 }
