@@ -37,7 +37,7 @@ import {
 export type ExerciseState = 'intro' | 'exercise' | 'results';
 
 export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
-const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
+const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/L3txCNWKosYcEMaQ-vxC';
 const restoreServerStateTimeoutMs = 3000;
 const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
