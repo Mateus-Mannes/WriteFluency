@@ -12,7 +12,7 @@ using WriteFluency.TextComparisons;
 var arguments = EvaluationArguments.Parse(args);
 var manifestPath = Path.Combine(
     AppContext.BaseDirectory,
-    "ai-refinement-eval-cases.json");
+    "orchestration-eval-cases.json");
 var cases = JsonSerializer.Deserialize(
     await File.ReadAllTextAsync(manifestPath),
     EvaluationJsonContext.Default.ListEvaluationCase)
@@ -76,7 +76,18 @@ builder.Services.AddSingleton<IChatClient>(serviceProvider =>
                 .Model)
         .AsIChatClient());
 builder.Services.AddSingleton<ITextComparisonAiRefiner, OpenAiTextComparisonRefiner>();
+builder.Services.AddSingleton<LevenshteinDistanceService>();
+builder.Services.AddSingleton<TokenAlignmentService>();
+builder.Services.AddSingleton<TokenizeTextService>();
+builder.Services.AddSingleton<NeedlemanWunschAlignmentService>();
+builder.Services.AddSingleton<TextAlignmentService>();
+builder.Services.AddSingleton<TokenComparisonService>();
+builder.Services.AddSingleton<TextComparisonService>();
+builder.Services.AddSingleton<EnglishNumberNormalizer>();
+builder.Services.AddSingleton<DeterministicTextEquivalenceService>();
+builder.Services.AddSingleton<DeterministicTextComparisonRefiner>();
 builder.Services.AddSingleton<AiRefinementOutputValidator>();
+builder.Services.AddSingleton<CorrectionOrchestrationService>();
 builder.Services.AddSingleton<AiRefinementEvaluator>();
 
 using var host = builder.Build();

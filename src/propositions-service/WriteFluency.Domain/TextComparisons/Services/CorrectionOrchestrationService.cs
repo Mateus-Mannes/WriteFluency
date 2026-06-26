@@ -3,18 +3,18 @@ namespace WriteFluency.TextComparisons;
 public sealed class CorrectionOrchestrationService
 {
     private readonly TextComparisonService _textComparisonService;
-    private readonly DeterministicTextEquivalenceService _equivalenceService;
+    private readonly DeterministicTextComparisonRefiner _deterministicRefiner;
     private readonly ITextComparisonAiRefiner _aiRefiner;
     private readonly AiRefinementOutputValidator _aiOutputValidator;
 
     public CorrectionOrchestrationService(
         TextComparisonService textComparisonService,
-        DeterministicTextEquivalenceService equivalenceService,
+        DeterministicTextComparisonRefiner deterministicRefiner,
         ITextComparisonAiRefiner aiRefiner,
         AiRefinementOutputValidator aiOutputValidator)
     {
         _textComparisonService = textComparisonService;
-        _equivalenceService = equivalenceService;
+        _deterministicRefiner = deterministicRefiner;
         _aiRefiner = aiRefiner;
         _aiOutputValidator = aiOutputValidator;
     }
@@ -33,38 +33,21 @@ public sealed class CorrectionOrchestrationService
             return CreateResult(staticResult, staticResult.Comparisons.Count);
         }
 
-        var correctionTrace = new Dictionary<int, CorrectionTraceEntry>();
-        var remainingComparisons = new List<TextComparison>();
+        var deterministic = _deterministicRefiner.Refine(
+            staticResult.OriginalText,
+            staticResult.UserText,
+            staticResult.Comparisons);
+        var correctionTrace = deterministic.Trace.ToDictionary(
+            entry => entry.Key,
+            entry => entry.Value);
 
-        foreach (var comparison in staticResult.Comparisons)
-        {
-            var equivalence = _equivalenceService.Evaluate(
-                comparison.OriginalText,
-                comparison.UserText);
-
-            if (!equivalence.IsEquivalent)
-            {
-                remainingComparisons.Add(comparison);
-                continue;
-            }
-
-            correctionTrace[comparison.SourceComparisonIndex] = new CorrectionTraceEntry(
-                comparison.SourceComparisonIndex,
-                ToSnapshot(comparison),
-                new CorrectionStageTrace(
-                    AiRefinementActions.Remove,
-                    equivalence.ReasonCode ?? "normalized_equivalence",
-                    []));
-        }
-
-        var removedComparisonCount = staticResult.Comparisons.Count - remainingComparisons.Count;
-        var preAiResult = removedComparisonCount == 0
+        var preAiResult = !deterministic.HasChanges
             ? staticResult
             : new TextComparisonResult(
                 staticResult.OriginalText,
                 staticResult.UserText,
-                CalculateAccuracy(staticResult.OriginalText, remainingComparisons),
-                remainingComparisons,
+                CalculateAccuracy(staticResult.OriginalText, deterministic.Comparisons),
+                deterministic.Comparisons.ToList(),
                 CorrectionModes.Normalized,
                 correctionTrace: OrderTrace(correctionTrace));
 
@@ -73,7 +56,7 @@ public sealed class CorrectionOrchestrationService
             return CreateResult(
                 preAiResult,
                 staticResult.Comparisons.Count,
-                removedComparisonCount);
+                deterministic.RemovedComparisonCount);
         }
 
         var request = CreateAiRequest(preAiResult);
@@ -90,13 +73,15 @@ public sealed class CorrectionOrchestrationService
                 return CreateFallbackResult(
                     preAiResult,
                     staticResult.Comparisons.Count,
-                    removedComparisonCount,
+                    deterministic.RemovedComparisonCount,
                     request.Comparisons.Count,
                     refinement,
                     validation.FailureReason);
             }
 
-            var finalComparisons = validation.Comparisons.ToList();
+            var finalComparisons = ApplyDeterministicProvenance(
+                validation.Comparisons,
+                preAiResult.Comparisons);
             AddAiTrace(
                 staticResult.Comparisons,
                 request,
@@ -114,7 +99,7 @@ public sealed class CorrectionOrchestrationService
             return CreateResult(
                 aiRefinedResult,
                 staticResult.Comparisons.Count,
-                removedComparisonCount,
+                deterministic.RemovedComparisonCount,
                 request.Comparisons.Count,
                 finalComparisons.Count,
                 refinement,
@@ -130,7 +115,7 @@ public sealed class CorrectionOrchestrationService
             return CreateFallbackResult(
                 preAiResult,
                 staticResult.Comparisons.Count,
-                removedComparisonCount,
+                deterministic.RemovedComparisonCount,
                 request.Comparisons.Count,
                 null,
                 null);
@@ -226,6 +211,27 @@ public sealed class CorrectionOrchestrationService
             comparisons[index].IsDeterministicallyRefined = false;
             comparisons[index].IsAiRefined = false;
         }
+    }
+
+    private static List<TextComparison> ApplyDeterministicProvenance(
+        IReadOnlyList<TextComparison> comparisons,
+        IReadOnlyList<TextComparison> preAiComparisons)
+    {
+        var deterministicSourceIndexes = preAiComparisons
+            .Where(comparison => comparison.IsDeterministicallyRefined)
+            .Select(comparison => comparison.SourceComparisonIndex)
+            .ToHashSet();
+
+        foreach (var comparison in comparisons)
+        {
+            if (deterministicSourceIndexes.Contains(
+                    comparison.SourceComparisonIndex))
+            {
+                comparison.IsDeterministicallyRefined = true;
+            }
+        }
+
+        return comparisons.ToList();
     }
 
     private static void AddAiTrace(

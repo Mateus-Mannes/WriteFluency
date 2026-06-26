@@ -234,6 +234,7 @@ public static class EvaluationReportWriter
         AppendMetric(builder, "Mean span F1", summary.MeanComparisonSpanF1.ToString("F3", CultureInfo.InvariantCulture), summary.MeanComparisonSpanF1);
         AppendMetric(builder, "Flaky cases", summary.FlakyCaseCount.ToString(CultureInfo.InvariantCulture));
         AppendMetric(builder, "Tokens", $"{summary.TotalInputTokens:N0} in / {summary.TotalOutputTokens:N0} out");
+        AppendMetric(builder, "Duration", $"{summary.TotalDurationMilliseconds:N0} ms");
         builder.AppendLine("</section>");
 
         builder.AppendLine("<section class=\"toolbar\" aria-label=\"Report filters\">");
@@ -411,7 +412,7 @@ public static class EvaluationReportWriter
             sourceResult.ExpectedRanges);
         AppendRangePair(
             builder,
-            "AI result",
+            "Actual result",
             evaluationCase,
             sourceResult.ActualRanges);
         builder.AppendLine("</div>");
@@ -420,8 +421,206 @@ public static class EvaluationReportWriter
             builder.AppendLine($"<p class=\"error-message\"><strong>Validation error:</strong> {Encode(sourceResult.Error)}</p>");
         }
 
+        AppendFinalComparisonDiagnostics(builder, sourceResult);
+        AppendTraceDiagnostics(builder, sourceResult);
+
         builder.AppendLine("</div>");
         builder.AppendLine("</details>");
+    }
+
+    private static void AppendFinalComparisonDiagnostics(
+        StringBuilder builder,
+        EvaluationSourceResult sourceResult)
+    {
+        if (sourceResult.ExpectedFinalComparisons is null
+            && sourceResult.ActualFinalComparisons is null)
+        {
+            return;
+        }
+
+        builder.AppendLine("<section class=\"diagnostic-section\">");
+        builder.AppendLine("<div class=\"diagnostic-heading\"><h4>Final output contract</h4>");
+        builder.AppendLine($"<span class=\"match-pill {(FinalComparisonsMatch(sourceResult) ? "pass" : "fail")}\">{(FinalComparisonsMatch(sourceResult) ? "Match" : "Mismatch")}</span></div>");
+        builder.AppendLine("<div class=\"diagnostic-grid two\">");
+        AppendFinalComparisonColumn(
+            builder,
+            "Expected final",
+            sourceResult.ExpectedFinalComparisons ?? []);
+        AppendFinalComparisonColumn(
+            builder,
+            "Actual final",
+            sourceResult.ActualFinalComparisons ?? []);
+        builder.AppendLine("</div>");
+        builder.AppendLine("</section>");
+    }
+
+    private static void AppendFinalComparisonColumn(
+        StringBuilder builder,
+        string title,
+        IReadOnlyList<EvaluationFinalComparison> comparisons)
+    {
+        builder.AppendLine("<section class=\"diagnostic-card\">");
+        builder.AppendLine($"<h4>{Encode(title)}</h4>");
+        if (comparisons.Count == 0)
+        {
+            builder.AppendLine("<p class=\"removed-value\">No final comparison</p>");
+        }
+        else
+        {
+            foreach (var comparison in comparisons)
+            {
+                AppendFlagRow(builder, comparison);
+                AppendTextValue(
+                    builder,
+                    "Original",
+                    comparison.OriginalText,
+                    comparison.OriginalTextRange.InitialIndex,
+                    comparison.OriginalTextRange.FinalIndex);
+                AppendTextValue(
+                    builder,
+                    "User",
+                    comparison.UserText,
+                    comparison.UserTextRange.InitialIndex,
+                    comparison.UserTextRange.FinalIndex);
+            }
+        }
+
+        builder.AppendLine("</section>");
+    }
+
+    private static void AppendFlagRow(
+        StringBuilder builder,
+        EvaluationFinalComparison comparison)
+    {
+        builder.AppendLine("<div class=\"flag-row\">");
+        builder.AppendLine($"<span>Source {comparison.SourceComparisonIndex}</span>");
+        builder.AppendLine($"<span class=\"flag {(comparison.IsDeterministicallyRefined ? "on" : "off")}\">Deterministic {comparison.IsDeterministicallyRefined}</span>");
+        builder.AppendLine($"<span class=\"flag {(comparison.IsAiRefined ? "on" : "off")}\">AI {comparison.IsAiRefined}</span>");
+        builder.AppendLine("</div>");
+    }
+
+    private static void AppendTraceDiagnostics(
+        StringBuilder builder,
+        EvaluationSourceResult sourceResult)
+    {
+        if (sourceResult.ExpectedTrace is null && sourceResult.ActualTrace is null)
+        {
+            return;
+        }
+
+        builder.AppendLine("<section class=\"diagnostic-section\">");
+        builder.AppendLine("<div class=\"diagnostic-heading\"><h4>Decision trace contract</h4>");
+        builder.AppendLine($"<span class=\"match-pill {(TraceMatches(sourceResult.ExpectedTrace, sourceResult.ActualTrace) ? "pass" : "fail")}\">{(TraceMatches(sourceResult.ExpectedTrace, sourceResult.ActualTrace) ? "Match" : "Mismatch")}</span></div>");
+        builder.AppendLine("<div class=\"diagnostic-grid two\">");
+        AppendTraceColumn(builder, "Expected trace", sourceResult.ExpectedTrace);
+        AppendTraceColumn(builder, "Actual trace", sourceResult.ActualTrace);
+        builder.AppendLine("</div>");
+        builder.AppendLine("</section>");
+    }
+
+    private static void AppendTraceColumn(
+        StringBuilder builder,
+        string title,
+        EvaluationExpectedTraceEntry? trace)
+    {
+        builder.AppendLine("<section class=\"diagnostic-card\">");
+        builder.AppendLine($"<h4>{Encode(title)}</h4>");
+        if (trace is null)
+        {
+            builder.AppendLine("<p class=\"removed-value neutral\">No trace entry</p>");
+            builder.AppendLine("</section>");
+            return;
+        }
+
+        builder.AppendLine($"<p class=\"trace-source\">Source {trace.SourceComparisonIndex}</p>");
+        AppendSnapshot(builder, "Initial", trace.Initial);
+        AppendStage(builder, "Deterministic", trace.Deterministic);
+        AppendStage(builder, "AI", trace.Ai);
+        builder.AppendLine("</section>");
+    }
+
+    private static void AppendStage(
+        StringBuilder builder,
+        string title,
+        EvaluationExpectedStageTrace? stage)
+    {
+        builder.AppendLine("<div class=\"trace-stage\">");
+        builder.AppendLine($"<h5>{Encode(title)}</h5>");
+        if (stage is null)
+        {
+            builder.AppendLine("<p class=\"empty-state\">No stage</p>");
+            builder.AppendLine("</div>");
+            return;
+        }
+
+        builder.AppendLine("<dl class=\"trace-meta\">");
+        builder.AppendLine($"<dt>Action</dt><dd>{ActionBadge(stage.Action)}</dd>");
+        builder.AppendLine($"<dt>Reason</dt><dd><code>{Encode(stage.ReasonCode)}</code></dd>");
+        if (!string.IsNullOrWhiteSpace(stage.ValidationStatus))
+        {
+            builder.AppendLine($"<dt>Validation</dt><dd><code>{Encode(stage.ValidationStatus)}</code></dd>");
+        }
+
+        if (!string.IsNullOrWhiteSpace(stage.ValidationFailureReason))
+        {
+            builder.AppendLine($"<dt>Failure</dt><dd><code>{Encode(stage.ValidationFailureReason)}</code></dd>");
+        }
+
+        builder.AppendLine("</dl>");
+        AppendSnapshots(builder, "Output", stage.Output);
+        if (stage.ProposedOutput is not null)
+        {
+            AppendSnapshots(builder, "Proposed", stage.ProposedOutput);
+        }
+
+        builder.AppendLine("</div>");
+    }
+
+    private static void AppendSnapshots(
+        StringBuilder builder,
+        string title,
+        IReadOnlyList<EvaluationComparisonSnapshot> snapshots)
+    {
+        builder.AppendLine($"<div class=\"snapshot-list\"><p>{Encode(title)}</p>");
+        if (snapshots.Count == 0)
+        {
+            builder.AppendLine("<p class=\"removed-value\">[]</p>");
+        }
+        else
+        {
+            foreach (var snapshot in snapshots)
+            {
+                AppendSnapshot(builder, string.Empty, snapshot);
+            }
+        }
+
+        builder.AppendLine("</div>");
+    }
+
+    private static void AppendSnapshot(
+        StringBuilder builder,
+        string title,
+        EvaluationComparisonSnapshot snapshot)
+    {
+        builder.AppendLine("<div class=\"snapshot-card\">");
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            builder.AppendLine($"<p>{Encode(title)}</p>");
+        }
+
+        AppendTextValue(
+            builder,
+            "Original",
+            snapshot.OriginalText,
+            snapshot.OriginalTextRange.InitialIndex,
+            snapshot.OriginalTextRange.FinalIndex);
+        AppendTextValue(
+            builder,
+            "User",
+            snapshot.UserText,
+            snapshot.UserTextRange.InitialIndex,
+            snapshot.UserTextRange.FinalIndex);
+        builder.AppendLine("</div>");
     }
 
     private static void AppendTextPair(
@@ -493,6 +692,114 @@ public static class EvaluationReportWriter
         builder.AppendLine($"<pre>{Encode(text)}</pre>");
         builder.AppendLine("</div>");
     }
+
+    private static bool FinalComparisonsMatch(
+        EvaluationSourceResult sourceResult)
+    {
+        var expected = sourceResult.ExpectedFinalComparisons ?? [];
+        var actual = sourceResult.ActualFinalComparisons ?? [];
+        if (expected.Count != actual.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < expected.Count; index++)
+        {
+            if (!FinalComparisonMatches(expected[index], actual[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool FinalComparisonMatches(
+        EvaluationFinalComparison expected,
+        EvaluationFinalComparison actual) =>
+        expected.SourceComparisonIndex == actual.SourceComparisonIndex
+        && expected.OriginalTextRange == actual.OriginalTextRange
+        && expected.OriginalText == actual.OriginalText
+        && expected.UserTextRange == actual.UserTextRange
+        && expected.UserText == actual.UserText
+        && expected.IsDeterministicallyRefined
+            == actual.IsDeterministicallyRefined
+        && expected.IsAiRefined == actual.IsAiRefined;
+
+    private static bool TraceMatches(
+        EvaluationExpectedTraceEntry? expected,
+        EvaluationExpectedTraceEntry? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return expected.SourceComparisonIndex == actual.SourceComparisonIndex
+            && SnapshotMatches(expected.Initial, actual.Initial)
+            && StageMatches(expected.Deterministic, actual.Deterministic)
+            && StageMatches(expected.Ai, actual.Ai);
+    }
+
+    private static bool StageMatches(
+        EvaluationExpectedStageTrace? expected,
+        EvaluationExpectedStageTrace? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return expected.Action == actual.Action
+            && expected.ReasonCode == actual.ReasonCode
+            && expected.ValidationStatus == actual.ValidationStatus
+            && expected.ValidationFailureReason
+                == actual.ValidationFailureReason
+            && SnapshotsMatch(expected.Output, actual.Output)
+            && SnapshotsMatchNullable(
+                expected.ProposedOutput,
+                actual.ProposedOutput);
+    }
+
+    private static bool SnapshotsMatchNullable(
+        IReadOnlyList<EvaluationComparisonSnapshot>? expected,
+        IReadOnlyList<EvaluationComparisonSnapshot>? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return SnapshotsMatch(expected, actual);
+    }
+
+    private static bool SnapshotsMatch(
+        IReadOnlyList<EvaluationComparisonSnapshot> expected,
+        IReadOnlyList<EvaluationComparisonSnapshot> actual)
+    {
+        if (expected.Count != actual.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < expected.Count; index++)
+        {
+            if (!SnapshotMatches(expected[index], actual[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool SnapshotMatches(
+        EvaluationComparisonSnapshot expected,
+        EvaluationComparisonSnapshot actual) =>
+        expected.OriginalTextRange == actual.OriginalTextRange
+        && expected.OriginalText == actual.OriginalText
+        && expected.UserTextRange == actual.UserTextRange
+        && expected.UserText == actual.UserText;
 
     private static void AppendMetric(
         StringBuilder builder,
@@ -641,6 +948,7 @@ public static class EvaluationReportWriter
         h2 { margin-bottom: 0; font-size: 22px; letter-spacing: 0; }
         h3 { margin-bottom: 2px; font-size: 16px; letter-spacing: 0; }
         h4 { margin-bottom: 10px; font-size: 13px; text-transform: uppercase; color: var(--muted); letter-spacing: 0; }
+        h5 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0; }
         .eyebrow { margin-bottom: 5px; color: #aeb9ca; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
         .subtitle { margin: 0; color: #cbd3df; }
         .run-status {
@@ -762,11 +1070,31 @@ public static class EvaluationReportWriter
         .source-body { padding: 12px; border-top: 1px solid var(--border); background: var(--surface-muted); }
         .comparison-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
         .comparison-block { padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+        .diagnostic-section { margin-top: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+        .diagnostic-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .diagnostic-heading h4 { margin: 0; }
+        .diagnostic-grid { display: grid; gap: 10px; }
+        .diagnostic-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .diagnostic-card { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); }
+        .match-pill { padding: 3px 7px; border-radius: 5px; font-size: 11px; font-weight: 800; }
+        .match-pill.pass { background: var(--green-bg); color: var(--green); }
+        .match-pill.fail { background: var(--red-bg); color: var(--red); }
+        .flag-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; color: var(--muted); font-size: 11px; font-weight: 700; }
+        .flag { padding: 2px 6px; border-radius: 4px; background: #e9edf3; color: var(--muted); }
+        .flag.on { background: #e8efff; color: #1d4ed8; }
+        .trace-source { margin: 0 0 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+        .trace-stage { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .trace-meta { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 5px 8px; margin: 0 0 10px; font-size: 12px; }
+        .trace-meta dt { color: var(--muted); font-weight: 700; }
+        .trace-meta dd { margin: 0; min-width: 0; }
+        .snapshot-list > p, .snapshot-card > p { margin: 0 0 6px; color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .snapshot-card { margin-top: 8px; padding: 8px; border: 1px dashed #cbd3df; border-radius: 5px; background: #fff; }
         .text-value + .text-value { margin-top: 10px; }
         .text-value > div { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
         code { color: #475467; font-size: 11px; }
         pre { min-height: 46px; margin: 5px 0 0; padding: 9px; overflow-wrap: anywhere; white-space: pre-wrap; border-radius: 4px; background: #f3f5f8; color: #202939; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
         .removed-value { padding: 10px; margin: 0; border-radius: 4px; background: var(--green-bg); color: var(--green); font-weight: 700; }
+        .removed-value.neutral { background: #e9edf3; color: var(--muted); }
         .error-message { margin: 10px 0 0; color: var(--red); }
         .focus-tag { padding: 2px 5px; border-radius: 4px; background: #e8efff; color: #1d4ed8; font-size: 10px; font-weight: 800; text-transform: uppercase; }
         .action { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #e9edf3; font-size: 11px; font-weight: 700; }
@@ -778,6 +1106,7 @@ public static class EvaluationReportWriter
           .metrics { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
           .toolbar { grid-template-columns: 1fr 1fr; }
           .comparison-grid { grid-template-columns: 1fr; }
+          .diagnostic-grid.two { grid-template-columns: 1fr; }
           .case-stats span:not(.status-label) { display: none; }
         }
         @media (max-width: 620px) {

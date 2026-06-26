@@ -33,14 +33,12 @@ public class OpenAiTextComparisonRefinerTests
                       "sourceComparisonIndex": 0,
                       "action": "refine",
                       "reasonCode": "word_substitution",
-                      "comparisons": [
-                        {
+                      "comparison": {
                           "originalTextStartOffset": 0,
                           "originalTextEndOffset": 2,
                           "userTextStartOffset": 0,
                           "userTextEndOffset": 2
                         }
-                      ]
                     }
                   ]
                 }
@@ -142,7 +140,7 @@ public class OpenAiTextComparisonRefinerTests
                       "sourceComparisonIndex": 0,
                       "action": "remove",
                       "reasonCode": "equivalent_transcription",
-                      "comparisons": []
+                      "comparison": null
                     }
                   ]
                 }
@@ -284,19 +282,6 @@ public class OpenAiTextComparisonRefinerTests
             AssertTagIsBalanced(systemPrompt, section);
         }
 
-        foreach (var ruleGroup in new[]
-                 {
-                     "formatting",
-                     "apostrophes-and-contractions",
-                     "regional-spelling",
-                     "abbreviations",
-                     "compounds-and-spacing",
-                     "numbers"
-                 })
-        {
-            AssertTagIsBalanced(systemPrompt, ruleGroup);
-        }
-
         var exampleGroups = Regex.Matches(
                 systemPrompt,
                 "<example-group name=\"([^\"]+)\">")
@@ -340,30 +325,26 @@ public class OpenAiTextComparisonRefinerTests
             var action = decision.GetProperty("action").GetString()!;
             actions.Add(action);
             decision.GetProperty("reasonCode").GetString().ShouldNotBeNullOrWhiteSpace();
-            var comparisons = decision.GetProperty("comparisons");
+            var comparison = decision.GetProperty("comparison");
 
             if (action is AiRefinementActions.Keep or AiRefinementActions.Remove)
             {
-                comparisons.GetArrayLength().ShouldBe(0);
+                comparison.ValueKind.ShouldBe(JsonValueKind.Null);
                 continue;
             }
 
             action.ShouldBe(AiRefinementActions.Refine);
-            comparisons.GetArrayLength().ShouldBeGreaterThan(0);
-
-            foreach (var comparison in comparisons.EnumerateArray())
-            {
-                AssertRangeIsWithinSnippet(
-                    comparison,
-                    "originalTextStartOffset",
-                    "originalTextEndOffset",
-                    originalText);
-                AssertRangeIsWithinSnippet(
-                    comparison,
-                    "userTextStartOffset",
-                    "userTextEndOffset",
-                    userText);
-            }
+            comparison.ValueKind.ShouldBe(JsonValueKind.Object);
+            AssertRangeIsWithinSnippet(
+                comparison,
+                "originalTextStartOffset",
+                "originalTextEndOffset",
+                originalText);
+            AssertRangeIsWithinSnippet(
+                comparison,
+                "userTextStartOffset",
+                "userTextEndOffset",
+                userText);
         }
 
         actions.SetEquals(
@@ -410,14 +391,12 @@ public class OpenAiTextComparisonRefinerTests
                       "sourceComparisonIndex": 3,
                       "action": "refine",
                       "reasonCode": "word_substitution",
-                      "comparisons": [
-                        {
+                      "comparison": {
                           "originalTextStartOffset": 2,
                           "originalTextEndOffset": 4,
                           "userTextStartOffset": 1,
                           "userTextEndOffset": 3
                         }
-                      ]
                     }
                   ]
                 }
@@ -511,7 +490,7 @@ public class OpenAiTextComparisonRefinerTests
             sourceComparisonIndex = index,
             action = AiRefinementActions.Remove,
             reasonCode = "equivalent_transcription",
-            comparisons = Array.Empty<object>()
+            comparison = (object?)null
         });
         var response = new ChatResponse(
             new AiChatMessage(

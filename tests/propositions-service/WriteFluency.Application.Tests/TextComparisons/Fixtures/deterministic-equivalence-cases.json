@@ -59,6 +59,7 @@
   { "caseId": "synthetic-could-have", "category": "contraction", "originalText": "could have worked", "userText": "could've worked", "expectedEquivalent": true, "futureDisposition": null },
   { "caseId": "synthetic-they-will", "category": "contraction", "originalText": "they will return", "userText": "they'll return", "expectedEquivalent": true, "futureDisposition": null },
   { "caseId": "synthetic-we-would", "category": "contraction", "originalText": "we would agree", "userText": "we'd agree", "expectedEquivalent": true, "futureDisposition": null },
+  { "caseId": "synthetic-want-to", "category": "contraction", "originalText": "want to see", "userText": "wanna see", "expectedEquivalent": true, "futureDisposition": null },
 
   { "caseId": "real-32-7", "category": "regional-spelling", "originalText": "traveling", "userText": "travelling", "expectedEquivalent": true, "futureDisposition": null },
   { "caseId": "real-35-4", "category": "regional-spelling", "originalText": "cozy", "userText": "cosy", "expectedEquivalent": true, "futureDisposition": null },

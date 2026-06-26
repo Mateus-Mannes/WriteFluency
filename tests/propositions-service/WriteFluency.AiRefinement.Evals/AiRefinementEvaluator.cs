@@ -10,13 +10,16 @@ public sealed class AiRefinementEvaluator
 
     private readonly ITextComparisonAiRefiner _refiner;
     private readonly AiRefinementOutputValidator _validator;
+    private readonly CorrectionOrchestrationService _orchestrationService;
 
     public AiRefinementEvaluator(
         ITextComparisonAiRefiner refiner,
-        AiRefinementOutputValidator validator)
+        AiRefinementOutputValidator validator,
+        CorrectionOrchestrationService orchestrationService)
     {
         _refiner = refiner;
         _validator = validator;
+        _orchestrationService = orchestrationService;
     }
 
     public async Task<EvaluationSummary> EvaluateAsync(
@@ -69,6 +72,14 @@ public sealed class AiRefinementEvaluator
         int runNumber,
         CancellationToken cancellationToken)
     {
+        if (evaluationCase.UsesOrchestrationContract)
+        {
+            return await EvaluateOrchestrationCaseAsync(
+                evaluationCase,
+                runNumber,
+                cancellationToken);
+        }
+
         var sourceComparisons = evaluationCase.GetSourceComparisons()
             .Select(source => source.ToDomain())
             .ToList();
@@ -133,6 +144,64 @@ public sealed class AiRefinementEvaluator
                 refinement.InputTokenCount,
                 refinement.OutputTokenCount,
                 validation.FailureReason,
+                expectedRanges,
+                actualRanges,
+                sourceResults);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return Failure(
+                evaluationCase,
+                runNumber,
+                exception.GetType().Name);
+        }
+    }
+
+    private async Task<EvaluationCaseResult> EvaluateOrchestrationCaseAsync(
+        EvaluationCase evaluationCase,
+        int runNumber,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _orchestrationService.CompareTextsAsync(
+                evaluationCase.OriginalText,
+                evaluationCase.UserText,
+                isPro: true,
+                cancellationToken);
+            var sourceResults = CreateOrchestrationSourceResults(
+                evaluationCase,
+                result);
+            var expectedRanges = sourceResults
+                .SelectMany(source => source.ExpectedRanges)
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
+            var actualRanges = sourceResults
+                .SelectMany(source => source.ActualRanges)
+                .OrderBy(range => range.OriginalTextInitialIndex)
+                .ThenBy(range => range.UserTextInitialIndex)
+                .ToList();
+            var isSafe = result.AiValidationFailureReason is null
+                && sourceResults.All(source => source.IsSafe);
+
+            return new EvaluationCaseResult(
+                evaluationCase.CaseId,
+                evaluationCase.Category,
+                runNumber,
+                evaluationCase.GetFocusSourceComparisonIndex(),
+                SummarizeActions(sourceResults.Select(source =>
+                    source.ExpectedAction)),
+                SummarizeActions(sourceResults.Select(source =>
+                    source.ActualAction)),
+                isSafe,
+                isSafe && sourceResults.All(source => source.IsExactMatch),
+                isSafe ? sourceResults.Average(source => source.SpanF1) : 0,
+                result.AiDurationMilliseconds ?? 0,
+                result.AiInputTokenCount,
+                result.AiOutputTokenCount,
+                sourceResults.FirstOrDefault(source => !source.IsExactMatch)?.Error
+                    ?? result.AiValidationFailureReason,
                 expectedRanges,
                 actualRanges,
                 sourceResults);
@@ -282,6 +351,249 @@ public sealed class AiRefinementEvaluator
     private static double CalculateRate(int numerator, int denominator) =>
         denominator == 0 ? 0 : (double)numerator / denominator;
 
+    private static IReadOnlyList<EvaluationSourceResult>
+        CreateOrchestrationSourceResults(
+            EvaluationCase evaluationCase,
+            CorrectionOrchestrationResult orchestrationResult)
+    {
+        var sources = evaluationCase.GetSourceComparisons()
+            .ToDictionary(source => source.SourceComparisonIndex);
+        var expectedFinalBySource =
+            (evaluationCase.ExpectedFinalComparisons ?? [])
+            .GroupBy(comparison => comparison.SourceComparisonIndex)
+            .ToDictionary(group => group.Key, group => group.ToList());
+        var actualFinalBySource = orchestrationResult.Result.Comparisons
+            .GroupBy(comparison => comparison.SourceComparisonIndex)
+            .ToDictionary(group => group.Key, group => group.ToList());
+        var expectedTraceBySource = (evaluationCase.ExpectedTrace ?? [])
+            .ToDictionary(trace => trace.SourceComparisonIndex);
+        var actualTraceBySource =
+            (orchestrationResult.Result.CorrectionTrace ?? [])
+            .ToDictionary(trace => trace.SourceComparisonIndex);
+
+        return sources
+            .OrderBy(source => source.Key)
+            .Select(source =>
+            {
+                expectedFinalBySource.TryGetValue(source.Key, out var expectedFinal);
+                actualFinalBySource.TryGetValue(source.Key, out var actualFinal);
+                expectedTraceBySource.TryGetValue(source.Key, out var expectedTrace);
+                actualTraceBySource.TryGetValue(source.Key, out var actualTrace);
+
+                var expectedRanges = (expectedFinal ?? [])
+                    .Select(comparison => comparison.ToRange())
+                    .OrderBy(range => range.OriginalTextInitialIndex)
+                    .ThenBy(range => range.UserTextInitialIndex)
+                    .ToList();
+                var actualRanges = (actualFinal ?? [])
+                    .Select(ToRange)
+                    .OrderBy(range => range.OriginalTextInitialIndex)
+                    .ThenBy(range => range.UserTextInitialIndex)
+                    .ToList();
+                var finalMatches = ExpectedFinalMatches(
+                    expectedFinal ?? [],
+                    actualFinal ?? []);
+                var traceMatches = ExpectedTraceMatches(
+                    expectedTrace,
+                    actualTrace);
+                var isExact = finalMatches && traceMatches;
+
+                return new EvaluationSourceResult(
+                    source.Key,
+                    DetermineAction(expectedRanges, source.Value),
+                    DetermineAction(actualRanges, source.Value),
+                    IsSafe: true,
+                    isExact,
+                    CalculateSpanF1(expectedRanges, actualRanges),
+                    Error: isExact
+                        ? null
+                        : !finalMatches
+                            ? "final_comparison_mismatch"
+                            : "trace_mismatch",
+                    expectedRanges,
+                    actualRanges,
+                    (expectedFinal ?? [])
+                        .Select(comparison => comparison.ToFinalComparison())
+                        .ToList(),
+                    (actualFinal ?? [])
+                        .Select(ToFinalComparison)
+                        .ToList(),
+                    expectedTrace,
+                    actualTrace is null ? null : ToExpectedTraceEntry(actualTrace));
+            })
+            .ToList();
+    }
+
+    private static bool ExpectedFinalMatches(
+        IReadOnlyList<EvaluationExpectedFinalComparison> expected,
+        IReadOnlyList<TextComparison> actual)
+    {
+        if (expected.Count != actual.Count)
+        {
+            return false;
+        }
+
+        var orderedExpected = expected
+            .OrderBy(comparison => comparison.OriginalTextRange.InitialIndex)
+            .ThenBy(comparison => comparison.UserTextRange.InitialIndex)
+            .ToList();
+        var orderedActual = actual
+            .OrderBy(comparison => comparison.OriginalTextRange.InitialIndex)
+            .ThenBy(comparison => comparison.UserTextRange.InitialIndex)
+            .ToList();
+
+        for (var index = 0; index < orderedExpected.Count; index++)
+        {
+            var expectedComparison = orderedExpected[index];
+            var actualComparison = orderedActual[index];
+
+            if (expectedComparison.SourceComparisonIndex
+                    != actualComparison.SourceComparisonIndex
+                || expectedComparison.OriginalTextRange.ToDomain()
+                    != actualComparison.OriginalTextRange
+                || expectedComparison.OriginalText != actualComparison.OriginalText
+                || expectedComparison.UserTextRange.ToDomain()
+                    != actualComparison.UserTextRange
+                || expectedComparison.UserText != actualComparison.UserText
+                || expectedComparison.IsDeterministicallyRefined
+                    != actualComparison.IsDeterministicallyRefined
+                || expectedComparison.IsAiRefined
+                    != actualComparison.IsAiRefined)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool ExpectedTraceMatches(
+        EvaluationExpectedTraceEntry? expected,
+        CorrectionTraceEntry? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return expected.SourceComparisonIndex == actual.SourceComparisonIndex
+            && SnapshotMatches(expected.Initial, actual.Initial)
+            && StageMatches(expected.Deterministic, actual.Deterministic)
+            && StageMatches(expected.Ai, actual.Ai);
+    }
+
+    private static bool StageMatches(
+        EvaluationExpectedStageTrace? expected,
+        CorrectionStageTrace? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return expected.Action == actual.Action
+            && expected.ReasonCode == actual.ReasonCode
+            && expected.ValidationStatus == actual.ValidationStatus
+            && expected.ValidationFailureReason
+                == actual.ValidationFailureReason
+            && SnapshotsMatch(expected.Output, actual.Output)
+            && SnapshotsMatchNullable(
+                expected.ProposedOutput,
+                actual.ProposedOutput);
+    }
+
+    private static bool SnapshotsMatchNullable(
+        IReadOnlyList<EvaluationComparisonSnapshot>? expected,
+        IReadOnlyList<ComparisonSnapshot>? actual)
+    {
+        if (expected is null || actual is null)
+        {
+            return expected is null && actual is null;
+        }
+
+        return SnapshotsMatch(expected, actual);
+    }
+
+    private static bool SnapshotsMatch(
+        IReadOnlyList<EvaluationComparisonSnapshot> expected,
+        IReadOnlyList<ComparisonSnapshot> actual)
+    {
+        if (expected.Count != actual.Count)
+        {
+            return false;
+        }
+
+        for (var index = 0; index < expected.Count; index++)
+        {
+            if (!SnapshotMatches(expected[index], actual[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool SnapshotMatches(
+        EvaluationComparisonSnapshot expected,
+        ComparisonSnapshot actual) =>
+        expected.OriginalTextRange.ToDomain() == actual.OriginalTextRange
+        && expected.OriginalText == actual.OriginalText
+        && expected.UserTextRange.ToDomain() == actual.UserTextRange
+        && expected.UserText == actual.UserText;
+
+    private static EvaluationFinalComparison ToFinalComparison(
+        TextComparison comparison) =>
+        new()
+        {
+            SourceComparisonIndex = comparison.SourceComparisonIndex,
+            OriginalTextRange = ToEvaluationRange(comparison.OriginalTextRange),
+            OriginalText = comparison.OriginalText ?? string.Empty,
+            UserTextRange = ToEvaluationRange(comparison.UserTextRange),
+            UserText = comparison.UserText ?? string.Empty,
+            IsDeterministicallyRefined = comparison.IsDeterministicallyRefined,
+            IsAiRefined = comparison.IsAiRefined
+        };
+
+    private static EvaluationExpectedTraceEntry ToExpectedTraceEntry(
+        CorrectionTraceEntry trace) =>
+        new()
+        {
+            SourceComparisonIndex = trace.SourceComparisonIndex,
+            Initial = ToEvaluationSnapshot(trace.Initial),
+            Deterministic = ToEvaluationStage(trace.Deterministic),
+            Ai = ToEvaluationStage(trace.Ai)
+        };
+
+    private static EvaluationExpectedStageTrace? ToEvaluationStage(
+        CorrectionStageTrace? trace) =>
+        trace is null
+            ? null
+            : new EvaluationExpectedStageTrace
+            {
+                Action = trace.Action,
+                ReasonCode = trace.ReasonCode,
+                Output = trace.Output.Select(ToEvaluationSnapshot).ToList(),
+                ValidationStatus = trace.ValidationStatus,
+                ProposedOutput = trace.ProposedOutput?
+                    .Select(ToEvaluationSnapshot)
+                    .ToList(),
+                ValidationFailureReason = trace.ValidationFailureReason
+            };
+
+    private static EvaluationComparisonSnapshot ToEvaluationSnapshot(
+        ComparisonSnapshot snapshot) =>
+        new()
+        {
+            OriginalTextRange = ToEvaluationRange(snapshot.OriginalTextRange),
+            OriginalText = snapshot.OriginalText,
+            UserTextRange = ToEvaluationRange(snapshot.UserTextRange),
+            UserText = snapshot.UserText
+        };
+
+    private static EvaluationTextRange ToEvaluationRange(TextRange range) =>
+        new(range.InitialIndex, range.FinalIndex);
+
     private static IReadOnlyList<EvaluationSourceResult> CreateSourceResults(
         IReadOnlyList<AiRefinementSourceComparison> sources,
         IReadOnlyList<EvaluationExpectedDecision> expectedDecisions,
@@ -344,6 +656,11 @@ public sealed class AiRefinementEvaluator
         var values = actions.Distinct(StringComparer.Ordinal).ToList();
         return values.Count == 1 ? values[0] : "mixed";
     }
+
+    private static string DetermineAction(
+        IReadOnlyList<AiRefinedComparison> ranges,
+        EvaluationSourceComparison source) =>
+        DetermineAction(ranges, source.ToDomain());
 
     private static string DetermineAction(
         IReadOnlyList<AiRefinedComparison> ranges,

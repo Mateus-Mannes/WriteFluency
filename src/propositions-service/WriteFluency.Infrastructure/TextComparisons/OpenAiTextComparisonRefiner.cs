@@ -150,12 +150,15 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
             decision.SourceComparisonIndex,
             decision.Action ?? string.Empty,
             decision.ReasonCode ?? string.Empty,
-            (decision.Comparisons ?? [])
-                .Select(comparison => ToAbsoluteComparison(
+            decision.Comparison is null
+                ? []
+                :
+                [
+                    ToAbsoluteComparison(
                     request,
                     decision.SourceComparisonIndex,
-                    comparison))
-                .ToList());
+                    decision.Comparison)
+                ]);
 
     private static AiRefinedComparison ToAbsoluteComparison(
         AiRefinementRequest request,
@@ -204,7 +207,7 @@ public sealed class OpenAiTextComparisonRefiner : ITextComparisonAiRefiner
         public required int SourceComparisonIndex { get; init; }
         public string? Action { get; init; }
         public string? ReasonCode { get; init; }
-        public List<StructuredRefinedComparison>? Comparisons { get; init; }
+        public StructuredRefinedComparison? Comparison { get; init; }
     }
 
     public sealed class StructuredRefinedComparison

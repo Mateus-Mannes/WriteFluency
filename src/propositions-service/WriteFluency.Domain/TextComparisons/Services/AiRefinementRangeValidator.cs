@@ -3,8 +3,6 @@ namespace WriteFluency.TextComparisons;
 internal sealed class AiRefinementRangeValidator
 {
     private readonly AiRefinementCandidateValidator _candidateValidator = new();
-    private readonly AiRefinementRangeCanonicalizer _canonicalizer = new();
-    private readonly AiRefinementRangeShapeNormalizer _shapeNormalizer = new();
 
     public AiRefinementValidationResult Validate(
         AiRefinementRequest request,
@@ -82,88 +80,29 @@ internal sealed class AiRefinementRangeValidator
         AiRefinementSourceComparison source,
         IReadOnlyList<AiRefinedComparison> candidates)
     {
-        if (_canonicalizer.HasCrossingRanges(candidates))
+        if (candidates.Count != 1)
         {
             return SourceValidationResult.Failure(
-                AiRefinementValidationErrors.CrossingRanges);
+                AiRefinementValidationErrors.InvalidActionRanges);
         }
 
-        var entries = new List<ValidatedEntry>();
-        var ignoredEquivalentCandidateCount = 0;
-
-        foreach (var candidate in _canonicalizer.MergeAdjacent(
-                     request,
-                     candidates))
+        var result = _candidateValidator.Validate(
+            request,
+            source,
+            candidates[0]);
+        if (!result.IsValid)
         {
-            var result = _candidateValidator.Validate(
-                request,
-                source,
-                candidate);
-            if (result.IsValid)
-            {
-                var entry = CreateValidatedEntry(request, result.Range!);
-                if (entry is null)
-                {
-                    return SourceValidationResult.Failure(
-                        AiRefinementValidationErrors.UnsafeTextSlice);
-                }
-
-                entries.Add(entry);
-                continue;
-            }
-
-            if (result.FailureReason
-                == AiRefinementValidationErrors.IdenticalSelectedText)
-            {
-                ignoredEquivalentCandidateCount++;
-                continue;
-            }
-
             return SourceValidationResult.Failure(result.FailureReason!);
         }
 
-        if (entries.Count == 0 && ignoredEquivalentCandidateCount > 0)
+        var entry = CreateValidatedEntry(request, result.Range!);
+        if (entry is null)
         {
             return SourceValidationResult.Failure(
-                AiRefinementValidationErrors.IdenticalSelectedText);
+                AiRefinementValidationErrors.UnsafeTextSlice);
         }
 
-        return SourceValidationResult.Success(
-            CanonicalizeEntries(request, entries));
-    }
-
-    private IReadOnlyList<ValidatedEntry> CanonicalizeEntries(
-        AiRefinementRequest request,
-        IReadOnlyList<ValidatedEntry> entries)
-    {
-        if (entries.Count == 0)
-        {
-            return entries;
-        }
-
-        var canonical = new List<ValidatedEntry>();
-        foreach (var range in _shapeNormalizer.Normalize(
-                     request,
-                     entries.Select(entry => entry.Range).ToList()))
-        {
-            var entry = CreateValidatedEntry(
-                request,
-                range.SourceComparisonIndex,
-                new TextRange(
-                    range.OriginalTextInitialIndex,
-                    range.OriginalTextFinalIndex),
-                new TextRange(
-                    range.UserTextInitialIndex,
-                    range.UserTextFinalIndex));
-            if (entry is null)
-            {
-                return entries;
-            }
-
-            canonical.Add(entry);
-        }
-
-        return canonical;
+        return SourceValidationResult.Success([entry]);
     }
 
     private static ValidatedEntry? CreateValidatedEntry(

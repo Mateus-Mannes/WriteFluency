@@ -87,7 +87,7 @@ public class CorrectionOrchestrationServiceTests
         result.AiAttempted.ShouldBeTrue();
         result.Comparisons.Count.ShouldBe(1);
         result.Comparisons[0].SourceComparisonIndex.ShouldBe(0);
-        result.Comparisons[0].IsDeterministicallyRefined.ShouldBeFalse();
+        result.Comparisons[0].IsDeterministicallyRefined.ShouldBeTrue();
         result.Comparisons[0].OriginalText.ShouldNotBeNull();
         result.Comparisons[0].UserText.ShouldNotBeNull();
         result.Comparisons[0].OriginalText!.ShouldContain("may be");
@@ -126,7 +126,7 @@ public class CorrectionOrchestrationServiceTests
         result.AccuracyPercentage.ShouldBe(1);
         result.CorrectionTrace.ShouldNotBeNull();
         var trace = result.CorrectionTrace.Single();
-        trace.Deterministic.ShouldBeNull();
+        trace.Deterministic.ShouldNotBeNull();
         trace.Ai.ShouldNotBeNull();
         trace.Ai.Action.ShouldBe(AiRefinementActions.Remove);
         trace.Ai.Output.ShouldBeEmpty();
@@ -237,6 +237,65 @@ public class CorrectionOrchestrationServiceTests
     }
 
     [Fact]
+    public async Task CompareTextsAsync_WhenDeterministicRefinerShrinksComparison_ShouldSendShrunkSourceToAi()
+    {
+        var aiRefiner = CreateAiRefiner();
+        aiRefiner
+            .RefineAsync(Arg.Any<AiRefinementRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var request = call.Arg<AiRefinementRequest>();
+                var source = request.Comparisons.Single();
+                source.OriginalText.ShouldBe("in");
+                source.UserText.ShouldBe("and");
+
+                return CreateRefinement(
+                [
+                    new AiRefinementDecision(
+                        source.SourceComparisonIndex,
+                        AiRefinementActions.Keep,
+                        "source_range_already_minimal",
+                        [])
+                ]);
+            });
+
+        var service = CreateService(aiRefiner);
+        var result = (await service.CompareTextsAsync(
+            "in energy, healthcare, and",
+            "and energy, health care, and",
+            isPro: true,
+            CancellationToken.None)).Result;
+
+        result.CorrectionMode.ShouldBe(CorrectionModes.AiRefined);
+        result.Comparisons.Single().OriginalText.ShouldBe("in");
+        result.Comparisons.Single().UserText.ShouldBe("and");
+        result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
+        result.Comparisons.Single().IsAiRefined.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_WhenAiFails_ShouldReturnDeterministicPreAiResult()
+    {
+        var aiRefiner = CreateAiRefiner();
+        aiRefiner
+            .RefineAsync(Arg.Any<AiRefinementRequest>(), Arg.Any<CancellationToken>())
+            .Returns<Task<AiRefinementResult>>(_ => throw new InvalidOperationException("AI failed"));
+
+        var service = CreateService(aiRefiner);
+        var result = (await service.CompareTextsAsync(
+            "in energy, healthcare, and",
+            "and energy, health care, and",
+            isPro: true,
+            CancellationToken.None)).Result;
+
+        result.CorrectionMode.ShouldBe(CorrectionModes.Fallback);
+        result.Comparisons.Single().OriginalText.ShouldBe("in");
+        result.Comparisons.Single().UserText.ShouldBe("and");
+        result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
+        result.Comparisons.Single().IsAiRefined.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task CompareTextsAsync_WhenRequestIsCanceled_ShouldPropagateCancellation()
     {
         using var cancellation = new CancellationTokenSource();
@@ -292,10 +351,14 @@ public class CorrectionOrchestrationServiceTests
     {
         return new CorrectionOrchestrationService(
             CreateTextComparisonService(),
-            new DeterministicTextEquivalenceService(new EnglishNumberNormalizer()),
+            CreateDeterministicRefiner(),
             aiRefiner,
             new AiRefinementOutputValidator());
     }
+
+    private static DeterministicTextComparisonRefiner CreateDeterministicRefiner() =>
+        new(new DeterministicTextEquivalenceService(
+            new EnglishNumberNormalizer()));
 
     private static TextComparisonService CreateTextComparisonService()
     {

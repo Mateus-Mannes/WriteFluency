@@ -84,6 +84,107 @@ public static class EvaluationFixtureValidator
                     $"Evaluation case '{evaluationCase.CaseId}' contains an expected range for the wrong source.");
             }
         }
+
+        ValidateOrchestrationContract(evaluationCase);
+    }
+
+    private static void ValidateOrchestrationContract(
+        EvaluationCase evaluationCase)
+    {
+        if (!evaluationCase.UsesOrchestrationContract)
+        {
+            return;
+        }
+
+        if (evaluationCase.ExpectedFinalComparisons is null)
+        {
+            throw new InvalidOperationException(
+                $"Evaluation case '{evaluationCase.CaseId}' must define expected final comparisons.");
+        }
+
+        if (evaluationCase.ExpectedTrace is null)
+        {
+            throw new InvalidOperationException(
+                $"Evaluation case '{evaluationCase.CaseId}' must define expected trace.");
+        }
+
+        foreach (var comparison in evaluationCase.ExpectedFinalComparisons)
+        {
+            ValidateSnapshotText(
+                evaluationCase,
+                comparison.OriginalTextRange,
+                comparison.OriginalText,
+                comparison.UserTextRange,
+                comparison.UserText);
+        }
+
+        foreach (var trace in evaluationCase.ExpectedTrace)
+        {
+            ValidateSnapshot(evaluationCase, trace.Initial);
+
+            if (trace.Deterministic is not null)
+            {
+                ValidateStage(evaluationCase, trace.Deterministic);
+            }
+
+            if (trace.Ai is not null)
+            {
+                ValidateStage(evaluationCase, trace.Ai);
+            }
+        }
+    }
+
+    private static void ValidateStage(
+        EvaluationCase evaluationCase,
+        EvaluationExpectedStageTrace stage)
+    {
+        foreach (var output in stage.Output)
+        {
+            ValidateSnapshot(evaluationCase, output);
+        }
+
+        if (stage.ProposedOutput is null)
+        {
+            return;
+        }
+
+        foreach (var output in stage.ProposedOutput)
+        {
+            ValidateSnapshot(evaluationCase, output);
+        }
+    }
+
+    private static void ValidateSnapshot(
+        EvaluationCase evaluationCase,
+        EvaluationComparisonSnapshot snapshot) =>
+        ValidateSnapshotText(
+            evaluationCase,
+            snapshot.OriginalTextRange,
+            snapshot.OriginalText,
+            snapshot.UserTextRange,
+            snapshot.UserText);
+
+    private static void ValidateSnapshotText(
+        EvaluationCase evaluationCase,
+        EvaluationTextRange originalRange,
+        string originalText,
+        EvaluationTextRange userRange,
+        string userText)
+    {
+        var originalSnippet = Slice(
+            evaluationCase.OriginalText,
+            originalRange,
+            evaluationCase.CaseId);
+        var userSnippet = Slice(
+            evaluationCase.UserText,
+            userRange,
+            evaluationCase.CaseId);
+
+        if (originalSnippet != originalText || userSnippet != userText)
+        {
+            throw new InvalidOperationException(
+                $"Evaluation case '{evaluationCase.CaseId}' contains expected trace or final snippets that do not match their ranges.");
+        }
     }
 
     private static string Slice(

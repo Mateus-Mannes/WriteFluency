@@ -66,6 +66,7 @@ builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<EnglishNumberNormalizer>();
 builder.Services.AddTransient<DeterministicTextEquivalenceService>();
+builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
 builder.Services.AddTransient<AiRefinementOutputValidator>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();

@@ -150,6 +150,28 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
+    public void ValidateDecisions_WhenRefinementReturnsMultipleRanges_ShouldRejectSource()
+    {
+        var request = CreateRequest();
+
+        var result = _validator.ValidateDecisions(
+            request,
+            [
+                new AiRefinementDecision(
+                    0,
+                    AiRefinementActions.Refine,
+                    "split_genuine_differences",
+                    [
+                        new AiRefinedComparison(0, 2, 4, 2, 4),
+                        new AiRefinedComparison(0, 12, 14, 12, 14)
+                    ])
+            ]);
+
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
+    }
+
+    [Fact]
     public void Validate_WhenOutputIsEmpty_ShouldRemoveAllComparisons()
     {
         var result = _validator.Validate(CreateRequest(), []);
@@ -180,7 +202,7 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenOneSourceIsSplit_ShouldReturnOrderedComparisons()
+    public void Validate_WhenOneSourceReturnsMultipleRanges_ShouldRejectSource()
     {
         var request = CreateRequest();
 
@@ -191,10 +213,8 @@ public class AiRefinementOutputValidatorTests
                 new AiRefinedComparison(0, 2, 4, 2, 4)
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.Comparisons.Count.ShouldBe(2);
-        result.Comparisons[0].OriginalText.ShouldBe("cat");
-        result.Comparisons[1].OriginalText.ShouldBe("dog");
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
@@ -222,7 +242,7 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenOneCandidateInASplitSourceFails_ShouldRestoreThatWholeSource()
+    public void Validate_WhenOneSourceReturnsMultipleRangesWithAnotherValidSource_ShouldRestoreThatWholeSource()
     {
         var request = CreateRequestWithSeparateSources();
 
@@ -236,6 +256,7 @@ public class AiRefinementOutputValidatorTests
 
         result.IsValid.ShouldBeTrue();
         result.RejectedSourceComparisonCount.ShouldBe(1);
+        result.RejectedSources.Single().Reason.ShouldBe("invalid_action_ranges");
         result.Comparisons.Count.ShouldBe(2);
         result.Comparisons.Count(comparison => comparison.OriginalText == "dog").ShouldBe(1);
         result.NormalizedRanges.Count(range => range.SourceComparisonIndex == 1).ShouldBe(1);
@@ -927,7 +948,7 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenAdjacentErrorsAreSplit_ShouldMergeAndTrimThem()
+    public void Validate_WhenAdjacentErrorsAreReturnedAsMultipleRanges_ShouldRejectSource()
     {
         var request = CreateRetirementRequest();
 
@@ -938,13 +959,12 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, "of their", "their")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.Single().ShouldBe(
-            CreateRange(request, "advantage of", "advantages"));
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenThreeAdjacentErrorsAreSplit_ShouldMergeAllRanges()
+    public void Validate_WhenThreeAdjacentErrorsAreReturnedAsMultipleRanges_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "bad old road",
@@ -958,13 +978,12 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, 0, "road", "roads")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.Single().ShouldBe(
-            CreateRange(request, 0, "bad old road", "sad new roads"));
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenErrorsAreSeparatedByMatchingWord_ShouldNotMerge()
+    public void Validate_WhenErrorsAreSeparatedByMatchingWordButReturnedAsMultipleRanges_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "cat and dog",
@@ -977,12 +996,12 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, 0, "dog", "dug")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.Count.ShouldBe(2);
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenBroadRangeHasReliableFunctionWordAnchor_ShouldSplit()
+    public void Validate_WhenBroadRangeHasReliableFunctionWordAnchor_ShouldKeepSingleRange()
     {
         var request = CreateSingleSourceRequest(
             "her heritage from Hawaii",
@@ -999,11 +1018,12 @@ public class AiRefinementOutputValidatorTests
             ]);
 
         result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "her heritage", "a hair teacher"),
-                CreateRange(request, 0, "Hawaii", "a while")
-            ]);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(
+                request,
+                0,
+                "her heritage from Hawaii",
+                "a hair teacher from a while"));
     }
 
     [Fact]
@@ -1025,17 +1045,11 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenAmbiguousPhraseIsOverSplit_ShouldMergeToBroadRange()
+    public void Validate_WhenAmbiguousPhraseIsOverSplit_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "art shows a side of her",
             "are a chose aside for");
-        var broadRange = CreateRange(
-            request,
-            0,
-            "art shows a side of her",
-            "are a chose aside for");
-
         var result = _validator.Validate(
             request,
             [
@@ -1044,12 +1058,12 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, 0, "side of her", "aside for")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.Single().ShouldBe(broadRange);
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenSplitBoundariesIncludeReliableAnchor_ShouldCanonicalize()
+    public void Validate_WhenSplitBoundariesIncludeReliableAnchor_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "her heritage from Hawaii and",
@@ -1070,16 +1084,12 @@ public class AiRefinementOutputValidatorTests
                     "a while")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "her heritage", "a hair teacher"),
-                CreateRange(request, 0, "Hawaii", "a while")
-            ]);
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenBroadRangeHasSimpleParallelFunctionWordAnchor_ShouldSplit()
+    public void Validate_WhenBroadRangeHasSimpleParallelFunctionWordAnchor_ShouldKeepSingleRange()
     {
         var request = CreateSingleSourceRequest(
             "cat and dog",
@@ -1090,15 +1100,12 @@ public class AiRefinementOutputValidatorTests
             [CreateRange(request, 0, "cat and dog", "cot and dug")]);
 
         result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "cat", "cot"),
-                CreateRange(request, 0, "dog", "dug")
-            ]);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "cat and dog", "cot and dug"));
     }
 
     [Fact]
-    public void Validate_WhenBroadRangeHasUniqueContentWordAnchor_ShouldSplit()
+    public void Validate_WhenBroadRangeHasUniqueContentWordAnchor_ShouldKeepSingleRange()
     {
         var request = CreateSingleSourceRequest(
             "cat near dog",
@@ -1109,15 +1116,12 @@ public class AiRefinementOutputValidatorTests
             [CreateRange(request, 0, "cat near dog", "cot near dug")]);
 
         result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "cat", "cot"),
-                CreateRange(request, 0, "dog", "dug")
-            ]);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, "cat near dog", "cot near dug"));
     }
 
     [Fact]
-    public void Validate_WhenBroadRangeHasUniqueMultiWordAnchor_ShouldSplit()
+    public void Validate_WhenBroadRangeHasUniqueMultiWordAnchor_ShouldKeepSingleRange()
     {
         var request = CreateSingleSourceRequest(
             "cat near the house dog",
@@ -1134,11 +1138,12 @@ public class AiRefinementOutputValidatorTests
             ]);
 
         result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "cat", "cot"),
-                CreateRange(request, 0, "dog", "dug")
-            ]);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(
+                request,
+                0,
+                "cat near the house dog",
+                "cot near the house dug"));
     }
 
     [Fact]
@@ -1165,7 +1170,7 @@ public class AiRefinementOutputValidatorTests
     [InlineData("in")]
     [InlineData("of")]
     [InlineData("the")]
-    public void Validate_WhenShortParallelPhraseUsesFunctionWordAnchor_ShouldSplit(
+    public void Validate_WhenShortParallelPhraseUsesFunctionWordAnchor_ShouldKeepSingleRange(
         string anchor)
     {
         var originalText = $"cat {anchor} dog";
@@ -1177,11 +1182,8 @@ public class AiRefinementOutputValidatorTests
             [CreateRange(request, 0, originalText, userText)]);
 
         result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-            [
-                CreateRange(request, 0, "cat", "cot"),
-                CreateRange(request, 0, "dog", "dug")
-            ]);
+        result.NormalizedRanges.Single().ShouldBe(
+            CreateRange(request, 0, originalText, userText));
     }
 
     [Fact]
@@ -1224,7 +1226,7 @@ public class AiRefinementOutputValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenRangesOverlapMonotonically_ShouldMergeTheirUnion()
+    public void Validate_WhenRangesOverlapMonotonically_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "bad road",
@@ -1237,9 +1239,8 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, 0, "road", "roads")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.Single().ShouldBe(
-            CreateRange(request, 0, "bad road", "sad roads"));
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
@@ -1257,11 +1258,11 @@ public class AiRefinementOutputValidatorTests
             ]);
 
         result.IsValid.ShouldBeFalse();
-        result.FailureReason.ShouldBe("crossing_ranges");
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenSplitContainsPunctuationDifference_ShouldPreserveIt()
+    public void Validate_WhenMultipleRangesIncludePunctuationDifference_ShouldRejectSource()
     {
         var request = CreateRetirementRequest();
 
@@ -1272,16 +1273,12 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, "employer’s", "employers")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.NormalizedRanges.ShouldBe(
-        [
-            CreateRange(request, "advantage of", "advantages"),
-            CreateRange(request, "employer’s", "employers")
-        ]);
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]
-    public void Validate_WhenOneSplitRangeIsIdentical_ShouldKeepOtherValidRange()
+    public void Validate_WhenMultipleRangesIncludeIdenticalRange_ShouldRejectSource()
     {
         var request = CreateSingleSourceRequest(
             "cat and sun",
@@ -1294,10 +1291,8 @@ public class AiRefinementOutputValidatorTests
                 CreateRange(request, 0, "sun", "sun")
             ]);
 
-        result.IsValid.ShouldBeTrue();
-        result.RejectedSourceComparisonCount.ShouldBe(0);
-        result.NormalizedRanges.Single().ShouldBe(
-            CreateRange(request, 0, "cat", "cot"));
+        result.IsValid.ShouldBeFalse();
+        result.FailureReason.ShouldBe("invalid_action_ranges");
     }
 
     [Fact]

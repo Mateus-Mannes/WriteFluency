@@ -15,14 +15,24 @@ public sealed class EvaluationCase
     public List<AiRefinedComparison>? ExpectedRanges { get; init; }
     public List<EvaluationSourceComparison>? SourceComparisons { get; init; }
     public List<EvaluationExpectedDecision>? ExpectedDecisions { get; init; }
+    public List<EvaluationExpectedFinalComparison>? ExpectedFinalComparisons { get; init; }
+    public List<EvaluationExpectedTraceEntry>? ExpectedTrace { get; init; }
     public int? FocusSourceComparisonIndex { get; init; }
+
+    public bool UsesOrchestrationContract =>
+        ExpectedFinalComparisons is not null || ExpectedTrace is not null;
 
     public IReadOnlyList<EvaluationSourceComparison> GetSourceComparisons() =>
         SourceComparisons is { Count: > 0 }
             ? SourceComparisons
             : SourceComparison is not null
                 ? [SourceComparison]
-                : [];
+                : ExpectedTrace is { Count: > 0 }
+                    ? ExpectedTrace
+                        .Select(trace => trace.Initial.ToSourceComparison(
+                            trace.SourceComparisonIndex))
+                        .ToList()
+                    : [];
 
     public IReadOnlyList<EvaluationExpectedDecision> GetExpectedDecisions() =>
         ExpectedDecisions is { Count: > 0 }
@@ -37,12 +47,68 @@ public sealed class EvaluationCase
                         ExpectedRanges = ExpectedRanges ?? []
                     }
                 ]
-                : [];
+                : ExpectedFinalComparisons is not null
+                    ? CreateExpectedDecisionsFromFinalComparisons()
+                    : [];
 
     public int GetFocusSourceComparisonIndex() =>
         FocusSourceComparisonIndex
         ?? SourceComparison?.SourceComparisonIndex
         ?? GetSourceComparisons().First().SourceComparisonIndex;
+
+    private IReadOnlyList<EvaluationExpectedDecision>
+        CreateExpectedDecisionsFromFinalComparisons()
+    {
+        var sources = GetSourceComparisons()
+            .ToDictionary(source => source.SourceComparisonIndex);
+        var finalBySource = (ExpectedFinalComparisons ?? [])
+            .GroupBy(comparison => comparison.SourceComparisonIndex)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        return sources
+            .Select(source =>
+            {
+                finalBySource.TryGetValue(source.Key, out var final);
+                var expectedRanges = final?
+                    .Select(comparison => comparison.ToRange())
+                    .OrderBy(range => range.OriginalTextInitialIndex)
+                    .ThenBy(range => range.UserTextInitialIndex)
+                    .ToList()
+                    ?? [];
+
+                return new EvaluationExpectedDecision
+                {
+                    SourceComparisonIndex = source.Key,
+                    ExpectedAction = DetermineAction(expectedRanges, source.Value),
+                    ExpectedRanges = expectedRanges
+                };
+            })
+            .OrderBy(decision => decision.SourceComparisonIndex)
+            .ToList();
+    }
+
+    private static string DetermineAction(
+        IReadOnlyList<AiRefinedComparison> ranges,
+        EvaluationSourceComparison source)
+    {
+        if (ranges.Count == 0)
+        {
+            return AiRefinementActions.Remove;
+        }
+
+        if (ranges.Count > 1)
+        {
+            return "split";
+        }
+
+        var range = ranges[0];
+        return range.OriginalTextInitialIndex == source.OriginalTextRange.InitialIndex
+            && range.OriginalTextFinalIndex == source.OriginalTextRange.FinalIndex
+            && range.UserTextInitialIndex == source.UserTextRange.InitialIndex
+            && range.UserTextFinalIndex == source.UserTextRange.FinalIndex
+                ? AiRefinementActions.Keep
+                : "shrink";
+    }
 }
 
 public sealed class EvaluationExpectedDecision
@@ -67,6 +133,85 @@ public sealed class EvaluationSourceComparison
             OriginalText,
             UserTextRange.ToDomain(),
             UserText);
+}
+
+public sealed class EvaluationExpectedFinalComparison
+{
+    public required int SourceComparisonIndex { get; init; }
+    public required EvaluationTextRange OriginalTextRange { get; init; }
+    public required string OriginalText { get; init; }
+    public required EvaluationTextRange UserTextRange { get; init; }
+    public required string UserText { get; init; }
+    public required bool IsDeterministicallyRefined { get; init; }
+    public required bool IsAiRefined { get; init; }
+
+    public AiRefinedComparison ToRange() =>
+        new(
+            SourceComparisonIndex,
+            OriginalTextRange.InitialIndex,
+            OriginalTextRange.FinalIndex,
+            UserTextRange.InitialIndex,
+            UserTextRange.FinalIndex);
+
+    public EvaluationFinalComparison ToFinalComparison() =>
+        new()
+        {
+            SourceComparisonIndex = SourceComparisonIndex,
+            OriginalTextRange = OriginalTextRange,
+            OriginalText = OriginalText,
+            UserTextRange = UserTextRange,
+            UserText = UserText,
+            IsDeterministicallyRefined = IsDeterministicallyRefined,
+            IsAiRefined = IsAiRefined
+        };
+}
+
+public sealed class EvaluationFinalComparison
+{
+    public required int SourceComparisonIndex { get; init; }
+    public required EvaluationTextRange OriginalTextRange { get; init; }
+    public required string OriginalText { get; init; }
+    public required EvaluationTextRange UserTextRange { get; init; }
+    public required string UserText { get; init; }
+    public required bool IsDeterministicallyRefined { get; init; }
+    public required bool IsAiRefined { get; init; }
+}
+
+public sealed class EvaluationExpectedTraceEntry
+{
+    public required int SourceComparisonIndex { get; init; }
+    public required EvaluationComparisonSnapshot Initial { get; init; }
+    public EvaluationExpectedStageTrace? Deterministic { get; init; }
+    public EvaluationExpectedStageTrace? Ai { get; init; }
+}
+
+public sealed class EvaluationExpectedStageTrace
+{
+    public required string Action { get; init; }
+    public required string ReasonCode { get; init; }
+    public required List<EvaluationComparisonSnapshot> Output { get; init; }
+    public string? ValidationStatus { get; init; }
+    public List<EvaluationComparisonSnapshot>? ProposedOutput { get; init; }
+    public string? ValidationFailureReason { get; init; }
+}
+
+public sealed class EvaluationComparisonSnapshot
+{
+    public required EvaluationTextRange OriginalTextRange { get; init; }
+    public required string OriginalText { get; init; }
+    public required EvaluationTextRange UserTextRange { get; init; }
+    public required string UserText { get; init; }
+
+    public EvaluationSourceComparison ToSourceComparison(
+        int sourceComparisonIndex) =>
+        new()
+        {
+            SourceComparisonIndex = sourceComparisonIndex,
+            OriginalTextRange = OriginalTextRange,
+            OriginalText = OriginalText,
+            UserTextRange = UserTextRange,
+            UserText = UserText
+        };
 }
 
 public sealed record EvaluationTextRange(int InitialIndex, int FinalIndex)
@@ -101,7 +246,11 @@ public sealed record EvaluationSourceResult(
     double SpanF1,
     string? Error,
     IReadOnlyList<AiRefinedComparison> ExpectedRanges,
-    IReadOnlyList<AiRefinedComparison> ActualRanges);
+    IReadOnlyList<AiRefinedComparison> ActualRanges,
+    IReadOnlyList<EvaluationFinalComparison>? ExpectedFinalComparisons = null,
+    IReadOnlyList<EvaluationFinalComparison>? ActualFinalComparisons = null,
+    EvaluationExpectedTraceEntry? ExpectedTrace = null,
+    EvaluationExpectedTraceEntry? ActualTrace = null);
 
 public sealed record EvaluationSummary(
     string Model,

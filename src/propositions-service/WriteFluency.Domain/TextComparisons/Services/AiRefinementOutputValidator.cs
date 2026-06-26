@@ -91,7 +91,7 @@ public sealed class AiRefinementOutputValidator
                 return;
 
             case AiRefinementActions.Refine
-                when decision.Comparisons.Count > 0:
+                when decision.Comparisons.Count == 1:
                 ValidateRefinement(
                     request,
                     source,
