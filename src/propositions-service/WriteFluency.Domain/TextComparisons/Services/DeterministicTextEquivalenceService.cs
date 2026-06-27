@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace WriteFluency.TextComparisons;
 
@@ -66,7 +67,18 @@ public sealed partial class DeterministicTextEquivalenceService
             ["versus", "vs", "vs."],
             ["United Kingdom", "UK", "U.K.", "U.K"],
             ["European Union", "EU", "E.U.", "E.U"],
+            ["gigabyte", "gigabytes", "GB"],
+            ["terabyte", "terabytes", "TB"],
+            ["kilogram", "kilograms", "kg"],
+            ["gram", "grams", "g"],
+            ["milligram", "milligrams", "mg"],
+            ["meter", "meters", "metre", "metres", "m"],
+            ["kilometer", "kilometers", "kilometre", "kilometres", "km"],
+            ["millisecond", "milliseconds", "ms"],
+            ["kilometers per hour", "kilometres per hour", "km/h"],
+            ["hantavirus", "hanta virus"],
             ["health care", "healthcare"],
+            ["heat wave", "heatwave"],
             ["home town", "hometown"],
             ["photo journalist", "photojournalist"],
             ["left leaning", "left-leaning"],
@@ -261,6 +273,8 @@ public sealed partial class DeterministicTextEquivalenceService
             .Replace('\u2014', '-')
             .Replace('\u2212', '-');
 
+        normalized = RemoveDiacritics(normalized);
+        normalized = TransliterateLatinLetters(normalized);
         normalized = DigitGroupingRegex().Replace(normalized, string.Empty);
         normalized = UsAbbreviationRegex().Replace(normalized, "us");
         normalized = ApplyPhraseMappings(normalized);
@@ -277,6 +291,35 @@ public sealed partial class DeterministicTextEquivalenceService
         normalized = NormalizeWhitespaceAndPunctuation(normalized);
 
         return TrimDecorativeAndSentenceBoundaryPunctuation(normalized);
+    }
+
+    private static string RemoveDiacritics(string value)
+    {
+        var decomposed = value.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(decomposed.Length);
+
+        foreach (var character in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character)
+                != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC);
+    }
+
+    private static string TransliterateLatinLetters(string value)
+    {
+        return value
+            .Replace("æ", "ae", StringComparison.Ordinal)
+            .Replace("œ", "oe", StringComparison.Ordinal)
+            .Replace('ø', 'o')
+            .Replace('ð', 'd')
+            .Replace("þ", "th", StringComparison.Ordinal)
+            .Replace('ł', 'l')
+            .Replace('đ', 'd');
     }
 
     private static string NormalizeWhitespaceAndPunctuation(string value)

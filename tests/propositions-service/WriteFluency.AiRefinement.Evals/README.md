@@ -1,39 +1,34 @@
-# AI Refinement Evaluator
+# Correction Orchestration Evaluator
 
-This is a local-only prompt and model evaluator for US-010. It is a console
+This is a local-only correction orchestration evaluator for US-010. It is a console
 application included in `WriteFluency.sln`, but it is not a test project.
 Solution-wide `dotnet build` commands compile it, while `dotnet test` does not
-execute it or make real OpenAI calls.
+execute it.
 
-The committed `ai-refinement-eval-cases.json` manifest is self-contained. It
-contains the original text, user text, source comparison, and human-reviewed
-expected ranges required by each case. The evaluator does not read
+The committed `orchestration-eval-cases.json` manifest is self-contained. It
+contains the original text, user text, source comparisons, expected final
+comparisons, and human-reviewed expected correction traces required by each
+case. The evaluator does not read
 `corrections.json` or any external dataset.
 
 Cases can contain either one source comparison or a full attempt with multiple
-source comparisons. Full-attempt cases are sent to the model in one request and
-graded independently per source comparison. The original edge case remains the
-focus comparison while the other comparisons provide realistic request context.
+source comparisons. Full-attempt cases are passed through the same correction
+orchestration flow used by the API and graded independently per source
+comparison. The original edge case remains the focus comparison while the other
+comparisons provide realistic request context.
 `report.json` and `highlights.json` include the source-level results.
 
 ## Run
 
-Set `ExternalApis:OpenAI:Key` in the shared WriteFluency user secrets or export
-`OPENAI_API_KEY`, then run from the repository root:
+Run from the repository root:
 
 ```bash
 dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals
 ```
 
-The evaluator and Web API both use the `TextComparison:AiRefinement` settings
-from `src/propositions-service/WriteFluency.WebApi/appsettings.json`. Change the
-model, reasoning effort, token limit, or batch size there. `--model` remains
-available as a temporary evaluator-only override.
-
 Optional arguments:
 
 ```text
---model <model-id>
 --runs <positive integer>
 --concurrency <positive integer>
 --case <case-id>
@@ -49,9 +44,7 @@ dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals 
   --concurrency 4
 ```
 
-Requests from all runs share the same concurrency limit. Start with `4`;
-higher values can trigger provider rate limits and increase simultaneous token
-usage.
+Runs share the same concurrency limit.
 
 The evaluator exits with code `1` when quality thresholds fail, unless
 `--report-only` is used. Reports are written under the ignored
@@ -60,15 +53,15 @@ The evaluator exits with code `1` when quality thresholds fail, unless
 - `report.md` contains the evaluation summary and per-case metrics.
 - `report.html` is the primary interactive report. It groups repeated runs by
   case, lists failed comparisons first, supports search and status/category
-  filters, and provides expected-versus-AI text and range drilldowns.
+  filters, and provides expected-versus-actual text and range drilldowns.
 - `report.json` contains the structured evaluation result.
 - `highlights.json` contains the full original and user text, source
-  comparison, expected highlights, and AI-selected highlights for each case.
+  comparison, expected highlights, and actual highlights for each case.
   Removed corrections have a `null` highlight collection.
 
 Reports contain the sanitized full attempts embedded in the evaluation
 manifest, along with case identifiers, indexes, selected snippets, metrics,
-latency, and token usage.
+and latency.
 
 Use `--validate-only` to verify manifest deserialization and range consistency
-without requiring an API key or making OpenAI calls.
+without running the orchestration flow.

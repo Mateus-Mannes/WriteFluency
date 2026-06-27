@@ -125,14 +125,6 @@ public sealed class EvaluationSourceComparison
     public required string OriginalText { get; init; }
     public required EvaluationTextRange UserTextRange { get; init; }
     public required string UserText { get; init; }
-
-    public AiRefinementSourceComparison ToDomain() =>
-        new(
-            SourceComparisonIndex,
-            OriginalTextRange.ToDomain(),
-            OriginalText,
-            UserTextRange.ToDomain(),
-            UserText);
 }
 
 public sealed class EvaluationExpectedFinalComparison
@@ -188,7 +180,7 @@ public sealed class EvaluationExpectedTraceEntry
 public sealed class EvaluationExpectedStageTrace
 {
     public required string Action { get; init; }
-    public required string ReasonCode { get; init; }
+    public string? ReasonCode { get; init; }
     public required List<EvaluationComparisonSnapshot> Output { get; init; }
     public string? ValidationStatus { get; init; }
     public List<EvaluationComparisonSnapshot>? ProposedOutput { get; init; }

@@ -15,6 +15,13 @@ public sealed class DeterministicTextComparisonRefinerTests
     [InlineData("woodwork", "wood work")]
     [InlineData("in 2022", "in twenty twenty two")]
     [InlineData("want to", "wanna")]
+    [InlineData("with two terabytes of", "with 2 TB of")]
+    [InlineData("after twelve milliseconds", "after 12 ms")]
+    [InlineData("near eighty kilometers per hour", "near 80 km/h")]
+    [InlineData("a hantavirus outbreak", "a Hanta virus outbreak")]
+    [InlineData("El Niño", "El Nino")]
+    [InlineData("García", "Garcia")]
+    [InlineData("Mørtvedt", "Mortvedt")]
     public void Refine_WhenFullRangeIsEquivalent_ShouldRemoveComparison(
         string originalText,
         string userText)
@@ -49,6 +56,21 @@ public sealed class DeterministicTextComparisonRefinerTests
         "record by of Saudi Aramco",
         "of",
         "by of")]
+    [InlineData(
+        "Niño could",
+        "nino can",
+        "could",
+        "can")]
+    [InlineData(
+        "Mørtvedt saw",
+        "Mortvedt found an",
+        "saw",
+        "found an")]
+    [InlineData(
+        "the one terabyte versions",
+        "1 TB versions",
+        "the one",
+        "1")]
     public void Refine_WhenBoundaryTextIsEquivalent_ShouldShrinkToGenuineError(
         string originalText,
         string userText,
@@ -66,6 +88,53 @@ public sealed class DeterministicTextComparisonRefinerTests
         result.Trace.Single().Value.Deterministic.ShouldNotBeNull();
         result.Trace.Single().Value.Deterministic!.Action.ShouldBe(
             AiRefinementActions.Refine);
+    }
+
+    [Fact]
+    public void Refine_WhenOnlyOneSideIncludesAdjacentEquivalentWord_ShouldRemoveComparison()
+    {
+        const string originalText = "The 512 gigabyte models will cost more.";
+        const string userText = "The 512 GB models will cost more.";
+
+        var result = _refiner.Refine(
+            originalText,
+            userText,
+            [
+                CreateComparison(
+                    originalText,
+                    userText,
+                    "512 gigabyte",
+                    "512 GB models",
+                    4)
+            ]);
+
+        result.Comparisons.ShouldBeEmpty();
+        result.RemovedComparisonCount.ShouldBe(1);
+        result.Trace.Single().Value.Deterministic!.Action.ShouldBe(
+            AiRefinementActions.Remove);
+    }
+
+    [Fact]
+    public void Refine_WhenUserRangeIncludesMatchingNextWord_ShouldTrimBoundaryWord()
+    {
+        const string originalText = "Mørtvedt saw an old sword.";
+        const string userText = "Mortvedt found an old sword.";
+
+        var result = _refiner.Refine(
+            originalText,
+            userText,
+            [
+                CreateComparison(
+                    originalText,
+                    userText,
+                    "Mørtvedt saw",
+                    "Mortvedt found an",
+                    4)
+            ]);
+
+        result.Comparisons.Single().OriginalText.ShouldBe("saw");
+        result.Comparisons.Single().UserText.ShouldBe("found");
+        result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
     }
 
     [Fact]

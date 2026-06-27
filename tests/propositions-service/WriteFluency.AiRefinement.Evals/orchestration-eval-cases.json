@@ -168,8 +168,8 @@
     "category": "equivalent-typography",
     "expectation": "Run the full correction orchestrator. Remove the comparison because smart and straight apostrophes represent the same word.",
     "focusSourceComparisonIndex": 10,
-    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
-    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate\u2019s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called \u0027Gaudi\u0027 is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate\u0027s love for textile are a chose aside for many people do not see",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -273,7 +273,7 @@
           "initialIndex": 282,
           "finalIndex": 288
         },
-        "userText": "'Gaudi'"
+        "userText": "\u0027Gaudi\u0027"
       },
       {
         "sourceComparisonIndex": 8,
@@ -307,12 +307,12 @@
           "initialIndex": 619,
           "finalIndex": 624
         },
-        "originalText": "Kate’s",
+        "originalText": "Kate\u2019s",
         "userTextRange": {
           "initialIndex": 612,
           "finalIndex": 617
         },
-        "userText": "Kate's"
+        "userText": "Kate\u0027s"
       },
       {
         "sourceComparisonIndex": 11,
@@ -559,7 +559,7 @@
             "initialIndex": 282,
             "finalIndex": 288
           },
-          "userText": "'Gaudi'"
+          "userText": "\u0027Gaudi\u0027"
         },
         "deterministic": {
           "action": "remove",
@@ -607,12 +607,12 @@
             "initialIndex": 619,
             "finalIndex": 624
           },
-          "originalText": "Kate’s",
+          "originalText": "Kate\u2019s",
           "userTextRange": {
             "initialIndex": 612,
             "finalIndex": 617
           },
-          "userText": "Kate's"
+          "userText": "Kate\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -919,9 +919,9 @@
         "originalText": "craftsmanship",
         "userTextRange": {
           "initialIndex": 543,
-          "finalIndex": 558
+          "finalIndex": 555
         },
-        "userText": "crossmentship of",
+        "userText": "crossmentship",
         "isDeterministicallyRefined": true,
         "isAiRefined": false
       }
@@ -1084,9 +1084,9 @@
               "originalText": "craftsmanship",
               "userTextRange": {
                 "initialIndex": 543,
-                "finalIndex": 558
+                "finalIndex": 555
               },
-              "userText": "crossmentship of"
+              "userText": "crossmentship"
             }
           ]
         }
@@ -1119,7 +1119,7 @@
     "expectation": "Run the full correction orchestrator. Remove the comparison because woodwork and wood work represent the same recognized compound in this context.",
     "focusSourceComparisonIndex": 5,
     "originalText": "In central London, there is a old neighborhood called Holborn. It is known for its special pubs. One pub is Ye Olde Mitre. It has been open since the 1500s. It has small rooms and an outdoor area. It has been in famous movies. It shows history. Another pub is the Princess Louise. It was built in the late 1800s. It is known for its woodwork and old style features. Many visitors like to spend time in these pubs. They try traditional British drinks and food. The area is good for walking. Many pubs are close to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay. It is a short walk from these old pubs.",
-    "userText": "In central London there is a old neighbourhood called Holborn. It is known for  its special pubs. One pub is the Ye olde Mitre. It has been opened since the 1500's. It has small rooms and an outdoor area. It has been in famous movies, it shows history. Another pub is the Princess Louise, it was built in the late 1800's. It is known for its wood work and old style features. Many visitors like to spend time in these pubs. They try traditional British  drinks and food. The area is good for walking, many pubs are closed to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay, it's a short walk from these old pubs.",
+    "userText": "In central London there is a old neighbourhood called Holborn. It is known for  its special pubs. One pub is the Ye olde Mitre. It has been opened since the 1500\u0027s. It has small rooms and an outdoor area. It has been in famous movies, it shows history. Another pub is the Princess Louise, it was built in the late 1800\u0027s. It is known for its wood work and old style features. Many visitors like to spend time in these pubs. They try traditional British  drinks and food. The area is good for walking, many pubs are closed to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay, it\u0027s a short walk from these old pubs.",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -1171,7 +1171,7 @@
           "initialIndex": 157,
           "finalIndex": 162
         },
-        "userText": "1500's"
+        "userText": "1500\u0027s"
       },
       {
         "sourceComparisonIndex": 4,
@@ -1184,7 +1184,7 @@
           "initialIndex": 314,
           "finalIndex": 319
         },
-        "userText": "1800's"
+        "userText": "1800\u0027s"
       },
       {
         "sourceComparisonIndex": 5,
@@ -1223,7 +1223,7 @@
           "initialIndex": 678,
           "finalIndex": 687
         },
-        "userText": "stay, it's"
+        "userText": "stay, it\u0027s"
       }
     ],
     "expectedFinalComparisons": [
@@ -1354,7 +1354,7 @@
             "initialIndex": 157,
             "finalIndex": 162
           },
-          "userText": "1500's"
+          "userText": "1500\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -1374,7 +1374,7 @@
             "initialIndex": 314,
             "finalIndex": 319
           },
-          "userText": "1800's"
+          "userText": "1800\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -1414,7 +1414,7 @@
             "initialIndex": 678,
             "finalIndex": 687
           },
-          "userText": "stay, it's"
+          "userText": "stay, it\u0027s"
         },
         "deterministic": {
           "action": "refine",
@@ -1801,7 +1801,7 @@
     "category": "equivalent-contraction",
     "expectation": "Run the full correction orchestrator. Remove the comparison because the contraction and its expansion have the same meaning, and the comma is not graded.",
     "focusSourceComparisonIndex": 10,
-    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
+    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer\u2019s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it\u2019s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
     "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
     "sourceComparisons": [
       {
@@ -1875,7 +1875,7 @@
           "initialIndex": 439,
           "finalIndex": 480
         },
-        "originalText": "advantage of their employer’s 401(k) match",
+        "originalText": "advantage of their employer\u2019s 401(k) match",
         "userTextRange": {
           "initialIndex": 417,
           "finalIndex": 453
@@ -1940,7 +1940,7 @@
           "initialIndex": 749,
           "finalIndex": 756
         },
-        "originalText": "So, it’s",
+        "originalText": "So, it\u2019s",
         "userTextRange": {
           "initialIndex": 715,
           "finalIndex": 722
@@ -2101,7 +2101,7 @@
           "initialIndex": 458,
           "finalIndex": 473
         },
-        "originalText": "employer’s 401(k",
+        "originalText": "employer\u2019s 401(k",
         "userTextRange": {
           "initialIndex": 434,
           "finalIndex": 447
@@ -2380,7 +2380,7 @@
             "initialIndex": 439,
             "finalIndex": 480
           },
-          "originalText": "advantage of their employer’s 401(k) match",
+          "originalText": "advantage of their employer\u2019s 401(k) match",
           "userTextRange": {
             "initialIndex": 417,
             "finalIndex": 453
@@ -2408,7 +2408,7 @@
                 "initialIndex": 458,
                 "finalIndex": 473
               },
-              "originalText": "employer’s 401(k",
+              "originalText": "employer\u2019s 401(k",
               "userTextRange": {
                 "initialIndex": 434,
                 "finalIndex": 447
@@ -2503,7 +2503,7 @@
             "initialIndex": 749,
             "finalIndex": 756
           },
-          "originalText": "So, it’s",
+          "originalText": "So, it\u2019s",
           "userTextRange": {
             "initialIndex": 715,
             "finalIndex": 722
@@ -2521,9 +2521,9 @@
   {
     "caseId": "real-possessive-meaning",
     "category": "possessive-grammar",
-    "expectation": "Run the full correction orchestrator. Keep daughters' versus daughters because the omitted possessive apostrophe changes the grammatical form, even though pronunciation is unchanged.",
+    "expectation": "Run the full correction orchestrator. Keep daughters\u0027 versus daughters because the omitted possessive apostrophe changes the grammatical form, even though pronunciation is unchanged.",
     "focusSourceComparisonIndex": 9,
-    "originalText": "Jesy Nelson, a well-known singer, recently shared a heartfelt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis, Jesy noticed unusual signs in their movement and breathing, but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seemed to breathe from their bellies. Over time, these signs worsened, and Jesy realized her daughters might have a serious condition called Spinal Muscular Atrophy. After a diagnosis, she became an advocate, speaking openly about her daughters' health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
+    "originalText": "Jesy Nelson, a well-known singer, recently shared a heartfelt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis, Jesy noticed unusual signs in their movement and breathing, but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seemed to breathe from their bellies. Over time, these signs worsened, and Jesy realized her daughters might have a serious condition called Spinal Muscular Atrophy. After a diagnosis, she became an advocate, speaking openly about her daughters\u0027 health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
     "userText": "Jessy Nelson a well know singer, recently shared a heart-felt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis Jessy noticed unusual signs in their movements and breathing but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seem to breathe from their bellies. Over time, this signs worsten and just she realized her daughters might have a serious condition called spinal muscular atrophy after a diagnosis she became an advocate speaking openly about her daughters health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
     "sourceComparisons": [
       {
@@ -2649,7 +2649,7 @@
           "initialIndex": 641,
           "finalIndex": 650
         },
-        "originalText": "daughters'",
+        "originalText": "daughters\u0027",
         "userTextRange": {
           "initialIndex": 637,
           "finalIndex": 645
@@ -2784,7 +2784,7 @@
           "initialIndex": 641,
           "finalIndex": 650
         },
-        "originalText": "daughters'",
+        "originalText": "daughters\u0027",
         "userTextRange": {
           "initialIndex": 637,
           "finalIndex": 645
@@ -2888,8 +2888,8 @@
     "category": "dangerous-word-boundary",
     "expectation": "Run the full correction orchestrator. Shrink the comparison to Every day versus Everyday because these forms have different grammatical meanings; ignore the comma and matching she.",
     "focusSourceComparisonIndex": 2,
-    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
-    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate\u2019s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called \u0027Gaudi\u0027 is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate\u0027s love for textile are a chose aside for many people do not see",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -2993,7 +2993,7 @@
           "initialIndex": 282,
           "finalIndex": 288
         },
-        "userText": "'Gaudi'"
+        "userText": "\u0027Gaudi\u0027"
       },
       {
         "sourceComparisonIndex": 8,
@@ -3027,12 +3027,12 @@
           "initialIndex": 619,
           "finalIndex": 624
         },
-        "originalText": "Kate’s",
+        "originalText": "Kate\u2019s",
         "userTextRange": {
           "initialIndex": 612,
           "finalIndex": 617
         },
-        "userText": "Kate's"
+        "userText": "Kate\u0027s"
       },
       {
         "sourceComparisonIndex": 11,
@@ -3279,7 +3279,7 @@
             "initialIndex": 282,
             "finalIndex": 288
           },
-          "userText": "'Gaudi'"
+          "userText": "\u0027Gaudi\u0027"
         },
         "deterministic": {
           "action": "remove",
@@ -3327,12 +3327,12 @@
             "initialIndex": 619,
             "finalIndex": 624
           },
-          "originalText": "Kate’s",
+          "originalText": "Kate\u2019s",
           "userTextRange": {
             "initialIndex": 612,
             "finalIndex": 617
           },
-          "userText": "Kate's"
+          "userText": "Kate\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -4064,8 +4064,8 @@
     "category": "equivalent-number",
     "expectation": "Run the full correction orchestrator. Remove the comparison because sixty thousand and 60000 express the same complete quantity.",
     "focusSourceComparisonIndex": 5,
-    "originalText": "A new study shows that changing how parents introduce peanuts to babies has made a big difference. Since health officials in 2015 recommended giving infants peanut products starting at around four months, about sixty thousand children have avoided developing peanut allergies. Before that, doctors advised waiting until children were three years old, but the new guidance helped many kids stay allergy-free. Researchers from the Children's Hospital of Philadelphia looked at health records and found that peanut allergies in children under three dropped by more than a quarter after the new advice. They saw even bigger drops after the guidelines were expanded in 2017. Experts say this is a major success that has helped prevent serious food allergies in thousands of children.",
-    "userText": "A new study shows that changing how parent introduce peanut to baby had made a big differences. Since health officials in 2015 recommended, giving peanut product storing around 4 months, about 60000 children have avoided deloping peanut allergies. Before that, doctor advice waiting until childrens were 3 years old, but the new guide in health many kids stay out allergy free. Researcher from children's hospital of philadephia looked at health records and found that peanut allergy in children under 3 dropped more than a quarter after a new advice. They saw even bigger drops after the guiline was expanded in 2017. Experts say it is a major success the help prevent serious food allergy in thousands of children",
+    "originalText": "A new study shows that changing how parents introduce peanuts to babies has made a big difference. Since health officials in 2015 recommended giving infants peanut products starting at around four months, about sixty thousand children have avoided developing peanut allergies. Before that, doctors advised waiting until children were three years old, but the new guidance helped many kids stay allergy-free. Researchers from the Children\u0027s Hospital of Philadelphia looked at health records and found that peanut allergies in children under three dropped by more than a quarter after the new advice. They saw even bigger drops after the guidelines were expanded in 2017. Experts say this is a major success that has helped prevent serious food allergies in thousands of children.",
+    "userText": "A new study shows that changing how parent introduce peanut to baby had made a big differences. Since health officials in 2015 recommended, giving peanut product storing around 4 months, about 60000 children have avoided deloping peanut allergies. Before that, doctor advice waiting until childrens were 3 years old, but the new guide in health many kids stay out allergy free. Researcher from children\u0027s hospital of philadephia looked at health records and found that peanut allergy in children under 3 dropped more than a quarter after a new advice. They saw even bigger drops after the guiline was expanded in 2017. Experts say it is a major success the help prevent serious food allergy in thousands of children",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -4203,12 +4203,12 @@
           "initialIndex": 389,
           "finalIndex": 438
         },
-        "originalText": "stay allergy-free. Researchers from the Children's",
+        "originalText": "stay allergy-free. Researchers from the Children\u0027s",
         "userTextRange": {
           "initialIndex": 355,
           "finalIndex": 403
         },
-        "userText": "stay out allergy free. Researcher from children's"
+        "userText": "stay out allergy free. Researcher from children\u0027s"
       },
       {
         "sourceComparisonIndex": 11,
@@ -4448,21 +4448,6 @@
           "finalIndex": 297
         },
         "userText": "childrens",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
-      },
-      {
-        "sourceComparisonIndex": 8,
-        "originalTextRange": {
-          "initialIndex": 334,
-          "finalIndex": 338
-        },
-        "originalText": "three",
-        "userTextRange": {
-          "initialIndex": 304,
-          "finalIndex": 310
-        },
-        "userText": "3 years",
         "isDeterministicallyRefined": true,
         "isAiRefined": false
       },
@@ -4727,18 +4712,6 @@
                 "finalIndex": 297
               },
               "userText": "childrens"
-            },
-            {
-              "originalTextRange": {
-                "initialIndex": 334,
-                "finalIndex": 338
-              },
-              "originalText": "three",
-              "userTextRange": {
-                "initialIndex": 304,
-                "finalIndex": 310
-              },
-              "userText": "3 years"
             }
           ]
         }
@@ -4750,12 +4723,12 @@
             "initialIndex": 389,
             "finalIndex": 438
           },
-          "originalText": "stay allergy-free. Researchers from the Children's",
+          "originalText": "stay allergy-free. Researchers from the Children\u0027s",
           "userTextRange": {
             "initialIndex": 355,
             "finalIndex": 403
           },
-          "userText": "stay out allergy free. Researcher from children's"
+          "userText": "stay out allergy free. Researcher from children\u0027s"
         },
         "deterministic": {
           "action": "refine",
@@ -4826,9 +4799,9 @@
   {
     "caseId": "real-retirement-mixed-range",
     "category": "split-mixed-formatting",
-    "expectation": "Run the full correction orchestrator. Split the broad comparison into advantage of versus advantages and employer’s versus employers; exclude matching their and harmless 401(k) formatting.",
+    "expectation": "Run the full correction orchestrator. Split the broad comparison into advantage of versus advantages and employer\u2019s versus employers; exclude matching their and harmless 401(k) formatting.",
     "focusSourceComparisonIndex": 5,
-    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
+    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer\u2019s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it\u2019s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
     "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
     "sourceComparisons": [
       {
@@ -4902,7 +4875,7 @@
           "initialIndex": 439,
           "finalIndex": 480
         },
-        "originalText": "advantage of their employer’s 401(k) match",
+        "originalText": "advantage of their employer\u2019s 401(k) match",
         "userTextRange": {
           "initialIndex": 417,
           "finalIndex": 453
@@ -4967,7 +4940,7 @@
           "initialIndex": 749,
           "finalIndex": 756
         },
-        "originalText": "So, it’s",
+        "originalText": "So, it\u2019s",
         "userTextRange": {
           "initialIndex": 715,
           "finalIndex": 722
@@ -5128,7 +5101,7 @@
           "initialIndex": 458,
           "finalIndex": 473
         },
-        "originalText": "employer’s 401(k",
+        "originalText": "employer\u2019s 401(k",
         "userTextRange": {
           "initialIndex": 434,
           "finalIndex": 447
@@ -5407,7 +5380,7 @@
             "initialIndex": 439,
             "finalIndex": 480
           },
-          "originalText": "advantage of their employer’s 401(k) match",
+          "originalText": "advantage of their employer\u2019s 401(k) match",
           "userTextRange": {
             "initialIndex": 417,
             "finalIndex": 453
@@ -5435,7 +5408,7 @@
                 "initialIndex": 458,
                 "finalIndex": 473
               },
-              "originalText": "employer’s 401(k",
+              "originalText": "employer\u2019s 401(k",
               "userTextRange": {
                 "initialIndex": 434,
                 "finalIndex": 447
@@ -5530,7 +5503,7 @@
             "initialIndex": 749,
             "finalIndex": 756
           },
-          "originalText": "So, it’s",
+          "originalText": "So, it\u2019s",
           "userTextRange": {
             "initialIndex": 715,
             "finalIndex": 722
@@ -5900,10 +5873,10 @@
   {
     "caseId": "real-possessive-and-plural-split",
     "category": "split-mixed-range",
-    "expectation": "Run the full correction orchestrator. Split the comparison into London's versus London and system versus systems; exclude matching words, punctuation, and the line break.",
+    "expectation": "Run the full correction orchestrator. Split the comparison into London\u0027s versus London and system versus systems; exclude matching words, punctuation, and the line break.",
     "focusSourceComparisonIndex": 7,
-    "originalText": "In central London, there is an interesting area that many visitors overlook. The Inns of Court, such as Gray’s Inn and Lincoln’s Inn, are old places where lawyers learn and work. These sites are close to the Royal Courts of Justice and have impressive buildings, green gardens, and stories from long ago. A local guide offers a free walking tour that shows you these hidden places and explains their history and role in London's legal system. The tour begins near Temple station and goes past beautiful structures and quiet streets, giving you a look into a part of the city that has been there for many years. Before going, it is good to check the opening times because some places are only open at certain times. This walk is a great way for history fans and curious visitors to learn about London's special heritage.",
-    "userText": "In central London there is an interesting area that many visitors overlook, the Inns of Court such as Gray's Inn and Lincoln's Inn are all places where lawyers learn and work. These sides are close to the Royal courts of Justice and have impressive buildings, green gardens and stories from long ago. Our local guide offers a free walking tour that shows all these descent places and explains the history and role in London legal systems.\nThe tour begins near Temple station and goes past beautiful structures and quiet streets. Giving you a look into the part of the city that has been there for many years.\nBefore going, it is good to check the opening times because some places are only opened at certain times. This walk is a great way for history fans and curious visitors to learn about London special heritage.",
+    "originalText": "In central London, there is an interesting area that many visitors overlook. The Inns of Court, such as Gray\u2019s Inn and Lincoln\u2019s Inn, are old places where lawyers learn and work. These sites are close to the Royal Courts of Justice and have impressive buildings, green gardens, and stories from long ago. A local guide offers a free walking tour that shows you these hidden places and explains their history and role in London\u0027s legal system. The tour begins near Temple station and goes past beautiful structures and quiet streets, giving you a look into a part of the city that has been there for many years. Before going, it is good to check the opening times because some places are only open at certain times. This walk is a great way for history fans and curious visitors to learn about London\u0027s special heritage.",
+    "userText": "In central London there is an interesting area that many visitors overlook, the Inns of Court such as Gray\u0027s Inn and Lincoln\u0027s Inn are all places where lawyers learn and work. These sides are close to the Royal courts of Justice and have impressive buildings, green gardens and stories from long ago. Our local guide offers a free walking tour that shows all these descent places and explains the history and role in London legal systems.\nThe tour begins near Temple station and goes past beautiful structures and quiet streets. Giving you a look into the part of the city that has been there for many years.\nBefore going, it is good to check the opening times because some places are only opened at certain times. This walk is a great way for history fans and curious visitors to learn about London special heritage.",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -5911,12 +5884,12 @@
           "initialIndex": 104,
           "finalIndex": 109
         },
-        "originalText": "Gray’s",
+        "originalText": "Gray\u2019s",
         "userTextRange": {
           "initialIndex": 102,
           "finalIndex": 107
         },
-        "userText": "Gray's"
+        "userText": "Gray\u0027s"
       },
       {
         "sourceComparisonIndex": 1,
@@ -5924,12 +5897,12 @@
           "initialIndex": 119,
           "finalIndex": 127
         },
-        "originalText": "Lincoln’s",
+        "originalText": "Lincoln\u2019s",
         "userTextRange": {
           "initialIndex": 117,
           "finalIndex": 125
         },
-        "userText": "Lincoln's"
+        "userText": "Lincoln\u0027s"
       },
       {
         "sourceComparisonIndex": 2,
@@ -6002,7 +5975,7 @@
           "initialIndex": 420,
           "finalIndex": 450
         },
-        "originalText": "London's legal system. The tour",
+        "originalText": "London\u0027s legal system. The tour",
         "userTextRange": {
           "initialIndex": 417,
           "finalIndex": 446
@@ -6054,7 +6027,7 @@
           "initialIndex": 793,
           "finalIndex": 800
         },
-        "originalText": "London's",
+        "originalText": "London\u0027s",
         "userTextRange": {
           "initialIndex": 793,
           "finalIndex": 798
@@ -6132,9 +6105,9 @@
         "originalText": "hidden",
         "userTextRange": {
           "initialIndex": 365,
-          "finalIndex": 378
+          "finalIndex": 371
         },
-        "userText": "descent places",
+        "userText": "descent",
         "isDeterministicallyRefined": true,
         "isAiRefined": false
       },
@@ -6159,7 +6132,7 @@
           "initialIndex": 420,
           "finalIndex": 427
         },
-        "originalText": "London's",
+        "originalText": "London\u0027s",
         "userTextRange": {
           "initialIndex": 417,
           "finalIndex": 422
@@ -6219,7 +6192,7 @@
           "initialIndex": 793,
           "finalIndex": 800
         },
-        "originalText": "London's",
+        "originalText": "London\u0027s",
         "userTextRange": {
           "initialIndex": 793,
           "finalIndex": 798
@@ -6237,12 +6210,12 @@
             "initialIndex": 104,
             "finalIndex": 109
           },
-          "originalText": "Gray’s",
+          "originalText": "Gray\u2019s",
           "userTextRange": {
             "initialIndex": 102,
             "finalIndex": 107
           },
-          "userText": "Gray's"
+          "userText": "Gray\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -6257,12 +6230,12 @@
             "initialIndex": 119,
             "finalIndex": 127
           },
-          "originalText": "Lincoln’s",
+          "originalText": "Lincoln\u2019s",
           "userTextRange": {
             "initialIndex": 117,
             "finalIndex": 125
           },
-          "userText": "Lincoln's"
+          "userText": "Lincoln\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -6308,9 +6281,9 @@
               "originalText": "hidden",
               "userTextRange": {
                 "initialIndex": 365,
-                "finalIndex": 378
+                "finalIndex": 371
               },
-              "userText": "descent places"
+              "userText": "descent"
             }
           ]
         }
@@ -6322,7 +6295,7 @@
             "initialIndex": 420,
             "finalIndex": 450
           },
-          "originalText": "London's legal system. The tour",
+          "originalText": "London\u0027s legal system. The tour",
           "userTextRange": {
             "initialIndex": 417,
             "finalIndex": 446
@@ -6338,7 +6311,7 @@
                 "initialIndex": 420,
                 "finalIndex": 427
               },
-              "originalText": "London's",
+              "originalText": "London\u0027s",
               "userTextRange": {
                 "initialIndex": 417,
                 "finalIndex": 422
@@ -6387,7 +6360,7 @@
     "category": "equivalent-abbreviation",
     "expectation": "Run the full correction orchestrator. Remove the comparison because Jr and junior are equivalent written forms of the same spoken title.",
     "focusSourceComparisonIndex": 0,
-    "originalText": "Robert F. Kennedy Jr. changed the schedule for giving vaccines to children. He did this without telling the CDC. He gave fewer vaccines, from seventeen to eleven. He took out vaccines for illnesses like flu and meningitis. He only kept them if a child is at high risk. He made the change quickly and without the usual science checks. Many experts were surprised. Kennedy is known for not trusting vaccines. He said he would not let his opinions change public health rules. But now, his actions seem to break that promise. Experts are worried about how his choices might affect children's health.",
+    "originalText": "Robert F. Kennedy Jr. changed the schedule for giving vaccines to children. He did this without telling the CDC. He gave fewer vaccines, from seventeen to eleven. He took out vaccines for illnesses like flu and meningitis. He only kept them if a child is at high risk. He made the change quickly and without the usual science checks. Many experts were surprised. Kennedy is known for not trusting vaccines. He said he would not let his opinions change public health rules. But now, his actions seem to break that promise. Experts are worried about how his choices might affect children\u0027s health.",
     "userText": "robert f kennedy junior changed the schedule for giving vaccine the childern he did this without telling the CDC, he gave fewer vaccine from seventeen to eleven. he took up vaccine for illneses like flu and minungutus. he only kept them of the child that is high risk. he made the changed quickly and without the usual sign checks. many expert was surprised kennedy is known for not trusting vaccine. he said he would not let us opinion changed public health rules. but now, he is action seems break that promise. expert are worried about how his choices may affect childern health.",
     "sourceComparisons": [
       {
@@ -6591,7 +6564,7 @@
           "initialIndex": 577,
           "finalIndex": 586
         },
-        "originalText": "children's",
+        "originalText": "children\u0027s",
         "userTextRange": {
           "initialIndex": 566,
           "finalIndex": 573
@@ -6831,7 +6804,7 @@
           "initialIndex": 577,
           "finalIndex": 586
         },
-        "originalText": "children's",
+        "originalText": "children\u0027s",
         "userTextRange": {
           "initialIndex": 566,
           "finalIndex": 573
@@ -6947,8 +6920,8 @@
     "category": "equivalent-decorative-punctuation",
     "expectation": "Run the full correction orchestrator. Remove the comparison because wrapping a name in quotation marks does not change the spoken words.",
     "focusSourceComparisonIndex": 7,
-    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
-    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate\u2019s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called \u0027Gaudi\u0027 is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate\u0027s love for textile are a chose aside for many people do not see",
     "sourceComparisons": [
       {
         "sourceComparisonIndex": 0,
@@ -7052,7 +7025,7 @@
           "initialIndex": 282,
           "finalIndex": 288
         },
-        "userText": "'Gaudi'"
+        "userText": "\u0027Gaudi\u0027"
       },
       {
         "sourceComparisonIndex": 8,
@@ -7086,12 +7059,12 @@
           "initialIndex": 619,
           "finalIndex": 624
         },
-        "originalText": "Kate’s",
+        "originalText": "Kate\u2019s",
         "userTextRange": {
           "initialIndex": 612,
           "finalIndex": 617
         },
-        "userText": "Kate's"
+        "userText": "Kate\u0027s"
       },
       {
         "sourceComparisonIndex": 11,
@@ -7338,7 +7311,7 @@
             "initialIndex": 282,
             "finalIndex": 288
           },
-          "userText": "'Gaudi'"
+          "userText": "\u0027Gaudi\u0027"
         },
         "deterministic": {
           "action": "remove",
@@ -7386,12 +7359,12 @@
             "initialIndex": 619,
             "finalIndex": 624
           },
-          "originalText": "Kate’s",
+          "originalText": "Kate\u2019s",
           "userTextRange": {
             "initialIndex": 612,
             "finalIndex": 617
           },
-          "userText": "Kate's"
+          "userText": "Kate\u0027s"
         },
         "deterministic": {
           "action": "remove",
@@ -8715,6 +8688,3721 @@
                 "finalIndex": 593
               },
               "userText": "game play"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-diacritic-name-with-word-substitution",
+    "category": "shrink-diacritic-name",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to saw versus found; ignore the harmless diacritic difference in the proper name Mortvedt and the matching article after the range.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "In Norway, a school trip led to a big find. A six-year-old boy called Henrik Refsnes M\u00F8rtvedt saw an old sword in the ground. Experts say the sword is about thirteen hundred years old from the Viking Age. It is made of iron and is different from most Viking swords. The sword was taken to the Museum of Cultural History in Oslo. Experts will clean and study it carefully. This find helps us learn about Norway\u0027s old history and shows why such discoveries are important.",
+    "userText": "In Norway, a school trip led to a big find. A six year old boy called Henrik Refsnes Mortvedt found an old sword on the ground. Experts say the sword is about 1300 hundred years old from the Viking Age. It is made of iron and is different from most viking swords. The sword was taken to the Museum of Cultural History in Oslo. Experts were clean and study it carefully. This find helps us learned about Norway old history and shows  why  such discovery is/are important.",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 44,
+          "finalIndex": 57
+        },
+        "originalText": "A six-year-old",
+        "userTextRange": {
+          "initialIndex": 44,
+          "finalIndex": 61
+        },
+        "userText": "A six year old boy"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 85,
+          "finalIndex": 96
+        },
+        "originalText": "M\u00F8rtvedt saw",
+        "userTextRange": {
+          "initialIndex": 85,
+          "finalIndex": 101
+        },
+        "userText": "Mortvedt found an"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 111,
+          "finalIndex": 112
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 113,
+          "finalIndex": 114
+        },
+        "userText": "on"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 151,
+          "finalIndex": 164
+        },
+        "originalText": "about thirteen",
+        "userTextRange": {
+          "initialIndex": 153,
+          "finalIndex": 170
+        },
+        "userText": "about 1300 hundred"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 337,
+          "finalIndex": 340
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 335,
+          "finalIndex": 338
+        },
+        "userText": "were"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 391,
+          "finalIndex": 395
+        },
+        "originalText": "learn",
+        "userTextRange": {
+          "initialIndex": 389,
+          "finalIndex": 395
+        },
+        "userText": "learned"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 410
+        },
+        "originalText": "Norway\u0027s",
+        "userTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 408
+        },
+        "userText": "Norway"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 457
+        },
+        "originalText": "discoveries are",
+        "userTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 458
+        },
+        "userText": "discovery is/are"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 94,
+          "finalIndex": 96
+        },
+        "originalText": "saw",
+        "userTextRange": {
+          "initialIndex": 94,
+          "finalIndex": 98
+        },
+        "userText": "found",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 111,
+          "finalIndex": 112
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 113,
+          "finalIndex": 114
+        },
+        "userText": "on",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 157,
+          "finalIndex": 164
+        },
+        "originalText": "thirteen",
+        "userTextRange": {
+          "initialIndex": 159,
+          "finalIndex": 162
+        },
+        "userText": "1300",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 337,
+          "finalIndex": 340
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 335,
+          "finalIndex": 338
+        },
+        "userText": "were",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 391,
+          "finalIndex": 395
+        },
+        "originalText": "learn",
+        "userTextRange": {
+          "initialIndex": 389,
+          "finalIndex": 395
+        },
+        "userText": "learned",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 410
+        },
+        "originalText": "Norway\u0027s",
+        "userTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 408
+        },
+        "userText": "Norway",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 453
+        },
+        "originalText": "discoveries",
+        "userTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 454
+        },
+        "userText": "discovery is",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 0,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 44,
+            "finalIndex": 57
+          },
+          "originalText": "A six-year-old",
+          "userTextRange": {
+            "initialIndex": 44,
+            "finalIndex": 61
+          },
+          "userText": "A six year old boy"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 85,
+            "finalIndex": 96
+          },
+          "originalText": "M\u00F8rtvedt saw",
+          "userTextRange": {
+            "initialIndex": 85,
+            "finalIndex": 101
+          },
+          "userText": "Mortvedt found an"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 94,
+                "finalIndex": 96
+              },
+              "originalText": "saw",
+              "userTextRange": {
+                "initialIndex": 94,
+                "finalIndex": 98
+              },
+              "userText": "found"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 151,
+            "finalIndex": 164
+          },
+          "originalText": "about thirteen",
+          "userTextRange": {
+            "initialIndex": 153,
+            "finalIndex": 170
+          },
+          "userText": "about 1300 hundred"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 157,
+                "finalIndex": 164
+              },
+              "originalText": "thirteen",
+              "userTextRange": {
+                "initialIndex": 159,
+                "finalIndex": 162
+              },
+              "userText": "1300"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 443,
+            "finalIndex": 457
+          },
+          "originalText": "discoveries are",
+          "userTextRange": {
+            "initialIndex": 443,
+            "finalIndex": 458
+          },
+          "userText": "discovery is/are"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 443,
+                "finalIndex": 453
+              },
+              "originalText": "discoveries",
+              "userTextRange": {
+                "initialIndex": 443,
+                "finalIndex": 454
+              },
+              "userText": "discovery is"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-heatwave-compound-spacing",
+    "category": "remove-established-compound-spacing",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because heatwave and heat wave are accepted spellings of the same spoken term.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "Scientists work to save Ningaloo Reef in Australia. Last year, the reef lost many corals because of a long heatwave. The reef looked very sick. Scientists from the Western Australian Marine Science Institution started a project to help the reef. They made special structures called spawning cones. These cones collect coral larvae to help new corals grow. In April, a cyclone hit the area. Many people thought the coral would die. But the coral was strong and kept growing. This is good news for the reef. Scientists will watch the reef over the next few years. They want to see how well it heals from the heat and storms. They are hopeful that Ningaloo Reef will get better.",
+    "userText": "Scientists  work to saved Ningaloo Reef in Australia.  Last year, the reef lost many corals because of a long heat wave. The reef looked very sick. Scientists from the Western Marine Science Institution started a project to help the reef. They made special structure called Spawning cones. This cones collect coral larvae to help new corals grow. In April, a cyclone hit the area. Many people thought the coral would die, but the coral was strong and kept growing. This is good news for the reef. Scientists will watch the reef over the next few years. They want to see how well it heals from the heat and storms. They are hopeful that Ningaloo Reef will get better.",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 19,
+          "finalIndex": 22
+        },
+        "originalText": "save",
+        "userTextRange": {
+          "initialIndex": 20,
+          "finalIndex": 24
+        },
+        "userText": "saved"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 102,
+          "finalIndex": 114
+        },
+        "originalText": "long heatwave",
+        "userTextRange": {
+          "initialIndex": 105,
+          "finalIndex": 118
+        },
+        "userText": "long heat wave"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 164,
+          "finalIndex": 188
+        },
+        "originalText": "Western Australian Marine",
+        "userTextRange": {
+          "initialIndex": 168,
+          "finalIndex": 181
+        },
+        "userText": "Western Marine"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 264,
+          "finalIndex": 273
+        },
+        "originalText": "structures",
+        "userTextRange": {
+          "initialIndex": 257,
+          "finalIndex": 265
+        },
+        "userText": "structure"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 298,
+          "finalIndex": 302
+        },
+        "originalText": "These",
+        "userTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 293
+        },
+        "userText": "This"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 19,
+          "finalIndex": 22
+        },
+        "originalText": "save",
+        "userTextRange": {
+          "initialIndex": 20,
+          "finalIndex": 24
+        },
+        "userText": "saved",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 172,
+          "finalIndex": 188
+        },
+        "originalText": "Australian Marine",
+        "userTextRange": {
+          "initialIndex": 176,
+          "finalIndex": 181
+        },
+        "userText": "Marine",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 264,
+          "finalIndex": 273
+        },
+        "originalText": "structures",
+        "userTextRange": {
+          "initialIndex": 257,
+          "finalIndex": 265
+        },
+        "userText": "structure",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 298,
+          "finalIndex": 302
+        },
+        "originalText": "These",
+        "userTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 293
+        },
+        "userText": "This",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 1,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 102,
+            "finalIndex": 114
+          },
+          "originalText": "long heatwave",
+          "userTextRange": {
+            "initialIndex": 105,
+            "finalIndex": 118
+          },
+          "userText": "long heat wave"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 164,
+            "finalIndex": 188
+          },
+          "originalText": "Western Australian Marine",
+          "userTextRange": {
+            "initialIndex": 168,
+            "finalIndex": 181
+          },
+          "userText": "Western Marine"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 172,
+                "finalIndex": 188
+              },
+              "originalText": "Australian Marine",
+              "userTextRange": {
+                "initialIndex": 176,
+                "finalIndex": 181
+              },
+              "userText": "Marine"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-hantavirus-term-spacing",
+    "category": "remove-established-term-spacing",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because hantavirus and Hanta virus are equivalent spellings of the same disease term in this context.",
+    "focusSourceComparisonIndex": 3,
+    "originalText": "After six hard weeks in quarantine, one New Zealander and five Australians who were on the cruise ship MV Hondius are going home. The ship had a hantavirus outbreak, which is a disease from rodents. The passengers stayed in a special place near Perth, Australia. They were safe and healthy there. They tested negative for the virus the whole time. Australian Health Minister Mark Butler said they worked together and stayed positive. Their safe return makes everyone happy and shows people can work well during health problems.",
+    "userText": "After six-hard weeks in quarantine, one New Zealander and five Australians who were on a cruise ship in the Hondius are going home. The ship had a Hanta virus outbreak which is a disease from rodents. The passengers stayed in a special place near Perf, Australia. They were safe and healthy there. They tested negative for the virus the whole time. Australian Health Minister -Mark Butler said they work together and stayed positive. Their safe return makes everyone happy and shows people can work well during health problems.",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 0,
+          "finalIndex": 13
+        },
+        "originalText": "After six hard",
+        "userTextRange": {
+          "initialIndex": 0,
+          "finalIndex": 13
+        },
+        "userText": "After six-hard"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 89
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 87
+        },
+        "userText": "a"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 103,
+          "finalIndex": 112
+        },
+        "originalText": "MV Hondius",
+        "userTextRange": {
+          "initialIndex": 101,
+          "finalIndex": 114
+        },
+        "userText": "in the Hondius"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 143,
+          "finalIndex": 163
+        },
+        "originalText": "a hantavirus outbreak",
+        "userTextRange": {
+          "initialIndex": 145,
+          "finalIndex": 166
+        },
+        "userText": "a Hanta virus outbreak"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 245,
+          "finalIndex": 249
+        },
+        "originalText": "Perth",
+        "userTextRange": {
+          "initialIndex": 247,
+          "finalIndex": 250
+        },
+        "userText": "Perf"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 375,
+          "finalIndex": 378
+        },
+        "originalText": "Mark",
+        "userTextRange": {
+          "initialIndex": 376,
+          "finalIndex": 380
+        },
+        "userText": "-Mark"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 397,
+          "finalIndex": 402
+        },
+        "originalText": "worked",
+        "userTextRange": {
+          "initialIndex": 399,
+          "finalIndex": 402
+        },
+        "userText": "work"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 89
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 87
+        },
+        "userText": "a",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 103,
+          "finalIndex": 104
+        },
+        "originalText": "MV",
+        "userTextRange": {
+          "initialIndex": 101,
+          "finalIndex": 106
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 245,
+          "finalIndex": 249
+        },
+        "originalText": "Perth",
+        "userTextRange": {
+          "initialIndex": 247,
+          "finalIndex": 250
+        },
+        "userText": "Perf",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 397,
+          "finalIndex": 402
+        },
+        "originalText": "worked",
+        "userTextRange": {
+          "initialIndex": 399,
+          "finalIndex": 402
+        },
+        "userText": "work",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 0,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 0,
+            "finalIndex": 13
+          },
+          "originalText": "After six hard",
+          "userTextRange": {
+            "initialIndex": 0,
+            "finalIndex": 13
+          },
+          "userText": "After six-hard"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 103,
+            "finalIndex": 112
+          },
+          "originalText": "MV Hondius",
+          "userTextRange": {
+            "initialIndex": 101,
+            "finalIndex": 114
+          },
+          "userText": "in the Hondius"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 103,
+                "finalIndex": 104
+              },
+              "originalText": "MV",
+              "userTextRange": {
+                "initialIndex": 101,
+                "finalIndex": 106
+              },
+              "userText": "in the"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 143,
+            "finalIndex": 163
+          },
+          "originalText": "a hantavirus outbreak",
+          "userTextRange": {
+            "initialIndex": 145,
+            "finalIndex": 166
+          },
+          "userText": "a Hanta virus outbreak"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 375,
+            "finalIndex": 378
+          },
+          "originalText": "Mark",
+          "userTextRange": {
+            "initialIndex": 376,
+            "finalIndex": 380
+          },
+          "userText": "-Mark"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-gigabyte-abbreviation-with-adjacent-word",
+    "category": "remove-unit-abbreviation",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because 512 gigabyte and 512 GB express the same value, and models is matching adjacent content in the full text.",
+    "focusSourceComparisonIndex": 4,
+    "originalText": "Recently, gamers worldwide faced some tough news as Microsoft announced that the prices of its Xbox Series X consoles will go up starting early August. The company explained that rising costs for memory and storage are behind the increase, which will add between one hundred and fifty dollars to the price. The 512 gigabyte models will cost an extra hundred dollars, while the one terabyte versions will go up by one hundred and fifty dollars. The most expensive model with two terabytes of storage is being discontinued. This is not the first time prices have increased; Microsoft already raised them twice in the past year. Since the console was first introduced in twenty twenty, its price has grown by a quarter to nearly a third. The memory shortage affecting many electronics companies has made it more expensive to produce these devices, leading to higher costs for consumers. For fans, this means gaming is becoming more of a luxury, especially during the upcoming holiday season.",
+    "userText": "Recently, gamers worldwide face some tough news as microsoft announced that the prices of the XBox series X consoles will go up starting early august. The company explained that raising costs for memory and storage are behind the increase, which will add between 150 dollars to the price. The 512 GB models will cost an extra 100 dollars, while 1 TB versions will go up by 150 dollars. The most expensive model with 2 TB of storage is being discontinued. This is not the first time prices have increased. Microsoft already rase up them twice in the last year. Since the console was first introduced in the 2020, its prices grown by a quarter, by nearly a thirtd, The memory shortage affecting many eletronics companies has made it more expensive to produce these devices, leaving a higher cost for consumers. For fans, this means gamming is becoming more of a luxuary, specially during the upcome holiday season",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 291
+        },
+        "originalText": "between one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 273
+        },
+        "userText": "between 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 311,
+          "finalIndex": 322
+        },
+        "originalText": "512 gigabyte",
+        "userTextRange": {
+          "initialIndex": 293,
+          "finalIndex": 305
+        },
+        "userText": "512 GB models"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 344,
+          "finalIndex": 356
+        },
+        "originalText": "extra hundred",
+        "userTextRange": {
+          "initialIndex": 320,
+          "finalIndex": 336
+        },
+        "userText": "extra 100 dollars"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 397
+        },
+        "originalText": "the one terabyte versions",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 357
+        },
+        "userText": "1 TB versions"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 410,
+          "finalIndex": 441
+        },
+        "originalText": "by one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 370,
+          "finalIndex": 383
+        },
+        "userText": "by 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 469,
+          "finalIndex": 489
+        },
+        "originalText": "with two terabytes of",
+        "userTextRange": {
+          "initialIndex": 411,
+          "finalIndex": 422
+        },
+        "userText": "with 2 TB of"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 600
+        },
+        "originalText": "raised them",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 534
+        },
+        "userText": "rase up them"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 701
+        },
+        "originalText": "in twenty twenty, its price has grown",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 627
+        },
+        "userText": "in the 2020, its prices grown"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a"
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost"
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming"
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially"
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 350,
+          "finalIndex": 356
+        },
+        "originalText": "hundred",
+        "userTextRange": {
+          "initialIndex": 326,
+          "finalIndex": 328
+        },
+        "userText": "100",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 379
+        },
+        "originalText": "the one",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 345
+        },
+        "userText": "1",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 595
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 529
+        },
+        "userText": "rase up",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 666
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 604
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 695
+        },
+        "originalText": "price has",
+        "userTextRange": {
+          "initialIndex": 616,
+          "finalIndex": 621
+        },
+        "userText": "prices",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 3,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 291
+          },
+          "originalText": "between one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 273
+          },
+          "userText": "between 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 311,
+            "finalIndex": 322
+          },
+          "originalText": "512 gigabyte",
+          "userTextRange": {
+            "initialIndex": 293,
+            "finalIndex": 305
+          },
+          "userText": "512 GB models"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 344,
+            "finalIndex": 356
+          },
+          "originalText": "extra hundred",
+          "userTextRange": {
+            "initialIndex": 320,
+            "finalIndex": 336
+          },
+          "userText": "extra 100 dollars"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 350,
+                "finalIndex": 356
+              },
+              "originalText": "hundred",
+              "userTextRange": {
+                "initialIndex": 326,
+                "finalIndex": 328
+              },
+              "userText": "100"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 373,
+            "finalIndex": 397
+          },
+          "originalText": "the one terabyte versions",
+          "userTextRange": {
+            "initialIndex": 345,
+            "finalIndex": 357
+          },
+          "userText": "1 TB versions"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 373,
+                "finalIndex": 379
+              },
+              "originalText": "the one",
+              "userTextRange": {
+                "initialIndex": 345,
+                "finalIndex": 345
+              },
+              "userText": "1"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 410,
+            "finalIndex": 441
+          },
+          "originalText": "by one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 370,
+            "finalIndex": 383
+          },
+          "userText": "by 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 469,
+            "finalIndex": 489
+          },
+          "originalText": "with two terabytes of",
+          "userTextRange": {
+            "initialIndex": 411,
+            "finalIndex": 422
+          },
+          "userText": "with 2 TB of"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 590,
+            "finalIndex": 600
+          },
+          "originalText": "raised them",
+          "userTextRange": {
+            "initialIndex": 523,
+            "finalIndex": 534
+          },
+          "userText": "rase up them"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 590,
+                "finalIndex": 595
+              },
+              "originalText": "raised",
+              "userTextRange": {
+                "initialIndex": 523,
+                "finalIndex": 529
+              },
+              "userText": "rase up"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 665,
+            "finalIndex": 701
+          },
+          "originalText": "in twenty twenty, its price has grown",
+          "userTextRange": {
+            "initialIndex": 599,
+            "finalIndex": 627
+          },
+          "userText": "in the 2020, its prices grown"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 665,
+                "finalIndex": 666
+              },
+              "originalText": "in",
+              "userTextRange": {
+                "initialIndex": 599,
+                "finalIndex": 604
+              },
+              "userText": "in the"
+            },
+            {
+              "originalTextRange": {
+                "initialIndex": 687,
+                "finalIndex": 695
+              },
+              "originalText": "price has",
+              "userTextRange": {
+                "initialIndex": 616,
+                "finalIndex": 621
+              },
+              "userText": "prices"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-terabyte-abbreviation-with-article",
+    "category": "shrink-unit-abbreviation-with-article",
+    "expectation": "Run the full correction orchestrator. Shrink to the one versus 1 because the unit value is equivalent but the article the is missing.",
+    "focusSourceComparisonIndex": 6,
+    "originalText": "Recently, gamers worldwide faced some tough news as Microsoft announced that the prices of its Xbox Series X consoles will go up starting early August. The company explained that rising costs for memory and storage are behind the increase, which will add between one hundred and fifty dollars to the price. The 512 gigabyte models will cost an extra hundred dollars, while the one terabyte versions will go up by one hundred and fifty dollars. The most expensive model with two terabytes of storage is being discontinued. This is not the first time prices have increased; Microsoft already raised them twice in the past year. Since the console was first introduced in twenty twenty, its price has grown by a quarter to nearly a third. The memory shortage affecting many electronics companies has made it more expensive to produce these devices, leading to higher costs for consumers. For fans, this means gaming is becoming more of a luxury, especially during the upcoming holiday season.",
+    "userText": "Recently, gamers worldwide face some tough news as microsoft announced that the prices of the XBox series X consoles will go up starting early august. The company explained that raising costs for memory and storage are behind the increase, which will add between 150 dollars to the price. The 512 GB models will cost an extra 100 dollars, while 1 TB versions will go up by 150 dollars. The most expensive model with 2 TB of storage is being discontinued. This is not the first time prices have increased. Microsoft already rase up them twice in the last year. Since the console was first introduced in the 2020, its prices grown by a quarter, by nearly a thirtd, The memory shortage affecting many eletronics companies has made it more expensive to produce these devices, leaving a higher cost for consumers. For fans, this means gamming is becoming more of a luxuary, specially during the upcome holiday season",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 291
+        },
+        "originalText": "between one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 273
+        },
+        "userText": "between 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 311,
+          "finalIndex": 322
+        },
+        "originalText": "512 gigabyte",
+        "userTextRange": {
+          "initialIndex": 293,
+          "finalIndex": 305
+        },
+        "userText": "512 GB models"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 344,
+          "finalIndex": 356
+        },
+        "originalText": "extra hundred",
+        "userTextRange": {
+          "initialIndex": 320,
+          "finalIndex": 336
+        },
+        "userText": "extra 100 dollars"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 397
+        },
+        "originalText": "the one terabyte versions",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 357
+        },
+        "userText": "1 TB versions"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 410,
+          "finalIndex": 441
+        },
+        "originalText": "by one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 370,
+          "finalIndex": 383
+        },
+        "userText": "by 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 469,
+          "finalIndex": 489
+        },
+        "originalText": "with two terabytes of",
+        "userTextRange": {
+          "initialIndex": 411,
+          "finalIndex": 422
+        },
+        "userText": "with 2 TB of"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 600
+        },
+        "originalText": "raised them",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 534
+        },
+        "userText": "rase up them"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 701
+        },
+        "originalText": "in twenty twenty, its price has grown",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 627
+        },
+        "userText": "in the 2020, its prices grown"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a"
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost"
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming"
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially"
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 350,
+          "finalIndex": 356
+        },
+        "originalText": "hundred",
+        "userTextRange": {
+          "initialIndex": 326,
+          "finalIndex": 328
+        },
+        "userText": "100",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 379
+        },
+        "originalText": "the one",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 345
+        },
+        "userText": "1",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 595
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 529
+        },
+        "userText": "rase up",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 666
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 604
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 695
+        },
+        "originalText": "price has",
+        "userTextRange": {
+          "initialIndex": 616,
+          "finalIndex": 621
+        },
+        "userText": "prices",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 3,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 291
+          },
+          "originalText": "between one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 273
+          },
+          "userText": "between 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 311,
+            "finalIndex": 322
+          },
+          "originalText": "512 gigabyte",
+          "userTextRange": {
+            "initialIndex": 293,
+            "finalIndex": 305
+          },
+          "userText": "512 GB models"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 344,
+            "finalIndex": 356
+          },
+          "originalText": "extra hundred",
+          "userTextRange": {
+            "initialIndex": 320,
+            "finalIndex": 336
+          },
+          "userText": "extra 100 dollars"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 350,
+                "finalIndex": 356
+              },
+              "originalText": "hundred",
+              "userTextRange": {
+                "initialIndex": 326,
+                "finalIndex": 328
+              },
+              "userText": "100"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 373,
+            "finalIndex": 397
+          },
+          "originalText": "the one terabyte versions",
+          "userTextRange": {
+            "initialIndex": 345,
+            "finalIndex": 357
+          },
+          "userText": "1 TB versions"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 373,
+                "finalIndex": 379
+              },
+              "originalText": "the one",
+              "userTextRange": {
+                "initialIndex": 345,
+                "finalIndex": 345
+              },
+              "userText": "1"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 410,
+            "finalIndex": 441
+          },
+          "originalText": "by one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 370,
+            "finalIndex": 383
+          },
+          "userText": "by 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 469,
+            "finalIndex": 489
+          },
+          "originalText": "with two terabytes of",
+          "userTextRange": {
+            "initialIndex": 411,
+            "finalIndex": 422
+          },
+          "userText": "with 2 TB of"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 590,
+            "finalIndex": 600
+          },
+          "originalText": "raised them",
+          "userTextRange": {
+            "initialIndex": 523,
+            "finalIndex": 534
+          },
+          "userText": "rase up them"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 590,
+                "finalIndex": 595
+              },
+              "originalText": "raised",
+              "userTextRange": {
+                "initialIndex": 523,
+                "finalIndex": 529
+              },
+              "userText": "rase up"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 665,
+            "finalIndex": 701
+          },
+          "originalText": "in twenty twenty, its price has grown",
+          "userTextRange": {
+            "initialIndex": 599,
+            "finalIndex": 627
+          },
+          "userText": "in the 2020, its prices grown"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 665,
+                "finalIndex": 666
+              },
+              "originalText": "in",
+              "userTextRange": {
+                "initialIndex": 599,
+                "finalIndex": 604
+              },
+              "userText": "in the"
+            },
+            {
+              "originalTextRange": {
+                "initialIndex": 687,
+                "finalIndex": 695
+              },
+              "originalText": "price has",
+              "userTextRange": {
+                "initialIndex": 616,
+                "finalIndex": 621
+              },
+              "userText": "prices"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-terabytes-abbreviation-equivalence",
+    "category": "remove-unit-abbreviation",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because two terabytes and 2 TB express the same value and unit.",
+    "focusSourceComparisonIndex": 8,
+    "originalText": "Recently, gamers worldwide faced some tough news as Microsoft announced that the prices of its Xbox Series X consoles will go up starting early August. The company explained that rising costs for memory and storage are behind the increase, which will add between one hundred and fifty dollars to the price. The 512 gigabyte models will cost an extra hundred dollars, while the one terabyte versions will go up by one hundred and fifty dollars. The most expensive model with two terabytes of storage is being discontinued. This is not the first time prices have increased; Microsoft already raised them twice in the past year. Since the console was first introduced in twenty twenty, its price has grown by a quarter to nearly a third. The memory shortage affecting many electronics companies has made it more expensive to produce these devices, leading to higher costs for consumers. For fans, this means gaming is becoming more of a luxury, especially during the upcoming holiday season.",
+    "userText": "Recently, gamers worldwide face some tough news as microsoft announced that the prices of the XBox series X consoles will go up starting early august. The company explained that raising costs for memory and storage are behind the increase, which will add between 150 dollars to the price. The 512 GB models will cost an extra 100 dollars, while 1 TB versions will go up by 150 dollars. The most expensive model with 2 TB of storage is being discontinued. This is not the first time prices have increased. Microsoft already rase up them twice in the last year. Since the console was first introduced in the 2020, its prices grown by a quarter, by nearly a thirtd, The memory shortage affecting many eletronics companies has made it more expensive to produce these devices, leaving a higher cost for consumers. For fans, this means gamming is becoming more of a luxuary, specially during the upcome holiday season",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 291
+        },
+        "originalText": "between one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 273
+        },
+        "userText": "between 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 311,
+          "finalIndex": 322
+        },
+        "originalText": "512 gigabyte",
+        "userTextRange": {
+          "initialIndex": 293,
+          "finalIndex": 305
+        },
+        "userText": "512 GB models"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 344,
+          "finalIndex": 356
+        },
+        "originalText": "extra hundred",
+        "userTextRange": {
+          "initialIndex": 320,
+          "finalIndex": 336
+        },
+        "userText": "extra 100 dollars"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 397
+        },
+        "originalText": "the one terabyte versions",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 357
+        },
+        "userText": "1 TB versions"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 410,
+          "finalIndex": 441
+        },
+        "originalText": "by one hundred and fifty dollars",
+        "userTextRange": {
+          "initialIndex": 370,
+          "finalIndex": 383
+        },
+        "userText": "by 150 dollars"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 469,
+          "finalIndex": 489
+        },
+        "originalText": "with two terabytes of",
+        "userTextRange": {
+          "initialIndex": 411,
+          "finalIndex": 422
+        },
+        "userText": "with 2 TB of"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 600
+        },
+        "originalText": "raised them",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 534
+        },
+        "userText": "rase up them"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 701
+        },
+        "originalText": "in twenty twenty, its price has grown",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 627
+        },
+        "userText": "in the 2020, its prices grown"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a"
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost"
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming"
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially"
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome"
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 350,
+          "finalIndex": 356
+        },
+        "originalText": "hundred",
+        "userTextRange": {
+          "initialIndex": 326,
+          "finalIndex": 328
+        },
+        "userText": "100",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 379
+        },
+        "originalText": "the one",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 345
+        },
+        "userText": "1",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 595
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 529
+        },
+        "userText": "rase up",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 666
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 604
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 695
+        },
+        "originalText": "price has",
+        "userTextRange": {
+          "initialIndex": 616,
+          "finalIndex": 621
+        },
+        "userText": "prices",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 3,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 291
+          },
+          "originalText": "between one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 255,
+            "finalIndex": 273
+          },
+          "userText": "between 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 311,
+            "finalIndex": 322
+          },
+          "originalText": "512 gigabyte",
+          "userTextRange": {
+            "initialIndex": 293,
+            "finalIndex": 305
+          },
+          "userText": "512 GB models"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 344,
+            "finalIndex": 356
+          },
+          "originalText": "extra hundred",
+          "userTextRange": {
+            "initialIndex": 320,
+            "finalIndex": 336
+          },
+          "userText": "extra 100 dollars"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 350,
+                "finalIndex": 356
+              },
+              "originalText": "hundred",
+              "userTextRange": {
+                "initialIndex": 326,
+                "finalIndex": 328
+              },
+              "userText": "100"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 373,
+            "finalIndex": 397
+          },
+          "originalText": "the one terabyte versions",
+          "userTextRange": {
+            "initialIndex": 345,
+            "finalIndex": 357
+          },
+          "userText": "1 TB versions"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 373,
+                "finalIndex": 379
+              },
+              "originalText": "the one",
+              "userTextRange": {
+                "initialIndex": 345,
+                "finalIndex": 345
+              },
+              "userText": "1"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 410,
+            "finalIndex": 441
+          },
+          "originalText": "by one hundred and fifty dollars",
+          "userTextRange": {
+            "initialIndex": 370,
+            "finalIndex": 383
+          },
+          "userText": "by 150 dollars"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 469,
+            "finalIndex": 489
+          },
+          "originalText": "with two terabytes of",
+          "userTextRange": {
+            "initialIndex": 411,
+            "finalIndex": 422
+          },
+          "userText": "with 2 TB of"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 590,
+            "finalIndex": 600
+          },
+          "originalText": "raised them",
+          "userTextRange": {
+            "initialIndex": 523,
+            "finalIndex": 534
+          },
+          "userText": "rase up them"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 590,
+                "finalIndex": 595
+              },
+              "originalText": "raised",
+              "userTextRange": {
+                "initialIndex": 523,
+                "finalIndex": 529
+              },
+              "userText": "rase up"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 665,
+            "finalIndex": 701
+          },
+          "originalText": "in twenty twenty, its price has grown",
+          "userTextRange": {
+            "initialIndex": 599,
+            "finalIndex": 627
+          },
+          "userText": "in the 2020, its prices grown"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 665,
+                "finalIndex": 666
+              },
+              "originalText": "in",
+              "userTextRange": {
+                "initialIndex": 599,
+                "finalIndex": 604
+              },
+              "userText": "in the"
+            },
+            {
+              "originalTextRange": {
+                "initialIndex": 687,
+                "finalIndex": 695
+              },
+              "originalText": "price has",
+              "userTextRange": {
+                "initialIndex": 616,
+                "finalIndex": 621
+              },
+              "userText": "prices"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "caseId": "real-diacritic-term-with-modal",
+    "category": "shrink-diacritic-term",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to could versus can; ignore the harmless diacritic and casing difference in El Nino.",
+    "focusSourceComparisonIndex": 13,
+    "originalText": "Climate experts say a strong El Ni\u00F1o might happen this year. It could make Australia\u0027s weather hotter and drier. Some places might have droughts. Droughts can hurt farms and the economy. In the east, farmers see warm and wet weather that helped crops grow early. Other areas stay dry and might face drought. In the past, droughts hurt some places more. The Hunter Valley had serious damage from drought that took years to fix. People and farmers watch the weather because El Ni\u00F1o could change everything. It might affect food prices and jobs in Australia.",
+    "userText": "Climate experts said strong El Nino might happened this year. It will make Australia weather hotter and drier. Some places might have drought. Drought can hurt farm and the economy. In the east, farmers see warm and wether it help corp grow early. Other area stay dry might face drought. In the past, drought hurt some places more. The valley have serious damage from drought that took years to fix. People in farmer looked each other because el nino can change everything.",
+    "sourceComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 16,
+          "finalIndex": 27
+        },
+        "originalText": "say a strong",
+        "userTextRange": {
+          "initialIndex": 16,
+          "finalIndex": 26
+        },
+        "userText": "said strong"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 32,
+          "finalIndex": 35
+        },
+        "originalText": "Ni\u00F1o",
+        "userTextRange": {
+          "initialIndex": 31,
+          "finalIndex": 34
+        },
+        "userText": "Nino"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 43,
+          "finalIndex": 48
+        },
+        "originalText": "happen",
+        "userTextRange": {
+          "initialIndex": 42,
+          "finalIndex": 49
+        },
+        "userText": "happened"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 64,
+          "finalIndex": 68
+        },
+        "originalText": "could",
+        "userTextRange": {
+          "initialIndex": 65,
+          "finalIndex": 68
+        },
+        "userText": "will"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 85
+        },
+        "originalText": "Australia\u0027s",
+        "userTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 83
+        },
+        "userText": "Australia"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 136,
+          "finalIndex": 153
+        },
+        "originalText": "droughts. Droughts",
+        "userTextRange": {
+          "initialIndex": 134,
+          "finalIndex": 149
+        },
+        "userText": "drought. Drought"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 164,
+          "finalIndex": 168
+        },
+        "originalText": "farms",
+        "userTextRange": {
+          "initialIndex": 160,
+          "finalIndex": 163
+        },
+        "userText": "farm"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 217,
+          "finalIndex": 249
+        },
+        "originalText": "and wet weather that helped crops",
+        "userTextRange": {
+          "initialIndex": 212,
+          "finalIndex": 234
+        },
+        "userText": "and wether it help corp"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 269,
+          "finalIndex": 273
+        },
+        "originalText": "areas",
+        "userTextRange": {
+          "initialIndex": 254,
+          "finalIndex": 257
+        },
+        "userText": "area"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 280,
+          "finalIndex": 292
+        },
+        "originalText": "dry and might",
+        "userTextRange": {
+          "initialIndex": 264,
+          "finalIndex": 272
+        },
+        "userText": "dry might"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 321,
+          "finalIndex": 328
+        },
+        "originalText": "droughts",
+        "userTextRange": {
+          "initialIndex": 301,
+          "finalIndex": 307
+        },
+        "userText": "drought"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 353,
+          "finalIndex": 373
+        },
+        "originalText": "The Hunter Valley had",
+        "userTextRange": {
+          "initialIndex": 332,
+          "finalIndex": 346
+        },
+        "userText": "The valley have"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 434,
+          "finalIndex": 470
+        },
+        "originalText": "and farmers watch the weather because",
+        "userTextRange": {
+          "initialIndex": 407,
+          "finalIndex": 441
+        },
+        "userText": "in farmer looked each other because"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 475,
+          "finalIndex": 484
+        },
+        "originalText": "Ni\u00F1o could",
+        "userTextRange": {
+          "initialIndex": 446,
+          "finalIndex": 453
+        },
+        "userText": "nino can"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 493,
+          "finalIndex": 554
+        },
+        "originalText": "everything. It might affect food prices and jobs in Australia.",
+        "userTextRange": {
+          "initialIndex": 462,
+          "finalIndex": 472
+        },
+        "userText": "everything."
+      }
+    ],
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 16,
+          "finalIndex": 20
+        },
+        "originalText": "say a",
+        "userTextRange": {
+          "initialIndex": 16,
+          "finalIndex": 19
+        },
+        "userText": "said",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 43,
+          "finalIndex": 48
+        },
+        "originalText": "happen",
+        "userTextRange": {
+          "initialIndex": 42,
+          "finalIndex": 49
+        },
+        "userText": "happened",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 64,
+          "finalIndex": 68
+        },
+        "originalText": "could",
+        "userTextRange": {
+          "initialIndex": 65,
+          "finalIndex": 68
+        },
+        "userText": "will",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 85
+        },
+        "originalText": "Australia\u0027s",
+        "userTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 83
+        },
+        "userText": "Australia",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 136,
+          "finalIndex": 153
+        },
+        "originalText": "droughts. Droughts",
+        "userTextRange": {
+          "initialIndex": 134,
+          "finalIndex": 149
+        },
+        "userText": "drought. Drought",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 164,
+          "finalIndex": 168
+        },
+        "originalText": "farms",
+        "userTextRange": {
+          "initialIndex": 160,
+          "finalIndex": 163
+        },
+        "userText": "farm",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 221,
+          "finalIndex": 249
+        },
+        "originalText": "wet weather that helped crops",
+        "userTextRange": {
+          "initialIndex": 216,
+          "finalIndex": 234
+        },
+        "userText": "wether it help corp",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 269,
+          "finalIndex": 273
+        },
+        "originalText": "areas",
+        "userTextRange": {
+          "initialIndex": 254,
+          "finalIndex": 257
+        },
+        "userText": "area",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 284,
+          "finalIndex": 292
+        },
+        "originalText": "and might",
+        "userTextRange": {
+          "initialIndex": 268,
+          "finalIndex": 272
+        },
+        "userText": "might",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 321,
+          "finalIndex": 328
+        },
+        "originalText": "droughts",
+        "userTextRange": {
+          "initialIndex": 301,
+          "finalIndex": 307
+        },
+        "userText": "drought",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 353,
+          "finalIndex": 362
+        },
+        "originalText": "The Hunter",
+        "userTextRange": {
+          "initialIndex": 332,
+          "finalIndex": 334
+        },
+        "userText": "The",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 371,
+          "finalIndex": 373
+        },
+        "originalText": "had",
+        "userTextRange": {
+          "initialIndex": 343,
+          "finalIndex": 346
+        },
+        "userText": "have",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 434,
+          "finalIndex": 462
+        },
+        "originalText": "and farmers watch the weather",
+        "userTextRange": {
+          "initialIndex": 407,
+          "finalIndex": 433
+        },
+        "userText": "in farmer looked each other",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 480,
+          "finalIndex": 484
+        },
+        "originalText": "could",
+        "userTextRange": {
+          "initialIndex": 451,
+          "finalIndex": 453
+        },
+        "userText": "can",
+        "isDeterministicallyRefined": true,
+        "isAiRefined": false
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 493,
+          "finalIndex": 554
+        },
+        "originalText": "everything. It might affect food prices and jobs in Australia.",
+        "userTextRange": {
+          "initialIndex": 462,
+          "finalIndex": 472
+        },
+        "userText": "everything.",
+        "isDeterministicallyRefined": false,
+        "isAiRefined": false
+      }
+    ],
+    "expectedTrace": [
+      {
+        "sourceComparisonIndex": 0,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 16,
+            "finalIndex": 27
+          },
+          "originalText": "say a strong",
+          "userTextRange": {
+            "initialIndex": 16,
+            "finalIndex": 26
+          },
+          "userText": "said strong"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 16,
+                "finalIndex": 20
+              },
+              "originalText": "say a",
+              "userTextRange": {
+                "initialIndex": 16,
+                "finalIndex": 19
+              },
+              "userText": "said"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 32,
+            "finalIndex": 35
+          },
+          "originalText": "Ni\u00F1o",
+          "userTextRange": {
+            "initialIndex": 31,
+            "finalIndex": 34
+          },
+          "userText": "Nino"
+        },
+        "deterministic": {
+          "action": "remove",
+          "reasonCode": "normalized_equivalence",
+          "output": []
+        }
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 217,
+            "finalIndex": 249
+          },
+          "originalText": "and wet weather that helped crops",
+          "userTextRange": {
+            "initialIndex": 212,
+            "finalIndex": 234
+          },
+          "userText": "and wether it help corp"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 221,
+                "finalIndex": 249
+              },
+              "originalText": "wet weather that helped crops",
+              "userTextRange": {
+                "initialIndex": 216,
+                "finalIndex": 234
+              },
+              "userText": "wether it help corp"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 280,
+            "finalIndex": 292
+          },
+          "originalText": "dry and might",
+          "userTextRange": {
+            "initialIndex": 264,
+            "finalIndex": 272
+          },
+          "userText": "dry might"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 284,
+                "finalIndex": 292
+              },
+              "originalText": "and might",
+              "userTextRange": {
+                "initialIndex": 268,
+                "finalIndex": 272
+              },
+              "userText": "might"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 353,
+            "finalIndex": 373
+          },
+          "originalText": "The Hunter Valley had",
+          "userTextRange": {
+            "initialIndex": 332,
+            "finalIndex": 346
+          },
+          "userText": "The valley have"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 353,
+                "finalIndex": 362
+              },
+              "originalText": "The Hunter",
+              "userTextRange": {
+                "initialIndex": 332,
+                "finalIndex": 334
+              },
+              "userText": "The"
+            },
+            {
+              "originalTextRange": {
+                "initialIndex": 371,
+                "finalIndex": 373
+              },
+              "originalText": "had",
+              "userTextRange": {
+                "initialIndex": 343,
+                "finalIndex": 346
+              },
+              "userText": "have"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 434,
+            "finalIndex": 470
+          },
+          "originalText": "and farmers watch the weather because",
+          "userTextRange": {
+            "initialIndex": 407,
+            "finalIndex": 441
+          },
+          "userText": "in farmer looked each other because"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 434,
+                "finalIndex": 462
+              },
+              "originalText": "and farmers watch the weather",
+              "userTextRange": {
+                "initialIndex": 407,
+                "finalIndex": 433
+              },
+              "userText": "in farmer looked each other"
+            }
+          ]
+        }
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "initial": {
+          "originalTextRange": {
+            "initialIndex": 475,
+            "finalIndex": 484
+          },
+          "originalText": "Ni\u00F1o could",
+          "userTextRange": {
+            "initialIndex": 446,
+            "finalIndex": 453
+          },
+          "userText": "nino can"
+        },
+        "deterministic": {
+          "action": "refine",
+          "reasonCode": "deterministic_boundary_refinement",
+          "output": [
+            {
+              "originalTextRange": {
+                "initialIndex": 480,
+                "finalIndex": 484
+              },
+              "originalText": "could",
+              "userTextRange": {
+                "initialIndex": 451,
+                "finalIndex": 453
+              },
+              "userText": "can"
             }
           ]
         }

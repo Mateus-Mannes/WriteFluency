@@ -1,12 +1,5 @@
 using System.Text.Json;
-using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using WriteFluency.AiRefinement.Evals;
-using WriteFluency.Infrastructure.TextComparisons;
 using WriteFluency.TextComparisons;
 
 var arguments = EvaluationArguments.Parse(args);
@@ -37,60 +30,6 @@ if (arguments.ValidateOnly)
     return 0;
 }
 
-var builder = Host.CreateApplicationBuilder();
-builder.Configuration.AddJsonFile(
-    Path.Combine(AppContext.BaseDirectory, "appsettings.webapi.json"),
-    optional: false,
-    reloadOnChange: false);
-builder.Configuration.AddUserSecrets<Program>(optional: true);
-
-var apiKey = builder.Configuration["OPENAI_API_KEY"]
-    ?? builder.Configuration["ExternalApis:OpenAI:Key"];
-if (string.IsNullOrWhiteSpace(apiKey)
-    || apiKey.StartsWith("{", StringComparison.Ordinal))
-{
-    Console.Error.WriteLine(
-        "OpenAI API key not found. Set OPENAI_API_KEY or ExternalApis:OpenAI:Key in user secrets.");
-    return 2;
-}
-
-if (!string.IsNullOrWhiteSpace(arguments.Model))
-{
-    builder.Configuration[$"{AiRefinementOptions.Section}:Model"] =
-        arguments.Model;
-}
-
-builder.Services.AddOptions<AiRefinementOptions>()
-    .Bind(builder.Configuration.GetSection(AiRefinementOptions.Section))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.Model))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.ReasoningEffort))
-    .Validate(options => options.MaxOutputTokens > 0)
-    .Validate(options => options.MaxComparisonsPerRequest > 0)
-    .ValidateOnStart();
-builder.Services.AddSingleton<IChatClient>(serviceProvider =>
-    new OpenAI.OpenAIClient(apiKey)
-        .GetChatClient(
-            serviceProvider
-                .GetRequiredService<IOptions<AiRefinementOptions>>()
-                .Value
-                .Model)
-        .AsIChatClient());
-builder.Services.AddSingleton<ITextComparisonAiRefiner, OpenAiTextComparisonRefiner>();
-builder.Services.AddSingleton<LevenshteinDistanceService>();
-builder.Services.AddSingleton<TokenAlignmentService>();
-builder.Services.AddSingleton<TokenizeTextService>();
-builder.Services.AddSingleton<NeedlemanWunschAlignmentService>();
-builder.Services.AddSingleton<TextAlignmentService>();
-builder.Services.AddSingleton<TokenComparisonService>();
-builder.Services.AddSingleton<TextComparisonService>();
-builder.Services.AddSingleton<EnglishNumberNormalizer>();
-builder.Services.AddSingleton<DeterministicTextEquivalenceService>();
-builder.Services.AddSingleton<DeterministicTextComparisonRefiner>();
-builder.Services.AddSingleton<AiRefinementOutputValidator>();
-builder.Services.AddSingleton<CorrectionOrchestrationService>();
-builder.Services.AddSingleton<AiRefinementEvaluator>();
-
-using var host = builder.Build();
 var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, eventArgs) =>
 {
@@ -100,7 +39,12 @@ Console.CancelKeyPress += (_, eventArgs) =>
 
 try
 {
-    var evaluator = host.Services.GetRequiredService<AiRefinementEvaluator>();
+    var evaluator = new AiRefinementEvaluator(
+        new CorrectionOrchestrationService(
+            CreateTextComparisonService(),
+            new DeterministicTextComparisonRefiner(
+                new DeterministicTextEquivalenceService(
+                    new EnglishNumberNormalizer()))));
     var summary = await evaluator.EvaluateAsync(
         cases,
         arguments.Runs,
@@ -137,4 +81,16 @@ catch (Exception exception)
 {
     Console.Error.WriteLine(exception.Message);
     return 2;
+}
+
+static TextComparisonService CreateTextComparisonService()
+{
+    var levenshteinDistanceService = new LevenshteinDistanceService();
+    return new TextComparisonService(
+        levenshteinDistanceService,
+        new TextAlignmentService(
+            new NeedlemanWunschAlignmentService(levenshteinDistanceService),
+            new TokenizeTextService(),
+            new TokenAlignmentService()),
+        new TokenComparisonService());
 }

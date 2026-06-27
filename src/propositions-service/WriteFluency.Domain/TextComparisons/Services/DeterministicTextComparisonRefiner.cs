@@ -26,14 +26,25 @@ public sealed class DeterministicTextComparisonRefiner
 
         foreach (var comparison in comparisons)
         {
-            var source = new ComparisonRange(
+            var initialSource = new ComparisonRange(
                 comparison.SourceComparisonIndex,
                 comparison.OriginalTextRange,
                 comparison.UserTextRange);
+            var source = TryTrimAdjacentBoundaryOverlap(
+                    originalText,
+                    userText,
+                    initialSource,
+                    out var boundaryTrimmed)
+                ? boundaryTrimmed
+                : initialSource;
 
             var equivalence = _equivalenceService.Evaluate(
-                comparison.OriginalText,
-                comparison.UserText);
+                TextRangeNavigator.Slice(
+                    originalText,
+                    source.OriginalTextRange),
+                TextRangeNavigator.Slice(
+                    userText,
+                    source.UserTextRange));
             if (equivalence.IsEquivalent)
             {
                 removedComparisonCount++;
@@ -48,11 +59,11 @@ public sealed class DeterministicTextComparisonRefiner
 
             var refinedRanges = RefineRange(originalText, userText, source);
             var refinedComparisons = refinedRanges
-                .Select(range => ToComparison(
+                    .Select(range => ToComparison(
                     originalText,
                     userText,
                     range,
-                    isDeterministicallyRefined: !IsSameRange(source, range)))
+                    isDeterministicallyRefined: !IsSameRange(initialSource, range)))
                 .Where(comparison => comparison is not null)
                 .Select(comparison => comparison!)
                 .ToList();
@@ -82,6 +93,156 @@ public sealed class DeterministicTextComparisonRefiner
             trace,
             removedComparisonCount,
             removedComparisonCount > 0 || trace.Count > 0);
+    }
+
+    private bool TryTrimAdjacentBoundaryOverlap(
+        string originalText,
+        string userText,
+        ComparisonRange source,
+        out ComparisonRange trimmed)
+    {
+        trimmed = source;
+        var changed = false;
+        var textRange = new TextRange(0, originalText.Length - 1);
+        var userTextRange = new TextRange(0, userText.Length - 1);
+
+        var keepTrimming = true;
+        while (keepTrimming)
+        {
+            keepTrimming = false;
+            if (TryTrimTrailingBoundaryWord(
+                    userText,
+                    trimmed.UserTextRange,
+                    originalText,
+                    textRange,
+                    trimmed.OriginalTextRange.FinalIndex,
+                    out var userTrailingTrimmed))
+            {
+                trimmed = trimmed with { UserTextRange = userTrailingTrimmed };
+                changed = true;
+                keepTrimming = true;
+                continue;
+            }
+
+            if (TryTrimTrailingBoundaryWord(
+                    originalText,
+                    trimmed.OriginalTextRange,
+                    userText,
+                    userTextRange,
+                    trimmed.UserTextRange.FinalIndex,
+                    out var originalTrailingTrimmed))
+            {
+                trimmed = trimmed with
+                {
+                    OriginalTextRange = originalTrailingTrimmed
+                };
+                changed = true;
+                keepTrimming = true;
+                continue;
+            }
+
+            if (TryTrimLeadingBoundaryWord(
+                    userText,
+                    trimmed.UserTextRange,
+                    originalText,
+                    textRange,
+                    trimmed.OriginalTextRange.InitialIndex,
+                    out var userLeadingTrimmed))
+            {
+                trimmed = trimmed with { UserTextRange = userLeadingTrimmed };
+                changed = true;
+                keepTrimming = true;
+                continue;
+            }
+
+            if (TryTrimLeadingBoundaryWord(
+                    originalText,
+                    trimmed.OriginalTextRange,
+                    userText,
+                    userTextRange,
+                    trimmed.UserTextRange.InitialIndex,
+                    out var originalLeadingTrimmed))
+            {
+                trimmed = trimmed with
+                {
+                    OriginalTextRange = originalLeadingTrimmed
+                };
+                changed = true;
+                keepTrimming = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private bool TryTrimTrailingBoundaryWord(
+        string text,
+        TextRange range,
+        string oppositeText,
+        TextRange oppositeFullRange,
+        int oppositeAfterIndex,
+        out TextRange trimmed)
+    {
+        trimmed = range;
+        if (!TextRangeNavigator.TryGetLastWord(text, range, out var boundaryWord)
+            || !TextRangeNavigator.TryGetNextWord(
+                oppositeText,
+                oppositeFullRange,
+                oppositeAfterIndex,
+                out var oppositeNextWord)
+            || !AreEquivalent(
+                TextRangeNavigator.Slice(text, boundaryWord),
+                TextRangeNavigator.Slice(oppositeText, oppositeNextWord)))
+        {
+            return false;
+        }
+
+        var candidate = TextRangeNavigator.TrimTrailingWord(
+            text,
+            range,
+            boundaryWord);
+        if (!HasWords(text, candidate))
+        {
+            return false;
+        }
+
+        trimmed = candidate;
+        return true;
+    }
+
+    private bool TryTrimLeadingBoundaryWord(
+        string text,
+        TextRange range,
+        string oppositeText,
+        TextRange oppositeFullRange,
+        int oppositeBeforeIndex,
+        out TextRange trimmed)
+    {
+        trimmed = range;
+        if (!TextRangeNavigator.TryGetFirstWord(text, range, out var boundaryWord)
+            || !TextRangeNavigator.TryGetPreviousWord(
+                oppositeText,
+                oppositeFullRange,
+                oppositeBeforeIndex,
+                out var oppositePreviousWord)
+            || !AreEquivalent(
+                TextRangeNavigator.Slice(text, boundaryWord),
+                TextRangeNavigator.Slice(oppositeText, oppositePreviousWord)))
+        {
+            return false;
+        }
+
+        var candidate = TextRangeNavigator.TrimLeadingWord(
+            text,
+            range,
+            boundaryWord);
+        if (!HasWords(text, candidate))
+        {
+            return false;
+        }
+
+        trimmed = candidate;
+        return true;
     }
 
     private IReadOnlyList<ComparisonRange> RefineRange(

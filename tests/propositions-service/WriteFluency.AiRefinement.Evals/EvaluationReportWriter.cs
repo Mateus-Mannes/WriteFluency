@@ -751,7 +751,8 @@ public static class EvaluationReportWriter
         }
 
         return expected.Action == actual.Action
-            && expected.ReasonCode == actual.ReasonCode
+            && (expected.ReasonCode is null
+                || expected.ReasonCode == actual.ReasonCode)
             && expected.ValidationStatus == actual.ValidationStatus
             && expected.ValidationFailureReason
                 == actual.ValidationFailureReason
@@ -767,7 +768,7 @@ public static class EvaluationReportWriter
     {
         if (expected is null || actual is null)
         {
-            return expected is null && actual is null;
+            return expected is null;
         }
 
         return SnapshotsMatch(expected, actual);

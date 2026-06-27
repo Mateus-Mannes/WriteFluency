@@ -8,17 +8,11 @@ public sealed class AiRefinementEvaluator
     private const double RequiredMeanSpanF1 = 0.85;
     private const double RequiredExactPassRate = 0.80;
 
-    private readonly ITextComparisonAiRefiner _refiner;
-    private readonly AiRefinementOutputValidator _validator;
     private readonly CorrectionOrchestrationService _orchestrationService;
 
     public AiRefinementEvaluator(
-        ITextComparisonAiRefiner refiner,
-        AiRefinementOutputValidator validator,
         CorrectionOrchestrationService orchestrationService)
     {
-        _refiner = refiner;
-        _validator = validator;
         _orchestrationService = orchestrationService;
     }
 
@@ -80,81 +74,10 @@ public sealed class AiRefinementEvaluator
                 cancellationToken);
         }
 
-        var sourceComparisons = evaluationCase.GetSourceComparisons()
-            .Select(source => source.ToDomain())
-            .ToList();
-        var expectedDecisions = evaluationCase.GetExpectedDecisions();
-
-        if (sourceComparisons.Any(source =>
-                !TrySlice(
-                    evaluationCase.OriginalText,
-                    source.OriginalTextRange,
-                    out var originalSnippet)
-                || !TrySlice(
-                    evaluationCase.UserText,
-                    source.UserTextRange,
-                    out var userSnippet)
-                || originalSnippet != source.OriginalText
-                || userSnippet != source.UserText))
-        {
-            return Failure(
-                evaluationCase,
-                runNumber,
-                "Source comparison snippets do not match their ranges.");
-        }
-
-        var request = new AiRefinementRequest(
-            evaluationCase.OriginalText,
-            evaluationCase.UserText,
-            sourceComparisons);
-
-        try
-        {
-            var refinement = await _refiner.RefineAsync(request, cancellationToken);
-            var validation = _validator.ValidateDecisions(request, refinement.Decisions);
-            var sourceResults = CreateSourceResults(
-                sourceComparisons,
-                expectedDecisions,
-                refinement,
-                validation);
-            var expectedRanges = sourceResults
-                .SelectMany(result => result.ExpectedRanges)
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
-            var actualRanges = sourceResults
-                .SelectMany(result => result.ActualRanges)
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
-            var isFullyValid = validation.IsValid
-                && sourceResults.All(result => result.IsSafe);
-
-            return new EvaluationCaseResult(
-                evaluationCase.CaseId,
-                evaluationCase.Category,
-                runNumber,
-                evaluationCase.GetFocusSourceComparisonIndex(),
-                SummarizeActions(sourceResults.Select(result => result.ExpectedAction)),
-                SummarizeActions(sourceResults.Select(result => result.ActualAction)),
-                isFullyValid,
-                isFullyValid && sourceResults.All(result => result.IsExactMatch),
-                isFullyValid ? sourceResults.Average(result => result.SpanF1) : 0,
-                refinement.DurationMilliseconds,
-                refinement.InputTokenCount,
-                refinement.OutputTokenCount,
-                validation.FailureReason,
-                expectedRanges,
-                actualRanges,
-                sourceResults);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            return Failure(
-                evaluationCase,
-                runNumber,
-                exception.GetType().Name);
-        }
+        return Failure(
+            evaluationCase,
+            runNumber,
+            "legacy_ai_refinement_cases_are_not_supported");
     }
 
     private async Task<EvaluationCaseResult> EvaluateOrchestrationCaseAsync(
@@ -182,8 +105,7 @@ public sealed class AiRefinementEvaluator
                 .OrderBy(range => range.OriginalTextInitialIndex)
                 .ThenBy(range => range.UserTextInitialIndex)
                 .ToList();
-            var isSafe = result.AiValidationFailureReason is null
-                && sourceResults.All(source => source.IsSafe);
+            var isSafe = sourceResults.All(source => source.IsSafe);
 
             return new EvaluationCaseResult(
                 evaluationCase.CaseId,
@@ -197,11 +119,10 @@ public sealed class AiRefinementEvaluator
                 isSafe,
                 isSafe && sourceResults.All(source => source.IsExactMatch),
                 isSafe ? sourceResults.Average(source => source.SpanF1) : 0,
-                result.AiDurationMilliseconds ?? 0,
-                result.AiInputTokenCount,
-                result.AiOutputTokenCount,
-                sourceResults.FirstOrDefault(source => !source.IsExactMatch)?.Error
-                    ?? result.AiValidationFailureReason,
+                DurationMilliseconds: 0,
+                InputTokenCount: null,
+                OutputTokenCount: null,
+                sourceResults.FirstOrDefault(source => !source.IsExactMatch)?.Error,
                 expectedRanges,
                 actualRanges,
                 sourceResults);
@@ -282,8 +203,8 @@ public sealed class AiRefinementEvaluator
             && exactPassRate >= RequiredExactPassRate;
 
         return new EvaluationSummary(
-            _refiner.Model,
-            _refiner.PromptVersion,
+            "deterministic",
+            "deterministic-text-comparison-refiner",
             DateTimeOffset.UtcNow,
             results.Select(result => result.RunNumber).DefaultIfEmpty().Max(),
             results.Select(result => result.CaseId).Distinct().Count(),
@@ -492,7 +413,8 @@ public sealed class AiRefinementEvaluator
         }
 
         return expected.Action == actual.Action
-            && expected.ReasonCode == actual.ReasonCode
+            && (expected.ReasonCode is null
+                || expected.ReasonCode == actual.ReasonCode)
             && expected.ValidationStatus == actual.ValidationStatus
             && expected.ValidationFailureReason
                 == actual.ValidationFailureReason
@@ -508,7 +430,7 @@ public sealed class AiRefinementEvaluator
     {
         if (expected is null || actual is null)
         {
-            return expected is null && actual is null;
+            return expected is null;
         }
 
         return SnapshotsMatch(expected, actual);
@@ -594,63 +516,6 @@ public sealed class AiRefinementEvaluator
     private static EvaluationTextRange ToEvaluationRange(TextRange range) =>
         new(range.InitialIndex, range.FinalIndex);
 
-    private static IReadOnlyList<EvaluationSourceResult> CreateSourceResults(
-        IReadOnlyList<AiRefinementSourceComparison> sources,
-        IReadOnlyList<EvaluationExpectedDecision> expectedDecisions,
-        AiRefinementResult refinement,
-        AiRefinementDecisionValidationResult validation)
-    {
-        var expectedBySource = expectedDecisions.ToDictionary(
-            decision => decision.SourceComparisonIndex);
-        var proposedBySource = refinement.Decisions
-            .GroupBy(decision => decision.SourceComparisonIndex)
-            .ToDictionary(group => group.Key, group => group.First());
-        var validatedBySource = validation.Decisions.ToDictionary(
-            decision => decision.SourceComparisonIndex);
-
-        return sources.Select(source =>
-        {
-            var expected = expectedBySource[source.SourceComparisonIndex];
-            validatedBySource.TryGetValue(
-                source.SourceComparisonIndex,
-                out var validated);
-            proposedBySource.TryGetValue(
-                source.SourceComparisonIndex,
-                out var proposed);
-
-            var isSafe = validation.IsValid
-                && validated is not null
-                && validated.ValidationStatus == "accepted";
-            var actualRanges = isSafe
-                ? validated!.OutputComparisons.Select(ToRange).ToList()
-                : proposed?.Comparisons.ToList() ?? [];
-            var actualAction = isSafe
-                ? DetermineAction(actualRanges, source)
-                : "error";
-            var expectedRanges = expected.ExpectedRanges
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
-            var orderedActualRanges = actualRanges
-                .OrderBy(range => range.OriginalTextInitialIndex)
-                .ThenBy(range => range.UserTextInitialIndex)
-                .ToList();
-
-            return new EvaluationSourceResult(
-                source.SourceComparisonIndex,
-                expected.ExpectedAction,
-                actualAction,
-                isSafe,
-                isSafe
-                && expected.ExpectedAction == actualAction
-                && expectedRanges.SequenceEqual(orderedActualRanges),
-                isSafe ? CalculateSpanF1(expectedRanges, orderedActualRanges) : 0,
-                validated?.ValidationFailureReason ?? validation.FailureReason,
-                expectedRanges,
-                orderedActualRanges);
-        }).ToList();
-    }
-
     private static string SummarizeActions(IEnumerable<string> actions)
     {
         var values = actions.Distinct(StringComparer.Ordinal).ToList();
@@ -659,12 +524,7 @@ public sealed class AiRefinementEvaluator
 
     private static string DetermineAction(
         IReadOnlyList<AiRefinedComparison> ranges,
-        EvaluationSourceComparison source) =>
-        DetermineAction(ranges, source.ToDomain());
-
-    private static string DetermineAction(
-        IReadOnlyList<AiRefinedComparison> ranges,
-        AiRefinementSourceComparison source)
+        EvaluationSourceComparison source)
     {
         if (ranges.Count == 0)
         {
@@ -747,20 +607,4 @@ public sealed class AiRefinementEvaluator
         Enumerable.Range(
             range.UserTextInitialIndex,
             range.UserTextFinalIndex - range.UserTextInitialIndex + 1);
-
-    private static bool TrySlice(string text, TextRange range, out string snippet)
-    {
-        if (range.InitialIndex < 0
-            || range.FinalIndex < range.InitialIndex
-            || range.FinalIndex >= text.Length)
-        {
-            snippet = string.Empty;
-            return false;
-        }
-
-        snippet = text.Substring(
-            range.InitialIndex,
-            range.FinalIndex - range.InitialIndex + 1);
-        return snippet.Length > 0;
-    }
 }
