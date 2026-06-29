@@ -36,7 +36,7 @@ public sealed class DeterministicTextComparisonRefinerTests
         result.HasChanges.ShouldBeTrue();
         result.Trace.Single().Value.Deterministic.ShouldNotBeNull();
         result.Trace.Single().Value.Deterministic!.Action.ShouldBe(
-            AiRefinementActions.Remove);
+            CorrectionRefinementActions.Remove);
         result.Trace.Single().Value.Deterministic!.Output.ShouldBeEmpty();
     }
 
@@ -87,7 +87,7 @@ public sealed class DeterministicTextComparisonRefinerTests
         result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
         result.Trace.Single().Value.Deterministic.ShouldNotBeNull();
         result.Trace.Single().Value.Deterministic!.Action.ShouldBe(
-            AiRefinementActions.Refine);
+            CorrectionRefinementActions.Refine);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public sealed class DeterministicTextComparisonRefinerTests
         result.Comparisons.ShouldBeEmpty();
         result.RemovedComparisonCount.ShouldBe(1);
         result.Trace.Single().Value.Deterministic!.Action.ShouldBe(
-            AiRefinementActions.Remove);
+            CorrectionRefinementActions.Remove);
     }
 
     [Fact]
@@ -373,7 +373,6 @@ public sealed class DeterministicTextComparisonRefinerTests
 
         result.Comparisons.Single().SourceComparisonIndex.ShouldBe(4);
         result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeFalse();
-        result.Comparisons.Single().IsAiRefined.ShouldBeFalse();
         result.Trace.ShouldBeEmpty();
     }
 

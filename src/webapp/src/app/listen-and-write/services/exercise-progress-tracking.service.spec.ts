@@ -175,7 +175,6 @@ describe('ExerciseProgressTrackingService', () => {
         },
       ],
       correctionMode: null,
-      aiAttempted: null,
       correctionTrace: null,
       exerciseTitle: 'Exercise 5',
       subject: null,

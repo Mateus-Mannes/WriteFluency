@@ -23,7 +23,6 @@ export interface CompleteProgressRequest {
   originalText?: string | null;
   comparisons?: Array<TextComparison> | null;
   correctionMode?: string | null;
-  aiAttempted?: boolean | null;
   correctionTrace?: Array<CorrectionTraceEntry> | null;
 }
 
@@ -61,7 +60,6 @@ export interface ProgressStateResponse {
   originalText?: string | null;
   comparisons?: Array<TextComparison> | null;
   correctionMode?: string | null;
-  aiAttempted?: boolean | null;
   correctionTrace?: Array<CorrectionTraceEntry> | null;
 }
 

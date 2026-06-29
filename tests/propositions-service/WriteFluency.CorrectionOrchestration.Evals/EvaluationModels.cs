@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using WriteFluency.TextComparisons;
 
-namespace WriteFluency.AiRefinement.Evals;
+namespace WriteFluency.CorrectionOrchestration.Evals;
 
 public sealed class EvaluationCase
 {
@@ -12,7 +12,7 @@ public sealed class EvaluationCase
     public required string UserText { get; init; }
     public EvaluationSourceComparison? SourceComparison { get; init; }
     public string? ExpectedAction { get; init; }
-    public List<AiRefinedComparison>? ExpectedRanges { get; init; }
+    public List<CorrectionComparisonRange>? ExpectedRanges { get; init; }
     public List<EvaluationSourceComparison>? SourceComparisons { get; init; }
     public List<EvaluationExpectedDecision>? ExpectedDecisions { get; init; }
     public List<EvaluationExpectedFinalComparison>? ExpectedFinalComparisons { get; init; }
@@ -88,12 +88,12 @@ public sealed class EvaluationCase
     }
 
     private static string DetermineAction(
-        IReadOnlyList<AiRefinedComparison> ranges,
+        IReadOnlyList<CorrectionComparisonRange> ranges,
         EvaluationSourceComparison source)
     {
         if (ranges.Count == 0)
         {
-            return AiRefinementActions.Remove;
+            return CorrectionRefinementActions.Remove;
         }
 
         if (ranges.Count > 1)
@@ -106,7 +106,7 @@ public sealed class EvaluationCase
             && range.OriginalTextFinalIndex == source.OriginalTextRange.FinalIndex
             && range.UserTextInitialIndex == source.UserTextRange.InitialIndex
             && range.UserTextFinalIndex == source.UserTextRange.FinalIndex
-                ? AiRefinementActions.Keep
+                ? CorrectionRefinementActions.Keep
                 : "shrink";
     }
 }
@@ -115,7 +115,7 @@ public sealed class EvaluationExpectedDecision
 {
     public required int SourceComparisonIndex { get; init; }
     public required string ExpectedAction { get; init; }
-    public required List<AiRefinedComparison> ExpectedRanges { get; init; }
+    public required List<CorrectionComparisonRange> ExpectedRanges { get; init; }
 }
 
 public sealed class EvaluationSourceComparison
@@ -135,9 +135,8 @@ public sealed class EvaluationExpectedFinalComparison
     public required EvaluationTextRange UserTextRange { get; init; }
     public required string UserText { get; init; }
     public required bool IsDeterministicallyRefined { get; init; }
-    public required bool IsAiRefined { get; init; }
 
-    public AiRefinedComparison ToRange() =>
+    public CorrectionComparisonRange ToRange() =>
         new(
             SourceComparisonIndex,
             OriginalTextRange.InitialIndex,
@@ -153,8 +152,7 @@ public sealed class EvaluationExpectedFinalComparison
             OriginalText = OriginalText,
             UserTextRange = UserTextRange,
             UserText = UserText,
-            IsDeterministicallyRefined = IsDeterministicallyRefined,
-            IsAiRefined = IsAiRefined
+            IsDeterministicallyRefined = IsDeterministicallyRefined
         };
 }
 
@@ -166,7 +164,6 @@ public sealed class EvaluationFinalComparison
     public required EvaluationTextRange UserTextRange { get; init; }
     public required string UserText { get; init; }
     public required bool IsDeterministicallyRefined { get; init; }
-    public required bool IsAiRefined { get; init; }
 }
 
 public sealed class EvaluationExpectedTraceEntry
@@ -174,7 +171,6 @@ public sealed class EvaluationExpectedTraceEntry
     public required int SourceComparisonIndex { get; init; }
     public required EvaluationComparisonSnapshot Initial { get; init; }
     public EvaluationExpectedStageTrace? Deterministic { get; init; }
-    public EvaluationExpectedStageTrace? Ai { get; init; }
 }
 
 public sealed class EvaluationExpectedStageTrace
@@ -225,8 +221,8 @@ public sealed record EvaluationCaseResult(
     long? InputTokenCount,
     long? OutputTokenCount,
     string? Error,
-    IReadOnlyList<AiRefinedComparison> ExpectedRanges,
-    IReadOnlyList<AiRefinedComparison> ActualRanges,
+    IReadOnlyList<CorrectionComparisonRange> ExpectedRanges,
+    IReadOnlyList<CorrectionComparisonRange> ActualRanges,
     IReadOnlyList<EvaluationSourceResult> Sources);
 
 public sealed record EvaluationSourceResult(
@@ -237,8 +233,8 @@ public sealed record EvaluationSourceResult(
     bool IsExactMatch,
     double SpanF1,
     string? Error,
-    IReadOnlyList<AiRefinedComparison> ExpectedRanges,
-    IReadOnlyList<AiRefinedComparison> ActualRanges,
+    IReadOnlyList<CorrectionComparisonRange> ExpectedRanges,
+    IReadOnlyList<CorrectionComparisonRange> ActualRanges,
     IReadOnlyList<EvaluationFinalComparison>? ExpectedFinalComparisons = null,
     IReadOnlyList<EvaluationFinalComparison>? ActualFinalComparisons = null,
     EvaluationExpectedTraceEntry? ExpectedTrace = null,
@@ -293,7 +289,7 @@ public sealed record EvaluationCaseHighlights(
     bool IsExactMatch,
     string? Error,
     IReadOnlyList<EvaluationHighlight>? ExpectedHighlights,
-    IReadOnlyList<EvaluationHighlight>? AiHighlights,
+    IReadOnlyList<EvaluationHighlight>? ActualHighlights,
     IReadOnlyList<EvaluationSourceHighlights> Sources);
 
 public sealed record EvaluationSourceHighlights(
@@ -307,7 +303,7 @@ public sealed record EvaluationSourceHighlights(
     double SpanF1,
     string? Error,
     IReadOnlyList<EvaluationHighlight>? ExpectedHighlights,
-    IReadOnlyList<EvaluationHighlight>? AiHighlights);
+    IReadOnlyList<EvaluationHighlight>? ActualHighlights);
 
 public sealed record EvaluationHighlight(
     int SourceComparisonIndex,

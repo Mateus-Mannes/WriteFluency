@@ -1,8 +1,8 @@
 using WriteFluency.TextComparisons;
 
-namespace WriteFluency.AiRefinement.Evals;
+namespace WriteFluency.CorrectionOrchestration.Evals;
 
-public sealed class AiRefinementEvaluator
+public sealed class CorrectionOrchestrationEvaluator
 {
     private const double RequiredRemovalRecall = 0.80;
     private const double RequiredMeanSpanF1 = 0.85;
@@ -10,7 +10,7 @@ public sealed class AiRefinementEvaluator
 
     private readonly CorrectionOrchestrationService _orchestrationService;
 
-    public AiRefinementEvaluator(
+    public CorrectionOrchestrationEvaluator(
         CorrectionOrchestrationService orchestrationService)
     {
         _orchestrationService = orchestrationService;
@@ -77,7 +77,7 @@ public sealed class AiRefinementEvaluator
         return Failure(
             evaluationCase,
             runNumber,
-            "legacy_ai_refinement_cases_are_not_supported");
+            "legacy_refinement_cases_are_not_supported");
     }
 
     private async Task<EvaluationCaseResult> EvaluateOrchestrationCaseAsync(
@@ -377,9 +377,7 @@ public sealed class AiRefinementEvaluator
                     != actualComparison.UserTextRange
                 || expectedComparison.UserText != actualComparison.UserText
                 || expectedComparison.IsDeterministicallyRefined
-                    != actualComparison.IsDeterministicallyRefined
-                || expectedComparison.IsAiRefined
-                    != actualComparison.IsAiRefined)
+                    != actualComparison.IsDeterministicallyRefined)
             {
                 return false;
             }
@@ -399,8 +397,7 @@ public sealed class AiRefinementEvaluator
 
         return expected.SourceComparisonIndex == actual.SourceComparisonIndex
             && SnapshotMatches(expected.Initial, actual.Initial)
-            && StageMatches(expected.Deterministic, actual.Deterministic)
-            && StageMatches(expected.Ai, actual.Ai);
+            && StageMatches(expected.Deterministic, actual.Deterministic);
     }
 
     private static bool StageMatches(
@@ -473,8 +470,7 @@ public sealed class AiRefinementEvaluator
             OriginalText = comparison.OriginalText ?? string.Empty,
             UserTextRange = ToEvaluationRange(comparison.UserTextRange),
             UserText = comparison.UserText ?? string.Empty,
-            IsDeterministicallyRefined = comparison.IsDeterministicallyRefined,
-            IsAiRefined = comparison.IsAiRefined
+            IsDeterministicallyRefined = comparison.IsDeterministicallyRefined
         };
 
     private static EvaluationExpectedTraceEntry ToExpectedTraceEntry(
@@ -483,8 +479,7 @@ public sealed class AiRefinementEvaluator
         {
             SourceComparisonIndex = trace.SourceComparisonIndex,
             Initial = ToEvaluationSnapshot(trace.Initial),
-            Deterministic = ToEvaluationStage(trace.Deterministic),
-            Ai = ToEvaluationStage(trace.Ai)
+            Deterministic = ToEvaluationStage(trace.Deterministic)
         };
 
     private static EvaluationExpectedStageTrace? ToEvaluationStage(
@@ -523,7 +518,7 @@ public sealed class AiRefinementEvaluator
     }
 
     private static string DetermineAction(
-        IReadOnlyList<AiRefinedComparison> ranges,
+        IReadOnlyList<CorrectionComparisonRange> ranges,
         EvaluationSourceComparison source)
     {
         if (ranges.Count == 0)
@@ -545,7 +540,7 @@ public sealed class AiRefinementEvaluator
                 : "shrink";
     }
 
-    private static AiRefinedComparison ToRange(TextComparison comparison) =>
+    private static CorrectionComparisonRange ToRange(TextComparison comparison) =>
         new(
             comparison.SourceComparisonIndex,
             comparison.OriginalTextRange.InitialIndex,
@@ -554,8 +549,8 @@ public sealed class AiRefinementEvaluator
             comparison.UserTextRange.FinalIndex);
 
     private static double CalculateSpanF1(
-        IReadOnlyList<AiRefinedComparison> expected,
-        IReadOnlyList<AiRefinedComparison> actual)
+        IReadOnlyList<CorrectionComparisonRange> expected,
+        IReadOnlyList<CorrectionComparisonRange> actual)
     {
         if (expected.Count == 0 && actual.Count == 0)
         {
@@ -598,12 +593,12 @@ public sealed class AiRefinementEvaluator
             : 2 * precision * recall / (precision + recall);
     }
 
-    private static IEnumerable<int> ToOriginalIndexes(AiRefinedComparison range) =>
+    private static IEnumerable<int> ToOriginalIndexes(CorrectionComparisonRange range) =>
         Enumerable.Range(
             range.OriginalTextInitialIndex,
             range.OriginalTextFinalIndex - range.OriginalTextInitialIndex + 1);
 
-    private static IEnumerable<int> ToUserIndexes(AiRefinedComparison range) =>
+    private static IEnumerable<int> ToUserIndexes(CorrectionComparisonRange range) =>
         Enumerable.Range(
             range.UserTextInitialIndex,
             range.UserTextFinalIndex - range.UserTextInitialIndex + 1);

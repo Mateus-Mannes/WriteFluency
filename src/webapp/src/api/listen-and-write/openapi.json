@@ -335,6 +335,7 @@
             "format": "int32"
           },
           "userText": {
+            "maxLength": 3000,
             "type": "string",
             "nullable": true
           }
@@ -686,9 +687,6 @@
           "isDeterministicallyRefined": {
             "type": "boolean"
           },
-          "isAiRefined": {
-            "type": "boolean"
-          },
           "originalTextRange": {
             "$ref": "#/components/schemas/TextRange"
           },
@@ -774,9 +772,6 @@
           },
           "deterministic": {
             "$ref": "#/components/schemas/CorrectionStageTrace"
-          },
-          "ai": {
-            "$ref": "#/components/schemas/CorrectionStageTrace"
           }
         },
         "additionalProperties": false
@@ -806,15 +801,10 @@
           "correctionMode": {
             "enum": [
               "static",
-              "normalized",
-              "ai_refined",
-              "fallback"
+              "normalized"
             ],
             "type": "string",
             "nullable": true
-          },
-          "aiAttempted": {
-            "type": "boolean"
           },
           "correctionTrace": {
             "type": "array",

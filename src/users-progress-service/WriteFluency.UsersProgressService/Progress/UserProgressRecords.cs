@@ -28,8 +28,6 @@ public sealed class UserProgressRecord
 
     public string? CompletedCorrectionMode { get; set; }
 
-    public bool? CompletedAiAttempted { get; set; }
-
     public IReadOnlyList<ProgressCorrectionTraceEntry>? CompletedCorrectionTrace { get; set; }
 
     public int? CurrentWordCount { get; set; }
@@ -88,8 +86,6 @@ public sealed class UserAttemptRecord
     public IReadOnlyList<ProgressTextComparison>? Comparisons { get; set; }
 
     public string? CorrectionMode { get; set; }
-
-    public bool? AiAttempted { get; set; }
 
     public IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace { get; set; }
 

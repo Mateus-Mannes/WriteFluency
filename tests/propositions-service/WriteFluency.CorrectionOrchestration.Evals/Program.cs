@@ -1,27 +1,9 @@
-using System.Text.Json;
-using WriteFluency.AiRefinement.Evals;
-using WriteFluency.TextComparisons;
+using WriteFluency.CorrectionOrchestration.Evals;
 
 var arguments = EvaluationArguments.Parse(args);
-var manifestPath = Path.Combine(
-    AppContext.BaseDirectory,
-    "orchestration-eval-cases.json");
-var cases = JsonSerializer.Deserialize(
-    await File.ReadAllTextAsync(manifestPath),
-    EvaluationJsonContext.Default.ListEvaluationCase)
-    ?? throw new InvalidOperationException("The evaluation manifest is empty.");
-
-if (!string.IsNullOrWhiteSpace(arguments.CaseId))
-{
-    cases = cases
-        .Where(item => item.CaseId == arguments.CaseId)
-        .ToList();
-    if (cases.Count == 0)
-    {
-        throw new InvalidOperationException(
-            $"Evaluation case '{arguments.CaseId}' was not found.");
-    }
-}
+var cases = await EvaluationRuntime.LoadCasesAsync(
+    arguments.CaseId,
+    CancellationToken.None);
 
 EvaluationFixtureValidator.Validate(cases);
 if (arguments.ValidateOnly)
@@ -39,12 +21,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
 
 try
 {
-    var evaluator = new AiRefinementEvaluator(
-        new CorrectionOrchestrationService(
-            CreateTextComparisonService(),
-            new DeterministicTextComparisonRefiner(
-                new DeterministicTextEquivalenceService(
-                    new EnglishNumberNormalizer()))));
+    var evaluator = EvaluationRuntime.CreateEvaluator();
     var summary = await evaluator.EvaluateAsync(
         cases,
         arguments.Runs,
@@ -81,16 +58,4 @@ catch (Exception exception)
 {
     Console.Error.WriteLine(exception.Message);
     return 2;
-}
-
-static TextComparisonService CreateTextComparisonService()
-{
-    var levenshteinDistanceService = new LevenshteinDistanceService();
-    return new TextComparisonService(
-        levenshteinDistanceService,
-        new TextAlignmentService(
-            new NeedlemanWunschAlignmentService(levenshteinDistanceService),
-            new TokenizeTextService(),
-            new TokenAlignmentService()),
-        new TokenComparisonService());
 }

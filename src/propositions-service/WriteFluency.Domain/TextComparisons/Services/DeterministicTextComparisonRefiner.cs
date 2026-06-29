@@ -51,7 +51,7 @@ public sealed class DeterministicTextComparisonRefiner
                 trace[comparison.SourceComparisonIndex] =
                     CreateTrace(
                         comparison,
-                        AiRefinementActions.Remove,
+                        CorrectionRefinementActions.Remove,
                         equivalence.ReasonCode ?? "normalized_equivalence",
                         []);
                 continue;
@@ -82,7 +82,7 @@ public sealed class DeterministicTextComparisonRefiner
                 trace[comparison.SourceComparisonIndex] =
                     CreateTrace(
                         comparison,
-                        AiRefinementActions.Refine,
+                        CorrectionRefinementActions.Refine,
                         BoundaryRefinementReasonCode,
                         refinedComparisons.Select(ToSnapshot).ToList());
             }
@@ -650,7 +650,7 @@ public sealed class DeterministicTextComparisonRefiner
         int userStartIndex)
     {
         if (words.Any(word =>
-                !AiRefinementAlignmentPolicy.IsFunctionWord(word)))
+                !TextComparisonAlignmentPolicy.IsFunctionWord(word)))
         {
             return true;
         }

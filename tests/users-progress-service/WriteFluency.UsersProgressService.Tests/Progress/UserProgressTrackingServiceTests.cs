@@ -87,10 +87,9 @@ public class UserProgressTrackingServiceTests
                         new ProgressTextRange(0, 9),
                         "submitted",
                         SourceComparisonIndex: 3,
-                        IsAiRefined: true)
+                        IsDeterministicallyRefined: true)
                 ],
-                CorrectionMode: "ai_refined",
-                AiAttempted: true,
+                CorrectionMode: "normalized",
                 CorrectionTrace:
                 [
                     new ProgressCorrectionTraceEntry(
@@ -100,7 +99,7 @@ public class UserProgressTrackingServiceTests
                             "original",
                             new ProgressTextRange(0, 9),
                             "submitted"),
-                        Ai: new ProgressCorrectionStageTrace(
+                        Deterministic: new ProgressCorrectionStageTrace(
                             "refine",
                             "word_substitution",
                             [
@@ -135,19 +134,17 @@ public class UserProgressTrackingServiceTests
         state.Comparisons.ShouldNotBeNull();
         state.Comparisons.Count.ShouldBe(1);
         state.Comparisons.Single().SourceComparisonIndex.ShouldBe(3);
-        state.Comparisons.Single().IsAiRefined.ShouldBeTrue();
-        state.CorrectionMode.ShouldBe("ai_refined");
-        state.AiAttempted.ShouldBe(true);
+        state.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
+        state.CorrectionMode.ShouldBe("normalized");
         state.CorrectionTrace.ShouldNotBeNull();
-        state.CorrectionTrace.Single().Ai.ShouldNotBeNull();
+        state.CorrectionTrace.Single().Deterministic.ShouldNotBeNull();
 
         var attempts = await repository.GetAttemptsAsync(
             userId,
             13,
             CancellationToken.None);
         var attempt = attempts.Single();
-        attempt.CorrectionMode.ShouldBe("ai_refined");
-        attempt.AiAttempted.ShouldBe(true);
+        attempt.CorrectionMode.ShouldBe("normalized");
         attempt.Comparisons.ShouldNotBeNull();
         attempt.CorrectionTrace.ShouldNotBeNull();
 

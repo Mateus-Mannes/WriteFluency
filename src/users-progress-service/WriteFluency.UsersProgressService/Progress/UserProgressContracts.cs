@@ -20,7 +20,6 @@ public sealed record CompleteProgressRequest(
     string? OriginalText = null,
     IReadOnlyList<ProgressTextComparison>? Comparisons = null,
     string? CorrectionMode = null,
-    bool? AiAttempted = null,
     IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace = null);
 
 public sealed record ProgressOperationResponse(
@@ -55,7 +54,6 @@ public sealed record ProgressStateResponse(
     string? OriginalText = null,
     IReadOnlyList<ProgressTextComparison>? Comparisons = null,
     string? CorrectionMode = null,
-    bool? AiAttempted = null,
     IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace = null);
 
 public sealed record ProgressTextComparison(
@@ -64,8 +62,7 @@ public sealed record ProgressTextComparison(
     ProgressTextRange? UserTextRange,
     string? UserText,
     int? SourceComparisonIndex = null,
-    bool IsDeterministicallyRefined = false,
-    bool IsAiRefined = false);
+    bool IsDeterministicallyRefined = false);
 
 public sealed record ProgressTextRange(
     int? InitialIndex,
@@ -88,8 +85,7 @@ public sealed record ProgressCorrectionStageTrace(
 public sealed record ProgressCorrectionTraceEntry(
     int? SourceComparisonIndex,
     ProgressComparisonSnapshot? Initial,
-    ProgressCorrectionStageTrace? Deterministic = null,
-    ProgressCorrectionStageTrace? Ai = null);
+    ProgressCorrectionStageTrace? Deterministic = null);
 
 public sealed record ProgressSummaryResponse(
     bool TrackingEnabled,

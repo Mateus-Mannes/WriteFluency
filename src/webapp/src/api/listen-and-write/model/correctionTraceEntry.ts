@@ -5,5 +5,4 @@ export interface CorrectionTraceEntry {
     sourceComparisonIndex?: number;
     initial?: ComparisonSnapshot;
     deterministic?: CorrectionStageTrace | null;
-    ai?: CorrectionStageTrace | null;
 }

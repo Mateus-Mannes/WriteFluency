@@ -20,7 +20,7 @@ export interface ExerciseSubmissionRequest {
   exerciseTimeUsedMs: number | null;
   onSuccess(result: TextComparisonResult, submittedUserText: string): void;
   onProRequired(): void;
-  onFailure(): void;
+  onFailure(message?: string): void;
 }
 
 @Injectable()
@@ -81,6 +81,17 @@ export class ExerciseSubmissionService {
         reason: 'missing_proposition_id',
       });
       request.onFailure();
+      return;
+    }
+
+    if (request.submittedUserText.length > constants.submitUserTextMaxLength) {
+      this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
+        reason: 'user_text_too_long',
+      }, {
+        text_char_count: request.submittedUserText.length,
+      });
+      request.onFailure(
+        `Your answer is too long. Please keep it under ${constants.submitUserTextMaxLength} characters.`);
       return;
     }
 

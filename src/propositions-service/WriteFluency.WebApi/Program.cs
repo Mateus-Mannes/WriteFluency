@@ -29,6 +29,10 @@ builder.Services.AddOptions<UsersServiceOptions>()
     .ValidateOnStart();
 
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<TextComparisonRefinementValidationOptions>()
+    .Bind(builder.Configuration.GetSection(TextComparisonRefinementValidationOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
@@ -51,6 +55,11 @@ builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<EnglishNumberNormalizer>();
 builder.Services.AddTransient<DeterministicTextEquivalenceService>();
 builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
+builder.Services.AddTransient(serviceProvider =>
+    serviceProvider
+        .GetRequiredService<IOptions<TextComparisonRefinementValidationOptions>>()
+        .Value);
+builder.Services.AddTransient<TextComparisonRefinementValidator>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();

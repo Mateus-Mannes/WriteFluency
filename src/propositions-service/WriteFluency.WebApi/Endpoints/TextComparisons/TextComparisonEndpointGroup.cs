@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using WriteFluency.Endpoints;
 using WriteFluency.Propositions;
@@ -32,6 +33,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         CorrectionOrchestrationService correctionOrchestrationService,
         PropositionService propositionService,
         IUsersSessionClient usersSessionClient,
+        IOptions<TextComparisonRefinementValidationOptions> validationOptions,
         ILogger<TextComparisonEndpointGroup> logger,
         CancellationToken cancellationToken)
     {
@@ -43,10 +45,20 @@ public class TextComparisonEndpointGroup : IEndpointMapper
             return TypedResults.BadRequest("PropositionId is required.");
         }
 
-        if (compareTextsDto.UserText is null)
+        var userTextValidation = TextComparisonRequestValidation.ValidateUserText(
+            compareTextsDto.UserText,
+            validationOptions.Value.MaxUserTextLength);
+        if (!userTextValidation.IsValid)
         {
-            return TypedResults.BadRequest("UserText is required.");
+            LogRejectedRequest(
+                logger,
+                compareTextsDto.PropositionId,
+                userTextValidation.UserTextLength,
+                userTextValidation.ReasonCode);
+            return TypedResults.BadRequest(userTextValidation.ErrorMessage!);
         }
+
+        var userText = compareTextsDto.UserText!;
 
         try
         {
@@ -68,19 +80,20 @@ public class TextComparisonEndpointGroup : IEndpointMapper
 
             var orchestrationResult = await correctionOrchestrationService.CompareTextsAsync(
                 accessResult.OriginalText,
-                compareTextsDto.UserText,
+                userText,
                 isPro,
                 cancellationToken);
             var result = orchestrationResult.Result;
 
             logger.LogInformation(
-                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
+                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, ValidationReason={ValidationReason}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
                 isPro,
                 result.CorrectionMode,
                 orchestrationResult.StaticComparisonCount,
                 orchestrationResult.RemovedComparisonCount,
                 result.Comparisons.Count,
+                orchestrationResult.ValidationReasonCode,
                 result.AccuracyPercentage,
                 stopwatch.ElapsedMilliseconds);
 
@@ -102,5 +115,18 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         return TypedResults.Json(
             new ProRequiredResultDto(ProRequiredAccess, metadata),
             statusCode: StatusCodes.Status403Forbidden);
+    }
+
+    private static void LogRejectedRequest(
+        ILogger<TextComparisonEndpointGroup> logger,
+        int propositionId,
+        int? userTextLength,
+        string reason)
+    {
+        logger.LogWarning(
+            "Comparison request rejected for proposition {PropositionId}: UserTextLength={UserTextLength}, Reason={Reason}",
+            propositionId,
+            userTextLength,
+            reason);
     }
 }

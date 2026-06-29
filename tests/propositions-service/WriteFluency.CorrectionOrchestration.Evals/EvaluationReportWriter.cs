@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using WriteFluency.TextComparisons;
 
-namespace WriteFluency.AiRefinement.Evals;
+namespace WriteFluency.CorrectionOrchestration.Evals;
 
 public static class EvaluationReportWriter
 {
@@ -16,7 +16,7 @@ public static class EvaluationReportWriter
         var outputDirectory = Path.Combine(
             FindRepositoryRoot(),
             "artifacts",
-            "ai-evals",
+            "correction-evals",
             summary.ExecutedAtUtc.ToString("yyyyMMdd-HHmmss"));
         Directory.CreateDirectory(outputDirectory);
 
@@ -84,7 +84,7 @@ public static class EvaluationReportWriter
         var expectedHighlights = CreateHighlights(
             result.ExpectedRanges,
             evaluationCase);
-        var aiHighlights = CreateHighlights(
+        var actualHighlights = CreateHighlights(
             result.ActualRanges,
             evaluationCase);
         var sourceComparisons = CreateSourceComparisons(evaluationCase);
@@ -106,7 +106,7 @@ public static class EvaluationReportWriter
             result.IsExactMatch,
             result.Error,
             expectedHighlights,
-            aiHighlights,
+            actualHighlights,
             sourceHighlights);
     }
 
@@ -152,7 +152,7 @@ public static class EvaluationReportWriter
             .ToList();
 
     private static IReadOnlyList<EvaluationHighlight>? CreateHighlights(
-        IReadOnlyList<AiRefinedComparison> ranges,
+        IReadOnlyList<CorrectionComparisonRange> ranges,
         EvaluationCase evaluationCase) =>
         ranges.Count == 0
             ? null
@@ -208,7 +208,7 @@ public static class EvaluationReportWriter
         builder.AppendLine("<head>");
         builder.AppendLine("<meta charset=\"utf-8\">");
         builder.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-        builder.AppendLine("<title>AI Refinement Evaluation</title>");
+        builder.AppendLine("<title>Deterministic Orchestration Evaluation</title>");
         builder.AppendLine("<style>");
         builder.AppendLine(HtmlStyles);
         builder.AppendLine("</style>");
@@ -217,7 +217,7 @@ public static class EvaluationReportWriter
         builder.AppendLine("<header class=\"page-header\">");
         builder.AppendLine("<div>");
         builder.AppendLine("<p class=\"eyebrow\">WriteFluency evaluation</p>");
-        builder.AppendLine("<h1>AI Refinement Report</h1>");
+        builder.AppendLine("<h1>Deterministic Orchestration Report</h1>");
         builder.AppendLine($"<p class=\"subtitle\">{Encode(summary.Model)} · {Encode(summary.PromptVersion)} · {summary.ExecutedAtUtc:yyyy-MM-dd HH:mm:ss} UTC</p>");
         builder.AppendLine("</div>");
         builder.AppendLine($"<span class=\"run-status {(summary.Passed ? "pass" : "fail")}\">{(summary.Passed ? "Passed" : "Failed")}</span>");
@@ -495,7 +495,6 @@ public static class EvaluationReportWriter
         builder.AppendLine("<div class=\"flag-row\">");
         builder.AppendLine($"<span>Source {comparison.SourceComparisonIndex}</span>");
         builder.AppendLine($"<span class=\"flag {(comparison.IsDeterministicallyRefined ? "on" : "off")}\">Deterministic {comparison.IsDeterministicallyRefined}</span>");
-        builder.AppendLine($"<span class=\"flag {(comparison.IsAiRefined ? "on" : "off")}\">AI {comparison.IsAiRefined}</span>");
         builder.AppendLine("</div>");
     }
 
@@ -535,7 +534,6 @@ public static class EvaluationReportWriter
         builder.AppendLine($"<p class=\"trace-source\">Source {trace.SourceComparisonIndex}</p>");
         AppendSnapshot(builder, "Initial", trace.Initial);
         AppendStage(builder, "Deterministic", trace.Deterministic);
-        AppendStage(builder, "AI", trace.Ai);
         builder.AppendLine("</section>");
     }
 
@@ -555,7 +553,7 @@ public static class EvaluationReportWriter
 
         builder.AppendLine("<dl class=\"trace-meta\">");
         builder.AppendLine($"<dt>Action</dt><dd>{ActionBadge(stage.Action)}</dd>");
-        builder.AppendLine($"<dt>Reason</dt><dd><code>{Encode(stage.ReasonCode)}</code></dd>");
+        builder.AppendLine($"<dt>Reason</dt><dd><code>{Encode(stage.ReasonCode ?? string.Empty)}</code></dd>");
         if (!string.IsNullOrWhiteSpace(stage.ValidationStatus))
         {
             builder.AppendLine($"<dt>Validation</dt><dd><code>{Encode(stage.ValidationStatus)}</code></dd>");
@@ -644,7 +642,7 @@ public static class EvaluationReportWriter
         StringBuilder builder,
         string title,
         EvaluationCase evaluationCase,
-        IReadOnlyList<AiRefinedComparison> ranges)
+        IReadOnlyList<CorrectionComparisonRange> ranges)
     {
         builder.AppendLine("<section class=\"comparison-block\">");
         builder.AppendLine($"<h4>{Encode(title)}</h4>");
@@ -723,8 +721,7 @@ public static class EvaluationReportWriter
         && expected.UserTextRange == actual.UserTextRange
         && expected.UserText == actual.UserText
         && expected.IsDeterministicallyRefined
-            == actual.IsDeterministicallyRefined
-        && expected.IsAiRefined == actual.IsAiRefined;
+            == actual.IsDeterministicallyRefined;
 
     private static bool TraceMatches(
         EvaluationExpectedTraceEntry? expected,
@@ -737,8 +734,7 @@ public static class EvaluationReportWriter
 
         return expected.SourceComparisonIndex == actual.SourceComparisonIndex
             && SnapshotMatches(expected.Initial, actual.Initial)
-            && StageMatches(expected.Deterministic, actual.Deterministic)
-            && StageMatches(expected.Ai, actual.Ai);
+            && StageMatches(expected.Deterministic, actual.Deterministic);
     }
 
     private static bool StageMatches(
@@ -844,7 +840,7 @@ public static class EvaluationReportWriter
     private static string CreateMarkdown(EvaluationSummary summary)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("# AI Refinement Evaluation");
+        builder.AppendLine("# Deterministic Orchestration Evaluation");
         builder.AppendLine();
         builder.AppendLine($"- Model: `{summary.Model}`");
         builder.AppendLine($"- Prompt: `{summary.PromptVersion}`");

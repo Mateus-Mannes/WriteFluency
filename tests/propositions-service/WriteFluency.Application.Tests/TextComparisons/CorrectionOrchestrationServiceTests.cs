@@ -18,10 +18,11 @@ public class CorrectionOrchestrationServiceTests
         var result = orchestrationResult.Result;
 
         result.CorrectionMode.ShouldBe(CorrectionModes.Static);
-        result.AiAttempted.ShouldBeFalse();
         result.Comparisons.ShouldNotBeEmpty();
         orchestrationResult.StaticComparisonCount.ShouldBe(1);
         orchestrationResult.RemovedComparisonCount.ShouldBe(0);
+        orchestrationResult.ValidationReasonCode.ShouldBe(
+            TextComparisonRefinementValidationReasons.Valid);
     }
 
     [Fact]
@@ -37,15 +38,13 @@ public class CorrectionOrchestrationServiceTests
         var result = orchestrationResult.Result;
 
         result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
-        result.AiAttempted.ShouldBeFalse();
         result.Comparisons.ShouldBeEmpty();
         result.CorrectionTrace.ShouldNotBeNull();
         var trace = result.CorrectionTrace.Single();
         trace.SourceComparisonIndex.ShouldBe(0);
         trace.Initial.OriginalText.ShouldNotBeEmpty();
         trace.Deterministic.ShouldNotBeNull();
-        trace.Deterministic.Action.ShouldBe(AiRefinementActions.Remove);
-        trace.Ai.ShouldBeNull();
+        trace.Deterministic.Action.ShouldBe(CorrectionRefinementActions.Remove);
         orchestrationResult.StaticComparisonCount.ShouldBe(1);
         orchestrationResult.RemovedComparisonCount.ShouldBe(1);
         result.AccuracyPercentage.ShouldBe(1);
@@ -64,12 +63,10 @@ public class CorrectionOrchestrationServiceTests
         var result = orchestrationResult.Result;
 
         result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
-        result.AiAttempted.ShouldBeFalse();
         result.Comparisons.Count.ShouldBe(1);
         result.Comparisons[0].OriginalText!.ShouldContain("may be");
         result.Comparisons[0].UserText!.ShouldContain("maybe");
         result.Comparisons[0].IsDeterministicallyRefined.ShouldBeTrue();
-        result.Comparisons[0].IsAiRefined.ShouldBeFalse();
         result.CorrectionTrace.ShouldNotBeNull();
     }
 
@@ -85,15 +82,33 @@ public class CorrectionOrchestrationServiceTests
             CancellationToken.None)).Result;
 
         result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
-        result.AiAttempted.ShouldBeFalse();
         result.Comparisons.Single().OriginalText.ShouldBe("in");
         result.Comparisons.Single().UserText.ShouldBe("and");
         result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
-        result.Comparisons.Single().IsAiRefined.ShouldBeFalse();
         result.CorrectionTrace.ShouldNotBeNull();
         result.CorrectionTrace.Single().Deterministic!.Action.ShouldBe(
-            AiRefinementActions.Refine);
-        result.CorrectionTrace.Single().Ai.ShouldBeNull();
+            CorrectionRefinementActions.Refine);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_WhenDiffIsUnstable_ShouldSkipDeterministicRefinement()
+    {
+        var service = CreateService(new TextComparisonRefinementValidationOptions
+        {
+            MinStaticAccuracyPercentage = 0.99
+        });
+
+        var orchestrationResult = await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            CancellationToken.None);
+
+        orchestrationResult.Result.CorrectionMode.ShouldBe(CorrectionModes.Static);
+        orchestrationResult.Result.Comparisons.Single()
+            .IsDeterministicallyRefined.ShouldBeFalse();
+        orchestrationResult.ValidationReasonCode.ShouldBe(
+            TextComparisonRefinementValidationReasons.SkipUnstableDiff);
     }
 
     [Fact]
@@ -112,11 +127,18 @@ public class CorrectionOrchestrationServiceTests
                 cancellation.Token));
     }
 
-    private static CorrectionOrchestrationService CreateService()
+    private static CorrectionOrchestrationService CreateService(
+        TextComparisonRefinementValidationOptions? options = null)
     {
         return new CorrectionOrchestrationService(
             CreateTextComparisonService(),
-            CreateDeterministicRefiner());
+            CreateDeterministicRefiner(),
+            new TextComparisonRefinementValidator(
+                options ?? new TextComparisonRefinementValidationOptions
+                {
+                    MaxOriginalCoverageRatio = 1,
+                    MinStaticAccuracyPercentage = 0
+                }));
     }
 
     private static DeterministicTextComparisonRefiner CreateDeterministicRefiner() =>

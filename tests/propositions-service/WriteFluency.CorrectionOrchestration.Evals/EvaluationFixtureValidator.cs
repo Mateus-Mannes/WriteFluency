@@ -1,4 +1,4 @@
-namespace WriteFluency.AiRefinement.Evals;
+namespace WriteFluency.CorrectionOrchestration.Evals;
 
 public static class EvaluationFixtureValidator
 {
@@ -125,11 +125,6 @@ public static class EvaluationFixtureValidator
             if (trace.Deterministic is not null)
             {
                 ValidateStage(evaluationCase, trace.Deterministic);
-            }
-
-            if (trace.Ai is not null)
-            {
-                ValidateStage(evaluationCase, trace.Ai);
             }
         }
     }

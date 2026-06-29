@@ -567,7 +567,8 @@ export class ListenAndWriteComponent implements OnDestroy {
         finalSubmittedUserText,
       ),
       onProRequired: () => this.openProUpgradeModal(),
-      onFailure: () => alert('Error processing your exercise. Please try again.'),
+      onFailure: (message?: string) => alert(
+        message ?? 'Error processing your exercise. Please try again.'),
     });
   }
 

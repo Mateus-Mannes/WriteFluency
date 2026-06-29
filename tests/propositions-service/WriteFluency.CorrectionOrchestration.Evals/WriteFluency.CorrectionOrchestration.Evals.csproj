@@ -16,9 +16,6 @@
     <ProjectReference Include="../../../src/propositions-service/WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="ai-refinement-eval-cases.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="orchestration-eval-cases.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

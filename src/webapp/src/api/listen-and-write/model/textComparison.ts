@@ -13,7 +13,6 @@ import { TextRange } from './textRange';
 export interface TextComparison { 
     sourceComparisonIndex?: number;
     isDeterministicallyRefined?: boolean;
-    isAiRefined?: boolean;
     originalTextRange?: TextRange;
     originalText?: string | null;
     userTextRange?: TextRange;

@@ -1,6 +1,6 @@
 namespace WriteFluency.TextComparisons;
 
-internal static class AiRefinementAlignmentPolicy
+internal static class TextComparisonAlignmentPolicy
 {
     private static readonly HashSet<string> FunctionWords =
         new(StringComparer.OrdinalIgnoreCase)

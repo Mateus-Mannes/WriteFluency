@@ -86,8 +86,7 @@
           "finalIndex": 252
         },
         "userText": "cause they",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -101,8 +100,7 @@
           "finalIndex": 270
         },
         "userText": "thinking",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -116,8 +114,7 @@
           "finalIndex": 283
         },
         "userText": "had",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -341,8 +338,7 @@
           "finalIndex": 69
         },
         "userText": "brodery",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -356,8 +352,7 @@
           "finalIndex": 120
         },
         "userText": "a hair teacher from a while",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -371,8 +366,7 @@
           "finalIndex": 163
         },
         "userText": "Everyday",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -386,8 +380,7 @@
           "finalIndex": 195
         },
         "userText": "saws",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -401,8 +394,7 @@
           "finalIndex": 204
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -416,8 +408,7 @@
           "finalIndex": 225
         },
         "userText": "bits",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -431,8 +422,7 @@
           "finalIndex": 238
         },
         "userText": "sequence",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -446,8 +436,7 @@
           "finalIndex": 294
         },
         "userText": "is it",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -461,8 +450,7 @@
           "finalIndex": 558
         },
         "userText": "artist",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -476,8 +464,7 @@
           "finalIndex": 656
         },
         "userText": "are a chose aside for",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -787,8 +774,7 @@
           "finalIndex": 19
         },
         "userText": "stunning",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 1,
@@ -802,8 +788,7 @@
           "finalIndex": 118
         },
         "userText": "sets",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -817,8 +802,7 @@
           "finalIndex": 134
         },
         "userText": "penninsula",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -832,8 +816,7 @@
           "finalIndex": 252
         },
         "userText": "guessed house, a barnand",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -847,8 +830,7 @@
           "finalIndex": 277
         },
         "userText": "green house stone",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -862,8 +844,7 @@
           "finalIndex": 285
         },
         "userText": "an",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -877,8 +858,7 @@
           "finalIndex": 308
         },
         "userText": "hecars",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -892,8 +872,7 @@
           "finalIndex": 374
         },
         "userText": "a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -907,8 +886,7 @@
           "finalIndex": 426
         },
         "userText": "store",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -922,8 +900,7 @@
           "finalIndex": 555
         },
         "userText": "crossmentship",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       }
     ],
     "expectedTrace": [
@@ -1239,8 +1216,7 @@
           "finalIndex": 114
         },
         "userText": "the Ye",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -1254,8 +1230,7 @@
           "finalIndex": 145
         },
         "userText": "opened",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -1269,8 +1244,7 @@
           "finalIndex": 520
         },
         "userText": "closed",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -1284,8 +1258,7 @@
           "finalIndex": 687
         },
         "userText": "s",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       }
     ],
     "expectedTrace": [
@@ -1589,8 +1562,7 @@
           "finalIndex": 180
         },
         "userText": "vandalise",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -1604,8 +1576,7 @@
           "finalIndex": 253
         },
         "userText": "include break in grafity",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -1619,8 +1590,7 @@
           "finalIndex": 283
         },
         "userText": "this",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -1634,8 +1604,7 @@
           "finalIndex": 312
         },
         "userText": "cost",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -1649,8 +1618,7 @@
           "finalIndex": 341
         },
         "userText": "find she",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -1664,8 +1632,7 @@
           "finalIndex": 360
         },
         "userText": "a help",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -1679,8 +1646,7 @@
           "finalIndex": 371
         },
         "userText": "tried",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -1694,8 +1660,7 @@
           "finalIndex": 479
         },
         "userText": "owner",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -1709,8 +1674,7 @@
           "finalIndex": 503
         },
         "userText": "where",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -1724,8 +1688,7 @@
           "finalIndex": 563
         },
         "userText": "vandal",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -1987,8 +1950,7 @@
           "finalIndex": 133
         },
         "userText": "a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -2002,8 +1964,7 @@
           "finalIndex": 225
         },
         "userText": "at",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -2017,8 +1978,7 @@
           "finalIndex": 266
         },
         "userText": "an important",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -2032,8 +1992,7 @@
           "finalIndex": 311
         },
         "userText": "contribution",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -2047,8 +2006,7 @@
           "finalIndex": 325
         },
         "userText": "retirement",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -2062,8 +2020,7 @@
           "finalIndex": 360
         },
         "userText": "workers",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -2077,8 +2034,7 @@
           "finalIndex": 375
         },
         "userText": "or",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -2092,8 +2048,7 @@
           "finalIndex": 426
         },
         "userText": "advantages",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -2107,8 +2062,7 @@
           "finalIndex": 447
         },
         "userText": "employers 401k",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -2122,8 +2076,7 @@
           "finalIndex": 510
         },
         "userText": "adapt a hundred",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -2137,8 +2090,7 @@
           "finalIndex": 523
         },
         "userText": "thousands",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -2152,8 +2104,7 @@
           "finalIndex": 538
         },
         "userText": "lessen",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -2167,8 +2118,7 @@
           "finalIndex": 644
         },
         "userText": "grow",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -2182,8 +2132,7 @@
           "finalIndex": 696
         },
         "userText": "short fall",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -2197,8 +2146,7 @@
           "finalIndex": 763
         },
         "userText": "rate",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 12,
@@ -2212,8 +2160,7 @@
           "finalIndex": 779
         },
         "userText": "benefit",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -2670,8 +2617,7 @@
           "finalIndex": 4
         },
         "userText": "Jessy",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -2685,8 +2631,7 @@
           "finalIndex": 23
         },
         "userText": "know",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -2700,8 +2645,7 @@
           "finalIndex": 161
         },
         "userText": "Jessy",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -2715,8 +2659,7 @@
           "finalIndex": 202
         },
         "userText": "movements",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -2730,8 +2673,7 @@
           "finalIndex": 409
         },
         "userText": "seem",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -2745,8 +2687,7 @@
           "finalIndex": 456
         },
         "userText": "this",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -2760,8 +2701,7 @@
           "finalIndex": 470
         },
         "userText": "worsten",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -2775,8 +2715,7 @@
           "finalIndex": 483
         },
         "userText": "just she",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -2790,8 +2729,7 @@
           "finalIndex": 645
         },
         "userText": "daughters",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -3061,8 +2999,7 @@
           "finalIndex": 69
         },
         "userText": "brodery",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -3076,8 +3013,7 @@
           "finalIndex": 120
         },
         "userText": "a hair teacher from a while",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -3091,8 +3027,7 @@
           "finalIndex": 163
         },
         "userText": "Everyday",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -3106,8 +3041,7 @@
           "finalIndex": 195
         },
         "userText": "saws",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -3121,8 +3055,7 @@
           "finalIndex": 204
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -3136,8 +3069,7 @@
           "finalIndex": 225
         },
         "userText": "bits",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -3151,8 +3083,7 @@
           "finalIndex": 238
         },
         "userText": "sequence",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -3166,8 +3097,7 @@
           "finalIndex": 294
         },
         "userText": "is it",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -3181,8 +3111,7 @@
           "finalIndex": 558
         },
         "userText": "artist",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -3196,8 +3125,7 @@
           "finalIndex": 656
         },
         "userText": "are a chose aside for",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -3520,8 +3448,7 @@
           "finalIndex": 9
         },
         "userText": "its",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -3535,8 +3462,7 @@
           "finalIndex": 31
         },
         "userText": "lead",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -3550,8 +3476,7 @@
           "finalIndex": 53
         },
         "userText": "want",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -3565,8 +3490,7 @@
           "finalIndex": 91
         },
         "userText": "stocksale",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -3580,8 +3504,7 @@
           "finalIndex": 140
         },
         "userText": "dollar",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -3595,8 +3518,7 @@
           "finalIndex": 216
         },
         "userText": "thrity five dollar age",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -3610,8 +3532,7 @@
           "finalIndex": 231
         },
         "userText": "be",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -3625,8 +3546,7 @@
           "finalIndex": 248
         },
         "userText": "by of",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -3640,8 +3560,7 @@
           "finalIndex": 274
         },
         "userText": "raise",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -3655,8 +3574,7 @@
           "finalIndex": 382
         },
         "userText": "percents",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -3670,8 +3588,7 @@
           "finalIndex": 546
         },
         "userText": "would",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -3956,8 +3873,7 @@
           "finalIndex": 50
         },
         "userText": "market",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -3971,8 +3887,7 @@
           "finalIndex": 233
         },
         "userText": "and",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -3986,8 +3901,7 @@
           "finalIndex": 359
         },
         "userText": "inflation",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       }
     ],
     "expectedTrace": [
@@ -4328,8 +4242,7 @@
           "finalIndex": 41
         },
         "userText": "parent",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -4343,8 +4256,7 @@
           "finalIndex": 58
         },
         "userText": "peanut",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -4358,8 +4270,7 @@
           "finalIndex": 70
         },
         "userText": "baby had",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -4373,8 +4284,7 @@
           "finalIndex": 93
         },
         "userText": "differences",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -4388,8 +4298,7 @@
           "finalIndex": 145
         },
         "userText": "giving",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -4403,8 +4312,7 @@
           "finalIndex": 168
         },
         "userText": "product storing",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -4418,8 +4326,7 @@
           "finalIndex": 228
         },
         "userText": "deloping",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -4433,8 +4340,7 @@
           "finalIndex": 273
         },
         "userText": "doctor advice",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -4448,8 +4354,7 @@
           "finalIndex": 297
         },
         "userText": "childrens",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -4463,8 +4368,7 @@
           "finalIndex": 343
         },
         "userText": "guide in health",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 10,
@@ -4478,8 +4382,7 @@
           "finalIndex": 362
         },
         "userText": "stay out",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 10,
@@ -4493,8 +4396,7 @@
           "finalIndex": 392
         },
         "userText": "Researcher from",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -4508,8 +4410,7 @@
           "finalIndex": 427
         },
         "userText": "philadephia",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 12,
@@ -4523,8 +4424,7 @@
           "finalIndex": 482
         },
         "userText": "allergy",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 13,
@@ -4538,8 +4438,7 @@
           "finalIndex": 515
         },
         "userText": "more",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 14,
@@ -4553,8 +4452,7 @@
           "finalIndex": 538
         },
         "userText": "a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 15,
@@ -4568,8 +4466,7 @@
           "finalIndex": 599
         },
         "userText": "guiline was",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 16,
@@ -4583,8 +4480,7 @@
           "finalIndex": 632
         },
         "userText": "it",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 17,
@@ -4598,8 +4494,7 @@
           "finalIndex": 660
         },
         "userText": "the help",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 18,
@@ -4613,8 +4508,7 @@
           "finalIndex": 689
         },
         "userText": "allergy",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -4987,8 +4881,7 @@
           "finalIndex": 133
         },
         "userText": "a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -5002,8 +4895,7 @@
           "finalIndex": 225
         },
         "userText": "at",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -5017,8 +4909,7 @@
           "finalIndex": 266
         },
         "userText": "an important",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -5032,8 +4923,7 @@
           "finalIndex": 311
         },
         "userText": "contribution",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -5047,8 +4937,7 @@
           "finalIndex": 325
         },
         "userText": "retirement",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -5062,8 +4951,7 @@
           "finalIndex": 360
         },
         "userText": "workers",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -5077,8 +4965,7 @@
           "finalIndex": 375
         },
         "userText": "or",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -5092,8 +4979,7 @@
           "finalIndex": 426
         },
         "userText": "advantages",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -5107,8 +4993,7 @@
           "finalIndex": 447
         },
         "userText": "employers 401k",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -5122,8 +5007,7 @@
           "finalIndex": 510
         },
         "userText": "adapt a hundred",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -5137,8 +5021,7 @@
           "finalIndex": 523
         },
         "userText": "thousands",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -5152,8 +5035,7 @@
           "finalIndex": 538
         },
         "userText": "lessen",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -5167,8 +5049,7 @@
           "finalIndex": 644
         },
         "userText": "grow",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -5182,8 +5063,7 @@
           "finalIndex": 696
         },
         "userText": "short fall",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -5197,8 +5077,7 @@
           "finalIndex": 763
         },
         "userText": "rate",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 12,
@@ -5212,8 +5091,7 @@
           "finalIndex": 779
         },
         "userText": "benefit",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -5657,8 +5535,7 @@
           "finalIndex": 217
         },
         "userText": "hunny",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -5672,8 +5549,7 @@
           "finalIndex": 276
         },
         "userText": "end",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -5687,8 +5563,7 @@
           "finalIndex": 354
         },
         "userText": "especial",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -5702,8 +5577,7 @@
           "finalIndex": 831
         },
         "userText": "mantain",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -5717,8 +5591,7 @@
           "finalIndex": 913
         },
         "userText": "light we",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       }
     ],
     "expectedTrace": [
@@ -6048,8 +5921,7 @@
           "finalIndex": 137
         },
         "userText": "all",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -6063,8 +5935,7 @@
           "finalIndex": 186
         },
         "userText": "sides",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -6078,8 +5949,7 @@
           "finalIndex": 303
         },
         "userText": "Our",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -6093,8 +5963,7 @@
           "finalIndex": 357
         },
         "userText": "all",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -6108,8 +5977,7 @@
           "finalIndex": 371
         },
         "userText": "descent",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -6123,8 +5991,7 @@
           "finalIndex": 395
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -6138,8 +6005,7 @@
           "finalIndex": 422
         },
         "userText": "London",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -6153,8 +6019,7 @@
           "finalIndex": 436
         },
         "userText": "systems",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -6168,8 +6033,7 @@
           "finalIndex": 554
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 10,
@@ -6183,8 +6047,7 @@
           "finalIndex": 695
         },
         "userText": "opened",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -6198,8 +6061,7 @@
           "finalIndex": 798
         },
         "userText": "London",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -6585,8 +6447,7 @@
           "finalIndex": 75
         },
         "userText": "vaccine the childern",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -6600,8 +6461,7 @@
           "finalIndex": 134
         },
         "userText": "vaccine",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -6615,8 +6475,7 @@
           "finalIndex": 179
         },
         "userText": "up vaccine",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -6630,8 +6489,7 @@
           "finalIndex": 192
         },
         "userText": "illneses",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -6645,8 +6503,7 @@
           "finalIndex": 216
         },
         "userText": "minungutus",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -6660,8 +6517,7 @@
           "finalIndex": 242
         },
         "userText": "of the",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -6675,8 +6531,7 @@
           "finalIndex": 256
         },
         "userText": "that is",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -6690,8 +6545,7 @@
           "finalIndex": 287
         },
         "userText": "changed",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -6705,8 +6559,7 @@
           "finalIndex": 322
         },
         "userText": "sign",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -6720,8 +6573,7 @@
           "finalIndex": 346
         },
         "userText": "expert was",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 10,
@@ -6735,8 +6587,7 @@
           "finalIndex": 398
         },
         "userText": "vaccine",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -6750,8 +6601,7 @@
           "finalIndex": 443
         },
         "userText": "us opinion changed",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 12,
@@ -6765,8 +6615,7 @@
           "finalIndex": 492
         },
         "userText": "he is action seems",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 13,
@@ -6780,8 +6629,7 @@
           "finalIndex": 519
         },
         "userText": "expert",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 14,
@@ -6795,8 +6643,7 @@
           "finalIndex": 557
         },
         "userText": "may",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 15,
@@ -6810,8 +6657,7 @@
           "finalIndex": 573
         },
         "userText": "childern",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -7093,8 +6939,7 @@
           "finalIndex": 69
         },
         "userText": "brodery",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -7108,8 +6953,7 @@
           "finalIndex": 120
         },
         "userText": "a hair teacher from a while",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -7123,8 +6967,7 @@
           "finalIndex": 163
         },
         "userText": "Everyday",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -7138,8 +6981,7 @@
           "finalIndex": 195
         },
         "userText": "saws",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -7153,8 +6995,7 @@
           "finalIndex": 204
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -7168,8 +7009,7 @@
           "finalIndex": 225
         },
         "userText": "bits",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -7183,8 +7023,7 @@
           "finalIndex": 238
         },
         "userText": "sequence",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 8,
@@ -7198,8 +7037,7 @@
           "finalIndex": 294
         },
         "userText": "is it",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -7213,8 +7051,7 @@
           "finalIndex": 558
         },
         "userText": "artist",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -7228,8 +7065,7 @@
           "finalIndex": 656
         },
         "userText": "are a chose aside for",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -7487,8 +7323,7 @@
           "finalIndex": 25
         },
         "userText": "and have",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -7502,8 +7337,7 @@
           "finalIndex": 96
         },
         "userText": "songs",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -7517,8 +7351,7 @@
           "finalIndex": 108
         },
         "userText": "this",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -7532,8 +7365,7 @@
           "finalIndex": 210
         },
         "userText": "everyday",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -7547,8 +7379,7 @@
           "finalIndex": 507
         },
         "userText": "scienties",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -7562,8 +7393,7 @@
           "finalIndex": 573
         },
         "userText": "brain",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -7833,8 +7663,7 @@
           "finalIndex": 9
         },
         "userText": "its",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -7848,8 +7677,7 @@
           "finalIndex": 31
         },
         "userText": "lead",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -7863,8 +7691,7 @@
           "finalIndex": 53
         },
         "userText": "want",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -7878,8 +7705,7 @@
           "finalIndex": 91
         },
         "userText": "stocksale",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -7893,8 +7719,7 @@
           "finalIndex": 140
         },
         "userText": "dollar",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 5,
@@ -7908,8 +7733,7 @@
           "finalIndex": 216
         },
         "userText": "thrity five dollar age",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -7923,8 +7747,7 @@
           "finalIndex": 231
         },
         "userText": "be",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -7938,8 +7761,7 @@
           "finalIndex": 248
         },
         "userText": "by of",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -7953,8 +7775,7 @@
           "finalIndex": 274
         },
         "userText": "raise",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -7968,8 +7789,7 @@
           "finalIndex": 382
         },
         "userText": "percents",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -7983,8 +7803,7 @@
           "finalIndex": 546
         },
         "userText": "would",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -8360,8 +8179,7 @@
           "finalIndex": 33
         },
         "userText": "they outters well",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 1,
@@ -8375,8 +8193,7 @@
           "finalIndex": 50
         },
         "userText": "call",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -8390,8 +8207,7 @@
           "finalIndex": 74
         },
         "userText": "would",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -8405,8 +8221,7 @@
           "finalIndex": 168
         },
         "userText": "let",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -8420,8 +8235,7 @@
           "finalIndex": 333
         },
         "userText": "oases",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -8435,8 +8249,7 @@
           "finalIndex": 441
         },
         "userText": "well",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -8450,8 +8263,7 @@
           "finalIndex": 478
         },
         "userText": "seems sincriously",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 7,
@@ -8465,8 +8277,7 @@
           "finalIndex": 541
         },
         "userText": "the sun",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -8480,8 +8291,7 @@
           "finalIndex": 579
         },
         "userText": "stories",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -8495,8 +8305,7 @@
           "finalIndex": 593
         },
         "userText": "game play",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -8510,8 +8319,7 @@
           "finalIndex": 619
         },
         "userText": "servival",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -8820,8 +8628,7 @@
           "finalIndex": 98
         },
         "userText": "found",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -8835,8 +8642,7 @@
           "finalIndex": 114
         },
         "userText": "on",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -8850,8 +8656,7 @@
           "finalIndex": 162
         },
         "userText": "1300",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -8865,8 +8670,7 @@
           "finalIndex": 338
         },
         "userText": "were",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -8880,8 +8684,7 @@
           "finalIndex": 395
         },
         "userText": "learned",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -8895,8 +8698,7 @@
           "finalIndex": 408
         },
         "userText": "Norway",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -8910,8 +8712,7 @@
           "finalIndex": 454
         },
         "userText": "discovery is",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       }
     ],
     "expectedTrace": [
@@ -9123,8 +8924,7 @@
           "finalIndex": 24
         },
         "userText": "saved",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -9138,8 +8938,7 @@
           "finalIndex": 181
         },
         "userText": "Marine",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 3,
@@ -9153,8 +8952,7 @@
           "finalIndex": 265
         },
         "userText": "structure",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -9168,8 +8966,7 @@
           "finalIndex": 293
         },
         "userText": "This",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -9341,8 +9138,7 @@
           "finalIndex": 87
         },
         "userText": "a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -9356,8 +9152,7 @@
           "finalIndex": 106
         },
         "userText": "in the",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 4,
@@ -9371,8 +9166,7 @@
           "finalIndex": 250
         },
         "userText": "Perf",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -9386,8 +9180,7 @@
           "finalIndex": 402
         },
         "userText": "work",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -9768,8 +9561,7 @@
           "finalIndex": 30
         },
         "userText": "face",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -9783,8 +9575,7 @@
           "finalIndex": 92
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -9798,8 +9589,7 @@
           "finalIndex": 184
         },
         "userText": "raising",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -9813,8 +9603,7 @@
           "finalIndex": 328
         },
         "userText": "100",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -9828,8 +9617,7 @@
           "finalIndex": 345
         },
         "userText": "1",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -9843,8 +9631,7 @@
           "finalIndex": 529
         },
         "userText": "rase up",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 10,
@@ -9858,8 +9645,7 @@
           "finalIndex": 552
         },
         "userText": "last",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -9873,8 +9659,7 @@
           "finalIndex": 604
         },
         "userText": "in the",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -9888,8 +9673,7 @@
           "finalIndex": 621
         },
         "userText": "prices",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 12,
@@ -9903,8 +9687,7 @@
           "finalIndex": 644
         },
         "userText": "by",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 13,
@@ -9918,8 +9701,7 @@
           "finalIndex": 660
         },
         "userText": "thirtd",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 14,
@@ -9933,8 +9715,7 @@
           "finalIndex": 707
         },
         "userText": "eletronics",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 15,
@@ -9948,8 +9729,7 @@
           "finalIndex": 780
         },
         "userText": "leaving a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 16,
@@ -9963,8 +9743,7 @@
           "finalIndex": 792
         },
         "userText": "cost",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 17,
@@ -9978,8 +9757,7 @@
           "finalIndex": 836
         },
         "userText": "gamming",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 18,
@@ -9993,8 +9771,7 @@
           "finalIndex": 877
         },
         "userText": "luxuary, specially",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 19,
@@ -10008,8 +9785,7 @@
           "finalIndex": 895
         },
         "userText": "upcome",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -10521,8 +10297,7 @@
           "finalIndex": 30
         },
         "userText": "face",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -10536,8 +10311,7 @@
           "finalIndex": 92
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -10551,8 +10325,7 @@
           "finalIndex": 184
         },
         "userText": "raising",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -10566,8 +10339,7 @@
           "finalIndex": 328
         },
         "userText": "100",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -10581,8 +10353,7 @@
           "finalIndex": 345
         },
         "userText": "1",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -10596,8 +10367,7 @@
           "finalIndex": 529
         },
         "userText": "rase up",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 10,
@@ -10611,8 +10381,7 @@
           "finalIndex": 552
         },
         "userText": "last",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -10626,8 +10395,7 @@
           "finalIndex": 604
         },
         "userText": "in the",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -10641,8 +10409,7 @@
           "finalIndex": 621
         },
         "userText": "prices",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 12,
@@ -10656,8 +10423,7 @@
           "finalIndex": 644
         },
         "userText": "by",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 13,
@@ -10671,8 +10437,7 @@
           "finalIndex": 660
         },
         "userText": "thirtd",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 14,
@@ -10686,8 +10451,7 @@
           "finalIndex": 707
         },
         "userText": "eletronics",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 15,
@@ -10701,8 +10465,7 @@
           "finalIndex": 780
         },
         "userText": "leaving a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 16,
@@ -10716,8 +10479,7 @@
           "finalIndex": 792
         },
         "userText": "cost",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 17,
@@ -10731,8 +10493,7 @@
           "finalIndex": 836
         },
         "userText": "gamming",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 18,
@@ -10746,8 +10507,7 @@
           "finalIndex": 877
         },
         "userText": "luxuary, specially",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 19,
@@ -10761,8 +10521,7 @@
           "finalIndex": 895
         },
         "userText": "upcome",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -11274,8 +11033,7 @@
           "finalIndex": 30
         },
         "userText": "face",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 1,
@@ -11289,8 +11047,7 @@
           "finalIndex": 92
         },
         "userText": "the",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 2,
@@ -11304,8 +11061,7 @@
           "finalIndex": 184
         },
         "userText": "raising",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -11319,8 +11075,7 @@
           "finalIndex": 328
         },
         "userText": "100",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 6,
@@ -11334,8 +11089,7 @@
           "finalIndex": 345
         },
         "userText": "1",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 9,
@@ -11349,8 +11103,7 @@
           "finalIndex": 529
         },
         "userText": "rase up",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 10,
@@ -11364,8 +11117,7 @@
           "finalIndex": 552
         },
         "userText": "last",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -11379,8 +11131,7 @@
           "finalIndex": 604
         },
         "userText": "in the",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -11394,8 +11145,7 @@
           "finalIndex": 621
         },
         "userText": "prices",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 12,
@@ -11409,8 +11159,7 @@
           "finalIndex": 644
         },
         "userText": "by",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 13,
@@ -11424,8 +11173,7 @@
           "finalIndex": 660
         },
         "userText": "thirtd",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 14,
@@ -11439,8 +11187,7 @@
           "finalIndex": 707
         },
         "userText": "eletronics",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 15,
@@ -11454,8 +11201,7 @@
           "finalIndex": 780
         },
         "userText": "leaving a",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 16,
@@ -11469,8 +11215,7 @@
           "finalIndex": 792
         },
         "userText": "cost",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 17,
@@ -11484,8 +11229,7 @@
           "finalIndex": 836
         },
         "userText": "gamming",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 18,
@@ -11499,8 +11243,7 @@
           "finalIndex": 877
         },
         "userText": "luxuary, specially",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 19,
@@ -11514,8 +11257,7 @@
           "finalIndex": 895
         },
         "userText": "upcome",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [
@@ -11962,8 +11704,7 @@
           "finalIndex": 19
         },
         "userText": "said",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 2,
@@ -11977,8 +11718,7 @@
           "finalIndex": 49
         },
         "userText": "happened",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 3,
@@ -11992,8 +11732,7 @@
           "finalIndex": 68
         },
         "userText": "will",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 4,
@@ -12007,8 +11746,7 @@
           "finalIndex": 83
         },
         "userText": "Australia",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 5,
@@ -12022,8 +11760,7 @@
           "finalIndex": 149
         },
         "userText": "drought. Drought",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 6,
@@ -12037,8 +11774,7 @@
           "finalIndex": 163
         },
         "userText": "farm",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 7,
@@ -12052,8 +11788,7 @@
           "finalIndex": 234
         },
         "userText": "wether it help corp",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 8,
@@ -12067,8 +11802,7 @@
           "finalIndex": 257
         },
         "userText": "area",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 9,
@@ -12082,8 +11816,7 @@
           "finalIndex": 272
         },
         "userText": "might",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 10,
@@ -12097,8 +11830,7 @@
           "finalIndex": 307
         },
         "userText": "drought",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       },
       {
         "sourceComparisonIndex": 11,
@@ -12112,8 +11844,7 @@
           "finalIndex": 334
         },
         "userText": "The",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 11,
@@ -12127,8 +11858,7 @@
           "finalIndex": 346
         },
         "userText": "have",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 12,
@@ -12142,8 +11872,7 @@
           "finalIndex": 433
         },
         "userText": "in farmer looked each other",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 13,
@@ -12157,8 +11886,7 @@
           "finalIndex": 453
         },
         "userText": "can",
-        "isDeterministicallyRefined": true,
-        "isAiRefined": false
+        "isDeterministicallyRefined": true
       },
       {
         "sourceComparisonIndex": 14,
@@ -12172,8 +11900,7 @@
           "finalIndex": 472
         },
         "userText": "everything.",
-        "isDeterministicallyRefined": false,
-        "isAiRefined": false
+        "isDeterministicallyRefined": false
       }
     ],
     "expectedTrace": [

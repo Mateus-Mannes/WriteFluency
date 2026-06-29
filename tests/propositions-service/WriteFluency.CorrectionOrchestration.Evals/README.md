@@ -23,7 +23,7 @@ comparisons provide realistic request context.
 Run from the repository root:
 
 ```bash
-dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals
+dotnet run --project tests/propositions-service/WriteFluency.CorrectionOrchestration.Evals
 ```
 
 Optional arguments:
@@ -39,7 +39,7 @@ Optional arguments:
 Concurrency defaults to `1`. Use bounded concurrency to reduce evaluation time:
 
 ```bash
-dotnet run --project tests/propositions-service/WriteFluency.AiRefinement.Evals -- \
+dotnet run --project tests/propositions-service/WriteFluency.CorrectionOrchestration.Evals -- \
   --runs 4 \
   --concurrency 4
 ```
@@ -48,7 +48,7 @@ Runs share the same concurrency limit.
 
 The evaluator exits with code `1` when quality thresholds fail, unless
 `--report-only` is used. Reports are written under the ignored
-`artifacts/ai-evals/` directory:
+`artifacts/correction-evals/` directory:
 
 - `report.md` contains the evaluation summary and per-case metrics.
 - `report.html` is the primary interactive report. It groups repeated runs by

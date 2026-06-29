@@ -163,6 +163,32 @@ describe('ExerciseSubmissionService', () => {
     }));
   }));
 
+  it('should reject oversized text before calling the API', () => {
+    const onFailure = jasmine.createSpy('onFailure');
+    const oversizedText = 'a'.repeat(3001);
+
+    service.submit({
+      proposition: { id: 22, title: 'Exercise 22' } as any,
+      exerciseId: 22,
+      submittedUserText: oversizedText,
+      exerciseTimeUsedMs: null,
+      onSuccess: jasmine.createSpy('onSuccess'),
+      onProRequired: jasmine.createSpy('onProRequired'),
+      onFailure,
+    });
+
+    expect(service.isSubmitting()).toBeFalse();
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost)
+      .not.toHaveBeenCalled();
+    expect(onFailure).toHaveBeenCalledWith(
+      'Your answer is too long. Please keep it under 3000 characters.');
+    expect(trackingMock.trackEvent).toHaveBeenCalledWith(
+      'exercise_submit_failed',
+      jasmine.objectContaining({ reason: 'user_text_too_long' }),
+      jasmine.objectContaining({ text_char_count: 3001 }),
+    );
+  });
+
   it('should call Pro-required callback for Pro submit failures', fakeAsync(() => {
     const onProRequired = jasmine.createSpy('onProRequired');
     const onFailure = jasmine.createSpy('onFailure');
