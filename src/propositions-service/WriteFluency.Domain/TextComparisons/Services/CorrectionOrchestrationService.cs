@@ -4,19 +4,19 @@ public sealed class CorrectionOrchestrationService
 {
     private readonly TextComparisonService _textComparisonService;
     private readonly DeterministicTextComparisonRefiner _deterministicRefiner;
-    private readonly TextComparisonRefinementValidator _validator;
+    private readonly IMistakePatternClassifier _mistakePatternClassifier;
 
     public CorrectionOrchestrationService(
         TextComparisonService textComparisonService,
         DeterministicTextComparisonRefiner deterministicRefiner,
-        TextComparisonRefinementValidator validator)
+        IMistakePatternClassifier mistakePatternClassifier)
     {
         _textComparisonService = textComparisonService;
         _deterministicRefiner = deterministicRefiner;
-        _validator = validator;
+        _mistakePatternClassifier = mistakePatternClassifier;
     }
 
-    public Task<CorrectionOrchestrationResult> CompareTextsAsync(
+    public async Task<CorrectionOrchestrationResult> CompareTextsAsync(
         string originalText,
         string userText,
         bool isPro,
@@ -27,101 +27,139 @@ public sealed class CorrectionOrchestrationService
         var staticResult = _textComparisonService.CompareTexts(originalText, userText);
         AssignStaticProvenance(staticResult.Comparisons);
         var staticComparisonCount = staticResult.Comparisons.Count;
-        var staticValidation = _validator.ValidateStatic(staticResult);
-        if (!staticValidation.IsValid)
-        {
-            var sanitizedStaticResult = CreateStaticResult(
-                staticResult.OriginalText,
-                staticResult.UserText,
-                staticValidation.Comparisons);
-
-            return Task.FromResult(CreateResult(
-                sanitizedStaticResult,
-                staticComparisonCount,
-                validationReasonCode: staticValidation.ReasonCode));
-        }
-
-        if (staticValidation.ShouldSkipRefinement)
-        {
-            return Task.FromResult(CreateResult(
-                CreateStaticResult(
-                    staticResult.OriginalText,
-                    staticResult.UserText,
-                    staticValidation.Comparisons),
-                staticComparisonCount,
-                validationReasonCode: staticValidation.ReasonCode));
-        }
-
         if (!isPro)
         {
-            return Task.FromResult(CreateResult(
+            return CreateResult(
                 CreateStaticResult(
                     staticResult.OriginalText,
                     staticResult.UserText,
-                    staticValidation.Comparisons),
-                staticComparisonCount,
-                validationReasonCode: staticValidation.ReasonCode));
+                    staticResult.Comparisons),
+                staticComparisonCount);
         }
 
+        TextComparisonStructureGuard.EnsureValid(staticResult);
         var deterministic = _deterministicRefiner.Refine(
             staticResult.OriginalText,
             staticResult.UserText,
-            staticValidation.Comparisons);
+            staticResult.Comparisons);
         var correctionTrace = deterministic.Trace.ToDictionary(
             entry => entry.Key,
             entry => entry.Value);
-        var deterministicValidation = _validator.ValidateFinal(
-            staticResult.OriginalText,
-            staticResult.UserText,
-            deterministic.Comparisons);
-        if (!deterministicValidation.IsValid)
-        {
-            return Task.FromResult(CreateResult(
-                CreateStaticResult(
-                    staticResult.OriginalText,
-                    staticResult.UserText,
-                    staticValidation.Comparisons),
-                staticComparisonCount,
-                validationReasonCode: deterministicValidation.ReasonCode));
-        }
 
         if (!deterministic.HasChanges)
         {
-            return Task.FromResult(CreateResult(
-                CreateStaticResult(
-                    staticResult.OriginalText,
-                    staticResult.UserText,
-                    staticValidation.Comparisons),
-                staticComparisonCount,
-                validationReasonCode: deterministicValidation.ReasonCode));
+            var unchangedResult = CreateStaticResult(
+                staticResult.OriginalText,
+                staticResult.UserText,
+                staticResult.Comparisons);
+            await AttachMistakePatternMetadataAsync(
+                unchangedResult,
+                cancellationToken);
+
+            return CreateResult(
+                unchangedResult,
+                staticComparisonCount);
         }
 
         var normalizedResult = new TextComparisonResult(
             staticResult.OriginalText,
             staticResult.UserText,
-            CalculateAccuracy(staticResult.OriginalText, deterministicValidation.Comparisons),
-            deterministicValidation.Comparisons.ToList(),
+            CalculateAccuracy(staticResult.OriginalText, deterministic.Comparisons),
+            deterministic.Comparisons.ToList(),
             CorrectionModes.Normalized,
             correctionTrace: OrderTrace(correctionTrace));
+        await AttachMistakePatternMetadataAsync(normalizedResult, cancellationToken);
 
-        return Task.FromResult(CreateResult(
+        return CreateResult(
             normalizedResult,
             staticComparisonCount,
-            deterministic.RemovedComparisonCount,
-            deterministicValidation.ReasonCode));
+            deterministic.RemovedComparisonCount);
+    }
+
+    private async Task AttachMistakePatternMetadataAsync(
+        TextComparisonResult result,
+        CancellationToken cancellationToken)
+    {
+        TextComparisonStructureGuard.EnsureValid(result);
+        TextComparisonStructureGuard.EnsureValidSourceIndexes(result.Comparisons);
+
+        if (result.Comparisons.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var annotations = await _mistakePatternClassifier.ClassifyAsync(
+                new MistakePatternClassificationRequest(
+                    result.OriginalText,
+                    result.UserText,
+                    result.Comparisons),
+                cancellationToken);
+
+            AttachMistakePatternMetadata(
+                result.Comparisons,
+                MistakePatternAnnotationSanitizer.Sanitize(
+                    annotations,
+                    result.Comparisons));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            ClearMistakePatternMetadata(result.Comparisons);
+        }
+    }
+
+    private static void AttachMistakePatternMetadata(
+        IReadOnlyList<TextComparison> comparisons,
+        IReadOnlyList<MistakePatternAnnotation>? annotations)
+    {
+        ClearMistakePatternMetadata(comparisons);
+        if (annotations is null || annotations.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var annotation in annotations)
+        {
+            if (annotation.ComparisonIndex < 0
+                || annotation.ComparisonIndex >= comparisons.Count)
+            {
+                continue;
+            }
+
+            var comparison = comparisons[annotation.ComparisonIndex];
+            if (comparison.SourceComparisonIndex != annotation.SourceComparisonIndex)
+            {
+                continue;
+            }
+
+            comparison.MistakePatternTags = annotation.Tags;
+            comparison.MistakePatternPhrase = annotation.StudentPhrase;
+        }
+    }
+
+    private static void ClearMistakePatternMetadata(
+        IReadOnlyList<TextComparison> comparisons)
+    {
+        foreach (var comparison in comparisons)
+        {
+            comparison.MistakePatternTags = null;
+            comparison.MistakePatternPhrase = null;
+        }
     }
 
     private CorrectionOrchestrationResult CreateResult(
         TextComparisonResult result,
         int staticComparisonCount,
-        int removedComparisonCount = 0,
-        string validationReasonCode =
-            TextComparisonRefinementValidationReasons.Valid) =>
+        int removedComparisonCount = 0) =>
         new(
             result,
             staticComparisonCount,
-            removedComparisonCount,
-            validationReasonCode);
+            removedComparisonCount);
 
     private static TextComparisonResult CreateStaticResult(
         string originalText,
@@ -168,5 +206,4 @@ public sealed class CorrectionOrchestrationService
 public sealed record CorrectionOrchestrationResult(
     TextComparisonResult Result,
     int StaticComparisonCount,
-    int RemovedComparisonCount,
-    string ValidationReasonCode);
+    int RemovedComparisonCount);

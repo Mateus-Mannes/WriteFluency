@@ -87,7 +87,16 @@ public class UserProgressTrackingServiceTests
                         new ProgressTextRange(0, 9),
                         "submitted",
                         SourceComparisonIndex: 3,
-                        IsDeterministicallyRefined: true)
+                        IsDeterministicallyRefined: true,
+                        MistakePatternTags:
+                        [
+                            " word_choice ",
+                            "WORD_CHOICE",
+                            "spelling",
+                            "article"
+                        ],
+                        MistakePatternPhrase:
+                        "  Choose the word that preserves the intended meaning.  ")
                 ],
                 CorrectionMode: "normalized",
                 CorrectionTrace:
@@ -133,8 +142,12 @@ public class UserProgressTrackingServiceTests
         state.OriginalText.ShouldBe("original exercise text");
         state.Comparisons.ShouldNotBeNull();
         state.Comparisons.Count.ShouldBe(1);
-        state.Comparisons.Single().SourceComparisonIndex.ShouldBe(3);
-        state.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
+        var restoredComparison = state.Comparisons.Single();
+        restoredComparison.SourceComparisonIndex.ShouldBe(3);
+        restoredComparison.IsDeterministicallyRefined.ShouldBeTrue();
+        restoredComparison.MistakePatternTags.ShouldBe(["word_choice", "spelling", "article"]);
+        restoredComparison.MistakePatternPhrase.ShouldBe(
+            "Choose the word that preserves the intended meaning.");
         state.CorrectionMode.ShouldBe("normalized");
         state.CorrectionTrace.ShouldNotBeNull();
         state.CorrectionTrace.Single().Deterministic.ShouldNotBeNull();
@@ -146,11 +159,17 @@ public class UserProgressTrackingServiceTests
         var attempt = attempts.Single();
         attempt.CorrectionMode.ShouldBe("normalized");
         attempt.Comparisons.ShouldNotBeNull();
+        attempt.Comparisons.Single().MistakePatternTags.ShouldBe(["word_choice", "spelling", "article"]);
+        attempt.Comparisons.Single().MistakePatternPhrase.ShouldBe(
+            "Choose the word that preserves the intended meaning.");
         attempt.CorrectionTrace.ShouldNotBeNull();
 
         var progressAfterStart = await repository.GetProgressAsync(userId, 13, CancellationToken.None);
         progressAfterStart.ShouldNotBeNull();
         progressAfterStart.CurrentAttemptActiveSeconds.ShouldBe(55);
+        progressAfterStart.CompletedComparisons.ShouldNotBeNull();
+        progressAfterStart.CompletedComparisons.Single().MistakePatternTags.ShouldBe(
+            ["word_choice", "spelling", "article"]);
     }
 
     [Fact]

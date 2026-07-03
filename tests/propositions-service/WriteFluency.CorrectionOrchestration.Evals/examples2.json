@@ -1,0 +1,4048 @@
+[
+  {
+    "caseId": "real-exact-whitespace-duplicate",
+    "category": "equivalent-whitespace",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because leading line breaks and repeated whitespace do not represent spoken-word errors.",
+    "focusSourceComparisonIndex": 0,
+    "originalText": "A house fire happened in Gisborne on George Street in the Mangapapa area. Emergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what caused the fire and think it might have been intentional. They said one person is helping with the investigation. This event reminds local residents how important it is to stay safe and watch out for each other.",
+    "userText": "A house fire happened in Gisborne on George Street, in the Mangapapa area. \n\nEmergency services arrived early in the morning and quickly put out the fire. No one was injured, but the house was badly damaged. Police are trying to find out what cause they fire and thinking it might had been intentional. They said one person is helping with the investigation. \n\nThis event reminds local residents how important it is to stay safe and watch out for each other.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 240,
+          "finalIndex": 249
+        },
+        "originalText": "caused the",
+        "userTextRange": {
+          "initialIndex": 243,
+          "finalIndex": 252
+        },
+        "userText": "cause they",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "articles_and_small_words",
+          "word_choice"
+        ],
+        "studentPhrase": "The original says \"caused the\"; \"caused\" is past tense, while \"cause\" is present/base form, and \"the\" is not \"they\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 260,
+          "finalIndex": 264
+        },
+        "originalText": "think",
+        "userTextRange": {
+          "initialIndex": 263,
+          "finalIndex": 270
+        },
+        "userText": "thinking",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original uses \"think\" as the main verb; \"thinking\" is an -ing form and would need a different sentence structure.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 275,
+          "finalIndex": 278
+        },
+        "originalText": "have",
+        "userTextRange": {
+          "initialIndex": 281,
+          "finalIndex": 283
+        },
+        "userText": "had",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original uses \"have\" in the present; \"had\" is past tense.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-smart-apostrophe",
+    "category": "equivalent-typography",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because smart and straight apostrophes represent the same word.",
+    "focusSourceComparisonIndex": 10,
+    "originalText": "Kate Ceberano is a well-known singer. She has started to enjoy embroidery and quilting. She says her heritage from Hawaii and the Philippines inspired her. Every day, she works with fabric. She sews with a needle and adds beads and sequins to her work. One quilt she made is called Gaudi. It is based on her painting and took almost a year to finish. Even with her busy music schedule, Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in families. Now, many young artists like it. They use it to tell stories and stay calm. Kate’s love for textile art shows a side of her many people do not see.",
+    "userText": "Kate Ceberano is a well-known singer. She has started to enjoy brodery and quilting, she says a hair teacher from a while and the Philippines inspired her. Everyday she works with fabric, she saws with the needle and adds bits and sequence to her work. One quilt she made is called 'Gaudi' is it based on her painting and took almost a year to finish even with her busy music schedule. Kate finds time each day to work on her quilts. She says making quilts is relaxing and helps her share her feelings. This craft was once passed in  families. Now many artist like it, they use it to tell stories and stay calm. Kate's love for textile are a chose aside for many people do not see",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 63,
+          "finalIndex": 72
+        },
+        "originalText": "embroidery",
+        "userTextRange": {
+          "initialIndex": 63,
+          "finalIndex": 69
+        },
+        "userText": "brodery",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Embroidery\" means decorative sewing; \"brodery\" is not the correct spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 97,
+          "finalIndex": 120
+        },
+        "originalText": "her heritage from Hawaii",
+        "userTextRange": {
+          "initialIndex": 94,
+          "finalIndex": 120
+        },
+        "userText": "a hair teacher from a while",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Her heritage from Hawaii\" means her family or cultural background, not a teacher or a time phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 156,
+          "finalIndex": 164
+        },
+        "originalText": "Every day",
+        "userTextRange": {
+          "initialIndex": 156,
+          "finalIndex": 163
+        },
+        "userText": "Everyday",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Every day\" means each day; \"everyday\" is an adjective, as in \"everyday clothes\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 194,
+          "finalIndex": 197
+        },
+        "originalText": "sews",
+        "userTextRange": {
+          "initialIndex": 192,
+          "finalIndex": 195
+        },
+        "userText": "saws",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Sews\" means stitches fabric; \"saws\" means cuts with a saw.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 204,
+          "finalIndex": 204
+        },
+        "originalText": "a",
+        "userTextRange": {
+          "initialIndex": 202,
+          "finalIndex": 204
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "This is an article swap: the original says \"a\", not \"the\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 222,
+          "finalIndex": 226
+        },
+        "originalText": "beads",
+        "userTextRange": {
+          "initialIndex": 222,
+          "finalIndex": 225
+        },
+        "userText": "bits",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Beads\" are small decorative pieces; \"bits\" is too general and changes the craft detail.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 232,
+          "finalIndex": 238
+        },
+        "originalText": "sequins",
+        "userTextRange": {
+          "initialIndex": 231,
+          "finalIndex": 238
+        },
+        "userText": "sequence",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Sequins\" are shiny decorations sewn onto fabric; \"sequence\" means order, so the meaning changes.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 289,
+          "finalIndex": 293
+        },
+        "originalText": "It is",
+        "userTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 294
+        },
+        "userText": "is it",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_order",
+          "verb_form"
+        ],
+        "studentPhrase": "\"It is\" is a statement; \"is it\" uses question word order.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 553,
+          "finalIndex": 565
+        },
+        "originalText": "young artists",
+        "userTextRange": {
+          "initialIndex": 553,
+          "finalIndex": 558
+        },
+        "userText": "artist",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural",
+          "missing_or_extra_word"
+        ],
+        "studentPhrase": "\"Young artists\" means more than one young artist; \"artist\" alone loses both \"young\" and the plural meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 665
+        },
+        "originalText": "art shows a side of her",
+        "userTextRange": {
+          "initialIndex": 636,
+          "finalIndex": 656
+        },
+        "userText": "are a chose aside for",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Art shows a side of her\" means her textile work reveals something about her; the written phrase loses that meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-regional-spelling",
+    "category": "equivalent-regional-spelling",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because cozy and cosy are accepted regional spellings of the same word.",
+    "focusSourceComparisonIndex": 3,
+    "originalText": "Some of the most stunning log homes can be found in places like Colorado and California. One charming house in Colorado sits on a peninsula surrounded by a lake, featuring huge log beams and a cozy antler chandelier. It comes with a guesthouse, a barn, and even a greenhouse dome, all on over forty-five acres of land. Meanwhile, on the California coast, a log house built in the style of a mountain cabin has a dramatic two-story living room with a large stone fireplace and a staircase made of logs. These unique homes showcase the beauty and craftsmanship of traditional log construction, making them truly special places to live or visit.",
+    "userText": "Some of the stunning log homes can be found in places like Colorado and California. One charming house in Colorado sets on a penninsula surrounded by a lake, featuring huge log beams and a cosy antler chandelier. It comes with a guessed house, a barnand even a green house stone. All an over forty-five hecars of land. Meanwhile on the California coast a log house built in a style of a mountain cabin, has a dramatic two store, living room with a large stone fireplace and a staircase made of logs. These unique homes showcase the beauty and crossmentship of traditional log construction,making them truly special places to live or visit",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 12,
+          "finalIndex": 24
+        },
+        "originalText": "most stunning",
+        "userTextRange": {
+          "initialIndex": 12,
+          "finalIndex": 19
+        },
+        "userText": "stunning",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word"
+        ],
+        "studentPhrase": "\"Most stunning\" means among the most impressive; writing only \"stunning\" loses that stronger comparison.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 120,
+          "finalIndex": 123
+        },
+        "originalText": "sits",
+        "userTextRange": {
+          "initialIndex": 115,
+          "finalIndex": 118
+        },
+        "userText": "sets",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Sits\" means \"is located here\"; \"sets\" usually means places something somewhere or prepares something.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 130,
+          "finalIndex": 138
+        },
+        "originalText": "peninsula",
+        "userTextRange": {
+          "initialIndex": 125,
+          "finalIndex": 134
+        },
+        "userText": "penninsula",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Peninsula\" is land almost surrounded by water; keep the single \"n\" after \"pe\" and the double \"n\" later.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 233,
+          "finalIndex": 255
+        },
+        "originalText": "guesthouse, a barn, and",
+        "userTextRange": {
+          "initialIndex": 229,
+          "finalIndex": 252
+        },
+        "userText": "guessed house, a barnand",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Guesthouse\" is a small house for guests, and \"a barn, and\" separates the list; \"guessed house\" and \"barnand\" break that meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 264,
+          "finalIndex": 278
+        },
+        "originalText": "greenhouse dome",
+        "userTextRange": {
+          "initialIndex": 261,
+          "finalIndex": 277
+        },
+        "userText": "green house stone",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Greenhouse dome\" means a dome-shaped greenhouse; \"green house stone\" sounds like a green stone house, which does not fit the property description.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 285,
+          "finalIndex": 286
+        },
+        "originalText": "on",
+        "userTextRange": {
+          "initialIndex": 284,
+          "finalIndex": 285
+        },
+        "userText": "an",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original uses the preposition \"on\"; \"an\" is an article and does not fit the location phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 304,
+          "finalIndex": 308
+        },
+        "originalText": "acres",
+        "userTextRange": {
+          "initialIndex": 303,
+          "finalIndex": 308
+        },
+        "userText": "hecars",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "number_or_unit",
+          "spelling"
+        ],
+        "studentPhrase": "\"Acres\" is a land-area unit; \"hecars\" is not the unit used in the original sentence.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 376,
+          "finalIndex": 378
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 374,
+          "finalIndex": 374
+        },
+        "userText": "a",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "You wrote \"a\" instead of \"the\"; this is mainly an article swap.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 425,
+          "finalIndex": 429
+        },
+        "originalText": "story",
+        "userTextRange": {
+          "initialIndex": 422,
+          "finalIndex": 426
+        },
+        "userText": "store",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Story\" means narrative or level; \"store\" means a shop or storage place.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 545,
+          "finalIndex": 557
+        },
+        "originalText": "craftsmanship",
+        "userTextRange": {
+          "initialIndex": 543,
+          "finalIndex": 555
+        },
+        "userText": "crossmentship",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Craftsmanship\" means skilled building or making; \"crossmentship\" is not an English word in this context.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-compound-spacing",
+    "category": "equivalent-compound",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because woodwork and wood work represent the same recognized compound in this context.",
+    "focusSourceComparisonIndex": 5,
+    "originalText": "In central London, there is a old neighborhood called Holborn. It is known for its special pubs. One pub is Ye Olde Mitre. It has been open since the 1500s. It has small rooms and an outdoor area. It has been in famous movies. It shows history. Another pub is the Princess Louise. It was built in the late 1800s. It is known for its woodwork and old style features. Many visitors like to spend time in these pubs. They try traditional British drinks and food. The area is good for walking. Many pubs are close to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay. It is a short walk from these old pubs.",
+    "userText": "In central London there is a old neighbourhood called Holborn. It is known for  its special pubs. One pub is the Ye olde Mitre. It has been opened since the 1500's. It has small rooms and an outdoor area. It has been in famous movies, it shows history. Another pub is the Princess Louise, it was built in the late 1800's. It is known for its wood work and old style features. Many visitors like to spend time in these pubs. They try traditional British  drinks and food. The area is good for walking, many pubs are closed to each other. People can enjoy sightseeing and relax with a drink or food. For visitors staying nearby, the hotel The Hoxton offers a comfortable place to stay, it's a short walk from these old pubs.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 108,
+          "finalIndex": 109
+        },
+        "originalText": "Ye",
+        "userTextRange": {
+          "initialIndex": 109,
+          "finalIndex": 114
+        },
+        "userText": "the Ye",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "proper_noun"
+        ],
+        "studentPhrase": "The original pub name starts with \"Ye\"; writing \"the Ye\" adds an unnecessary extra article before the name.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 135,
+          "finalIndex": 138
+        },
+        "originalText": "open",
+        "userTextRange": {
+          "initialIndex": 140,
+          "finalIndex": 145
+        },
+        "userText": "opened",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"has been open\", using \"open\" as an adjective for a state; \"opened\" describes an action in the past.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 504,
+          "finalIndex": 508
+        },
+        "originalText": "close",
+        "userTextRange": {
+          "initialIndex": 515,
+          "finalIndex": 520
+        },
+        "userText": "closed",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "verb_form"
+        ],
+        "studentPhrase": "The original says the pubs are \"close\" to each other, meaning nearby; \"closed\" means not open.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 675,
+          "finalIndex": 676
+        },
+        "originalText": "is",
+        "userTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 687
+        },
+        "userText": "s",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form",
+          "word_boundary"
+        ],
+        "studentPhrase": "The original says \"is\"; \"s\" is only a contracted ending, so write the full verb here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-year-number-words",
+    "category": "equivalent-number",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because the year written with digits and number words has the same spoken value.",
+    "focusSourceComparisonIndex": 0,
+    "originalText": "In Mount Isa, Ishani Harney makes cakes for birthdays, weddings, and events. She started her business in 2022. Many people like her cakes. But her shop has been vandalized many times in the past three years. The damage includes break-ins, graffiti, and a broken glass door. These events make her sad and cause money problems. She finds it hard to get help through grants. She tries to fix her shop, but she feels sad and thinks reporting vandalism might not help. The police tell shop owners to report damage. When they do not report, it is harder to find and stop the vandals.",
+    "userText": "in mount Isa, ishani harney makes cakes for birthdays, weddings and events. she started her business in twenty twenty two. many people like her cakes but her shop has been vandalise many times in the past three years.  the damage include break in grafity and a broken glass door. this events make her sad and cost money problems. she find she hard to get a help. she tried to fix her shop but she feels sad and thinks reporting vandalism might not help. the police tell shop owner to report damage. where they do not report it is harder to find and stop the vandal.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 161,
+          "finalIndex": 170
+        },
+        "originalText": "vandalized",
+        "userTextRange": {
+          "initialIndex": 172,
+          "finalIndex": 180
+        },
+        "userText": "vandalise",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "The original spelling is \"vandalized\"; write \"vandalized\", not \"vandalise\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 219,
+          "finalIndex": 246
+        },
+        "originalText": "includes break-ins, graffiti",
+        "userTextRange": {
+          "initialIndex": 230,
+          "finalIndex": 253
+        },
+        "userText": "include break in grafity",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "word_boundary",
+          "spelling"
+        ],
+        "studentPhrase": "\"Includes break-ins, graffiti\" uses the verb \"includes\", the hyphenated noun \"break-ins\", and the spelling \"graffiti\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 274,
+          "finalIndex": 278
+        },
+        "originalText": "These",
+        "userTextRange": {
+          "initialIndex": 280,
+          "finalIndex": 283
+        },
+        "userText": "this",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"These\" points to plural things; \"this\" points to one thing.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 304,
+          "finalIndex": 308
+        },
+        "originalText": "cause",
+        "userTextRange": {
+          "initialIndex": 309,
+          "finalIndex": 312
+        },
+        "userText": "cost",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Cause money problems\" means make money problems happen; \"cost money\" would mean require money. The original uses \"cause\" here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 330,
+          "finalIndex": 337
+        },
+        "originalText": "finds it",
+        "userTextRange": {
+          "initialIndex": 334,
+          "finalIndex": 341
+        },
+        "userText": "find she",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Finds it\" uses third-person \"-s\" and the object \"it\"; \"find she\" changes both grammar and meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 351,
+          "finalIndex": 369
+        },
+        "originalText": "help through grants",
+        "userTextRange": {
+          "initialIndex": 355,
+          "finalIndex": 360
+        },
+        "userText": "a help",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "phrase_heard_incorrectly"
+        ],
+        "studentPhrase": "The original says \"help through grants\", meaning support with grant money; \"a help\" loses that specific meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 376,
+          "finalIndex": 380
+        },
+        "originalText": "tries",
+        "userTextRange": {
+          "initialIndex": 367,
+          "finalIndex": 371
+        },
+        "userText": "tried",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Tries\" is present tense with \"she\"; \"tried\" is past tense.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 485,
+          "finalIndex": 490
+        },
+        "originalText": "owners",
+        "userTextRange": {
+          "initialIndex": 475,
+          "finalIndex": 479
+        },
+        "userText": "owner",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Owners\" means more than one owner; \"owner\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 510,
+          "finalIndex": 513
+        },
+        "originalText": "When",
+        "userTextRange": {
+          "initialIndex": 499,
+          "finalIndex": 503
+        },
+        "userText": "where",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"When\" asks about time; \"where\" asks about place.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 569,
+          "finalIndex": 575
+        },
+        "originalText": "vandals",
+        "userTextRange": {
+          "initialIndex": 558,
+          "finalIndex": 563
+        },
+        "userText": "vandal",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Vandals\" means more than one vandal; \"vandal\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-contraction-and-punctuation",
+    "category": "equivalent-contraction",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because the contraction and its expansion have the same meaning, and the comma is not graded.",
+    "focusSourceComparisonIndex": 10,
+    "originalText": "Many people think paying off their student loans early is a smart move, but financial experts warn it can actually cost you a lot in the long run. A big financial company called Vanguard found that if you pay off low-interest debt early, you might miss out on important benefits like employer matching contributions to your retirement account. For example, some workers who clear their mortgages or student loans early are not taking full advantage of their employer’s 401(k) match. Over many years, missing that match can add up to hundreds of thousands of dollars less in your retirement savings. Experts say that missing out on these free contributions reduces your money growth over time and can lead to a significant shortfall when you retire. So, it’s important to consider your interest rates and the benefits of employer matches before paying off debt early.",
+    "userText": "Many people think paying off their student loans early is a smart move. But financial experts warn it can actually cost you a lot in a long run. A big financial company called Vanguard found that if you pay off low interest at early you might miss out on an important benefits like employer matching contribution to retirement account. For example, some workers clear their or student loans early are not taking full advantages their employers 401k match, over many years, missing that match can adapt a hundred of thousands dollars lessen your retirement savings. Experts say that missing out on these free contributions reduces your money grow over time, and can lead to a significant short fall when you retire. So it is important to consider your interest rate and the benefit of employer matches before paying off debt early",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 133,
+          "finalIndex": 135
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 133,
+          "finalIndex": 133
+        },
+        "userText": "a",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "You wrote \"a\" instead of \"the\"; this is mainly an article swap.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 226,
+          "finalIndex": 229
+        },
+        "originalText": "debt",
+        "userTextRange": {
+          "initialIndex": 224,
+          "finalIndex": 225
+        },
+        "userText": "at",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Debt\" is money owed; \"at\" is a preposition, so the finance meaning disappears.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 260,
+          "finalIndex": 268
+        },
+        "originalText": "important",
+        "userTextRange": {
+          "initialIndex": 255,
+          "finalIndex": 266
+        },
+        "userText": "an important",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original says \"important\"; the user added the extra article \"an\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 302,
+          "finalIndex": 314
+        },
+        "originalText": "contributions",
+        "userTextRange": {
+          "initialIndex": 300,
+          "finalIndex": 311
+        },
+        "userText": "contribution",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Contributions\" is plural; \"contribution\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 319,
+          "finalIndex": 333
+        },
+        "originalText": "your retirement",
+        "userTextRange": {
+          "initialIndex": 316,
+          "finalIndex": 325
+        },
+        "userText": "retirement",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "possessive"
+        ],
+        "studentPhrase": "The original says \"your retirement\", meaning the retirement account belongs to you; \"retirement\" alone loses that owner.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 362,
+          "finalIndex": 372
+        },
+        "originalText": "workers who",
+        "userTextRange": {
+          "initialIndex": 354,
+          "finalIndex": 360
+        },
+        "userText": "workers",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"Who\" introduces the next idea about the workers; dropping it makes the clause incomplete.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 386,
+          "finalIndex": 397
+        },
+        "originalText": "mortgages or",
+        "userTextRange": {
+          "initialIndex": 374,
+          "finalIndex": 375
+        },
+        "userText": "or",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Mortgages\" is the key noun before \"or\"; without it, the phrase loses the finance meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 439,
+          "finalIndex": 450
+        },
+        "originalText": "advantage of",
+        "userTextRange": {
+          "initialIndex": 417,
+          "finalIndex": 426
+        },
+        "userText": "advantages",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_choice",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"Take advantage of\" means use an opportunity; \"advantages\" is the plural noun for benefits.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 458,
+          "finalIndex": 473
+        },
+        "originalText": "employer’s 401(k",
+        "userTextRange": {
+          "initialIndex": 434,
+          "finalIndex": 447
+        },
+        "userText": "employers 401k",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "possessive",
+          "number_or_unit"
+        ],
+        "studentPhrase": "The original uses \"employer’s 401(k)\" as a possessive account phrase; \"employers 401k\" loses the possessive form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 540
+        },
+        "originalText": "add up to hundreds",
+        "userTextRange": {
+          "initialIndex": 496,
+          "finalIndex": 510
+        },
+        "userText": "adapt a hundred",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "number_or_unit"
+        ],
+        "studentPhrase": "\"Add up to hundreds\" means the total can become hundreds; \"adapt a hundred\" means change one hundred, which does not fit here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 545,
+          "finalIndex": 556
+        },
+        "originalText": "thousands of",
+        "userTextRange": {
+          "initialIndex": 515,
+          "finalIndex": 523
+        },
+        "userText": "thousands",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The expression is \"thousands of\" before a following noun; writing only \"thousands\" drops the needed \"of\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 566,
+          "finalIndex": 572
+        },
+        "originalText": "less in",
+        "userTextRange": {
+          "initialIndex": 533,
+          "finalIndex": 538
+        },
+        "userText": "lessen",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Less in\" means a smaller amount in the retirement savings; \"lessen\" is a verb meaning reduce.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 675,
+          "finalIndex": 680
+        },
+        "originalText": "growth",
+        "userTextRange": {
+          "initialIndex": 641,
+          "finalIndex": 644
+        },
+        "userText": "grow",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Growth\" is a noun; \"grow\" is a verb. The phrase needs the noun form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 722,
+          "finalIndex": 730
+        },
+        "originalText": "shortfall",
+        "userTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 696
+        },
+        "userText": "short fall",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Shortfall\" is one noun meaning a deficit; \"short fall\" would describe a small drop or fall.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 794,
+          "finalIndex": 798
+        },
+        "originalText": "rates",
+        "userTextRange": {
+          "initialIndex": 760,
+          "finalIndex": 763
+        },
+        "userText": "rate",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Rates\" is plural; \"rate\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 808,
+          "finalIndex": 815
+        },
+        "originalText": "benefits",
+        "userTextRange": {
+          "initialIndex": 773,
+          "finalIndex": 779
+        },
+        "userText": "benefit",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Benefits\" is plural; \"benefit\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-possessive-meaning",
+    "category": "possessive-grammar",
+    "expectation": "Run the full correction orchestrator. Keep daughters' versus daughters because the omitted possessive apostrophe changes the grammatical form, even though pronunciation is unchanged.",
+    "focusSourceComparisonIndex": 9,
+    "originalText": "Jesy Nelson, a well-known singer, recently shared a heartfelt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis, Jesy noticed unusual signs in their movement and breathing, but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seemed to breathe from their bellies. Over time, these signs worsened, and Jesy realized her daughters might have a serious condition called Spinal Muscular Atrophy. After a diagnosis, she became an advocate, speaking openly about her daughters' health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
+    "userText": "Jessy Nelson a well know singer, recently shared a heart-felt story about her twin daughters, Ocean Jade and Story Monroe. Just weeks before their diagnosis Jessy noticed unusual signs in their movements and breathing but she initially thought it was due to their prematurity. When they came home from the hospital, she and her mother observed that the babies were not moving their legs as they should and seem to breathe from their bellies. Over time, this signs worsten and just she realized her daughters might have a serious condition called spinal muscular atrophy after a diagnosis she became an advocate speaking openly about her daughters health struggles and the importance of early detection. Her story highlights the challenges and emotional journey faced by parents of children with rare genetic disorders.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 0,
+          "finalIndex": 3
+        },
+        "originalText": "Jesy",
+        "userTextRange": {
+          "initialIndex": 0,
+          "finalIndex": 4
+        },
+        "userText": "Jessy",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "proper_noun",
+          "spelling"
+        ],
+        "studentPhrase": "The name is \"Jesy\", with one \"s\" in the middle; \"Jessy\" is a different spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 20,
+          "finalIndex": 24
+        },
+        "originalText": "known",
+        "userTextRange": {
+          "initialIndex": 20,
+          "finalIndex": 23
+        },
+        "userText": "know",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Known\" is the past participle/adjective form; \"know\" is the base verb.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 158,
+          "finalIndex": 161
+        },
+        "originalText": "Jesy",
+        "userTextRange": {
+          "initialIndex": 157,
+          "finalIndex": 161
+        },
+        "userText": "Jessy",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "proper_noun",
+          "spelling"
+        ],
+        "studentPhrase": "The name is \"Jesy\", with one \"s\" in the middle; \"Jessy\" is a different spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 194,
+          "finalIndex": 201
+        },
+        "originalText": "movement",
+        "userTextRange": {
+          "initialIndex": 194,
+          "finalIndex": 202
+        },
+        "userText": "movements",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Movement\" is singular; \"movements\" is plural.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 406,
+          "finalIndex": 411
+        },
+        "originalText": "seemed",
+        "userTextRange": {
+          "initialIndex": 406,
+          "finalIndex": 409
+        },
+        "userText": "seem",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"seemed\", which is past tense; \"seem\" is present/base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 455,
+          "finalIndex": 459
+        },
+        "originalText": "these",
+        "userTextRange": {
+          "initialIndex": 453,
+          "finalIndex": 456
+        },
+        "userText": "this",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"These\" points to plural things; \"this\" points to one thing.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 467,
+          "finalIndex": 474
+        },
+        "originalText": "worsened",
+        "userTextRange": {
+          "initialIndex": 464,
+          "finalIndex": 470
+        },
+        "userText": "worsten",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "spelling"
+        ],
+        "studentPhrase": "\"Worsened\" is past tense; \"worsten\" is not the correct word.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 481,
+          "finalIndex": 484
+        },
+        "originalText": "Jesy",
+        "userTextRange": {
+          "initialIndex": 476,
+          "finalIndex": 483
+        },
+        "userText": "just she",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "proper_noun",
+          "phrase_heard_incorrectly"
+        ],
+        "studentPhrase": "\"Jesy\" is the person's name; \"just she\" sounds like separate common words and loses the name.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 641,
+          "finalIndex": 650
+        },
+        "originalText": "daughters'",
+        "userTextRange": {
+          "initialIndex": 637,
+          "finalIndex": 645
+        },
+        "userText": "daughters",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive"
+        ],
+        "studentPhrase": "\"Daughters'\" is possessive, meaning belonging to the daughters; \"daughters\" is only plural.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-invalid-compound",
+    "category": "dangerous-compound",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to stock sale versus stocksale because stocksale is not an accepted compound; ignore punctuation, capitalization, and repeated spaces.",
+    "focusSourceComparisonIndex": 3,
+    "originalText": "SpaceX is a rocket company led by Elon Musk. It wants to go public and have a big stock sale. They plan to raise seventy-five billion dollars by selling over half a million shares at one hundred thirty-five dollars each. This would beat the record of Saudi Aramco, which raised twenty-nine billion dollars. Musk will still control most of the company, holding about eighty-two percent of the voting shares. This is important because SpaceX is about to start trading on the stock market. Many investors and tech fans want to see how this big IPO will turn out.",
+    "userText": "SpaceX its a rocket company lead by elon musk. it want to go public and have a big stocksale,  they plan to raise seventy five billion dollar by selling over half a million shares at one hundred thrity five dollar age. this would be the record by of saudi Aramco. which raise twenty nine billion dollars. musk will still control most of the company. holding about eighty two percents of the voting shares. this is important because SpaceX is about to start trading on the stock market. many investors and tech fans wanna see how this big IPO would turn out.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 7,
+          "finalIndex": 8
+        },
+        "originalText": "is",
+        "userTextRange": {
+          "initialIndex": 7,
+          "finalIndex": 9
+        },
+        "userText": "its",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Is\" is a verb; \"its\" shows ownership, so this changes the grammar of the phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 29
+        },
+        "originalText": "led",
+        "userTextRange": {
+          "initialIndex": 28,
+          "finalIndex": 31
+        },
+        "userText": "lead",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Led\" is past tense; \"lead\" is the present/base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 48,
+          "finalIndex": 52
+        },
+        "originalText": "wants",
+        "userTextRange": {
+          "initialIndex": 50,
+          "finalIndex": 53
+        },
+        "userText": "want",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Wants\" has the third-person -s for \"it/he/she\"; \"want\" is the base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 82,
+          "finalIndex": 91
+        },
+        "originalText": "stock sale",
+        "userTextRange": {
+          "initialIndex": 83,
+          "finalIndex": 91
+        },
+        "userText": "stocksale",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Stock sale\" is two words here: a sale of stock. \"Stocksale\" incorrectly joins the phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 134,
+          "finalIndex": 140
+        },
+        "originalText": "dollars",
+        "userTextRange": {
+          "initialIndex": 135,
+          "finalIndex": 140
+        },
+        "userText": "dollar",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Dollars\" is the plural money unit; \"dollar\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 195,
+          "finalIndex": 218
+        },
+        "originalText": "thirty-five dollars each",
+        "userTextRange": {
+          "initialIndex": 195,
+          "finalIndex": 216
+        },
+        "userText": "thrity five dollar age",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Thirty-five dollars each\" means $35 for each share; \"dollar age\" changes the plural money unit and mistakes \"each\" for \"age\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 232,
+          "finalIndex": 235
+        },
+        "originalText": "beat",
+        "userTextRange": {
+          "initialIndex": 230,
+          "finalIndex": 231
+        },
+        "userText": "be",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Beat\" means surpass or do better than a record; \"be\" only means exist or equal something.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 248,
+          "finalIndex": 249
+        },
+        "originalText": "of",
+        "userTextRange": {
+          "initialIndex": 244,
+          "finalIndex": 248
+        },
+        "userText": "by of",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original has just \"of\"; adding \"by\" creates an extra connector.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 271,
+          "finalIndex": 276
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 270,
+          "finalIndex": 274
+        },
+        "userText": "raise",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Raised\" is past tense; \"raise\" is the present/base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 377,
+          "finalIndex": 383
+        },
+        "originalText": "percent",
+        "userTextRange": {
+          "initialIndex": 375,
+          "finalIndex": 382
+        },
+        "userText": "percents",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Percent\" is the correct unit form here; \"percents\" adds an unnecessary plural ending.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 545,
+          "finalIndex": 548
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 542,
+          "finalIndex": 546
+        },
+        "userText": "would",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "modal_verb",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Will\" presents the result as expected in the future; \"would\" makes it sound more hypothetical or conditional.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-healthcare-mixed-range",
+    "category": "shrink-mixed-equivalence",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to the genuine connector error while excluding healthcare versus health care, which is an accepted compound variant.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "Recent world politics have changed financial markets. As conflicts in the Middle East grow, the economy might change. When inflation goes up and growth slows, some stocks do better. Experts say investors should look at value stocks in energy, healthcare, and everyday goods. These areas did well in past high inflation times. With oil prices rising and inflation high, different companies might lead the market now. This change could create new chances for investors who watch carefully.",
+    "userText": "Recent World Politics have changed financial market. As conflicts in the Middle East grow, the economy might change. When inflation goes up and growth slows, some stocks do better. Experts say investors should look at value stocks and energy, health care, and everyday goods. These areas did well in past high inflation times. With oil prices rising, inflation high, different companies might lead the market now. This change could create new chances for investors who watch carefully.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 45,
+          "finalIndex": 51
+        },
+        "originalText": "markets",
+        "userTextRange": {
+          "initialIndex": 45,
+          "finalIndex": 50
+        },
+        "userText": "market",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Markets\" is plural; \"market\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 232,
+          "finalIndex": 233
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 231,
+          "finalIndex": 233
+        },
+        "userText": "and",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"In healthcare markets\" means inside those markets; \"and healthcare markets\" adds healthcare markets as a separate item.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 349,
+          "finalIndex": 361
+        },
+        "originalText": "and inflation",
+        "userTextRange": {
+          "initialIndex": 351,
+          "finalIndex": 359
+        },
+        "userText": "inflation",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original says \"and inflation\"; dropping \"and\" removes the connector to the previous idea.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-large-number-equivalence",
+    "category": "equivalent-number",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because sixty thousand and 60000 express the same complete quantity.",
+    "focusSourceComparisonIndex": 5,
+    "originalText": "A new study shows that changing how parents introduce peanuts to babies has made a big difference. Since health officials in 2015 recommended giving infants peanut products starting at around four months, about sixty thousand children have avoided developing peanut allergies. Before that, doctors advised waiting until children were three years old, but the new guidance helped many kids stay allergy-free. Researchers from the Children's Hospital of Philadelphia looked at health records and found that peanut allergies in children under three dropped by more than a quarter after the new advice. They saw even bigger drops after the guidelines were expanded in 2017. Experts say this is a major success that has helped prevent serious food allergies in thousands of children.",
+    "userText": "A new study shows that changing how parent introduce peanut to baby had made a big differences. Since health officials in 2015 recommended, giving peanut product storing around 4 months, about 60000 children have avoided deloping peanut allergies. Before that, doctor advice waiting until childrens were 3 years old, but the new guide in health many kids stay out allergy free. Researcher from children's hospital of philadephia looked at health records and found that peanut allergy in children under 3 dropped more than a quarter after a new advice. They saw even bigger drops after the guiline was expanded in 2017. Experts say it is a major success the help prevent serious food allergy in thousands of children",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 36,
+          "finalIndex": 42
+        },
+        "originalText": "parents",
+        "userTextRange": {
+          "initialIndex": 36,
+          "finalIndex": 41
+        },
+        "userText": "parent",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Parents\" is plural; \"parent\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 54,
+          "finalIndex": 60
+        },
+        "originalText": "peanuts",
+        "userTextRange": {
+          "initialIndex": 53,
+          "finalIndex": 58
+        },
+        "userText": "peanut",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Peanuts\" is plural; \"peanut\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 65,
+          "finalIndex": 74
+        },
+        "originalText": "babies has",
+        "userTextRange": {
+          "initialIndex": 63,
+          "finalIndex": 70
+        },
+        "userText": "baby had",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Babies\" is plural and uses \"has\" in the present perfect phrase; \"baby had\" is singular and uses past tense.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 96
+        },
+        "originalText": "difference",
+        "userTextRange": {
+          "initialIndex": 83,
+          "finalIndex": 93
+        },
+        "userText": "differences",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Difference\" is singular; \"differences\" is plural.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 142,
+          "finalIndex": 155
+        },
+        "originalText": "giving infants",
+        "userTextRange": {
+          "initialIndex": 140,
+          "finalIndex": 145
+        },
+        "userText": "giving",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word"
+        ],
+        "studentPhrase": "The original says \"giving infants\"; writing only \"giving\" drops who receives the peanut products.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 164,
+          "finalIndex": 183
+        },
+        "originalText": "products starting at",
+        "userTextRange": {
+          "initialIndex": 154,
+          "finalIndex": 168
+        },
+        "userText": "product storing",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word"
+        ],
+        "studentPhrase": "\"Products starting at\" means products introduced from a certain age; \"product storing\" sounds like keeping a product somewhere.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 248,
+          "finalIndex": 257
+        },
+        "originalText": "developing",
+        "userTextRange": {
+          "initialIndex": 221,
+          "finalIndex": 228
+        },
+        "userText": "deloping",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Developing\" means starting to have peanut allergies; \"deloping\" is not the correct spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 304
+        },
+        "originalText": "doctors advised",
+        "userTextRange": {
+          "initialIndex": 261,
+          "finalIndex": 273
+        },
+        "userText": "doctor advice",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Doctors advised\" is a plural subject plus past verb; \"doctor advice\" is a noun phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 320,
+          "finalIndex": 327
+        },
+        "originalText": "children",
+        "userTextRange": {
+          "initialIndex": 289,
+          "finalIndex": 297
+        },
+        "userText": "childrens",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Children\" is already plural; \"childrens\" adds an unnecessary plural ending.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 363,
+          "finalIndex": 377
+        },
+        "originalText": "guidance helped",
+        "userTextRange": {
+          "initialIndex": 329,
+          "finalIndex": 343
+        },
+        "userText": "guide in health",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Guidance helped\" means the advice had a positive effect; \"guide in health\" changes the noun and verb meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 389,
+          "finalIndex": 392
+        },
+        "originalText": "stay",
+        "userTextRange": {
+          "initialIndex": 355,
+          "finalIndex": 362
+        },
+        "userText": "stay out",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Stay allergy-free\" means remain without allergies; \"stay out\" means keep away or outside, which does not fit here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 408,
+          "finalIndex": 427
+        },
+        "originalText": "Researchers from the",
+        "userTextRange": {
+          "initialIndex": 378,
+          "finalIndex": 392
+        },
+        "userText": "Researcher from",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"Researchers from the\" is plural and includes \"the\"; \"Researcher from\" changes both number and structure.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 452,
+          "finalIndex": 463
+        },
+        "originalText": "Philadelphia",
+        "userTextRange": {
+          "initialIndex": 417,
+          "finalIndex": 427
+        },
+        "userText": "philadephia",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Philadelphia\" is a city name; keep the \"ia\" ending in the spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 512,
+          "finalIndex": 520
+        },
+        "originalText": "allergies",
+        "userTextRange": {
+          "initialIndex": 476,
+          "finalIndex": 482
+        },
+        "userText": "allergy",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Allergies\" is plural; \"allergy\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 554,
+          "finalIndex": 560
+        },
+        "originalText": "by more",
+        "userTextRange": {
+          "initialIndex": 512,
+          "finalIndex": 515
+        },
+        "userText": "more",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"By more\" shows the amount of change; writing only \"more\" drops the preposition that marks the comparison.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 583,
+          "finalIndex": 585
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 538,
+          "finalIndex": 538
+        },
+        "userText": "a",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "You wrote \"a\" instead of \"the\"; this is mainly an article swap.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 636,
+          "finalIndex": 650
+        },
+        "originalText": "guidelines were",
+        "userTextRange": {
+          "initialIndex": 589,
+          "finalIndex": 599
+        },
+        "userText": "guiline was",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural",
+          "verb_form",
+          "spelling"
+        ],
+        "studentPhrase": "\"Guidelines were\" is a plural subject plus plural verb; \"guiline was\" changes the number and spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 682,
+          "finalIndex": 685
+        },
+        "originalText": "this",
+        "userTextRange": {
+          "initialIndex": 631,
+          "finalIndex": 632
+        },
+        "userText": "it",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "The original uses \"this\"; writing \"it\" swaps the pronoun in this phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 706,
+          "finalIndex": 720
+        },
+        "originalText": "that has helped",
+        "userTextRange": {
+          "initialIndex": 653,
+          "finalIndex": 660
+        },
+        "userText": "the help",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form",
+          "phrase_heard_incorrectly"
+        ],
+        "studentPhrase": "\"That has helped\" is a verb phrase meaning it had a positive effect; \"the help\" is a noun phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 743,
+          "finalIndex": 751
+        },
+        "originalText": "allergies",
+        "userTextRange": {
+          "initialIndex": 683,
+          "finalIndex": 689
+        },
+        "userText": "allergy",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Allergies\" is plural; \"allergy\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-newline-with-misspelling",
+    "category": "shrink-line-break",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to maintain versus mantain and exclude the equivalent punctuation and line-break differences around Summer.",
+    "focusSourceComparisonIndex": 7,
+    "originalText": "As summer gets closer, many people think about changing their hair color, especially to blonde. Celebrity colorist Tauni Dawson, who works with famous celebrities, says that the popular shade this season is Hot Honey Blonde. It is a warm and rich color that looks natural and effortless. She recommends that if you want a brighter blonde, use special shampoos and conditioners to keep the color bright. For warmer blondes, it is better to avoid purple shampoo and instead use nourishing masks and water filters. Dawson says the best time to go blonde is when you feel ready and willing to take care of the color, not just because it is summer. She suggests starting with a softer, multi-dimensional shade like honey or caramel before going all the way to platinum. This makes the change look more natural and easier to maintain. Summer is a common time to try blonde hair because of the sun and the lively feel, but the most important thing is to pick a shade that fits your lifestyle and makes you feel confident.",
+    "userText": "As summer gets closer, many people think about changing their hair color, especially to blonde. \n\nCelebrity colorist Tauni Dawson, who works with famous celebrities, says that the popular shade this season is hot hunny blonde. It is a warm and rich color that looks natural end effortless. \n\nShe recommends that if you want a brighter blonde, use especial shampoos and conditioners to keep the color bright. For warmer blondes it is better to avoid purple shampoo and instead use nourishing masks and  water filters. Dawson says the best time to go blonde is when you feel ready and willing to take care of the color, not just because it is summer. \n\nShe suggests starting with a softer, multidimensional shade like honey or caramel before going all the way to platinum. This makes the change look more natural and easier to mantain. \n\nSummer is a common time to try blonde hair because of the sun and the light we feel. But the most important thing, is to pick a shade that fits your lifestyle and makes you feel confident.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 211,
+          "finalIndex": 215
+        },
+        "originalText": "Honey",
+        "userTextRange": {
+          "initialIndex": 213,
+          "finalIndex": 217
+        },
+        "userText": "hunny",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Honey\" is spelled with \"o\"; \"hunny\" is informal and not the original word here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 272,
+          "finalIndex": 274
+        },
+        "originalText": "and",
+        "userTextRange": {
+          "initialIndex": 274,
+          "finalIndex": 276
+        },
+        "userText": "end",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"And\" connects two ideas; \"end\" means a final point, so it is not interchangeable in this sentence.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 343,
+          "finalIndex": 349
+        },
+        "originalText": "special",
+        "userTextRange": {
+          "initialIndex": 347,
+          "finalIndex": 354
+        },
+        "userText": "especial",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Special\" means not ordinary and fits the natural phrase here; \"especial\" is rare and usually means particular or exceptional.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 819,
+          "finalIndex": 826
+        },
+        "originalText": "maintain",
+        "userTextRange": {
+          "initialIndex": 825,
+          "finalIndex": 831
+        },
+        "userText": "mantain",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Maintain\" keeps the \"ai\" spelling after \"m\"; \"mantain\" is missing one letter.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 899,
+          "finalIndex": 904
+        },
+        "originalText": "lively",
+        "userTextRange": {
+          "initialIndex": 906,
+          "finalIndex": 913
+        },
+        "userText": "light we",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Lively\" means full of life or energy; \"light we\" is a phrase mix-up and does not fit the description.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-possessive-and-plural-split",
+    "category": "split-mixed-range",
+    "expectation": "Run the full correction orchestrator. Split the comparison into London's versus London and system versus systems; exclude matching words, punctuation, and the line break.",
+    "focusSourceComparisonIndex": 7,
+    "originalText": "In central London, there is an interesting area that many visitors overlook. The Inns of Court, such as Gray’s Inn and Lincoln’s Inn, are old places where lawyers learn and work. These sites are close to the Royal Courts of Justice and have impressive buildings, green gardens, and stories from long ago. A local guide offers a free walking tour that shows you these hidden places and explains their history and role in London's legal system. The tour begins near Temple station and goes past beautiful structures and quiet streets, giving you a look into a part of the city that has been there for many years. Before going, it is good to check the opening times because some places are only open at certain times. This walk is a great way for history fans and curious visitors to learn about London's special heritage.",
+    "userText": "In central London there is an interesting area that many visitors overlook, the Inns of Court such as Gray's Inn and Lincoln's Inn are all places where lawyers learn and work. These sides are close to the Royal courts of Justice and have impressive buildings, green gardens and stories from long ago. Our local guide offers a free walking tour that shows all these descent places and explains the history and role in London legal systems.\nThe tour begins near Temple station and goes past beautiful structures and quiet streets. Giving you a look into the part of the city that has been there for many years.\nBefore going, it is good to check the opening times because some places are only opened at certain times. This walk is a great way for history fans and curious visitors to learn about London special heritage.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 138,
+          "finalIndex": 140
+        },
+        "originalText": "old",
+        "userTextRange": {
+          "initialIndex": 135,
+          "finalIndex": 137
+        },
+        "userText": "all",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Old\" describes age; \"all\" means every one, so the meaning is different.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 185,
+          "finalIndex": 189
+        },
+        "originalText": "sites",
+        "userTextRange": {
+          "initialIndex": 182,
+          "finalIndex": 186
+        },
+        "userText": "sides",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "spelling"
+        ],
+        "studentPhrase": "\"Sites\" are places; \"sides\" are edges or parts, so the word choice changes the meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 305,
+          "finalIndex": 305
+        },
+        "originalText": "A",
+        "userTextRange": {
+          "initialIndex": 301,
+          "finalIndex": 303
+        },
+        "userText": "Our",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"A\" introduces one item generally; \"our\" changes the speaker relationship and was not in the original.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 357,
+          "finalIndex": 359
+        },
+        "originalText": "you",
+        "userTextRange": {
+          "initialIndex": 355,
+          "finalIndex": 357
+        },
+        "userText": "all",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"You\" addresses the listener; \"all\" changes who the phrase is talking about.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 367,
+          "finalIndex": 372
+        },
+        "originalText": "hidden",
+        "userTextRange": {
+          "initialIndex": 365,
+          "finalIndex": 371
+        },
+        "userText": "descent",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Hidden\" means not easy to find; \"descent\" means going downward or family origin, so it does not fit here.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 394,
+          "finalIndex": 398
+        },
+        "originalText": "their",
+        "userTextRange": {
+          "initialIndex": 393,
+          "finalIndex": 395
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive"
+        ],
+        "studentPhrase": "\"Their\" shows possession or ownership; \"the\" drops that relationship.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 420,
+          "finalIndex": 427
+        },
+        "originalText": "London's",
+        "userTextRange": {
+          "initialIndex": 417,
+          "finalIndex": 422
+        },
+        "userText": "London",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "possessive"
+        ],
+        "studentPhrase": "\"London's\" shows possession or association; \"London\" alone drops that relationship.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 435,
+          "finalIndex": 440
+        },
+        "originalText": "system",
+        "userTextRange": {
+          "initialIndex": 430,
+          "finalIndex": 436
+        },
+        "userText": "systems",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"System\" is singular; \"systems\" is plural.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 556,
+          "finalIndex": 556
+        },
+        "originalText": "a",
+        "userTextRange": {
+          "initialIndex": 552,
+          "finalIndex": 554
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "This is an article swap: the original says \"a\", not \"the\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 692,
+          "finalIndex": 695
+        },
+        "originalText": "open",
+        "userTextRange": {
+          "initialIndex": 690,
+          "finalIndex": 695
+        },
+        "userText": "opened",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"has been open\", using \"open\" as an adjective for a state; \"opened\" describes an action in the past.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 793,
+          "finalIndex": 800
+        },
+        "originalText": "London's",
+        "userTextRange": {
+          "initialIndex": 793,
+          "finalIndex": 798
+        },
+        "userText": "London",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive"
+        ],
+        "studentPhrase": "\"London's\" shows possession or association; \"London\" alone drops that relationship.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-abbreviation-expansion",
+    "category": "equivalent-abbreviation",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because Jr and junior are equivalent written forms of the same spoken title.",
+    "focusSourceComparisonIndex": 0,
+    "originalText": "Robert F. Kennedy Jr. changed the schedule for giving vaccines to children. He did this without telling the CDC. He gave fewer vaccines, from seventeen to eleven. He took out vaccines for illnesses like flu and meningitis. He only kept them if a child is at high risk. He made the change quickly and without the usual science checks. Many experts were surprised. Kennedy is known for not trusting vaccines. He said he would not let his opinions change public health rules. But now, his actions seem to break that promise. Experts are worried about how his choices might affect children's health.",
+    "userText": "robert f kennedy junior changed the schedule for giving vaccine the childern he did this without telling the CDC, he gave fewer vaccine from seventeen to eleven. he took up vaccine for illneses like flu and minungutus. he only kept them of the child that is high risk. he made the changed quickly and without the usual sign checks. many expert was surprised kennedy is known for not trusting vaccine. he said he would not let us opinion changed public health rules. but now, he is action seems break that promise. expert are worried about how his choices may affect childern health.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 54,
+          "finalIndex": 73
+        },
+        "originalText": "vaccines to children",
+        "userTextRange": {
+          "initialIndex": 56,
+          "finalIndex": 75
+        },
+        "userText": "vaccine the childern",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural",
+          "articles_and_small_words",
+          "spelling"
+        ],
+        "studentPhrase": "The original says \"vaccines to children\"; \"vaccine the childern\" changes the plural, connector word, and spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 127,
+          "finalIndex": 134
+        },
+        "originalText": "vaccines",
+        "userTextRange": {
+          "initialIndex": 128,
+          "finalIndex": 134
+        },
+        "userText": "vaccine",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Vaccines\" is plural; \"vaccine\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 171,
+          "finalIndex": 182
+        },
+        "originalText": "out vaccines",
+        "userTextRange": {
+          "initialIndex": 170,
+          "finalIndex": 179
+        },
+        "userText": "up vaccine",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Out vaccines\" belongs to the phrase about rolling vaccines out; \"up vaccine\" changes both word choice and number.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 188,
+          "finalIndex": 196
+        },
+        "originalText": "illnesses",
+        "userTextRange": {
+          "initialIndex": 185,
+          "finalIndex": 192
+        },
+        "userText": "illneses",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "The original word is \"illnesses\"; \"illneses\" is missing an \"s\" in the spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 211,
+          "finalIndex": 220
+        },
+        "originalText": "meningitis",
+        "userTextRange": {
+          "initialIndex": 207,
+          "finalIndex": 216
+        },
+        "userText": "minungutus",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Meningitis\" is a serious illness; \"minungutus\" is not the correct word or spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 241,
+          "finalIndex": 244
+        },
+        "originalText": "if a",
+        "userTextRange": {
+          "initialIndex": 237,
+          "finalIndex": 242
+        },
+        "userText": "of the",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "articles_and_small_words",
+          "phrase_heard_incorrectly"
+        ],
+        "studentPhrase": "\"If a\" introduces a condition; \"of the\" has a different grammar pattern and meaning.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 252,
+          "finalIndex": 256
+        },
+        "originalText": "is at",
+        "userTextRange": {
+          "initialIndex": 250,
+          "finalIndex": 256
+        },
+        "userText": "that is",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"Is at\" describes a level or position; \"that is\" changes the structure of the clause.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 281,
+          "finalIndex": 286
+        },
+        "originalText": "change",
+        "userTextRange": {
+          "initialIndex": 281,
+          "finalIndex": 287
+        },
+        "userText": "changed",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"change\" in the present/base form; \"changed\" is past tense.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 318,
+          "finalIndex": 324
+        },
+        "originalText": "science",
+        "userTextRange": {
+          "initialIndex": 319,
+          "finalIndex": 322
+        },
+        "userText": "sign",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Science\" means the field of study; \"sign\" means a symbol, notice, or indication.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 339,
+          "finalIndex": 350
+        },
+        "originalText": "experts were",
+        "userTextRange": {
+          "initialIndex": 337,
+          "finalIndex": 346
+        },
+        "userText": "expert was",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Experts were\" is plural subject plus plural verb; \"expert was\" changes it to singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 397,
+          "finalIndex": 404
+        },
+        "originalText": "vaccines",
+        "userTextRange": {
+          "initialIndex": 392,
+          "finalIndex": 398
+        },
+        "userText": "vaccine",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Vaccines\" is plural; \"vaccine\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 432,
+          "finalIndex": 450
+        },
+        "originalText": "his opinions change",
+        "userTextRange": {
+          "initialIndex": 426,
+          "finalIndex": 443
+        },
+        "userText": "us opinion changed",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "singular_plural",
+          "verb_form"
+        ],
+        "studentPhrase": "\"His opinions change\" uses a possessive subject and present verb; \"us opinion changed\" changes the pronoun, number, and tense.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 482,
+          "finalIndex": 500
+        },
+        "originalText": "his actions seem to",
+        "userTextRange": {
+          "initialIndex": 475,
+          "finalIndex": 492
+        },
+        "userText": "he is action seems",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"His actions seem to\" uses plural \"actions\" with \"seem\"; \"he is action seems\" is not grammatical.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 522,
+          "finalIndex": 528
+        },
+        "originalText": "Experts",
+        "userTextRange": {
+          "initialIndex": 514,
+          "finalIndex": 519
+        },
+        "userText": "expert",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Experts\" is plural; \"expert\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 564,
+          "finalIndex": 568
+        },
+        "originalText": "might",
+        "userTextRange": {
+          "initialIndex": 555,
+          "finalIndex": 557
+        },
+        "userText": "may",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "modal_verb",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Might\" and \"may\" both show possibility, but the original modal is \"might\" in this sentence.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 577,
+          "finalIndex": 586
+        },
+        "originalText": "children's",
+        "userTextRange": {
+          "initialIndex": 566,
+          "finalIndex": 573
+        },
+        "userText": "childern",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive",
+          "spelling"
+        ],
+        "studentPhrase": "\"Children's\" is possessive and spelled \"children\"; \"childern\" misses both the spelling and ownership ending.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-informal-spoken-contraction",
+    "category": "equivalent-spoken-contraction",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because wanna is the informal spoken contraction of want to in this context.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "Many people often have a song or tune in their head. They want to focus or relax, but the song stays. These short songs are called earworms. Many people get earworms at least once a week. Some get them every day. Listening to a song many times makes it more likely to become an earworm. Brain studies show that when we think about music, the same brain parts that hear real sounds become active. People with conditions like congenital amusia may feel music differently. Even though earworms go away, scientists find them interesting. They show how active and complex our brains are with music.",
+    "userText": "many people often and have a song or tune in their head. they wanna focus or relax, but the songs stays. this short songs are called earworms. many people get earworms at least once a week some get them everyday. listening to a song many times makes it more  likely to become an earworm. brain studies show that when we think about music the same brain parts that hear real sounds become active. people with conditions like congenital amusia may feel music differently. even though earworms go away scienties find them interesting. they show how active and complex our brain are with music",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 18,
+          "finalIndex": 21
+        },
+        "originalText": "have",
+        "userTextRange": {
+          "initialIndex": 18,
+          "finalIndex": 25
+        },
+        "userText": "and have",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original says \"have\"; adding \"and\" creates an extra connector that was not in the phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 93
+        },
+        "originalText": "song",
+        "userTextRange": {
+          "initialIndex": 92,
+          "finalIndex": 96
+        },
+        "userText": "songs",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Song\" is singular; \"songs\" is plural.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 102,
+          "finalIndex": 106
+        },
+        "originalText": "These",
+        "userTextRange": {
+          "initialIndex": 105,
+          "finalIndex": 108
+        },
+        "userText": "this",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"These\" points to plural things; \"this\" points to one thing.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 202,
+          "finalIndex": 210
+        },
+        "originalText": "every day",
+        "userTextRange": {
+          "initialIndex": 203,
+          "finalIndex": 210
+        },
+        "userText": "everyday",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Every day\" means each day; \"everyday\" is an adjective, as in \"everyday clothes\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 500,
+          "finalIndex": 509
+        },
+        "originalText": "scientists",
+        "userTextRange": {
+          "initialIndex": 499,
+          "finalIndex": 507
+        },
+        "userText": "scienties",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "The original word is \"scientists\"; \"scienties\" is not the correct spelling.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 571,
+          "finalIndex": 576
+        },
+        "originalText": "brains",
+        "userTextRange": {
+          "initialIndex": 569,
+          "finalIndex": 573
+        },
+        "userText": "brain",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Brains\" is plural; \"brain\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-number-hyphen-with-plural",
+    "category": "shrink-number-formatting",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to percent versus percents; ignore the harmless hyphen difference in eighty-two versus eighty two.",
+    "focusSourceComparisonIndex": 9,
+    "originalText": "SpaceX is a rocket company led by Elon Musk. It wants to go public and have a big stock sale. They plan to raise seventy-five billion dollars by selling over half a million shares at one hundred thirty-five dollars each. This would beat the record of Saudi Aramco, which raised twenty-nine billion dollars. Musk will still control most of the company, holding about eighty-two percent of the voting shares. This is important because SpaceX is about to start trading on the stock market. Many investors and tech fans want to see how this big IPO will turn out.",
+    "userText": "SpaceX its a rocket company lead by elon musk. it want to go public and have a big stocksale,  they plan to raise seventy five billion dollar by selling over half a million shares at one hundred thrity five dollar age. this would be the record by of saudi Aramco. which raise twenty nine billion dollars. musk will still control most of the company. holding about eighty two percents of the voting shares. this is important because SpaceX is about to start trading on the stock market. many investors and tech fans wanna see how this big IPO would turn out.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 7,
+          "finalIndex": 8
+        },
+        "originalText": "is",
+        "userTextRange": {
+          "initialIndex": 7,
+          "finalIndex": 9
+        },
+        "userText": "its",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Is\" is a verb; \"its\" shows ownership, so this changes the grammar of the phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 29
+        },
+        "originalText": "led",
+        "userTextRange": {
+          "initialIndex": 28,
+          "finalIndex": 31
+        },
+        "userText": "lead",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Led\" is past tense; \"lead\" is the present/base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 48,
+          "finalIndex": 52
+        },
+        "originalText": "wants",
+        "userTextRange": {
+          "initialIndex": 50,
+          "finalIndex": 53
+        },
+        "userText": "want",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Wants\" has the third-person -s for \"it/he/she\"; \"want\" is the base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 82,
+          "finalIndex": 91
+        },
+        "originalText": "stock sale",
+        "userTextRange": {
+          "initialIndex": 83,
+          "finalIndex": 91
+        },
+        "userText": "stocksale",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Stock sale\" is two words here: a sale of stock. \"Stocksale\" incorrectly joins the phrase.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 134,
+          "finalIndex": 140
+        },
+        "originalText": "dollars",
+        "userTextRange": {
+          "initialIndex": 135,
+          "finalIndex": 140
+        },
+        "userText": "dollar",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Dollars\" is the plural money unit; \"dollar\" is singular.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 195,
+          "finalIndex": 218
+        },
+        "originalText": "thirty-five dollars each",
+        "userTextRange": {
+          "initialIndex": 195,
+          "finalIndex": 216
+        },
+        "userText": "thrity five dollar age",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Thirty-five dollars each\" means $35 for each share; \"dollar age\" changes the plural money unit and mistakes \"each\" for \"age\".",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 232,
+          "finalIndex": 235
+        },
+        "originalText": "beat",
+        "userTextRange": {
+          "initialIndex": 230,
+          "finalIndex": 231
+        },
+        "userText": "be",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Beat\" means surpass or do better than a record; \"be\" only means exist or equal something.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 248,
+          "finalIndex": 249
+        },
+        "originalText": "of",
+        "userTextRange": {
+          "initialIndex": 244,
+          "finalIndex": 248
+        },
+        "userText": "by of",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original has just \"of\"; adding \"by\" creates an extra connector.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 271,
+          "finalIndex": 276
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 270,
+          "finalIndex": 274
+        },
+        "userText": "raise",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Raised\" is past tense; \"raise\" is the present/base form.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 377,
+          "finalIndex": 383
+        },
+        "originalText": "percent",
+        "userTextRange": {
+          "initialIndex": 375,
+          "finalIndex": 382
+        },
+        "userText": "percents",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Percent\" is the correct unit form here; \"percents\" adds an unnecessary plural ending.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 545,
+          "finalIndex": 548
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 542,
+          "finalIndex": 546
+        },
+        "userText": "would",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "modal_verb",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Will\" presents the result as expected in the future; \"would\" makes it sound more hypothetical or conditional.",
+        "feedback": "ok",
+        "aiverified": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-regional-spelling-with-article",
+    "category": "shrink-mixed-regional-spelling",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to sun versus the sun because the is extra spoken content; exclude aging versus ageing and matching without.",
+    "focusSourceComparisonIndex": 7,
+    "originalText": "Fans of the game The Alters will like the new DLC called Last Variable. It will come out in July. The DLC has about twenty hours of new content. It has new ways to play and lets players build an underground base. Players can visit new places and try to make the planet green and lively. The story is about finding out the mystery of the Oasis. They get help from scientists like geologists and biologists, who have different ideas about science. While the main character sleeps in cryosleep, others on the planet have problems like aging without sun protection. The DLC adds more story and gameplay. It also has new survival challenges and scientific progress. A new trailer was shared before, showing what is coming.",
+    "userText": "Fans of the game they outters well the new DLC call last variable. It would come out in July, the DLC has about twenty hours of new content. It has new ways to play, let players build an underground base. players can visit new places and try to make the planet green and lively. The story is about finding out the mystery of the oases. They get help from scientists like geologists and biologists, who have different ideas about science, well the main character seems sincriously others on the planet have problems like ageing without the sun protection. The DLC adds more stories and game play. It also has new servival challenges and scientific progress. A new trailer was shared before showing what is coming.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 17,
+          "finalIndex": 36
+        },
+        "originalText": "The Alters will like",
+        "userTextRange": {
+          "initialIndex": 17,
+          "finalIndex": 33
+        },
+        "userText": "they outters well",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "proper_noun",
+          "phrase_heard_incorrectly"
+        ],
+        "studentPhrase": "\"The Alters\" is the game title, and \"will\" marks the future; \"they outters well\" loses the title and sentence meaning.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 50,
+          "finalIndex": 55
+        },
+        "originalText": "called",
+        "userTextRange": {
+          "initialIndex": 47,
+          "finalIndex": 50
+        },
+        "userText": "call",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Called\" is past tense; \"call\" is the present/base form.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 75,
+          "finalIndex": 78
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 70,
+          "finalIndex": 74
+        },
+        "userText": "would",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "modal_verb",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Will\" presents the result as expected in the future; \"would\" makes it sound more hypothetical or conditional.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 169,
+          "finalIndex": 176
+        },
+        "originalText": "and lets",
+        "userTextRange": {
+          "initialIndex": 166,
+          "finalIndex": 168
+        },
+        "userText": "let",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "verb_form"
+        ],
+        "studentPhrase": "\"And lets\" connects another action and uses third-person \"-s\"; \"let\" drops both.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 337,
+          "finalIndex": 341
+        },
+        "originalText": "Oasis",
+        "userTextRange": {
+          "initialIndex": 329,
+          "finalIndex": 333
+        },
+        "userText": "oases",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "proper_noun",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Oasis\" is the title/name here; \"oases\" is the plural common noun.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 446,
+          "finalIndex": 450
+        },
+        "originalText": "While",
+        "userTextRange": {
+          "initialIndex": 438,
+          "finalIndex": 441
+        },
+        "userText": "well",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"While\" connects two ideas in time; \"well\" can mean in a good way or can introduce a response.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 471,
+          "finalIndex": 489
+        },
+        "originalText": "sleeps in cryosleep",
+        "userTextRange": {
+          "initialIndex": 462,
+          "finalIndex": 478
+        },
+        "userText": "seems sincriously",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Sleeps in cryosleep\" means remains asleep in a frozen state; \"seems sincriously\" does not fit the sentence.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 546,
+          "finalIndex": 548
+        },
+        "originalText": "sun",
+        "userTextRange": {
+          "initialIndex": 535,
+          "finalIndex": 541
+        },
+        "userText": "the sun",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original says \"without sun\"; adding \"the\" adds an article that was not in the phrase.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 580,
+          "finalIndex": 584
+        },
+        "originalText": "story",
+        "userTextRange": {
+          "initialIndex": 573,
+          "finalIndex": 579
+        },
+        "userText": "stories",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Story\" is singular; \"stories\" is plural.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 8,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 597
+        },
+        "originalText": "gameplay",
+        "userTextRange": {
+          "initialIndex": 585,
+          "finalIndex": 593
+        },
+        "userText": "game play",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Gameplay\" is one word meaning how the game plays; \"game play\" splits the compound.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 616,
+          "finalIndex": 623
+        },
+        "originalText": "survival",
+        "userTextRange": {
+          "initialIndex": 612,
+          "finalIndex": 619
+        },
+        "userText": "servival",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Survival\" means staying alive; \"servival\" is a misspelling of that word.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-diacritic-name-with-word-substitution",
+    "category": "shrink-diacritic-name",
+    "expectation": "Run the full correction orchestrator. Shrink the comparison to saw versus found; ignore the harmless diacritic difference in the proper name Mortvedt and the matching article after the range.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "In Norway, a school trip led to a big find. A six-year-old boy called Henrik Refsnes Mørtvedt saw an old sword in the ground. Experts say the sword is about thirteen hundred years old from the Viking Age. It is made of iron and is different from most Viking swords. The sword was taken to the Museum of Cultural History in Oslo. Experts will clean and study it carefully. This find helps us learn about Norway's old history and shows why such discoveries are important.",
+    "userText": "In Norway, a school trip led to a big find. A six year old boy called Henrik Refsnes Mortvedt found an old sword on the ground. Experts say the sword is about 1300 hundred years old from the Viking Age. It is made of iron and is different from most viking swords. The sword was taken to the Museum of Cultural History in Oslo. Experts were clean and study it carefully. This find helps us learned about Norway old history and shows  why  such discovery is/are important.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 94,
+          "finalIndex": 96
+        },
+        "originalText": "saw",
+        "userTextRange": {
+          "initialIndex": 94,
+          "finalIndex": 98
+        },
+        "userText": "found",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Saw\" means noticed with sight; \"found\" means discovered, so the action is different.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 111,
+          "finalIndex": 112
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 113,
+          "finalIndex": 114
+        },
+        "userText": "on",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original preposition is \"in\"; \"on\" points to a different relationship in the sentence.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 157,
+          "finalIndex": 164
+        },
+        "originalText": "thirteen",
+        "userTextRange": {
+          "initialIndex": 159,
+          "finalIndex": 162
+        },
+        "userText": "1300",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit"
+        ],
+        "studentPhrase": "\"Thirteen\" means 13; \"1300\" means one thousand three hundred, so the amount is very different.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 337,
+          "finalIndex": 340
+        },
+        "originalText": "will",
+        "userTextRange": {
+          "initialIndex": 335,
+          "finalIndex": 338
+        },
+        "userText": "were",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "modal_verb",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Will\" marks a future result; \"were\" is a past form of \"be\", so it changes both time and verb meaning.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 391,
+          "finalIndex": 395
+        },
+        "originalText": "learn",
+        "userTextRange": {
+          "initialIndex": 389,
+          "finalIndex": 395
+        },
+        "userText": "learned",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"learn\" in the present/base form; \"learned\" is past tense.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 410
+        },
+        "originalText": "Norway's",
+        "userTextRange": {
+          "initialIndex": 403,
+          "finalIndex": 408
+        },
+        "userText": "Norway",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive"
+        ],
+        "studentPhrase": "\"Norway's\" shows possession or association; \"Norway\" alone drops that relationship.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 7,
+        "originalTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 453
+        },
+        "originalText": "discoveries",
+        "userTextRange": {
+          "initialIndex": 443,
+          "finalIndex": 454
+        },
+        "userText": "discovery is",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural",
+          "word_boundary"
+        ],
+        "studentPhrase": "\"Discoveries\" is one plural noun; \"discovery is\" splits it into a singular noun plus verb.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-heatwave-compound-spacing",
+    "category": "remove-established-compound-spacing",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because heatwave and heat wave are accepted spellings of the same spoken term.",
+    "focusSourceComparisonIndex": 1,
+    "originalText": "Scientists work to save Ningaloo Reef in Australia. Last year, the reef lost many corals because of a long heatwave. The reef looked very sick. Scientists from the Western Australian Marine Science Institution started a project to help the reef. They made special structures called spawning cones. These cones collect coral larvae to help new corals grow. In April, a cyclone hit the area. Many people thought the coral would die. But the coral was strong and kept growing. This is good news for the reef. Scientists will watch the reef over the next few years. They want to see how well it heals from the heat and storms. They are hopeful that Ningaloo Reef will get better.",
+    "userText": "Scientists  work to saved Ningaloo Reef in Australia.  Last year, the reef lost many corals because of a long heat wave. The reef looked very sick. Scientists from the Western Marine Science Institution started a project to help the reef. They made special structure called Spawning cones. This cones collect coral larvae to help new corals grow. In April, a cyclone hit the area. Many people thought the coral would die, but the coral was strong and kept growing. This is good news for the reef. Scientists will watch the reef over the next few years. They want to see how well it heals from the heat and storms. They are hopeful that Ningaloo Reef will get better.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 19,
+          "finalIndex": 22
+        },
+        "originalText": "save",
+        "userTextRange": {
+          "initialIndex": 20,
+          "finalIndex": 24
+        },
+        "userText": "saved",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "The original says \"save\" in the present/base form; \"saved\" is past tense.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 172,
+          "finalIndex": 188
+        },
+        "originalText": "Australian Marine",
+        "userTextRange": {
+          "initialIndex": 176,
+          "finalIndex": 181
+        },
+        "userText": "Marine",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "missing_or_extra_word",
+          "proper_noun"
+        ],
+        "studentPhrase": "\"Australian Marine\" is part of the institution name; writing only \"Marine\" drops part of that name.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 3,
+        "originalTextRange": {
+          "initialIndex": 264,
+          "finalIndex": 273
+        },
+        "originalText": "structures",
+        "userTextRange": {
+          "initialIndex": 257,
+          "finalIndex": 265
+        },
+        "userText": "structure",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"Structures\" is plural; \"structure\" is singular.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 298,
+          "finalIndex": 302
+        },
+        "originalText": "These",
+        "userTextRange": {
+          "initialIndex": 290,
+          "finalIndex": 293
+        },
+        "userText": "This",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "singular_plural"
+        ],
+        "studentPhrase": "\"These\" points to plural things; \"This\" points to one thing.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-hantavirus-term-spacing",
+    "category": "remove-established-term-spacing",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because hantavirus and Hanta virus are equivalent spellings of the same disease term in this context.",
+    "focusSourceComparisonIndex": 3,
+    "originalText": "After six hard weeks in quarantine, one New Zealander and five Australians who were on the cruise ship MV Hondius are going home. The ship had a hantavirus outbreak, which is a disease from rodents. The passengers stayed in a special place near Perth, Australia. They were safe and healthy there. They tested negative for the virus the whole time. Australian Health Minister Mark Butler said they worked together and stayed positive. Their safe return makes everyone happy and shows people can work well during health problems.",
+    "userText": "After six-hard weeks in quarantine, one New Zealander and five Australians who were on a cruise ship in the Hondius are going home. The ship had a Hanta virus outbreak which is a disease from rodents. The passengers stayed in a special place near Perf, Australia. They were safe and healthy there. They tested negative for the virus the whole time. Australian Health Minister -Mark Butler said they work together and stayed positive. Their safe return makes everyone happy and shows people can work well during health problems.",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 89
+        },
+        "originalText": "the",
+        "userTextRange": {
+          "initialIndex": 87,
+          "finalIndex": 87
+        },
+        "userText": "a",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "You wrote \"a\" instead of \"the\"; this is mainly an article swap.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 103,
+          "finalIndex": 104
+        },
+        "originalText": "MV",
+        "userTextRange": {
+          "initialIndex": 101,
+          "finalIndex": 106
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "proper_noun",
+          "abbreviation"
+        ],
+        "studentPhrase": "\"MV\" is part of the ship name, not the phrase \"in the\"; the initials belong before \"Hondius\".",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 4,
+        "originalTextRange": {
+          "initialIndex": 245,
+          "finalIndex": 249
+        },
+        "originalText": "Perth",
+        "userTextRange": {
+          "initialIndex": 247,
+          "finalIndex": 250
+        },
+        "userText": "Perf",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "proper_noun",
+          "spelling"
+        ],
+        "studentPhrase": "\"Perth\" is the place name; \"Perf\" changes the final sound and spelling.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 397,
+          "finalIndex": 402
+        },
+        "originalText": "worked",
+        "userTextRange": {
+          "initialIndex": 399,
+          "finalIndex": 402
+        },
+        "userText": "work",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Worked\" is past tense; \"work\" is the present/base form.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      }
+    ]
+  },
+  {
+    "caseId": "real-gigabyte-abbreviation-with-adjacent-word",
+    "category": "remove-unit-abbreviation",
+    "expectation": "Run the full correction orchestrator. Remove the comparison because 512 gigabyte and 512 GB express the same value, and models is matching adjacent content in the full text.",
+    "focusSourceComparisonIndex": 4,
+    "originalText": "Recently, gamers worldwide faced some tough news as Microsoft announced that the prices of its Xbox Series X consoles will go up starting early August. The company explained that rising costs for memory and storage are behind the increase, which will add between one hundred and fifty dollars to the price. The 512 gigabyte models will cost an extra hundred dollars, while the one terabyte versions will go up by one hundred and fifty dollars. The most expensive model with two terabytes of storage is being discontinued. This is not the first time prices have increased; Microsoft already raised them twice in the past year. Since the console was first introduced in twenty twenty, its price has grown by a quarter to nearly a third. The memory shortage affecting many electronics companies has made it more expensive to produce these devices, leading to higher costs for consumers. For fans, this means gaming is becoming more of a luxury, especially during the upcoming holiday season.",
+    "userText": "Recently, gamers worldwide face some tough news as microsoft announced that the prices of the XBox series X consoles will go up starting early august. The company explained that raising costs for memory and storage are behind the increase, which will add between 150 dollars to the price. The 512 GB models will cost an extra 100 dollars, while 1 TB versions will go up by 150 dollars. The most expensive model with 2 TB of storage is being discontinued. This is not the first time prices have increased. Microsoft already rase up them twice in the last year. Since the console was first introduced in the 2020, its prices grown by a quarter, by nearly a thirtd, The memory shortage affecting many eletronics companies has made it more expensive to produce these devices, leaving a higher cost for consumers. For fans, this means gamming is becoming more of a luxuary, specially during the upcome holiday season",
+    "expectedFinalComparisons": [
+      {
+        "sourceComparisonIndex": 0,
+        "originalTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 31
+        },
+        "originalText": "faced",
+        "userTextRange": {
+          "initialIndex": 27,
+          "finalIndex": 30
+        },
+        "userText": "face",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Faced\" is past tense; \"face\" is the present/base form.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 1,
+        "originalTextRange": {
+          "initialIndex": 91,
+          "finalIndex": 93
+        },
+        "originalText": "its",
+        "userTextRange": {
+          "initialIndex": 90,
+          "finalIndex": 92
+        },
+        "userText": "the",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "possessive",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "\"Its\" shows ownership, while \"the\" is only an article; the possessive meaning is missing.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 2,
+        "originalTextRange": {
+          "initialIndex": 179,
+          "finalIndex": 184
+        },
+        "originalText": "rising",
+        "userTextRange": {
+          "initialIndex": 178,
+          "finalIndex": 184
+        },
+        "userText": "raising",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Rising\" means going up by itself; \"raising\" means causing something else to go up.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 5,
+        "originalTextRange": {
+          "initialIndex": 350,
+          "finalIndex": 356
+        },
+        "originalText": "hundred",
+        "userTextRange": {
+          "initialIndex": 326,
+          "finalIndex": 328
+        },
+        "userText": "100",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit"
+        ],
+        "studentPhrase": "\"Hundred\" and \"100\" can match, but the surrounding amount still needs to stay complete.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 6,
+        "originalTextRange": {
+          "initialIndex": 373,
+          "finalIndex": 379
+        },
+        "originalText": "the one",
+        "userTextRange": {
+          "initialIndex": 345,
+          "finalIndex": 345
+        },
+        "userText": "1",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "number_or_unit",
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original says \"the one\" before the unit; writing only \"1\" drops the article and wording.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 9,
+        "originalTextRange": {
+          "initialIndex": 590,
+          "finalIndex": 595
+        },
+        "originalText": "raised",
+        "userTextRange": {
+          "initialIndex": 523,
+          "finalIndex": 529
+        },
+        "userText": "rase up",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "verb_form",
+          "spelling"
+        ],
+        "studentPhrase": "The original says \"raised\" with final \"-ed\"; \"rase up\" changes the spelling and verb form.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 10,
+        "originalTextRange": {
+          "initialIndex": 615,
+          "finalIndex": 618
+        },
+        "originalText": "past",
+        "userTextRange": {
+          "initialIndex": 549,
+          "finalIndex": 552
+        },
+        "userText": "last",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice"
+        ],
+        "studentPhrase": "\"Past\" refers to an earlier time period; \"last\" can mean final or previous, so the meaning shifts.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 665,
+          "finalIndex": 666
+        },
+        "originalText": "in",
+        "userTextRange": {
+          "initialIndex": 599,
+          "finalIndex": 604
+        },
+        "userText": "in the",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original has just \"in\"; adding \"the\" adds an extra article.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 11,
+        "originalTextRange": {
+          "initialIndex": 687,
+          "finalIndex": 695
+        },
+        "originalText": "price has",
+        "userTextRange": {
+          "initialIndex": 616,
+          "finalIndex": 621
+        },
+        "userText": "prices",
+        "isDeterministicallyRefined": true,
+        "tags": [
+          "singular_plural",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Price has\" is a singular noun plus helper verb; \"prices\" is only the plural noun.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 12,
+        "originalTextRange": {
+          "initialIndex": 716,
+          "finalIndex": 717
+        },
+        "originalText": "to",
+        "userTextRange": {
+          "initialIndex": 643,
+          "finalIndex": 644
+        },
+        "userText": "by",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "articles_and_small_words"
+        ],
+        "studentPhrase": "The original preposition is \"to\"; \"by\" points to a different relationship in the sentence.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 13,
+        "originalTextRange": {
+          "initialIndex": 728,
+          "finalIndex": 732
+        },
+        "originalText": "third",
+        "userTextRange": {
+          "initialIndex": 655,
+          "finalIndex": 660
+        },
+        "userText": "thirtd",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Third\" is the ordinal number; \"thirtd\" adds an extra letter sound that does not belong.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 14,
+        "originalTextRange": {
+          "initialIndex": 770,
+          "finalIndex": 780
+        },
+        "originalText": "electronics",
+        "userTextRange": {
+          "initialIndex": 698,
+          "finalIndex": 707
+        },
+        "userText": "eletronics",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Electronics\" keeps the \"c\" after \"elec\"; \"eletronics\" drops an important letter.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 15,
+        "originalTextRange": {
+          "initialIndex": 845,
+          "finalIndex": 854
+        },
+        "originalText": "leading to",
+        "userTextRange": {
+          "initialIndex": 772,
+          "finalIndex": 780
+        },
+        "userText": "leaving a",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "word_choice",
+          "verb_form"
+        ],
+        "studentPhrase": "\"Leading to\" means causing a result; \"leaving a\" means going away from something or leaving something behind.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 16,
+        "originalTextRange": {
+          "initialIndex": 863,
+          "finalIndex": 867
+        },
+        "originalText": "costs",
+        "userTextRange": {
+          "initialIndex": 789,
+          "finalIndex": 792
+        },
+        "userText": "cost",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "verb_form"
+        ],
+        "studentPhrase": "\"Costs\" has the third-person \"-s\" for one thing; \"cost\" is the base form.",
+        "aiverified": "ok"
+      },
+      {
+        "sourceComparisonIndex": 17,
+        "originalTextRange": {
+          "initialIndex": 905,
+          "finalIndex": 910
+        },
+        "originalText": "gaming",
+        "userTextRange": {
+          "initialIndex": 830,
+          "finalIndex": 836
+        },
+        "userText": "gamming",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Gaming\" has one \"m\" after \"ga\"; \"gamming\" is not the original spelling.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 18,
+        "originalTextRange": {
+          "initialIndex": 934,
+          "finalIndex": 951
+        },
+        "originalText": "luxury, especially",
+        "userTextRange": {
+          "initialIndex": 860,
+          "finalIndex": 877
+        },
+        "userText": "luxuary, specially",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "phrase_heard_incorrectly",
+          "word_choice"
+        ],
+        "studentPhrase": "\"Luxury\" means something expensive or special; \"especially\" means particularly. \"Luxuary, specially\" changes both forms.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      },
+      {
+        "sourceComparisonIndex": 19,
+        "originalTextRange": {
+          "initialIndex": 964,
+          "finalIndex": 971
+        },
+        "originalText": "upcoming",
+        "userTextRange": {
+          "initialIndex": 890,
+          "finalIndex": 895
+        },
+        "userText": "upcome",
+        "isDeterministicallyRefined": false,
+        "tags": [
+          "spelling"
+        ],
+        "studentPhrase": "\"Upcoming\" means happening soon; \"upcome\" is not the normal adjective form.",
+        "aiverified": "ok",
+        "feedback": "ok"
+      }
+    ]
+  }
+]

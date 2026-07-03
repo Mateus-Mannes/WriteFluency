@@ -1,0 +1,56 @@
+@if (rows().length > 0) {
+  <section class="mistake-pattern-review" aria-label="Mistake patterns">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>Patterns in this attempt</h2>
+      </div>
+      <p class="mistake-pattern-review-count">{{ rows().length }} corrections</p>
+    </div>
+
+    <div class="mistake-pattern-tags" aria-label="Filter mistake patterns">
+      <button
+        type="button"
+        class="mistake-pattern-tag"
+        [class.mistake-pattern-tag-active]="selectedTag() === null"
+        (click)="selectTag(null)">
+        All
+      </button>
+      @for (item of tagCounts(); track item.tag) {
+        <button
+          type="button"
+          class="mistake-pattern-tag"
+          [class.mistake-pattern-tag-active]="selectedTag() === item.tag"
+          (click)="selectTag(item.tag)">
+          {{ formatTag(item.tag) }} <span>{{ item.count }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="mistake-pattern-list">
+      @for (row of filteredRows(); track row.comparisonIndex) {
+        <button
+          type="button"
+          class="mistake-pattern-row"
+          [ngClass]="{ 'mistake-pattern-row-active': isActive(row) }"
+          (mouseenter)="setActiveComparison(row.comparisonIndex)"
+          (mouseleave)="setActiveComparison(null)"
+          (focus)="setActiveComparison(row.comparisonIndex)"
+          (blur)="setActiveComparison(null)"
+          (click)="togglePinnedComparison(row.comparisonIndex)">
+          <span class="mistake-pattern-text-pair">
+            <span class="mistake-pattern-user-text">{{ row.userText }}</span>
+            <span class="mistake-pattern-arrow" aria-hidden="true">&rarr;</span>
+            <span class="mistake-pattern-original-text">{{ row.originalText }}</span>
+          </span>
+          <span class="mistake-pattern-row-tags">
+            @for (tag of row.tags; track tag) {
+              <span>{{ formatTag(tag) }}</span>
+            }
+          </span>
+          <span class="mistake-pattern-phrase">{{ row.studentPhrase }}</span>
+        </button>
+      }
+    </div>
+  </section>
+}

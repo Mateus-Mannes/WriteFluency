@@ -584,13 +584,26 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         }
 
         return comparisons
-            .Select(comparison => new ProgressTextComparison(
-                NormalizeTextRange(comparison.OriginalTextRange),
-                NormalizeDraftText(comparison.OriginalText),
-                NormalizeTextRange(comparison.UserTextRange),
-                NormalizeDraftText(comparison.UserText),
-                NormalizeSourceComparisonIndex(comparison.SourceComparisonIndex),
-                comparison.IsDeterministicallyRefined))
+            .Select(comparison =>
+            {
+                var tags = NormalizeMistakePatternTags(comparison.MistakePatternTags);
+                var phrase = NormalizeMistakePatternPhrase(comparison.MistakePatternPhrase);
+                if (tags is null || phrase is null)
+                {
+                    tags = null;
+                    phrase = null;
+                }
+
+                return new ProgressTextComparison(
+                    NormalizeTextRange(comparison.OriginalTextRange),
+                    NormalizeDraftText(comparison.OriginalText),
+                    NormalizeTextRange(comparison.UserTextRange),
+                    NormalizeDraftText(comparison.UserText),
+                    NormalizeSourceComparisonIndex(comparison.SourceComparisonIndex),
+                    comparison.IsDeterministicallyRefined,
+                    tags,
+                    phrase);
+            })
             .ToArray();
     }
 
@@ -610,6 +623,45 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
                 NormalizeSnapshot(entry.Initial),
                 NormalizeStage(entry.Deterministic)))
             .ToArray();
+    }
+
+    private static IReadOnlyList<string>? NormalizeMistakePatternTags(
+        IReadOnlyList<string>? tags)
+    {
+        if (tags is null || tags.Count == 0)
+        {
+            return null;
+        }
+
+        var normalized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in tags)
+        {
+            var normalizedTag = NormalizeShortValue(tag)?.ToLowerInvariant();
+            if (normalizedTag is null || !seen.Add(normalizedTag))
+            {
+                continue;
+            }
+
+            normalized.Add(normalizedTag);
+            if (normalized.Count == 3)
+            {
+                break;
+            }
+        }
+
+        return normalized.Count == 0 ? null : normalized;
+    }
+
+    private static string? NormalizeMistakePatternPhrase(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= 2500 ? trimmed : null;
     }
 
     private static ProgressCorrectionStageTrace? NormalizeStage(

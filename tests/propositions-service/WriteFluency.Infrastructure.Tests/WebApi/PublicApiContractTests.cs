@@ -66,6 +66,11 @@ public class PublicApiContractTests
         textComparisonResult.TryGetProperty("correctionMode", out _).ShouldBeTrue();
         textComparisonResult.TryGetProperty("aiAttempted", out _).ShouldBeFalse();
         textComparisonResult.TryGetProperty("correctionTrace", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternAnnotations", out _).ShouldBeFalse();
+        components
+            .GetProperty("schemas")
+            .TryGetProperty("MistakePatternAnnotation", out _)
+            .ShouldBeFalse();
         var textComparison = components
             .GetProperty("schemas")
             .GetProperty("TextComparison")
@@ -73,6 +78,8 @@ public class PublicApiContractTests
         textComparison.TryGetProperty("sourceComparisonIndex", out _).ShouldBeTrue();
         textComparison.TryGetProperty("isDeterministicallyRefined", out _).ShouldBeTrue();
         textComparison.TryGetProperty("isAiRefined", out _).ShouldBeFalse();
+        textComparison.TryGetProperty("mistakePatternTags", out _).ShouldBeTrue();
+        textComparison.TryGetProperty("mistakePatternPhrase", out _).ShouldBeTrue();
         root.TryGetProperty("security", out _).ShouldBeFalse();
     }
 

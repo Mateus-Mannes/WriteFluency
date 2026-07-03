@@ -11,6 +11,7 @@ import { ListenFirstTourService } from './services/listen-first-tour.service';
 import { ExerciseTourService } from './services/exercise-tour.service';
 import { SubmitTourService } from './services/submit-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
+import { MistakePatternReviewComponent } from './mistake-pattern-review/mistake-pattern-review.component';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult } from 'src/api/listen-and-write';
@@ -44,6 +45,7 @@ import * as models from './listen-and-write.models';
     ExerciseSectionComponent,
     ExerciseResultsSectionComponent,
     NewsHighlightedTextComponent,
+    MistakePatternReviewComponent,
     feedbackModal.FeedbackModalComponent,
     tutorialVideoModal.TutorialVideoModalComponent
   ],
@@ -94,6 +96,11 @@ export class ListenAndWriteComponent implements OnDestroy {
   exerciseAudioUrl = this.exerciseAudioAccess.audioUrl;
 
   result = signal<TextComparisonResult | null>(null);
+  activeMistakePatternComparisonIndex = signal<number | null>(null);
+  pinnedMistakePatternComparisonIndex = signal<number | null>(null);
+  highlightedMistakePatternComparisonIndex = computed(() =>
+    this.pinnedMistakePatternComparisonIndex()
+    ?? this.activeMistakePatternComparisonIndex());
 
   isSubmitting = this.exerciseSubmission.isSubmitting;
   isBeginningExercise = this.exerciseAudioAccess.isBeginningExercise;
@@ -170,6 +177,8 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.userText.set('');
+        this.activeMistakePatternComparisonIndex.set(null);
+        this.pinnedMistakePatternComparisonIndex.set(null);
         this.exerciseAudioController.reset();
         this.exerciseAudioAccess.reset();
         this.exerciseStateRestore.resetForExercise(this.exerciseId);
@@ -583,6 +592,8 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     this.userText.set(submittedUserText);
     this.result.set(result);
+    this.activeMistakePatternComparisonIndex.set(null);
+    this.pinnedMistakePatternComparisonIndex.set(null);
     this.exerciseProgressTracking.trackComplete(proposition, result);
     this.onSaveExerciseState();
     this.setNewState('results');
@@ -711,6 +722,15 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onExerciseTextChanged(text: string) {
     this.exerciseSessionTracking.trackTextChanged(text);
+  }
+
+  onMistakePatternActiveComparisonChanged(comparisonIndex: number | null): void {
+    this.activeMistakePatternComparisonIndex.set(comparisonIndex);
+  }
+
+  onMistakePatternPinnedComparisonChanged(comparisonIndex: number | null): void {
+    this.pinnedMistakePatternComparisonIndex.update(current =>
+      current === comparisonIndex ? null : comparisonIndex);
   }
 
   onExerciseTutorialVideoRequested(): void {

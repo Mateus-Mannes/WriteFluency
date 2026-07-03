@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
 using WriteFluency.TextComparisons;
 
 namespace WriteFluency.CorrectionOrchestration.Evals;
@@ -42,8 +41,7 @@ public static class EvaluationRuntime
                 new DeterministicTextComparisonRefiner(
                     new DeterministicTextEquivalenceService(
                         new EnglishNumberNormalizer())),
-                new TextComparisonRefinementValidator(
-                    LoadRefinementValidationOptions())));
+                new EmptyMistakePatternClassifier()));
 
     private static TextComparisonService CreateTextComparisonService()
     {
@@ -57,18 +55,11 @@ public static class EvaluationRuntime
             new TokenComparisonService());
     }
 
-    private static TextComparisonRefinementValidationOptions
-        LoadRefinementValidationOptions()
+    private sealed class EmptyMistakePatternClassifier : IMistakePatternClassifier
     {
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.webapi.json", optional: false)
-            .Build();
-
-        return configuration
-            .GetSection(TextComparisonRefinementValidationOptions.Section)
-            .Get<TextComparisonRefinementValidationOptions>()
-            ?? throw new InvalidOperationException(
-                $"Missing configuration section '{TextComparisonRefinementValidationOptions.Section}'.");
+        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+            MistakePatternClassificationRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<MistakePatternAnnotation>>([]);
     }
 }

@@ -107,9 +107,27 @@
         <app-exercise-results-section [result]="result()" class="exercise-results-section">
         </app-exercise-results-section>
 
-        <app-news-highlighted-text class="exercise-original-text" [textType]="'original'" [result]="result()"></app-news-highlighted-text>
+        <app-news-highlighted-text
+            class="exercise-original-text"
+            [textType]="'original'"
+            [result]="result()"
+            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+        </app-news-highlighted-text>
         
-        <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
+        <app-news-highlighted-text
+            class="exercise-user-text"
+            [textType]="'user'"
+            [result]="result()"
+            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+        </app-news-highlighted-text>
+
+        <app-mistake-pattern-review
+            class="mistake-pattern-review-panel"
+            [result]="result()"
+            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()"
+            (activeComparisonIndexChange)="onMistakePatternActiveComparisonChanged($event)"
+            (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)">
+        </app-mistake-pattern-review>
 
         <div
             class="exercise-results-actions"

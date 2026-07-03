@@ -19,10 +19,11 @@ public class CorrectionOrchestrationServiceTests
 
         result.CorrectionMode.ShouldBe(CorrectionModes.Static);
         result.Comparisons.ShouldNotBeEmpty();
+        result.Comparisons.ShouldAllBe(comparison =>
+            comparison.MistakePatternTags == null
+            && comparison.MistakePatternPhrase == null);
         orchestrationResult.StaticComparisonCount.ShouldBe(1);
         orchestrationResult.RemovedComparisonCount.ShouldBe(0);
-        orchestrationResult.ValidationReasonCode.ShouldBe(
-            TextComparisonRefinementValidationReasons.Valid);
     }
 
     [Fact]
@@ -71,6 +72,83 @@ public class CorrectionOrchestrationServiceTests
     }
 
     [Fact]
+    public async Task CompareTextsAsync_ForProUserWithFinalComparisons_ShouldAttachMistakePatternMetadata()
+    {
+        var classifier = new RecordingMistakePatternClassifier(
+            request => request.Comparisons
+                .Select((comparison, index) => new MistakePatternAnnotation(
+                    index,
+                    comparison.SourceComparisonIndex,
+                    ["word_boundary", "word_choice"],
+                    "Word spacing changes the meaning here."))
+                .ToArray());
+        var service = CreateService(mistakePatternClassifier: classifier);
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(1);
+        var comparison = result.Comparisons.Single();
+        comparison.MistakePatternTags.ShouldBe(["word_boundary", "word_choice"]);
+        comparison.MistakePatternPhrase.ShouldBe("Word spacing changes the meaning here.");
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForProUser_WhenClassifierFails_ShouldReturnResultWithoutMistakePatternMetadata()
+    {
+        var service = CreateService(
+            mistakePatternClassifier: new ThrowingMistakePatternClassifier());
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            CancellationToken.None)).Result;
+
+        result.Comparisons.ShouldNotBeEmpty();
+        result.Comparisons.ShouldAllBe(comparison =>
+            comparison.MistakePatternTags == null
+            && comparison.MistakePatternPhrase == null);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForProUser_ShouldSanitizeMistakePatternMetadata()
+    {
+        var classifier = new RecordingMistakePatternClassifier(_ =>
+        [
+            new MistakePatternAnnotation(
+                0,
+                0,
+                [" spelling ", "SPELLING", "word_choice", "extra_word"],
+                "  Useful phrase.  "),
+            new MistakePatternAnnotation(
+                0,
+                999,
+                ["word_choice"],
+                "Invalid source."),
+            new MistakePatternAnnotation(
+                1,
+                0,
+                [],
+                "Missing tags.")
+        ]);
+        var service = CreateService(mistakePatternClassifier: classifier);
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            CancellationToken.None)).Result;
+
+        var comparison = result.Comparisons.Single();
+        comparison.MistakePatternTags.ShouldBe(["spelling", "word_choice", "extra_word"]);
+        comparison.MistakePatternPhrase.ShouldBe("Useful phrase.");
+    }
+
+    [Fact]
     public async Task CompareTextsAsync_WhenDeterministicRefinerShrinksComparison_ShouldReturnNormalizedResult()
     {
         var service = CreateService();
@@ -86,29 +164,6 @@ public class CorrectionOrchestrationServiceTests
         result.Comparisons.Single().UserText.ShouldBe("and");
         result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeTrue();
         result.CorrectionTrace.ShouldNotBeNull();
-        result.CorrectionTrace.Single().Deterministic!.Action.ShouldBe(
-            CorrectionRefinementActions.Refine);
-    }
-
-    [Fact]
-    public async Task CompareTextsAsync_WhenDiffIsUnstable_ShouldSkipDeterministicRefinement()
-    {
-        var service = CreateService(new TextComparisonRefinementValidationOptions
-        {
-            MinStaticAccuracyPercentage = 0.99
-        });
-
-        var orchestrationResult = await service.CompareTextsAsync(
-            "They may be ready",
-            "They maybe ready",
-            isPro: true,
-            CancellationToken.None);
-
-        orchestrationResult.Result.CorrectionMode.ShouldBe(CorrectionModes.Static);
-        orchestrationResult.Result.Comparisons.Single()
-            .IsDeterministicallyRefined.ShouldBeFalse();
-        orchestrationResult.ValidationReasonCode.ShouldBe(
-            TextComparisonRefinementValidationReasons.SkipUnstableDiff);
     }
 
     [Fact]
@@ -128,17 +183,12 @@ public class CorrectionOrchestrationServiceTests
     }
 
     private static CorrectionOrchestrationService CreateService(
-        TextComparisonRefinementValidationOptions? options = null)
+        IMistakePatternClassifier? mistakePatternClassifier = null)
     {
         return new CorrectionOrchestrationService(
             CreateTextComparisonService(),
             CreateDeterministicRefiner(),
-            new TextComparisonRefinementValidator(
-                options ?? new TextComparisonRefinementValidationOptions
-                {
-                    MaxOriginalCoverageRatio = 1,
-                    MinStaticAccuracyPercentage = 0
-                }));
+            mistakePatternClassifier ?? new EmptyMistakePatternClassifier());
     }
 
     private static DeterministicTextComparisonRefiner CreateDeterministicRefiner() =>
@@ -155,5 +205,43 @@ public class CorrectionOrchestrationServiceTests
                 new TokenizeTextService(),
                 new TokenAlignmentService()),
             new TokenComparisonService());
+    }
+
+    private sealed class RecordingMistakePatternClassifier : IMistakePatternClassifier
+    {
+        private readonly Func<MistakePatternClassificationRequest, IReadOnlyList<MistakePatternAnnotation>>
+            _handler;
+
+        public int CallCount { get; private set; }
+
+        public RecordingMistakePatternClassifier(
+            Func<MistakePatternClassificationRequest, IReadOnlyList<MistakePatternAnnotation>> handler)
+        {
+            _handler = handler;
+        }
+
+        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+            MistakePatternClassificationRequest request,
+            CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult(_handler(request));
+        }
+    }
+
+    private sealed class EmptyMistakePatternClassifier : IMistakePatternClassifier
+    {
+        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+            MistakePatternClassificationRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<MistakePatternAnnotation>>([]);
+    }
+
+    private sealed class ThrowingMistakePatternClassifier : IMistakePatternClassifier
+    {
+        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+            MistakePatternClassificationRequest request,
+            CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("Classifier failed.");
     }
 }

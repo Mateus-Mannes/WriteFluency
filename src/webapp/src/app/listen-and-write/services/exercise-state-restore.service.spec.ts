@@ -256,6 +256,52 @@ describe('ExerciseStateRestoreService', () => {
     expect(browserServiceMock.removeItem).toHaveBeenCalledWith('guest-snapshot-17');
   });
 
+  it('should restore completed result mistake pattern metadata from server state', async () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.userId.and.returnValue('user-3');
+    progressTrackingMock.loadState.and.resolveTo({
+      trackingEnabled: true,
+      exerciseId: 31,
+      hasServerState: true,
+      exerciseState: 'results',
+      userText: 'typed answer',
+      wordCount: 2,
+      autoPauseSeconds: null,
+      pausedTimeSeconds: null,
+      updatedAtUtc: '2026-06-29T12:00:00.000Z',
+      accuracyPercentage: 0.8,
+      originalText: 'original',
+      comparisons: [
+        {
+          sourceComparisonIndex: 0,
+          originalTextRange: { initialIndex: 0, finalIndex: 7 },
+          originalText: 'expected',
+          userTextRange: { initialIndex: 0, finalIndex: 4 },
+          userText: 'typed',
+          mistakePatternTags: ['word_choice'],
+          mistakePatternPhrase: 'Choose the word that preserves the intended meaning.',
+        },
+      ],
+      correctionMode: 'normalized',
+      correctionTrace: null,
+    });
+
+    await service.restore(createRestoreRequest(31));
+
+    expect(appliedSnapshots.length).toBe(1);
+    expect(appliedSnapshots[0].result?.comparisons).toEqual([
+      {
+        sourceComparisonIndex: 0,
+        originalTextRange: { initialIndex: 0, finalIndex: 7 },
+        originalText: 'expected',
+        userTextRange: { initialIndex: 0, finalIndex: 4 },
+        userText: 'typed',
+        mistakePatternTags: ['word_choice'],
+        mistakePatternPhrase: 'Choose the word that preserves the intended meaning.',
+      },
+    ]);
+  });
+
   it('should not restore guest state for an authenticated user without an authorized transfer', async () => {
     authSessionStoreMock.isAuthenticated.and.returnValue(true);
     authSessionStoreMock.userId.and.returnValue('user-2');

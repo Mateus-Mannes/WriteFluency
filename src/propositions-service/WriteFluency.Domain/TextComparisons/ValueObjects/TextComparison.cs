@@ -8,6 +8,8 @@ public class TextComparison
     public string? OriginalText { get; set; }
     public TextRange UserTextRange { get; set; }
     public string? UserText { get; set; }
+    public IReadOnlyList<string>? MistakePatternTags { get; set; }
+    public string? MistakePatternPhrase { get; set; }
 
     public TextComparison(
         TextRange originalTextRange,
@@ -15,7 +17,9 @@ public class TextComparison
         TextRange userTextRange,
         string userText,
         int sourceComparisonIndex = -1,
-        bool isDeterministicallyRefined = false)
+        bool isDeterministicallyRefined = false,
+        IReadOnlyList<string>? mistakePatternTags = null,
+        string? mistakePatternPhrase = null)
     {
         SourceComparisonIndex = sourceComparisonIndex;
         IsDeterministicallyRefined = isDeterministicallyRefined;
@@ -23,6 +27,8 @@ public class TextComparison
         OriginalText = originalText;
         UserTextRange = userTextRange;
         UserText = userText;
+        MistakePatternTags = mistakePatternTags;
+        MistakePatternPhrase = mistakePatternPhrase;
     }
 
     public TextComparison(TextRange originalTextRange, TextRange userTextRange)
@@ -76,6 +82,12 @@ public class TextComparisonResult
         CorrectionTrace = correctionTrace;
     }
 }
+
+public sealed record MistakePatternAnnotation(
+    int ComparisonIndex,
+    int SourceComparisonIndex,
+    IReadOnlyList<string> Tags,
+    string StudentPhrase);
 
 public sealed record ComparisonSnapshot(
     TextRange OriginalTextRange,

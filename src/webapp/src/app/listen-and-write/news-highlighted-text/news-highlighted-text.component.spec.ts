@@ -20,4 +20,26 @@ describe('NewsHighlightedTextComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should mark the active comparison highlight', () => {
+    fixture.componentRef.setInput('textType', 'user');
+    fixture.componentRef.setInput('activeComparisonIndex', 0);
+    fixture.componentRef.setInput('result', {
+      originalText: 'They may be ready',
+      userText: 'They maybe ready',
+      comparisons: [
+        {
+          sourceComparisonIndex: 7,
+          originalTextRange: { initialIndex: 5, finalIndex: 10 },
+          originalText: 'may be',
+          userTextRange: { initialIndex: 5, finalIndex: 9 },
+          userText: 'maybe',
+        },
+      ],
+    });
+
+    const activePart = component.textParts().find(part => part.highlight);
+    expect(activePart?.text).toContain('maybe');
+    expect(component.isActivePart(activePart!)).toBeTrue();
+  });
 });

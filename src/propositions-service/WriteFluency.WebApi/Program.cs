@@ -7,6 +7,7 @@ using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
 using WriteFluency.Infrastructure.FileStorage;
+using WriteFluency.Infrastructure.TextComparisons;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
@@ -33,6 +34,10 @@ builder.Services.AddOptions<TextComparisonRefinementValidationOptions>()
     .Bind(builder.Configuration.GetSection(TextComparisonRefinementValidationOptions.Section))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<MistakePatternClassificationOptions>()
+    .Bind(builder.Configuration.GetSection(MistakePatternClassificationOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
@@ -55,11 +60,7 @@ builder.Services.AddTransient<TextComparisonService>();
 builder.Services.AddTransient<EnglishNumberNormalizer>();
 builder.Services.AddTransient<DeterministicTextEquivalenceService>();
 builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
-builder.Services.AddTransient(serviceProvider =>
-    serviceProvider
-        .GetRequiredService<IOptions<TextComparisonRefinementValidationOptions>>()
-        .Value);
-builder.Services.AddTransient<TextComparisonRefinementValidator>();
+builder.Services.AddTransient<IMistakePatternClassifier, OpenAiMistakePatternClassifier>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();

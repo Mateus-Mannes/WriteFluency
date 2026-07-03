@@ -62,7 +62,9 @@ public sealed record ProgressTextComparison(
     ProgressTextRange? UserTextRange,
     string? UserText,
     int? SourceComparisonIndex = null,
-    bool IsDeterministicallyRefined = false);
+    bool IsDeterministicallyRefined = false,
+    IReadOnlyList<string>? MistakePatternTags = null,
+    string? MistakePatternPhrase = null);
 
 public sealed record ProgressTextRange(
     int? InitialIndex,
