@@ -5,22 +5,38 @@ public sealed class CorrectionOrchestrationService
     private readonly TextComparisonService _textComparisonService;
     private readonly DeterministicTextComparisonRefiner _deterministicRefiner;
     private readonly IMistakePatternClassifier _mistakePatternClassifier;
+    private readonly IAiUsageLimiter _aiUsageLimiter;
 
     public CorrectionOrchestrationService(
         TextComparisonService textComparisonService,
         DeterministicTextComparisonRefiner deterministicRefiner,
-        IMistakePatternClassifier mistakePatternClassifier)
+        IMistakePatternClassifier mistakePatternClassifier,
+        IAiUsageLimiter aiUsageLimiter)
     {
         _textComparisonService = textComparisonService;
         _deterministicRefiner = deterministicRefiner;
         _mistakePatternClassifier = mistakePatternClassifier;
+        _aiUsageLimiter = aiUsageLimiter;
     }
 
     public async Task<CorrectionOrchestrationResult> CompareTextsAsync(
         string originalText,
         string userText,
         bool isPro,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        await CompareTextsAsync(
+            originalText,
+            userText,
+            isPro,
+            userId: null,
+            cancellationToken);
+
+    public async Task<CorrectionOrchestrationResult> CompareTextsAsync(
+        string originalText,
+        string userText,
+        bool isPro,
+        string? userId = null,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -54,6 +70,7 @@ public sealed class CorrectionOrchestrationService
                 staticResult.Comparisons);
             await AttachMistakePatternMetadataAsync(
                 unchangedResult,
+                userId,
                 cancellationToken);
 
             return CreateResult(
@@ -68,7 +85,7 @@ public sealed class CorrectionOrchestrationService
             deterministic.Comparisons.ToList(),
             CorrectionModes.Normalized,
             correctionTrace: OrderTrace(correctionTrace));
-        await AttachMistakePatternMetadataAsync(normalizedResult, cancellationToken);
+        await AttachMistakePatternMetadataAsync(normalizedResult, userId, cancellationToken);
 
         return CreateResult(
             normalizedResult,
@@ -78,6 +95,7 @@ public sealed class CorrectionOrchestrationService
 
     private async Task AttachMistakePatternMetadataAsync(
         TextComparisonResult result,
+        string? userId,
         CancellationToken cancellationToken)
     {
         TextComparisonStructureGuard.EnsureValid(result);
@@ -85,12 +103,43 @@ public sealed class CorrectionOrchestrationService
 
         if (result.Comparisons.Count == 0)
         {
+            result.MistakePatternStatus = MistakePatternStatuses.NotApplicable;
+            return;
+        }
+
+        if (!_mistakePatternClassifier.IsEnabled)
+        {
+            ClearMistakePatternMetadata(result.Comparisons);
+            result.MistakePatternStatus = MistakePatternStatuses.SkippedDisabled;
+            result.MistakePatternMessage = "The Pro AI review is currently disabled.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            ClearMistakePatternMetadata(result.Comparisons);
+            result.MistakePatternStatus = MistakePatternStatuses.SkippedUsageLimit;
+            result.MistakePatternMessage = "The Pro AI review could not run because your session could not be verified.";
+            return;
+        }
+
+        var reservation = await _aiUsageLimiter.TryReserveAsync(
+            new AiUsageReservationRequest(
+                userId,
+                AiUsageFeatures.MistakePatternClassification),
+            cancellationToken);
+
+        if (!reservation.IsAllowed)
+        {
+            ClearMistakePatternMetadata(result.Comparisons);
+            result.MistakePatternStatus = MistakePatternStatuses.SkippedUsageLimit;
+            result.MistakePatternMessage = CreateUsageLimitMessage(reservation.DenialReason);
             return;
         }
 
         try
         {
-            var annotations = await _mistakePatternClassifier.ClassifyAsync(
+            var classificationRun = await _mistakePatternClassifier.ClassifyWithDiagnosticsAsync(
                 new MistakePatternClassificationRequest(
                     result.OriginalText,
                     result.UserText,
@@ -100,8 +149,27 @@ public sealed class CorrectionOrchestrationService
             AttachMistakePatternMetadata(
                 result.Comparisons,
                 MistakePatternAnnotationSanitizer.Sanitize(
-                    annotations,
+                    classificationRun.Annotations,
                     result.Comparisons));
+            await _aiUsageLimiter.RecordCompletionAsync(
+                reservation,
+                new AiUsageCompletion(
+                    classificationRun.InputTokenCount,
+                    classificationRun.OutputTokenCount),
+                cancellationToken);
+
+            if (result.Comparisons.Any(comparison =>
+                    comparison.MistakePatternTags?.Count > 0
+                    && !string.IsNullOrWhiteSpace(comparison.MistakePatternPhrase)))
+            {
+                result.MistakePatternStatus = MistakePatternStatuses.Generated;
+                result.MistakePatternMessage = null;
+            }
+            else
+            {
+                result.MistakePatternStatus = MistakePatternStatuses.SkippedDisabled;
+                result.MistakePatternMessage = "The Pro AI review is currently disabled.";
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -109,7 +177,10 @@ public sealed class CorrectionOrchestrationService
         }
         catch
         {
+            await _aiUsageLimiter.RecordFailureAsync(reservation, cancellationToken);
             ClearMistakePatternMetadata(result.Comparisons);
+            result.MistakePatternStatus = MistakePatternStatuses.ClassifierFailed;
+            result.MistakePatternMessage = "The Pro AI review is temporarily unavailable. Your correction highlights are still available.";
         }
     }
 
@@ -151,6 +222,19 @@ public sealed class CorrectionOrchestrationService
             comparison.MistakePatternPhrase = null;
         }
     }
+
+    private static string CreateUsageLimitMessage(string? denialReason) =>
+        denialReason switch
+        {
+            "daily_limit_exceeded" =>
+                "You reached today's Pro AI review limit. Your correction highlights are still available; only the AI mistake-pattern review is paused. You can use AI review again tomorrow. If this seems unexpected, contact us on the Support page.",
+            "monthly_limit_exceeded" =>
+                "You reached this month's Pro AI review limit. Your correction highlights are still available; only the AI mistake-pattern review is paused. You can use AI review again when the monthly limit resets. If this seems unexpected, contact us on the Support page.",
+            "monthly_cost_limit_exceeded" =>
+                "Your Pro AI review is paused because this month's estimated AI usage limit was reached. This helps keep the Pro plan affordable. Your correction highlights are still available, and AI review will be available again when the monthly limit resets. If this seems unexpected, contact us on the Support page.",
+            _ =>
+                "Your Pro AI review limit was reached. Your correction highlights are still available; only the AI mistake-pattern review is paused. Please try again later, or contact us on the Support page if this seems unexpected."
+        };
 
     private CorrectionOrchestrationResult CreateResult(
         TextComparisonResult result,

@@ -91,6 +91,7 @@ public sealed class CorrectionOrchestrationEvaluator
                 evaluationCase.OriginalText,
                 evaluationCase.UserText,
                 isPro: true,
+                userId: "orchestration-evaluator",
                 cancellationToken);
             var sourceResults = CreateOrchestrationSourceResults(
                 evaluationCase,

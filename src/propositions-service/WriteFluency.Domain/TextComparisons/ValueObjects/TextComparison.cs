@@ -65,6 +65,8 @@ public class TextComparisonResult
     public double AccuracyPercentage { get; set; }
     public string CorrectionMode { get; set; }
     public IReadOnlyList<CorrectionTraceEntry>? CorrectionTrace { get; set; }
+    public string MistakePatternStatus { get; set; }
+    public string? MistakePatternMessage { get; set; }
 
     public TextComparisonResult(
         string originalText,
@@ -72,7 +74,9 @@ public class TextComparisonResult
         double accuracyPercentage,
         List<TextComparison> comparisons,
         string correctionMode = CorrectionModes.Static,
-        IReadOnlyList<CorrectionTraceEntry>? correctionTrace = null)
+        IReadOnlyList<CorrectionTraceEntry>? correctionTrace = null,
+        string mistakePatternStatus = MistakePatternStatuses.NotApplicable,
+        string? mistakePatternMessage = null)
     {
         OriginalText = originalText;
         UserText = userText;
@@ -80,6 +84,8 @@ public class TextComparisonResult
         Comparisons = comparisons;
         CorrectionMode = correctionMode;
         CorrectionTrace = correctionTrace;
+        MistakePatternStatus = mistakePatternStatus;
+        MistakePatternMessage = mistakePatternMessage;
     }
 }
 

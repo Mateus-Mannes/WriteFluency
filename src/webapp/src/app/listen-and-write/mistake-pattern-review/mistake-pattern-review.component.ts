@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TextComparison, TextComparisonResult } from 'src/api/listen-and-write';
 
 interface MistakePatternRow {
@@ -13,7 +14,7 @@ interface MistakePatternRow {
 
 @Component({
   selector: 'app-mistake-pattern-review',
-  imports: [NgClass],
+  imports: [NgClass, RouterLink],
   templateUrl: './mistake-pattern-review.component.html',
   styleUrl: './mistake-pattern-review.component.scss',
 })
@@ -25,6 +26,13 @@ export class MistakePatternReviewComponent {
   pinnedComparisonIndexChange = output<number | null>();
 
   readonly selectedTag = signal<string | null>(null);
+
+  readonly isUsageLimitSkipped = computed(() =>
+    this.result()?.mistakePatternStatus === 'skipped_usage_limit');
+
+  readonly usageLimitMessage = computed(() =>
+    this.result()?.mistakePatternMessage?.trim()
+    || 'You reached today\'s Pro AI review limit. Your correction highlights are still available; only the AI mistake-pattern review is paused. You can use AI review again tomorrow.');
 
   readonly rows = computed<MistakePatternRow[]>(() => {
     const result = this.result();

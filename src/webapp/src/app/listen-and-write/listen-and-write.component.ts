@@ -101,6 +101,22 @@ export class ListenAndWriteComponent implements OnDestroy {
   highlightedMistakePatternComparisonIndex = computed(() =>
     this.pinnedMistakePatternComparisonIndex()
     ?? this.activeMistakePatternComparisonIndex());
+  shouldShowMistakePatternReview = computed(() => {
+    const result = this.result();
+    if (!result) {
+      return false;
+    }
+
+    if (result.mistakePatternStatus === 'skipped_usage_limit') {
+      return true;
+    }
+
+    return (result.comparisons ?? []).some(comparison => {
+      const hasTag = (comparison.mistakePatternTags ?? [])
+        .some(tag => Boolean(tag?.trim()));
+      return hasTag && Boolean(comparison.mistakePatternPhrase?.trim());
+    });
+  });
 
   isSubmitting = this.exerciseSubmission.isSubmitting;
   isBeginningExercise = this.exerciseAudioAccess.isBeginningExercise;

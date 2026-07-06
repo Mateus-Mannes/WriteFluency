@@ -2,7 +2,9 @@ namespace WriteFluency.TextComparisons;
 
 public interface IMistakePatternClassifier
 {
-    Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+    bool IsEnabled { get; }
+
+    Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
         MistakePatternClassificationRequest request,
         CancellationToken cancellationToken);
 }

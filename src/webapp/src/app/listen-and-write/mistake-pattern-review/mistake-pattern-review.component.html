@@ -1,4 +1,15 @@
-@if (rows().length > 0) {
+@if (isUsageLimitSkipped()) {
+  <section class="mistake-pattern-review mistake-pattern-review-alert" aria-label="Pro review limit">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>AI review limit reached</h2>
+      </div>
+    </div>
+    <p class="mistake-pattern-alert-message">{{ usageLimitMessage() }}</p>
+    <a class="mistake-pattern-alert-link" routerLink="/support">Contact support</a>
+  </section>
+} @else if (rows().length > 0) {
   <section class="mistake-pattern-review" aria-label="Mistake patterns">
     <div class="mistake-pattern-review-header">
       <div>

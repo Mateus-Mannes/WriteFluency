@@ -41,7 +41,8 @@ public static class EvaluationRuntime
                 new DeterministicTextComparisonRefiner(
                     new DeterministicTextEquivalenceService(
                         new EnglishNumberNormalizer())),
-                new EmptyMistakePatternClassifier()));
+                new EmptyMistakePatternClassifier(),
+                new AllowingAiUsageLimiter()));
 
     private static TextComparisonService CreateTextComparisonService()
     {
@@ -57,9 +58,34 @@ public static class EvaluationRuntime
 
     private sealed class EmptyMistakePatternClassifier : IMistakePatternClassifier
     {
-        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+        public bool IsEnabled => true;
+
+        public Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
             MistakePatternClassificationRequest request,
             CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<MistakePatternAnnotation>>([]);
+            Task.FromResult(new MistakePatternClassificationRun([], []));
+    }
+
+    private sealed class AllowingAiUsageLimiter : IAiUsageLimiter
+    {
+        public Task<AiUsageReservation> TryReserveAsync(
+            AiUsageReservationRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(AiUsageReservation.Allowed(
+                request.UserId,
+                request.Feature,
+                "2026-07-06",
+                "2026-07"));
+
+        public Task RecordCompletionAsync(
+            AiUsageReservation reservation,
+            AiUsageCompletion completion,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task RecordFailureAsync(
+            AiUsageReservation reservation,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 }

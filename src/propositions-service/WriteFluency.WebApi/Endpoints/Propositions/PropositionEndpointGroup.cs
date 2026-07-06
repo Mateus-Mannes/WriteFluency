@@ -67,8 +67,8 @@ public class PropositionEndpointGroup : IEndpointMapper
 
         try
         {
-            var isPro = await usersSessionClient.IsProAsync(request, cancellationToken);
-            var result = await propositionService.BeginExerciseAsync(id, isPro, cancellationToken);
+            var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
+            var result = await propositionService.BeginExerciseAsync(id, session.IsPro, cancellationToken);
 
             if (result is null)
             {

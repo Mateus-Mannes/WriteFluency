@@ -88,6 +88,7 @@ public class CorrectionOrchestrationServiceTests
             "They may be ready",
             "They maybe ready",
             isPro: true,
+            userId: "user-1",
             CancellationToken.None)).Result;
 
         classifier.CallCount.ShouldBe(1);
@@ -106,6 +107,7 @@ public class CorrectionOrchestrationServiceTests
             "They may be ready",
             "They maybe ready",
             isPro: true,
+            userId: "user-1",
             CancellationToken.None)).Result;
 
         result.Comparisons.ShouldNotBeEmpty();
@@ -141,11 +143,99 @@ public class CorrectionOrchestrationServiceTests
             "They may be ready",
             "They maybe ready",
             isPro: true,
+            userId: "user-1",
             CancellationToken.None)).Result;
 
         var comparison = result.Comparisons.Single();
         comparison.MistakePatternTags.ShouldBe(["spelling", "word_choice", "extra_word"]);
         comparison.MistakePatternPhrase.ShouldBe("Useful phrase.");
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForProUser_WhenUsageLimitIsReached_ShouldSkipClassifier()
+    {
+        var classifier = new RecordingMistakePatternClassifier(_ =>
+        [
+            new MistakePatternAnnotation(
+                0,
+                0,
+                ["word_boundary"],
+                "Word spacing changes the meaning here.")
+        ]);
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: false);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            userId: "user-1",
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(0);
+        usageLimiter.ReservationCount.ShouldBe(1);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.SkippedUsageLimit);
+        result.MistakePatternMessage.ShouldNotBeNullOrWhiteSpace();
+        result.Comparisons.ShouldAllBe(comparison =>
+            comparison.MistakePatternTags == null
+            && comparison.MistakePatternPhrase == null);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForProUser_WhenClassifierSucceeds_ShouldRecordUsageCompletion()
+    {
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
+        var classifier = new RecordingMistakePatternClassifier(
+            _ =>
+            [
+                new MistakePatternAnnotation(
+                    0,
+                    0,
+                    ["word_boundary"],
+                    "Word spacing changes the meaning here.")
+            ],
+            inputTokens: 123,
+            outputTokens: 45);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            userId: "user-1",
+            CancellationToken.None)).Result;
+
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
+        usageLimiter.CompletedCount.ShouldBe(1);
+        usageLimiter.LastCompletion.ShouldNotBeNull();
+        usageLimiter.LastCompletion.InputTokenCount.ShouldBe(123);
+        usageLimiter.LastCompletion.OutputTokenCount.ShouldBe(45);
+        usageLimiter.FailedCount.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForProUser_WhenClassifierFails_ShouldRecordUsageFailure()
+    {
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
+        var service = CreateService(
+            mistakePatternClassifier: new ThrowingMistakePatternClassifier(),
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            "They may be ready",
+            "They maybe ready",
+            isPro: true,
+            userId: "user-1",
+            CancellationToken.None)).Result;
+
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.ClassifierFailed);
+        result.MistakePatternMessage.ShouldNotBeNullOrWhiteSpace();
+        usageLimiter.CompletedCount.ShouldBe(0);
+        usageLimiter.FailedCount.ShouldBe(1);
     }
 
     [Fact]
@@ -183,12 +273,14 @@ public class CorrectionOrchestrationServiceTests
     }
 
     private static CorrectionOrchestrationService CreateService(
-        IMistakePatternClassifier? mistakePatternClassifier = null)
+        IMistakePatternClassifier? mistakePatternClassifier = null,
+        IAiUsageLimiter? aiUsageLimiter = null)
     {
         return new CorrectionOrchestrationService(
             CreateTextComparisonService(),
             CreateDeterministicRefiner(),
-            mistakePatternClassifier ?? new EmptyMistakePatternClassifier());
+            mistakePatternClassifier ?? new EmptyMistakePatternClassifier(),
+            aiUsageLimiter ?? new RecordingAiUsageLimiter(isAllowed: true));
     }
 
     private static DeterministicTextComparisonRefiner CreateDeterministicRefiner() =>
@@ -211,37 +303,113 @@ public class CorrectionOrchestrationServiceTests
     {
         private readonly Func<MistakePatternClassificationRequest, IReadOnlyList<MistakePatternAnnotation>>
             _handler;
+        private readonly long? _inputTokens;
+        private readonly long? _outputTokens;
 
         public int CallCount { get; private set; }
+        public bool IsEnabled => true;
 
         public RecordingMistakePatternClassifier(
-            Func<MistakePatternClassificationRequest, IReadOnlyList<MistakePatternAnnotation>> handler)
+            Func<MistakePatternClassificationRequest, IReadOnlyList<MistakePatternAnnotation>> handler,
+            long? inputTokens = null,
+            long? outputTokens = null)
         {
             _handler = handler;
+            _inputTokens = inputTokens;
+            _outputTokens = outputTokens;
         }
 
-        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+        public Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
             MistakePatternClassificationRequest request,
             CancellationToken cancellationToken)
         {
             CallCount++;
-            return Task.FromResult(_handler(request));
+            return Task.FromResult(new MistakePatternClassificationRun(
+                _handler(request),
+                [
+                    new MistakePatternClassificationRequestMetrics(
+                        1,
+                        0,
+                        request.Comparisons.Count,
+                        1,
+                        _inputTokens,
+                        _outputTokens,
+                        (_inputTokens ?? 0) + (_outputTokens ?? 0))
+                ]));
         }
     }
 
     private sealed class EmptyMistakePatternClassifier : IMistakePatternClassifier
     {
-        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+        public bool IsEnabled => true;
+
+        public Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
             MistakePatternClassificationRequest request,
             CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<MistakePatternAnnotation>>([]);
+            Task.FromResult(new MistakePatternClassificationRun([], []));
     }
 
     private sealed class ThrowingMistakePatternClassifier : IMistakePatternClassifier
     {
-        public Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
+        public bool IsEnabled => true;
+
+        public Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
             MistakePatternClassificationRequest request,
             CancellationToken cancellationToken) =>
             throw new InvalidOperationException("Classifier failed.");
+    }
+
+    private sealed class RecordingAiUsageLimiter : IAiUsageLimiter
+    {
+        private readonly bool _isAllowed;
+
+        public int ReservationCount { get; private set; }
+        public int CompletedCount { get; private set; }
+        public int FailedCount { get; private set; }
+        public AiUsageCompletion? LastCompletion { get; private set; }
+
+        public RecordingAiUsageLimiter(bool isAllowed)
+        {
+            _isAllowed = isAllowed;
+        }
+
+        public Task<AiUsageReservation> TryReserveAsync(
+            AiUsageReservationRequest request,
+            CancellationToken cancellationToken)
+        {
+            ReservationCount++;
+            var reservation = _isAllowed
+                ? AiUsageReservation.Allowed(
+                    request.UserId,
+                    request.Feature,
+                    "2026-07-06",
+                    "2026-07")
+                : AiUsageReservation.Denied(
+                    "test_limit",
+                    request.UserId,
+                    request.Feature,
+                    "2026-07-06",
+                    "2026-07");
+
+            return Task.FromResult(reservation);
+        }
+
+        public Task RecordCompletionAsync(
+            AiUsageReservation reservation,
+            AiUsageCompletion completion,
+            CancellationToken cancellationToken)
+        {
+            CompletedCount++;
+            LastCompletion = completion;
+            return Task.CompletedTask;
+        }
+
+        public Task RecordFailureAsync(
+            AiUsageReservation reservation,
+            CancellationToken cancellationToken)
+        {
+            FailedCount++;
+            return Task.CompletedTask;
+        }
     }
 }

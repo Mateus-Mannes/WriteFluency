@@ -35,7 +35,7 @@
     height: 100%;
     box-sizing: border-box;
     padding: 14px 16px;
-    height: 340px;
+    height: var(--highlighted-text-height, 340px);
     font-size: 0.9rem;
     line-height: 1.65;
     color: vars.$color-text;

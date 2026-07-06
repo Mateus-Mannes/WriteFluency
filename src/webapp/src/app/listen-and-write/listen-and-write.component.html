@@ -60,6 +60,7 @@
     'exercise-intro-container': exerciseState() == 'intro',
     'exercise-container': exerciseState() == 'exercise',
     'exercise-results-container': exerciseState() == 'results',
+    'exercise-results-container--with-review': exerciseState() == 'results' && shouldShowMistakePatternReview(),
     'state-anim': stateAnimOn()
 }">
     <app-news-info class="news-info" 
@@ -121,13 +122,15 @@
             [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
         </app-news-highlighted-text>
 
-        <app-mistake-pattern-review
-            class="mistake-pattern-review-panel"
-            [result]="result()"
-            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()"
-            (activeComparisonIndexChange)="onMistakePatternActiveComparisonChanged($event)"
-            (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)">
-        </app-mistake-pattern-review>
+        @if (shouldShowMistakePatternReview()) {
+            <app-mistake-pattern-review
+                class="mistake-pattern-review-panel"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()"
+                (activeComparisonIndexChange)="onMistakePatternActiveComparisonChanged($event)"
+                (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)">
+            </app-mistake-pattern-review>
+        }
 
         <div
             class="exercise-results-actions"

@@ -18,6 +18,12 @@ public class UsersSessionClient : IUsersSessionClient
 
     public async Task<bool> IsProAsync(HttpRequest request, CancellationToken cancellationToken = default)
     {
+        var session = await GetSessionAsync(request, cancellationToken);
+        return session.IsPro;
+    }
+
+    public async Task<UsersSession> GetSessionAsync(HttpRequest request, CancellationToken cancellationToken = default)
+    {
         try
         {
             using var sessionRequest = new HttpRequestMessage(HttpMethod.Get, SessionPath);
@@ -29,11 +35,17 @@ public class UsersSessionClient : IUsersSessionClient
             using var response = await _httpClient.SendAsync(sessionRequest, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
-                return false;
+                return UsersSession.Anonymous;
             }
 
             var session = await response.Content.ReadFromJsonAsync<UsersSessionResponse>(cancellationToken);
-            return session?.IsPro == true;
+            return session is null
+                ? UsersSession.Anonymous
+                : new UsersSession(
+                    session.UserId,
+                    session.IsAuthenticated,
+                    session.IsPro,
+                    session.CurrentPeriodEndUtc);
         }
         catch (OperationCanceledException)
         {
@@ -42,9 +54,13 @@ public class UsersSessionClient : IUsersSessionClient
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Unable to resolve users-service session for proposition access check.");
-            return false;
+            return UsersSession.Anonymous;
         }
     }
 
-    private record UsersSessionResponse(bool IsPro);
+    private sealed record UsersSessionResponse(
+        string? UserId,
+        bool IsAuthenticated,
+        bool IsPro,
+        DateTimeOffset? CurrentPeriodEndUtc);
 }

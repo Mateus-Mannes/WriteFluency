@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Domain.App;
 using WriteFluency.Propositions;
+using WriteFluency.TextComparisons;
 
 namespace WriteFluency.Data;
 
@@ -13,6 +14,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     public DbSet<Proposition> Propositions { get; set; }
     public DbSet<PropositionGenerationLog> PropositionGenerationLogs { get; set; }
     public DbSet<AppSettings> AppSettings { get; set; }
+    public DbSet<AiUsageCounter> AiUsageCounters { get; set; }
     public AppDbContext(DbContextOptions opts) : base(opts) { }
     
     protected override void OnModelCreating(ModelBuilder builder)
@@ -26,6 +28,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
 
         builder.ApplyConfiguration(new PropositionEfConfiguration(Database.IsNpgsql()));
         builder.ApplyConfiguration(new PropositionGenerationLogEfConfiguration());
+        builder.ApplyConfiguration(new AiUsageCounterEfConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

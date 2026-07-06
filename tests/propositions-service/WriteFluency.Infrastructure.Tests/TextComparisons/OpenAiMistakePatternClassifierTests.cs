@@ -11,7 +11,7 @@ namespace WriteFluency.Infrastructure.Tests.TextComparisons;
 public sealed class OpenAiMistakePatternClassifierTests
 {
     [Fact]
-    public async Task ClassifyAsync_ShouldMapStructuredAnnotationsAndUseConfiguredOptions()
+    public async Task ClassifyWithDiagnosticsAsync_ShouldMapStructuredAnnotationsAndUseConfiguredOptions()
     {
         var chatClient = Substitute.For<IChatClient>();
         chatClient
@@ -44,7 +44,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                 """))));
         var classifier = CreateClassifier(chatClient);
 
-        var annotations = await classifier.ClassifyAsync(
+        var classificationRun = await classifier.ClassifyWithDiagnosticsAsync(
             new MistakePatternClassificationRequest(
                 "The color changed",
                 "The colour changed",
@@ -57,7 +57,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                         sourceComparisonIndex: 2)
                 ]),
             CancellationToken.None);
-
+        var annotations = classificationRun.Annotations;
         var annotation = annotations.Single();
         annotation.ComparisonIndex.ShouldBe(0);
         annotation.SourceComparisonIndex.ShouldBe(2);
@@ -66,7 +66,7 @@ public sealed class OpenAiMistakePatternClassifierTests
     }
 
     [Fact]
-    public async Task ClassifyAsync_ShouldBatchComparisonsAndKeepGlobalComparisonIndexes()
+    public async Task ClassifyWithDiagnosticsAsync_ShouldBatchComparisonsAndKeepGlobalComparisonIndexes()
     {
         var chatClient = Substitute.For<IChatClient>();
         chatClient
@@ -108,7 +108,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                     """))));
         var classifier = CreateClassifier(chatClient, maxComparisonsPerRequest: 2);
 
-        var annotations = await classifier.ClassifyAsync(
+        var classificationRun = await classifier.ClassifyWithDiagnosticsAsync(
             new MistakePatternClassificationRequest(
                 "red caused the issue",
                 "read cause they issue",
@@ -118,9 +118,10 @@ public sealed class OpenAiMistakePatternClassifierTests
                     CreateComparison(11, "the", 11, "they", 12)
                 ]),
             CancellationToken.None);
-
+        var annotations = classificationRun.Annotations;
         annotations.Select(annotation => annotation.ComparisonIndex).ShouldBe([0, 1, 2]);
         annotations.Select(annotation => annotation.SourceComparisonIndex).ShouldBe([10, 11, 12]);
+        classificationRun.Requests.Count.ShouldBe(2);
         await chatClient
             .Received(2)
             .GetResponseAsync(
@@ -130,7 +131,7 @@ public sealed class OpenAiMistakePatternClassifierTests
     }
 
     [Fact]
-    public async Task ClassifyAsync_ShouldUseFallbackAnnotationWhenAiOutputIsExtreme()
+    public async Task ClassifyWithDiagnosticsAsync_ShouldUseFallbackAnnotationWhenAiOutputIsExtreme()
     {
         var chatClient = Substitute.For<IChatClient>();
         chatClient
@@ -153,7 +154,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                 """))));
         var classifier = CreateClassifier(chatClient);
 
-        var annotations = await classifier.ClassifyAsync(
+        var classificationRun = await classifier.ClassifyWithDiagnosticsAsync(
             new MistakePatternClassificationRequest(
                 "The color changed",
                 "The colour changed",
@@ -166,7 +167,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                         sourceComparisonIndex: 2)
                 ]),
             CancellationToken.None);
-
+        var annotations = classificationRun.Annotations;
         var annotation = annotations.Single();
         annotation.ComparisonIndex.ShouldBe(0);
         annotation.SourceComparisonIndex.ShouldBe(2);
@@ -176,7 +177,7 @@ public sealed class OpenAiMistakePatternClassifierTests
     }
 
     [Fact]
-    public async Task ClassifyAsync_ShouldKeepValidAnnotationsWhenOneAnnotationIsMalformed()
+    public async Task ClassifyWithDiagnosticsAsync_ShouldKeepValidAnnotationsWhenOneAnnotationIsMalformed()
     {
         var chatClient = Substitute.For<IChatClient>();
         chatClient
@@ -210,7 +211,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                 """))));
         var classifier = CreateClassifier(chatClient);
 
-        var annotations = await classifier.ClassifyAsync(
+        var classificationRun = await classifier.ClassifyWithDiagnosticsAsync(
             new MistakePatternClassificationRequest(
                 "red caused the issue",
                 "read cause they issue",
@@ -220,7 +221,7 @@ public sealed class OpenAiMistakePatternClassifierTests
                     CreateComparison(11, "the", 11, "they", 12)
                 ]),
             CancellationToken.None);
-
+        var annotations = classificationRun.Annotations;
         annotations.Count.ShouldBe(3);
         annotations[0].ComparisonIndex.ShouldBe(0);
         annotations[0].SourceComparisonIndex.ShouldBe(10);

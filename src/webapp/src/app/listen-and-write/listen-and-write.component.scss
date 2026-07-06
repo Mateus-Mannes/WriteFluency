@@ -548,10 +548,21 @@
 
 @media (min-width: 1200px) {
     .exercise-results-container {
-        align-self: flex-start;
-        width: min(calc(100vw - 3rem), 1480px);
+        align-self: center;
+        width: min(calc(100vw - 3rem), 1032px);
+        box-sizing: border-box;
+        height: min(650px, calc(100dvh - #{vars.$nav-bar-height} - 2rem));
+        min-height: 0;
+        margin-top: 0;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .exercise-results-container.exercise-results-container--with-review {
+        width: min(calc(100vw - 3rem), 1360px);
         max-width: none;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(360px, 420px);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(340px, 390px);
         grid-template-areas:
             "exercise-results-section  news-info              mistake-pattern-review-panel"
             "exercise-results-section  news-audio             mistake-pattern-review-panel"
@@ -562,11 +573,20 @@
         align-items: start;
     }
 
-    .exercise-results-container > * {
+    .exercise-results-container.exercise-results-container--with-review > * {
         max-width: none;
     }
 
     .exercise-results-container {
+        .exercise-user-text,
+        .exercise-original-text {
+            height: 100%;
+            min-height: 0;
+            --highlighted-text-height: 100%;
+        }
+    }
+
+    .exercise-results-container.exercise-results-container--with-review {
         .exercise-results-section,
         .exercise-user-text,
         .exercise-original-text,
@@ -583,8 +603,10 @@
             position: sticky;
             top: calc(vars.$nav-bar-height + 1rem);
             align-self: start;
+            height: 100%;
+            min-height: 0;
             margin-top: 0;
-            --mistake-pattern-review-max-height: calc(100vh - #{vars.$nav-bar-height} - 2rem);
+            --mistake-pattern-review-max-height: min(620px, calc(100dvh - #{vars.$nav-bar-height} - 4rem));
             --mistake-pattern-list-max-height: none;
         }
     }

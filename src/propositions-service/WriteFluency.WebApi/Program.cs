@@ -38,10 +38,15 @@ builder.Services.AddOptions<MistakePatternClassificationOptions>()
     .Bind(builder.Configuration.GetSection(MistakePatternClassificationOptions.Section))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<AiUsageOptions>()
+    .Bind(builder.Configuration.GetSection(AiUsageOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
+builder.Services.AddScoped<IAppDbContext>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>
@@ -61,6 +66,7 @@ builder.Services.AddTransient<EnglishNumberNormalizer>();
 builder.Services.AddTransient<DeterministicTextEquivalenceService>();
 builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
 builder.Services.AddTransient<IMistakePatternClassifier, OpenAiMistakePatternClassifier>();
+builder.Services.AddTransient<IAiUsageLimiter, EfAiUsageLimiter>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();

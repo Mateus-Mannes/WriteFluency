@@ -25,10 +25,7 @@ public sealed class OpenAiMistakePatternClassifier : IMistakePatternClassifier
         _logger = logger;
     }
 
-    public async Task<IReadOnlyList<MistakePatternAnnotation>> ClassifyAsync(
-        MistakePatternClassificationRequest request,
-        CancellationToken cancellationToken) =>
-        (await ClassifyWithDiagnosticsAsync(request, cancellationToken)).Annotations;
+    public bool IsEnabled => _options.Enabled;
 
     public async Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
         MistakePatternClassificationRequest request,

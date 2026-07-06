@@ -59,10 +59,10 @@ public class TextComparisonEndpointGroup : IEndpointMapper
 
         try
         {
-            var isPro = await usersSessionClient.IsProAsync(request, cancellationToken);
+            var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
             var accessResult = await propositionService.GetExerciseForComparisonAsync(
                 compareTextsDto.PropositionId,
-                isPro,
+                session.IsPro,
                 cancellationToken);
 
             if (accessResult is null)
@@ -78,18 +78,31 @@ public class TextComparisonEndpointGroup : IEndpointMapper
             var orchestrationResult = await correctionOrchestrationService.CompareTextsAsync(
                 accessResult.OriginalText,
                 compareTextsDto.UserText ?? string.Empty,
-                isPro,
+                session.IsPro,
+                session.UserId,
                 cancellationToken);
             var result = orchestrationResult.Result;
 
+            if (result.MistakePatternStatus == MistakePatternStatuses.SkippedUsageLimit)
+            {
+                logger.LogError(
+                    "Pro mistake-pattern AI review limit reached for proposition {PropositionId}: UserId={UserId}, UserTextLength={UserTextLength}, StaticComparisons={StaticComparisons}, FinalComparisons={FinalComparisons}",
+                    compareTextsDto.PropositionId,
+                    session.UserId,
+                    userTextLength,
+                    orchestrationResult.StaticComparisonCount,
+                    result.Comparisons.Count);
+            }
+
             logger.LogInformation(
-                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, MistakePatternComparisons={MistakePatternComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
+                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, MistakePatternStatus={MistakePatternStatus}, MistakePatternComparisons={MistakePatternComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
-                isPro,
+                session.IsPro,
                 result.CorrectionMode,
                 orchestrationResult.StaticComparisonCount,
                 orchestrationResult.RemovedComparisonCount,
                 result.Comparisons.Count,
+                result.MistakePatternStatus,
                 result.Comparisons.Count(comparison =>
                     comparison.MistakePatternTags?.Count > 0
                     && !string.IsNullOrWhiteSpace(comparison.MistakePatternPhrase)),

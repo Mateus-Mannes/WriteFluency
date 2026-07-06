@@ -827,6 +827,21 @@
               "$ref": "#/components/schemas/CorrectionTraceEntry"
             },
             "nullable": true
+          },
+          "mistakePatternStatus": {
+            "enum": [
+              "generated",
+              "skipped_usage_limit",
+              "skipped_disabled",
+              "classifier_failed",
+              "not_applicable"
+            ],
+            "type": "string",
+            "nullable": true
+          },
+          "mistakePatternMessage": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

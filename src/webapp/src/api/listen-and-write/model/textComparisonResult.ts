@@ -18,4 +18,6 @@ export interface TextComparisonResult {
     accuracyPercentage?: number;
     correctionMode?: 'static' | 'normalized' | string | null;
     correctionTrace?: Array<CorrectionTraceEntry> | null;
+    mistakePatternStatus?: 'generated' | 'skipped_usage_limit' | 'skipped_disabled' | 'classifier_failed' | 'not_applicable' | string | null;
+    mistakePatternMessage?: string | null;
 }
