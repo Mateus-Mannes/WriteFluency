@@ -1,15 +1,20 @@
 @use '../../styles/variables' as vars;
 
 .plans-page {
-  width: min(920px, calc(100% - 32px));
-  margin: 32px auto 48px;
+  width: min(1180px, calc(100% - 32px));
+  margin: 32px auto 56px;
   display: grid;
-  gap: 20px;
+  gap: 28px;
+}
+
+.plans-header,
+.section-heading {
+  display: grid;
+  gap: 8px;
 }
 
 .plans-header {
-  display: grid;
-  gap: 8px;
+  max-width: 760px;
 }
 
 .eyebrow {
@@ -21,21 +26,42 @@
   text-transform: uppercase;
 }
 
-.plans-header h1 {
+.plans-header h1,
+.section-heading h2 {
   margin: 0;
   color: vars.$color-text;
-  font-size: clamp(2rem, 2.5vw + 1rem, 3rem);
-  line-height: 1.05;
+  line-height: 1.08;
 }
 
-.plans-header p:not(.eyebrow) {
+.plans-header h1 {
+  font-size: clamp(2rem, 2.5vw + 1rem, 3.15rem);
+}
+
+.section-heading h2 {
+  font-size: clamp(1.45rem, 1vw + 1rem, 2rem);
+}
+
+.plans-header p:not(.eyebrow),
+.section-heading p:not(.eyebrow) {
   margin: 0;
-  max-width: 58ch;
+  max-width: 68ch;
   color: vars.$color-text-muted;
   line-height: 1.5;
 }
 
+.plan-cards,
+.plans-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.plans-demo-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .plan-card,
+.demo-card,
 .plans-error {
   border-radius: 14px;
   border: 1px solid vars.$color-border-subtle;
@@ -44,57 +70,134 @@
 
 .plan-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 24px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 18px;
   padding: 24px;
+  background: vars.$color-surface;
+}
+
+.plan-card-pro {
+  border-color: rgba(vars.$color-primary, 0.34);
   background:
-    linear-gradient(180deg, rgba(vars.$color-primary, 0.08), transparent 52%),
+    linear-gradient(180deg, rgba(vars.$color-primary, 0.1), transparent 58%),
     vars.$color-surface;
 }
 
-.plan-copy {
-  display: grid;
-  gap: 8px;
+.plan-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .plan-name,
 .plan-price,
-.plan-status {
+.plan-status,
+.plan-summary {
   margin: 0;
 }
 
 .plan-name {
   color: vars.$color-text;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .plan-price {
+  margin-top: 8px;
   color: vars.$color-primary-dark;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 850;
   line-height: 1;
 }
 
 .plan-price span {
   color: vars.$color-text-muted;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: vars.$color-status-success-text;
+  background: vars.$color-status-success-bg;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.plan-badge-muted {
+  color: vars.$color-status-neutral-text;
+  background: vars.$color-status-neutral-bg;
+}
+
+.plan-summary,
+.plan-feature-list,
+.plan-status {
+  color: vars.$color-text-muted;
+  line-height: 1.45;
 }
 
 .plan-status {
   color: vars.$color-status-success-text;
   font-size: 0.92rem;
-  line-height: 1.45;
+  font-weight: 650;
+}
+
+.plan-feature-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-feature-list li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  color: vars.$color-text;
+  font-weight: 650;
+}
+
+.plan-feature-list mat-icon {
+  color: vars.$color-primary;
+  font-size: 1.18rem;
+  width: 1.18rem;
+  height: 1.18rem;
+  line-height: 1.18rem;
+}
+
+.plan-feature-muted {
+  color: vars.$color-text-muted !important;
+}
+
+.plan-feature-muted mat-icon {
+  color: vars.$color-text-muted;
+}
+
+.plan-cta,
+.plan-secondary-cta {
+  justify-self: start;
+  align-self: end;
+  min-width: 210px;
+  min-height: 46px;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.plan-secondary-cta {
+  color: vars.$color-primary-dark !important;
+  border-color: rgba(vars.$color-primary, 0.4) !important;
 }
 
 .plan-cta {
-  width: 200px;
-  min-height: 46px;
-  border-radius: 14px !important;
   color: #fff !important;
-  font-weight: 700 !important;
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%) !important;
@@ -142,6 +245,221 @@
   --mdc-circular-progress-active-indicator-color: #fff;
 }
 
+.plans-demo-section,
+.plans-comparison {
+  display: grid;
+  gap: 16px;
+}
+
+.demo-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 18px;
+  background: vars.$color-surface;
+}
+
+.demo-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: vars.$color-primary-dark;
+  background: rgba(vars.$color-primary, 0.12);
+}
+
+.demo-card-icon mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.demo-card h3,
+.demo-card p,
+.review-preview p {
+  margin: 0;
+}
+
+.demo-card h3 {
+  color: vars.$color-text;
+  font-size: 1.02rem;
+}
+
+.demo-card p {
+  min-height: 4.35em;
+  color: vars.$color-text-muted;
+  line-height: 1.45;
+}
+
+.review-preview p {
+  min-height: 0;
+}
+
+.catalog-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.catalog-meter span {
+  border-radius: 10px;
+  padding: 9px 10px;
+  color: vars.$color-text;
+  background: vars.$color-surface-subtle;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.catalog-meter span:last-child {
+  color: vars.$color-status-success-text;
+  background: vars.$color-status-success-bg;
+}
+
+.topic-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.topic-pill-list span {
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: vars.$color-primary-dark;
+  background: rgba(vars.$color-primary, 0.1);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.correction-preview,
+.catalog-preview,
+.review-preview {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  border-radius: 12px;
+  padding: 12px;
+  background: vars.$color-surface-subtle;
+}
+
+.preview-label {
+  color: vars.$color-text-muted;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.preview-pair,
+.review-preview-pair {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: vars.$color-text-muted;
+  font-weight: 700;
+}
+
+.preview-pair {
+  gap: 7px;
+}
+
+.preview-pair mark,
+.review-preview-pair span:first-child,
+.review-preview-pair span:last-child {
+  border-radius: 7px;
+  padding: 3px 7px;
+}
+
+.preview-pair mark,
+.review-preview-pair span:last-child {
+  color: #133e37;
+  background: rgba(vars.$color-accent-success, 0.18);
+}
+
+.preview-pair .preview-wrong {
+  color: #4f3810;
+  background: rgba(vars.$color-accent-highlight, 0.34);
+}
+
+.review-preview-pair span:first-child {
+  color: #4f3810;
+  background: rgba(vars.$color-accent-highlight, 0.34);
+}
+
+.review-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.review-preview-tag {
+  justify-self: start;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: vars.$color-primary-dark;
+  background: rgba(vars.$color-primary, 0.12);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.comparison-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid vars.$color-border-subtle;
+  border-radius: 14px;
+  background: vars.$color-surface;
+  box-shadow: vars.$shadow-elevation-low;
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  border-top: 1px solid vars.$color-border-subtle;
+}
+
+.comparison-row:first-child {
+  border-top: 0;
+}
+
+.comparison-row > div {
+  padding: 14px 16px;
+  color: vars.$color-text-muted;
+  line-height: 1.45;
+}
+
+.comparison-row > div:not(:first-child) {
+  border-left: 1px solid vars.$color-border-subtle;
+}
+
+.comparison-row > div:first-child,
+.comparison-row-header > div {
+  color: vars.$color-text;
+  font-weight: 800;
+}
+
+.comparison-row-header {
+  background: vars.$color-surface-subtle;
+}
+
+.comparison-row > div:nth-child(3) {
+  color: vars.$color-text;
+}
+
+.plans-error {
+  padding: 16px 18px;
+  background-color: rgba(vars.$color-accent-warning, 0.08);
+  border-color: rgba(vars.$color-accent-warning, 0.26);
+}
+
+.plans-error p {
+  margin: 0;
+}
+
 @keyframes plan-cta-loading-pulse {
   0% {
     box-shadow:
@@ -160,29 +478,89 @@
   }
 }
 
-.plans-error {
-  padding: 16px 18px;
-  background-color: rgba(vars.$color-accent-warning, 0.08);
-  border-color: rgba(vars.$color-accent-warning, 0.26);
+@media (max-width: 920px) {
+  .plan-cards,
+  .plans-demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card-pro {
+    order: -1;
+  }
 }
 
-.plans-error p {
-  margin: 0;
-}
-
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .plans-page {
     width: min(100%, calc(100% - 20px));
     margin-top: 20px;
+    gap: 22px;
   }
 
-  .plan-card {
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: 18px;
+  .plan-card,
+  .demo-card {
+    padding: 18px;
   }
 
-  .plan-cta {
+  .plan-card-header {
+    display: grid;
+  }
+
+  .plan-badge {
     justify-self: start;
+  }
+
+  .plan-cta,
+  .plan-secondary-cta {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .catalog-meter {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-table {
+    gap: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .comparison-row,
+  .comparison-row-header {
+    grid-template-columns: 1fr;
+    border: 1px solid vars.$color-border-subtle;
+    border-radius: 12px;
+    overflow: hidden;
+    background: vars.$color-surface;
+  }
+
+  .comparison-row {
+    margin-top: 10px;
+  }
+
+  .comparison-row-header {
+    display: none;
+  }
+
+  .comparison-row > div {
+    padding: 11px 14px;
+  }
+
+  .comparison-row > div:not(:first-child) {
+    border-left: 0;
+    border-top: 1px solid vars.$color-border-subtle;
+  }
+
+  .comparison-row > div:nth-child(2)::before {
+    content: 'Free: ';
+    color: vars.$color-text;
+    font-weight: 800;
+  }
+
+  .comparison-row > div:nth-child(3)::before {
+    content: 'Pro: ';
+    color: vars.$color-text;
+    font-weight: 800;
   }
 }

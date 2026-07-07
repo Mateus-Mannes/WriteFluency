@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PlansComponent } from './plans.component';
+import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { AuthSessionState } from '../auth/models/auth-session.model';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { CheckoutSessionResponse } from '../user/models/billing.model';
@@ -15,6 +16,7 @@ describe('PlansComponent', () => {
   let component: PlansComponent;
   let fixture: ComponentFixture<PlansComponent>;
   let billingApiSpy: jasmine.SpyObj<BillingApiService>;
+  let propositionsServiceSpy: jasmine.SpyObj<PropositionsService>;
   let browserServiceSpy: jasmine.SpyObj<BrowserService>;
   let insightsSpy: jasmine.SpyObj<Insights>;
   let router: Router;
@@ -28,7 +30,13 @@ describe('PlansComponent', () => {
       'createCheckoutSession',
       'createPortalSession',
     ]);
-    browserServiceSpy = jasmine.createSpyObj<BrowserService>('BrowserService', ['navigateTo']);
+    propositionsServiceSpy = jasmine.createSpyObj<PropositionsService>('PropositionsService', [
+      'apiPropositionExercisesGet',
+    ]);
+    browserServiceSpy = jasmine.createSpyObj<BrowserService>('BrowserService', [
+      'isBrowserEnvironment',
+      'navigateTo',
+    ]);
     insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException']);
     authSessionStoreMock = {
       state: signal({
@@ -63,6 +71,13 @@ describe('PlansComponent', () => {
     billingApiSpy.createPortalSession.and.returnValue(of({
       portalUrl: 'https://billing.stripe.test/session',
     }));
+    browserServiceSpy.isBrowserEnvironment.and.returnValue(true);
+    propositionsServiceSpy.apiPropositionExercisesGet.and.returnValue(of({
+      items: [],
+      totalCount: 2962,
+      pageNumber: 1,
+      pageSize: 1,
+    }) as any);
 
     await TestBed.configureTestingModule({
       imports: [PlansComponent],
@@ -70,6 +85,7 @@ describe('PlansComponent', () => {
         provideRouter([]),
         { provide: AuthSessionStore, useValue: authSessionStoreMock },
         { provide: BillingApiService, useValue: billingApiSpy },
+        { provide: PropositionsService, useValue: propositionsServiceSpy },
         { provide: BrowserService, useValue: browserServiceSpy },
         { provide: Insights, useValue: insightsSpy },
       ],
@@ -86,8 +102,57 @@ describe('PlansComponent', () => {
   it('should render initial Pro CTA', () => {
     const root: HTMLElement = fixture.nativeElement;
 
+    expect(root.textContent).toContain('Free');
     expect(root.textContent).toContain('Pro Monthly');
+    expect(root.textContent).toContain('Latest 18 exercises');
+    expect(root.textContent).toContain('2,900 exercises');
+    expect(root.textContent).toContain('Business');
+    expect(root.textContent).toContain('Politics');
+    expect(root.textContent).toContain('512 GB');
+    expect(root.textContent).toContain('Every day');
+    expect(root.textContent).toContain('word boundary');
+    expect(root.textContent).toContain('Refined correction highlights');
+    expect(root.textContent).toContain('Pro review');
     expect(root.textContent).toContain('Subscribe to Pro');
+  });
+
+  it('should load catalog count from existing exercises endpoint', fakeAsync(() => {
+    fixture.destroy();
+
+    fixture = TestBed.createComponent(PlansComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(propositionsServiceSpy.apiPropositionExercisesGet).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      1,
+      1,
+      'newest',
+      undefined
+    );
+    expect(component.catalogExerciseCount()).toBe(2900);
+
+    tick(700);
+    fixture.detectChanges();
+
+    expect(component.catalogExerciseCount()).toBe(2962);
+    expect(fixture.nativeElement.textContent).toContain('2,962 exercises');
+  }));
+
+  it('should show fallback catalog copy when catalog count fails', () => {
+    propositionsServiceSpy.apiPropositionExercisesGet.and.returnValue(throwError(() => new Error('offline')) as any);
+
+    const fallbackFixture = TestBed.createComponent(PlansComponent);
+    fallbackFixture.detectChanges();
+
+    expect(fallbackFixture.nativeElement.textContent).toContain('2,900 exercises');
+  });
+
+  it('should link free CTA to the exercise catalog', () => {
+    const freeCta = fixture.nativeElement.querySelector('.plan-secondary-cta') as HTMLAnchorElement;
+
+    expect(freeCta.getAttribute('href')).toBe('/exercises');
   });
 
   it('should show a portal management CTA for Pro users', () => {

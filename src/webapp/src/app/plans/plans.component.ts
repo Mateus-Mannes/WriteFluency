@@ -1,33 +1,40 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Insights } from '../../telemetry/insights.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { BrowserService } from '../core/services/browser.service';
 import { BillingApiService } from '../user/services/billing-api.service';
 
 const checkoutLoadingTimeoutMs = 8000;
+const catalogExerciseCountPlaceholder = 2900;
+const catalogCountAnimationDurationMs = 700;
 
 @Component({
   selector: 'app-plans',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatCardModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './plans.component.html',
   styleUrls: ['./plans.component.scss'],
 })
-export class PlansComponent implements OnDestroy {
+export class PlansComponent implements OnDestroy, OnInit {
   private readonly authSessionStore = inject(AuthSessionStore);
   private readonly billingApi = inject(BillingApiService);
+  private readonly propositionsService = inject(PropositionsService);
   private readonly browser = inject(BrowserService);
   private readonly router = inject(Router);
   private readonly insights = inject(Insights, { optional: true });
   private checkoutLoadingTimer: ReturnType<typeof setTimeout> | null = null;
+  private catalogCountAnimationFrameId: number | null = null;
 
   readonly authState = this.authSessionStore.state;
+  readonly catalogExerciseCount = signal(catalogExerciseCountPlaceholder);
   readonly checkoutError = signal<string | null>(null);
   readonly isCheckoutStarting = signal(false);
   private readonly isCheckoutRequestInProgress = signal(false);
@@ -47,11 +54,29 @@ export class PlansComponent implements OnDestroy {
 
     return null;
   });
+  readonly catalogCountLabel = computed(() => {
+    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(this.catalogExerciseCount());
+  });
+  readonly proCatalogFeatureLabel = computed(() => {
+    return `${this.catalogCountLabel()} exercises and growing`;
+  });
+  readonly proCatalogMeterLabel = computed(() => {
+    return `${this.catalogCountLabel()} with Pro`;
+  });
+
+  ngOnInit(): void {
+    this.loadCatalogExerciseCount();
+  }
 
   ngOnDestroy(): void {
     if (this.checkoutLoadingTimer) {
       clearTimeout(this.checkoutLoadingTimer);
       this.checkoutLoadingTimer = null;
+    }
+
+    if (this.catalogCountAnimationFrameId !== null && this.browser.isBrowserEnvironment()) {
+      window.cancelAnimationFrame(this.catalogCountAnimationFrameId);
+      this.catalogCountAnimationFrameId = null;
     }
   }
 
@@ -156,5 +181,66 @@ export class PlansComponent implements OnDestroy {
       day: 'numeric',
       year: 'numeric',
     }).format(date);
+  }
+
+  private loadCatalogExerciseCount(): void {
+    this.propositionsService.apiPropositionExercisesGet(
+      undefined,
+      undefined,
+      1,
+      1,
+      'newest',
+      undefined
+    ).subscribe({
+      next: response => {
+        if (typeof response.totalCount === 'number' && response.totalCount > 0) {
+          this.animateCatalogExerciseCount(response.totalCount);
+        }
+      },
+      error: error => {
+        this.insights?.trackException(error, {
+          properties: {
+            area: 'plans',
+            operation: 'plans_load_catalog_count',
+          },
+        });
+      },
+    });
+  }
+
+  private animateCatalogExerciseCount(targetCount: number): void {
+    const startCount = this.catalogExerciseCount();
+    if (startCount === targetCount) {
+      return;
+    }
+
+    if (!this.browser.isBrowserEnvironment() || typeof window.requestAnimationFrame !== 'function') {
+      this.catalogExerciseCount.set(targetCount);
+      return;
+    }
+
+    if (this.catalogCountAnimationFrameId !== null) {
+      window.cancelAnimationFrame(this.catalogCountAnimationFrameId);
+    }
+
+    const startedAt = Date.now();
+    const step = (): void => {
+      const elapsed = Date.now() - startedAt;
+      const progress = Math.min(1, elapsed / catalogCountAnimationDurationMs);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextCount = Math.round(startCount + ((targetCount - startCount) * easedProgress));
+
+      this.catalogExerciseCount.set(nextCount);
+
+      if (progress < 1) {
+        this.catalogCountAnimationFrameId = window.requestAnimationFrame(step);
+        return;
+      }
+
+      this.catalogExerciseCount.set(targetCount);
+      this.catalogCountAnimationFrameId = null;
+    };
+
+    this.catalogCountAnimationFrameId = window.requestAnimationFrame(step);
   }
 }

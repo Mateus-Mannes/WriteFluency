@@ -1,37 +1,238 @@
 <section class="plans-page">
   <header class="plans-header">
-    <p class="eyebrow">WriteFluency Pro</p>
-    <h1>Upgrade your writing practice</h1>
+    <p class="eyebrow">WriteFluency plans</p>
+    <h1>Choose how you want to practice</h1>
     <p>
-      Start Pro to unlock the paid exercise experience as it becomes available.
+      Start with the latest daily exercises for free, or upgrade to Pro for the
+      full catalog, cleaner correction highlights, and mistake explanations.
     </p>
   </header>
 
-  <mat-card class="plan-card">
-    <div class="plan-copy">
-      <p class="plan-name">Pro Monthly</p>
-      <p class="plan-price">$3<span>/month</span></p>
+  <section class="plan-cards" aria-label="Plan comparison">
+    <mat-card class="plan-card plan-card-free">
+      <div class="plan-card-header">
+        <div>
+          <p class="plan-name">Free</p>
+          <p class="plan-price">$0<span>/month</span></p>
+        </div>
+        <span class="plan-badge plan-badge-muted">Starter practice</span>
+      </div>
+
+      <p class="plan-summary">
+        Daily listening and writing practice with the newest exercises.
+      </p>
+
+      <ul class="plan-feature-list">
+        <li>
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          Latest 18 exercises
+        </li>
+        <li>
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          Standard correction highlights
+        </li>
+        <li class="plan-feature-muted">
+          <mat-icon aria-hidden="true">remove_circle</mat-icon>
+          No mistake-pattern review
+        </li>
+      </ul>
+
+      <a
+        mat-stroked-button
+        class="plan-secondary-cta"
+        routerLink="/exercises">
+        Browse free exercises
+      </a>
+    </mat-card>
+
+    <mat-card class="plan-card plan-card-pro">
+      <div class="plan-card-header">
+        <div>
+          <p class="plan-name">Pro Monthly</p>
+          <p class="plan-price">$3<span>/month</span></p>
+        </div>
+        <span class="plan-badge">Best for steady practice</span>
+      </div>
+
+      <p class="plan-summary">
+        Unlock the full WriteFluency experience and help keep the project alive.
+      </p>
+
       @if (planStatusMessage()) {
         <p class="plan-status">{{ planStatusMessage() }}</p>
       }
+
+      <ul class="plan-feature-list">
+        <li>
+          <mat-icon aria-hidden="true">workspace_premium</mat-icon>
+          Full catalog: {{ proCatalogFeatureLabel() }}
+        </li>
+        <li>
+          <mat-icon aria-hidden="true">auto_fix_high</mat-icon>
+          Refined correction highlights with less noise
+        </li>
+        <li>
+          <mat-icon aria-hidden="true">tips_and_updates</mat-icon>
+          Pro review with tags, explanations, and tips
+        </li>
+        <li>
+          <mat-icon aria-hidden="true">favorite</mat-icon>
+          Supports daily exercise generation and product hosting
+        </li>
+      </ul>
+
+      <button
+        mat-flat-button
+        class="plan-cta"
+        [class.plan-cta-loading]="isCheckoutStarting()"
+        [class.plan-cta-pro]="isPortalEligible()"
+        type="button"
+        [disabled]="isCheckoutDisabled()"
+        (click)="startCheckout()">
+        <span class="plan-cta__label">{{ planCtaLabel() }}</span>
+        @if (isCheckoutStarting()) {
+          <span class="plan-cta__loading" aria-hidden="true">
+            <mat-spinner diameter="20"></mat-spinner>
+          </span>
+        }
+      </button>
+    </mat-card>
+  </section>
+
+  <section class="plans-demo-section" aria-labelledby="plans-demo-title">
+    <div class="section-heading">
+      <p class="eyebrow">What Pro adds</p>
+      <h2 id="plans-demo-title">See the difference before you upgrade</h2>
     </div>
 
-    <button
-      mat-flat-button
-      class="plan-cta"
-      [class.plan-cta-loading]="isCheckoutStarting()"
-      [class.plan-cta-pro]="isPortalEligible()"
-      type="button"
-      [disabled]="isCheckoutDisabled()"
-      (click)="startCheckout()">
-      <span class="plan-cta__label">{{ planCtaLabel() }}</span>
-      @if (isCheckoutStarting()) {
-        <span class="plan-cta__loading" aria-hidden="true">
-          <mat-spinner diameter="20"></mat-spinner>
-        </span>
-      }
-    </button>
-  </mat-card>
+    <div class="plans-demo-grid">
+      <mat-card class="demo-card demo-card-catalog">
+        <div class="demo-card-icon" aria-hidden="true">
+          <mat-icon>library_books</mat-icon>
+        </div>
+        <h3>More exercises to choose from</h3>
+        <p>
+          Free keeps you focused on the newest daily set. Pro opens the catalog
+          across real news topics and every available level.
+        </p>
+        <div class="catalog-preview" aria-label="Catalog access preview">
+          <span class="preview-label">Topics included</span>
+          <div class="topic-pill-list" aria-label="Available topic examples">
+            <span>Business</span>
+            <span>Politics</span>
+            <span>Science</span>
+            <span>Tech</span>
+            <span>Sports</span>
+            <span>Health</span>
+          </div>
+          <div class="catalog-meter" aria-label="Catalog access comparison">
+            <span>up to 18 free today</span>
+            <span>{{ proCatalogMeterLabel() }}</span>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="demo-card">
+        <div class="demo-card-icon" aria-hidden="true">
+          <mat-icon>center_focus_strong</mat-icon>
+        </div>
+        <h3>Cleaner correction highlights</h3>
+        <p>
+          Pro ignores accepted listening variants, then narrows the highlight to
+          the words that actually need attention.
+        </p>
+        <div class="correction-preview" aria-label="Correction preview">
+          <span class="preview-label">Accepted variants</span>
+          <span class="preview-pair">
+            <mark>512 GB</mark>
+            <span aria-hidden="true">=</span>
+            <mark>512 gigabytes</mark>
+          </span>
+          <span class="preview-pair">
+            <mark>health care</mark>
+            <span aria-hidden="true">=</span>
+            <mark>healthcare</mark>
+          </span>
+          <span class="preview-label">Focused mistake</span>
+          <span class="preview-pair">
+            <mark class="preview-wrong">forwar</mark>
+            <span aria-hidden="true">&rarr;</span>
+            <mark>forward</mark>
+          </span>
+        </div>
+      </mat-card>
+
+      <mat-card class="demo-card">
+        <div class="demo-card-icon" aria-hidden="true">
+          <mat-icon>psychology</mat-icon>
+        </div>
+        <h3>Review mistakes as patterns</h3>
+        <p>
+          Pro turns final corrections into a list with learner-friendly tags and
+          short explanations.
+        </p>
+        <div class="review-preview" aria-label="Pro review preview">
+          <span class="review-preview-pair">
+            <span>Everyday</span>
+            <span aria-hidden="true">&rarr;</span>
+            <span>Every day</span>
+          </span>
+          <span class="review-preview-tags">
+            <span class="review-preview-tag">word boundary</span>
+          </span>
+          <p>
+            "Every day" (two words) means each day, while "everyday" (one word)
+            is an adjective meaning ordinary.
+          </p>
+        </div>
+      </mat-card>
+    </div>
+  </section>
+
+  <section class="plans-comparison" aria-labelledby="plans-comparison-title">
+    <div class="section-heading">
+      <p class="eyebrow">Free vs Pro</p>
+      <h2 id="plans-comparison-title">Compare what is included</h2>
+    </div>
+
+    <div class="comparison-table" role="table" aria-label="Free and Pro feature comparison">
+      <div class="comparison-row comparison-row-header" role="row">
+        <div role="columnheader">Feature</div>
+        <div role="columnheader">Free</div>
+        <div role="columnheader">Pro</div>
+      </div>
+
+      <div class="comparison-row" role="row">
+        <div role="cell">Exercise catalog</div>
+        <div role="cell">Latest 18 exercises</div>
+        <div role="cell">Full catalog with {{ proCatalogFeatureLabel() }}</div>
+      </div>
+
+      <div class="comparison-row" role="row">
+        <div role="cell">Topics and levels</div>
+        <div role="cell">Limited to the newest daily set</div>
+        <div role="cell">Browse every available topic and level</div>
+      </div>
+
+      <div class="comparison-row" role="row">
+        <div role="cell">Corrections</div>
+        <div role="cell">Standard text highlights</div>
+        <div role="cell">Refined highlights that reduce noisy comparison ranges</div>
+      </div>
+
+      <div class="comparison-row" role="row">
+        <div role="cell">Mistake review</div>
+        <div role="cell">Not included</div>
+        <div role="cell">Pattern list with tags, explanations, and linked highlights</div>
+      </div>
+
+      <div class="comparison-row" role="row">
+        <div role="cell">Project support</div>
+        <div role="cell">Use the daily free practice</div>
+        <div role="cell">Help fund exercise generation, hosting, and product improvements</div>
+      </div>
+    </div>
+  </section>
 
   @if (checkoutError()) {
     <mat-card class="plans-error" aria-live="assertive">
