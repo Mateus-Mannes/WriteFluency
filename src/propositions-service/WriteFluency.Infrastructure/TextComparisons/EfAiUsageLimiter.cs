@@ -32,14 +32,20 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
         var now = DateTimeOffset.UtcNow;
         var dailyPeriodKey = now.ToString("yyyy-MM-dd");
         var monthlyPeriodKey = now.ToString("yyyy-MM");
+        const string lifetimePeriodKey = "all";
+        var policy = request.Policy ?? _options.CreateDefaultPolicy();
+        var periods = GetPolicyPeriods(
+            policy,
+            dailyPeriodKey,
+            monthlyPeriodKey,
+            lifetimePeriodKey);
 
         if (!_options.Enabled)
         {
             return AiUsageReservation.Allowed(
                 request.UserId,
                 request.Feature,
-                dailyPeriodKey,
-                monthlyPeriodKey);
+                periods);
         }
 
         return await _dbContext.Database
@@ -51,37 +57,29 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
                     await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                     try
                     {
-                        var dailyCounter = await GetOrCreateLockedCounterAsync(
+                        var counters = await GetOrCreateLockedCountersAsync(
                             request.UserId,
                             request.Feature,
-                            AiUsagePeriodKinds.Day,
-                            dailyPeriodKey,
-                            now,
-                            cancellationToken);
-                        var monthlyCounter = await GetOrCreateLockedCounterAsync(
-                            request.UserId,
-                            request.Feature,
-                            AiUsagePeriodKinds.Month,
-                            monthlyPeriodKey,
+                            periods,
                             now,
                             cancellationToken);
 
                         var denial = GetLimitDenial(
                             request,
-                            dailyPeriodKey,
-                            monthlyPeriodKey,
-                            dailyCounter,
-                            monthlyCounter);
+                            periods,
+                            policy,
+                            counters);
                         if (denial is not null)
                         {
                             await transaction.CommitAsync(cancellationToken);
                             return denial;
                         }
 
-                        dailyCounter.ReservedRequestCount++;
-                        monthlyCounter.ReservedRequestCount++;
-                        dailyCounter.UpdatedAtUtc = now;
-                        monthlyCounter.UpdatedAtUtc = now;
+                        foreach (var counter in counters.Values)
+                        {
+                            counter.ReservedRequestCount++;
+                            counter.UpdatedAtUtc = now;
+                        }
 
                         await _dbContext.SaveChangesAsync(cancellationToken);
                         await transaction.CommitAsync(cancellationToken);
@@ -89,8 +87,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
                         return AiUsageReservation.Allowed(
                             request.UserId,
                             request.Feature,
-                            dailyPeriodKey,
-                            monthlyPeriodKey);
+                            periods);
                     }
                     catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex) && attempt < MaxReservationAttempts)
                     {
@@ -134,23 +131,17 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
                 {
                     await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                     var now = DateTimeOffset.UtcNow;
-                    var dailyCounter = await GetOrCreateLockedCounterAsync(
+                    var counters = await GetOrCreateLockedCountersAsync(
                         reservation.UserId,
                         reservation.Feature,
-                        AiUsagePeriodKinds.Day,
-                        reservation.DailyPeriodKey,
-                        now,
-                        cancellationToken);
-                    var monthlyCounter = await GetOrCreateLockedCounterAsync(
-                        reservation.UserId,
-                        reservation.Feature,
-                        AiUsagePeriodKinds.Month,
-                        reservation.MonthlyPeriodKey,
+                        reservation.Periods,
                         now,
                         cancellationToken);
 
-                    ApplyOutcome(dailyCounter, completion, isFailure, now);
-                    ApplyOutcome(monthlyCounter, completion, isFailure, now);
+                    foreach (var counter in counters.Values)
+                    {
+                        ApplyOutcome(counter, completion, isFailure, now);
+                    }
 
                     await _dbContext.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
@@ -207,44 +198,105 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
         return counter;
     }
 
+    private async Task<Dictionary<string, AiUsageCounter>> GetOrCreateLockedCountersAsync(
+        string userId,
+        string feature,
+        IReadOnlyList<AiUsageReservationPeriod> periods,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var counters = new Dictionary<string, AiUsageCounter>(StringComparer.Ordinal);
+        foreach (var period in periods)
+        {
+            counters[period.PeriodKind] = await GetOrCreateLockedCounterAsync(
+                userId,
+                feature,
+                period.PeriodKind,
+                period.PeriodKey,
+                now,
+                cancellationToken);
+        }
+
+        return counters;
+    }
+
     private AiUsageReservation? GetLimitDenial(
         AiUsageReservationRequest request,
-        string dailyPeriodKey,
-        string monthlyPeriodKey,
-        AiUsageCounter dailyCounter,
-        AiUsageCounter monthlyCounter)
+        IReadOnlyList<AiUsageReservationPeriod> periods,
+        AiUsageLimitPolicy policy,
+        IReadOnlyDictionary<string, AiUsageCounter> counters)
     {
-        if (dailyCounter.ReservedRequestCount >= _options.DailySubmissionLimit)
+        if (policy.DailySubmissionLimit is int dailyLimit
+            && counters.TryGetValue(AiUsagePeriodKinds.Day, out var dailyCounter)
+            && dailyCounter.ReservedRequestCount >= dailyLimit)
         {
             return AiUsageReservation.Denied(
                 "daily_limit_exceeded",
                 request.UserId,
                 request.Feature,
-                dailyPeriodKey,
-                monthlyPeriodKey);
+                periods);
         }
 
-        if (monthlyCounter.ReservedRequestCount >= _options.MonthlySubmissionLimit)
+        if (policy.MonthlySubmissionLimit is int monthlyLimit
+            && counters.TryGetValue(AiUsagePeriodKinds.Month, out var monthlyCounter)
+            && monthlyCounter.ReservedRequestCount >= monthlyLimit)
         {
             return AiUsageReservation.Denied(
                 "monthly_limit_exceeded",
                 request.UserId,
                 request.Feature,
-                dailyPeriodKey,
-                monthlyPeriodKey);
+                periods);
         }
 
-        if (monthlyCounter.EstimatedCostUsd >= _options.MonthlyEstimatedCostLimitUsd)
+        if (policy.MonthlyEstimatedCostLimitUsd is decimal monthlyCostLimit
+            && counters.TryGetValue(AiUsagePeriodKinds.Month, out monthlyCounter)
+            && monthlyCounter.EstimatedCostUsd >= monthlyCostLimit)
         {
             return AiUsageReservation.Denied(
                 "monthly_cost_limit_exceeded",
                 request.UserId,
                 request.Feature,
-                dailyPeriodKey,
-                monthlyPeriodKey);
+                periods);
+        }
+
+        if (policy.LifetimeSubmissionLimit is int lifetimeLimit
+            && counters.TryGetValue(AiUsagePeriodKinds.Lifetime, out var lifetimeCounter)
+            && lifetimeCounter.ReservedRequestCount >= lifetimeLimit)
+        {
+            return AiUsageReservation.Denied(
+                "lifetime_limit_exceeded",
+                request.UserId,
+                request.Feature,
+                periods);
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<AiUsageReservationPeriod> GetPolicyPeriods(
+        AiUsageLimitPolicy policy,
+        string dailyPeriodKey,
+        string monthlyPeriodKey,
+        string lifetimePeriodKey)
+    {
+        var periods = new List<AiUsageReservationPeriod>();
+        if (policy.DailySubmissionLimit is not null)
+        {
+            periods.Add(new AiUsageReservationPeriod(AiUsagePeriodKinds.Day, dailyPeriodKey));
+        }
+
+        if (policy.MonthlySubmissionLimit is not null
+            || policy.MonthlyEstimatedCostLimitUsd is not null)
+        {
+            periods.Add(new AiUsageReservationPeriod(AiUsagePeriodKinds.Month, monthlyPeriodKey));
+        }
+
+        if (policy.LifetimeSubmissionLimit is not null)
+        {
+            periods.Add(new AiUsageReservationPeriod(AiUsagePeriodKinds.Lifetime, lifetimePeriodKey));
+        }
+
+        return periods;
     }
 
     private void ApplyOutcome(

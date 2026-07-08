@@ -1,5 +1,7 @@
 @use '../../styles/variables' as vars;
 
+$results-desktop-height: 600px;
+
 // Background gradient for the entire page
 :host {
     min-height: calc(100vh - vars.$nav-bar-height);
@@ -311,7 +313,8 @@
 .container app-exercise-section,
 .container app-exercise-results-section,
 .container app-news-highlighted-text,
-.container app-mistake-pattern-review {
+.container app-mistake-pattern-review,
+.container .exercise-highlighted-texts {
     display: block;
     width: 100%;
 }
@@ -414,7 +417,7 @@
     grid-template-areas:
         "exercise-results-section  news-info"
         "exercise-results-section  news-audio"
-        "exercise-user-text  exercise-original-text"
+        "exercise-highlighted-texts exercise-highlighted-texts"
         "mistake-pattern-review-panel mistake-pattern-review-panel"
         "exercise-results-actions  exercise-results-actions";
 
@@ -434,6 +437,22 @@
         justify-self: end;
         align-self: stretch;
         height: 100%;
+    }
+
+    .exercise-highlighted-texts {
+        grid-area: exercise-highlighted-texts;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "exercise-user-text exercise-original-text";
+        column-gap: 1rem;
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+    }
+
+    .exercise-highlighted-texts > app-news-highlighted-text {
+        max-width: 500px;
+        width: 100%;
     }
 
     .exercise-original-text {
@@ -551,12 +570,12 @@
         align-self: center;
         width: min(calc(100vw - 3rem), 1032px);
         box-sizing: border-box;
-        height: min(650px, calc(100dvh - #{vars.$nav-bar-height} - 2rem));
+        height: min(#{$results-desktop-height}, calc(100dvh - #{vars.$nav-bar-height} - 0.75rem));
         min-height: 0;
         margin-top: 0;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        grid-template-rows: auto auto minmax(0, 1fr) minmax(3.25rem, auto);
     }
 
     .exercise-results-container.exercise-results-container--with-review {
@@ -566,7 +585,7 @@
         grid-template-areas:
             "exercise-results-section  news-info              mistake-pattern-review-panel"
             "exercise-results-section  news-audio             mistake-pattern-review-panel"
-            "exercise-user-text        exercise-original-text mistake-pattern-review-panel"
+            "exercise-highlighted-texts exercise-highlighted-texts mistake-pattern-review-panel"
             "exercise-results-actions  exercise-results-actions mistake-pattern-review-panel";
         column-gap: 1rem;
         row-gap: 0.75rem;
@@ -577,17 +596,41 @@
         max-width: none;
     }
 
+    .exercise-results-container.exercise-results-container--with-review .exercise-highlighted-texts {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        max-width: none;
+    }
+
+    .exercise-results-container.exercise-results-container--with-review .exercise-highlighted-texts > app-news-highlighted-text {
+        max-width: none;
+    }
+
     .exercise-results-container {
+        .exercise-highlighted-texts {
+            height: 100%;
+            min-height: 0;
+        }
+
         .exercise-user-text,
         .exercise-original-text {
             height: 100%;
             min-height: 0;
             --highlighted-text-height: 100%;
+            --highlighted-text-font-size: 0.84rem;
+            --highlighted-text-line-height: 1.45;
+            --highlighted-text-padding: 12px 14px;
+        }
+
+        .exercise-results-actions {
+            align-self: center;
+            min-height: 3.25rem;
+            margin-top: 0;
         }
     }
 
     .exercise-results-container.exercise-results-container--with-review {
         .exercise-results-section,
+        .exercise-highlighted-texts,
         .exercise-user-text,
         .exercise-original-text,
         .exercise-results-actions {
@@ -606,7 +649,7 @@
             height: 100%;
             min-height: 0;
             margin-top: 0;
-            --mistake-pattern-review-max-height: min(620px, calc(100dvh - #{vars.$nav-bar-height} - 4rem));
+            --mistake-pattern-review-max-height: min(#{$results-desktop-height}, calc(100dvh - #{vars.$nav-bar-height} - 0.75rem));
             --mistake-pattern-list-max-height: none;
         }
     }
@@ -667,6 +710,7 @@
     .exercise-results-container .news-info,
     .exercise-results-container .news-audio,
     .exercise-results-container .exercise-results-section,
+    .exercise-results-container .exercise-highlighted-texts,
     .exercise-results-container .exercise-original-text,
     .exercise-results-container .exercise-user-text,
     .exercise-results-container .mistake-pattern-review-panel,
@@ -707,13 +751,24 @@
             "news-info"
             "news-audio"
             "exercise-results-section"
-            "exercise-user-text"
-            "exercise-original-text"
+            "exercise-highlighted-texts"
             "mistake-pattern-review-panel"
             "exercise-results-actions";
     }
 
     .exercise-results-container {
+        .exercise-highlighted-texts {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "exercise-user-text"
+                "exercise-original-text";
+            gap: 1rem;
+        }
+
+        .exercise-highlighted-texts > app-news-highlighted-text {
+            max-width: 100%;
+        }
+
         .exercise-results-actions {
             justify-self: stretch;
             flex-direction: column;

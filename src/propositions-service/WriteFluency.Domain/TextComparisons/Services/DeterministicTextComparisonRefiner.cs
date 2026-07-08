@@ -5,7 +5,9 @@ public sealed class DeterministicTextComparisonRefiner
     private const string BoundaryRefinementReasonCode =
         "deterministic_boundary_refinement";
     private const int MaxAnchorWords = 4;
+    private const int MaxEquivalentEdgeWords = 6;
     private const int MaxFunctionAnchorPhraseWords = 4;
+    private const int MaxSplitCandidateWordPairs = 2500;
 
     private readonly DeterministicTextEquivalenceService _equivalenceService;
 
@@ -434,12 +436,19 @@ public sealed class DeterministicTextComparisonRefiner
         match = new EdgeMatch(0, 0);
         var bestScore = 0;
 
+        var maxOriginalCount = Math.Min(
+            MaxEquivalentEdgeWords,
+            originalWords.Count - 1);
+        var maxUserCount = Math.Min(
+            MaxEquivalentEdgeWords,
+            userWords.Count - 1);
+
         for (var originalCount = 1;
-             originalCount < originalWords.Count;
+             originalCount <= maxOriginalCount;
              originalCount++)
         {
             for (var userCount = 1;
-                 userCount < userWords.Count;
+                 userCount <= maxUserCount;
                  userCount++)
             {
                 var originalRange = fromStart
@@ -551,6 +560,12 @@ public sealed class DeterministicTextComparisonRefiner
         var userWords = TextRangeNavigator.GetWords(
             userText,
             range.UserTextRange);
+
+        if ((long)originalWords.Count * userWords.Count
+            > MaxSplitCandidateWordPairs)
+        {
+            return false;
+        }
 
         SplitAnchor? best = null;
         var bestScore = 0;

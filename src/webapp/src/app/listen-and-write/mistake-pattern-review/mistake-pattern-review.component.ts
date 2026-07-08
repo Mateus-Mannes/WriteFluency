@@ -19,16 +19,71 @@ interface MistakePatternRow {
   styleUrl: './mistake-pattern-review.component.scss',
 })
 export class MistakePatternReviewComponent {
+  private static readonly maxTextPairSnippetLength = 84;
+
   result = input<TextComparisonResult | null>(null);
   activeComparisonIndex = input<number | null>(null);
 
   activeComparisonIndexChange = output<number | null>();
   pinnedComparisonIndexChange = output<number | null>();
+  loginToUnlockClick = output<void>();
+  upgradeToProClick = output<void>();
 
   readonly selectedTag = signal<string | null>(null);
+  readonly mockRows: MistakePatternRow[] = [
+    {
+      comparisonIndex: -1,
+      sourceComparisonIndex: -1,
+      tags: ['word_boundary'],
+      studentPhrase: '"Every day" (two words) means each day, while "everyday" (one word) is an adjective meaning ordinary.',
+      originalText: 'Every day',
+      userText: 'Everyday',
+    },
+    {
+      comparisonIndex: -2,
+      sourceComparisonIndex: -2,
+      tags: ['spelling'],
+      studentPhrase: '"Forward" is missing the final "d" in your version, so be sure to include all the letters of the word.',
+      originalText: 'forward',
+      userText: 'forwar',
+    },
+    {
+      comparisonIndex: -3,
+      sourceComparisonIndex: -3,
+      tags: ['missing_or_extra_word'],
+      studentPhrase: 'The original uses the full phrase "new ways," so leaving out "new" changes the meaning and makes the idea less specific.',
+      originalText: 'new ways',
+      userText: 'ways',
+    },
+  ];
 
   readonly isUsageLimitSkipped = computed(() =>
     this.result()?.mistakePatternStatus === 'skipped_usage_limit');
+
+  readonly isLoginRequired = computed(() =>
+    this.result()?.mistakePatternStatus === 'login_required_to_unlock_review');
+
+  readonly isUpgradeRequired = computed(() =>
+    this.result()?.mistakePatternStatus === 'upgrade_required_to_unlock_review');
+
+  private readonly mistakePatternStatus = computed(() =>
+    this.result()?.mistakePatternStatus ?? 'not_applicable');
+
+  readonly shouldShowNoCorrections = computed(() =>
+    (this.mistakePatternStatus() === 'generated'
+      || this.mistakePatternStatus() === 'not_applicable')
+    && this.rows().length === 0);
+
+  readonly shouldShowNoUserText = computed(() =>
+    this.mistakePatternStatus() === 'not_applicable'
+    && this.result()?.userText !== undefined
+    && !this.result()?.userText?.trim());
+
+  readonly isPerfectResult = computed(() =>
+    (this.result()?.accuracyPercentage ?? 0) >= 0.999);
+
+  readonly shouldShowLockedMock = computed(() =>
+    this.isLoginRequired() || this.isUpgradeRequired());
 
   readonly usageLimitMessage = computed(() =>
     this.result()?.mistakePatternMessage?.trim()
@@ -94,6 +149,10 @@ export class MistakePatternReviewComponent {
   }
 
   togglePinnedComparison(comparisonIndex: number): void {
+    if (comparisonIndex < 0) {
+      return;
+    }
+
     this.pinnedComparisonIndexChange.emit(comparisonIndex);
   }
 
@@ -103,5 +162,22 @@ export class MistakePatternReviewComponent {
 
   formatTag(tag: string): string {
     return tag.replaceAll('_', ' ');
+  }
+
+  formatTextPairSnippet(text: string): string {
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+    if (normalizedText.length <= MistakePatternReviewComponent.maxTextPairSnippetLength) {
+      return normalizedText;
+    }
+
+    return `${normalizedText.slice(0, MistakePatternReviewComponent.maxTextPairSnippetLength - 1).trimEnd()}…`;
+  }
+
+  onLoginToUnlockClick(): void {
+    this.loginToUnlockClick.emit();
+  }
+
+  onUpgradeToProClick(): void {
+    this.upgradeToProClick.emit();
   }
 }

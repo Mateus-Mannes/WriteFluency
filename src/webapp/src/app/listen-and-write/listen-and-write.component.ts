@@ -27,6 +27,8 @@ import { ExerciseSeoService } from './services/exercise-seo.service';
 import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
 import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
 import { GuestExerciseLoginPromptService } from './services/guest-exercise-login-prompt.service';
+import { ProReviewPendingRequestService } from './services/pro-review-pending-request.service';
+import { ResultsTourService } from './services/results-tour.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
@@ -71,6 +73,8 @@ export class ListenAndWriteComponent implements OnDestroy {
   private readonly exerciseSubmission = inject(ExerciseSubmissionService);
   private readonly guestProgressTransfer = inject(GuestExerciseProgressTransferService);
   private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
+  private readonly proReviewPendingRequest = inject(ProReviewPendingRequestService);
+  private readonly resultsTourService = inject(ResultsTourService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
@@ -107,7 +111,23 @@ export class ListenAndWriteComponent implements OnDestroy {
       return false;
     }
 
-    if (result.mistakePatternStatus === 'skipped_usage_limit') {
+    const mistakePatternStatus = result.mistakePatternStatus ?? 'not_applicable';
+
+    if (mistakePatternStatus === 'generated'
+        || mistakePatternStatus === 'skipped_usage_limit'
+        || mistakePatternStatus === 'login_required_to_unlock_review'
+        || mistakePatternStatus === 'upgrade_required_to_unlock_review') {
+      return true;
+    }
+
+    if (mistakePatternStatus === 'not_applicable'
+        && (result.comparisons ?? []).length === 0
+        && (result.accuracyPercentage ?? 0) >= 0.999) {
+      return true;
+    }
+
+    if (mistakePatternStatus === 'not_applicable'
+        && !result.userText?.trim()) {
       return true;
     }
 
@@ -150,6 +170,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
   private tutorialVideoSource: tutorialVideoConfig.TutorialVideoSource | null = null;
   private hasHydrated = false;
+  private pendingProReviewRestoreInFlight = false;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -240,6 +261,14 @@ export class ListenAndWriteComponent implements OnDestroy {
       queueMicrotask(() => this.stateAnimEnabled.set(true));
       void this.restoreExerciseState();
     });
+
+    effect(() => {
+      const isAuthenticated = this.authSessionStore.isAuthenticated();
+      const hasReliableSessionState = this.authSessionStore.hasReliableSessionState();
+      if (isAuthenticated && hasReliableSessionState) {
+        queueMicrotask(() => this.tryRestorePendingProReviewRequest());
+      }
+    });
   }
 
   private getInitialPropositionFromState(): Proposition | null {
@@ -283,6 +312,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.exerciseSeo.applyExerciseSeo(id, data);
         this.syncCompletedResultAfterRestoreIfNeeded(data);
         this.tryResolveAudioAccessAfterHydration();
+        this.tryRestorePendingProReviewRequest();
       },
       error: (error) => {
         if (this.exerciseId !== id) {
@@ -608,12 +638,116 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     this.userText.set(submittedUserText);
     this.result.set(result);
+    this.trackProReviewCtaShownIfNeeded(result);
     this.activeMistakePatternComparisonIndex.set(null);
     this.pinnedMistakePatternComparisonIndex.set(null);
     this.exerciseProgressTracking.trackComplete(proposition, result);
     this.onSaveExerciseState();
     this.setNewState('results');
     this.browserService.scrollToTop();
+    this.scheduleAnonymousSampleResultsTour(result);
+  }
+
+  private scheduleAnonymousSampleResultsTour(result: TextComparisonResult): void {
+    if (!this.browserService.isBrowserEnvironment()) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      window.setTimeout(() => {
+        this.resultsTourService.maybeStartAnonymousSampleTour(
+          result,
+          this.authSessionStore.isAuthenticated(),
+          this.isMobileLayout());
+      }, 0);
+    });
+  }
+
+  private trackProReviewCtaShownIfNeeded(result: TextComparisonResult): void {
+    const status = result.mistakePatternStatus;
+    const ctaType = status === 'login_required_to_unlock_review'
+      ? 'login_to_unlock'
+      : status === 'upgrade_required_to_unlock_review'
+        ? 'upgrade_to_pro'
+        : status === 'skipped_usage_limit'
+          ? 'usage_limit'
+          : null;
+    if (!ctaType) {
+      return;
+    }
+
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_shown', {
+      cta_type: ctaType,
+      exercise_id: String(this.exerciseId ?? ''),
+      review_status: status ?? '',
+    }, {
+      comparison_count: result.comparisons?.length ?? 0,
+    });
+  }
+
+  private tryRestorePendingProReviewRequest(): void {
+    if (this.pendingProReviewRestoreInFlight
+        || !this.exerciseId
+        || !this.proposition()
+        || !this.authSessionStore.hasReliableSessionState()
+        || !this.authSessionStore.isAuthenticated()) {
+      return;
+    }
+
+    const pendingRequest = this.proReviewPendingRequest.peek();
+    if (!pendingRequest || pendingRequest.exerciseId !== this.exerciseId) {
+      return;
+    }
+
+    const isExpired = this.proReviewPendingRequest.isExpired(pendingRequest);
+    this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_attempted', {
+      exercise_id: String(this.exerciseId),
+      source: pendingRequest.source,
+      is_expired: String(isExpired),
+      has_draft_user_text: String(Boolean(pendingRequest.draftUserText.trim())),
+    });
+
+    if (isExpired || !pendingRequest.draftUserText.trim()) {
+      this.proReviewPendingRequest.clear();
+      this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_expired', {
+        exercise_id: String(this.exerciseId),
+        source: pendingRequest.source,
+      });
+      return;
+    }
+
+    const consumedRequest = this.proReviewPendingRequest.consumeForExercise(this.exerciseId);
+    if (!consumedRequest) {
+      return;
+    }
+
+    this.pendingProReviewRestoreInFlight = true;
+    this.userText.set(consumedRequest.draftUserText);
+    this.exerciseSubmission.submit({
+      proposition: this.proposition(),
+      exerciseId: this.exerciseId,
+      submittedUserText: consumedRequest.draftUserText,
+      exerciseTimeUsedMs: null,
+      onSuccess: (result, finalSubmittedUserText) => {
+        this.pendingProReviewRestoreInFlight = false;
+        this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_completed', {
+          exercise_id: String(this.exerciseId ?? ''),
+          review_status: result.mistakePatternStatus ?? '',
+        });
+        this.applySubmitSuccess(
+          this.proposition(),
+          result,
+          finalSubmittedUserText);
+      },
+      onProRequired: () => {
+        this.pendingProReviewRestoreInFlight = false;
+        this.openProUpgradeModal();
+      },
+      onFailure: () => {
+        this.pendingProReviewRestoreInFlight = false;
+        alert('Unable to unlock your Pro review. Please try again.');
+      },
+    });
   }
 
   private getSubmitWarningMessage(): string | null {
@@ -688,6 +822,47 @@ export class ListenAndWriteComponent implements OnDestroy {
       queryParams: {
         returnUrl,
         source: 'results_save_cta',
+      }
+    });
+  }
+
+  onProReviewLoginToUnlock(): void {
+    if (!this.exerciseId) {
+      return;
+    }
+
+    const returnUrl = this.getPostLoginReturnUrl();
+    this.proReviewPendingRequest.save(
+      this.exerciseId,
+      this.userText(),
+      returnUrl);
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_clicked', {
+      cta_type: 'login_to_unlock',
+      exercise_id: String(this.exerciseId),
+      review_status: this.result()?.mistakePatternStatus ?? '',
+      return_url_present: 'true',
+    });
+
+    void this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl,
+        source: 'pro_review_login_cta',
+      }
+    });
+  }
+
+  onProReviewUpgradeToPro(): void {
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_clicked', {
+      cta_type: 'upgrade_to_pro',
+      exercise_id: String(this.exerciseId ?? ''),
+      review_status: this.result()?.mistakePatternStatus ?? '',
+      return_url_present: 'true',
+    });
+
+    void this.router.navigate(['/plans'], {
+      queryParams: {
+        source: 'pro_review_upgrade_cta',
+        returnUrl: this.getPostLoginReturnUrl(),
       }
     });
   }

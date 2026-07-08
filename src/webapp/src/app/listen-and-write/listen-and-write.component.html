@@ -105,30 +105,37 @@
     }
 
     @if(exerciseState() === 'results') {
-        <app-exercise-results-section [result]="result()" class="exercise-results-section">
+        <app-exercise-results-section id="results-summary-panel" [result]="result()" class="exercise-results-section">
         </app-exercise-results-section>
 
-        <app-news-highlighted-text
-            class="exercise-original-text"
-            [textType]="'original'"
-            [result]="result()"
-            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
-        </app-news-highlighted-text>
-        
-        <app-news-highlighted-text
-            class="exercise-user-text"
-            [textType]="'user'"
-            [result]="result()"
-            [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
-        </app-news-highlighted-text>
+        <div id="results-highlighted-text-panels" class="exercise-highlighted-texts">
+            <app-news-highlighted-text
+                id="results-original-highlight-panel"
+                class="exercise-original-text"
+                [textType]="'original'"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+            </app-news-highlighted-text>
+            
+            <app-news-highlighted-text
+                id="results-user-highlight-panel"
+                class="exercise-user-text"
+                [textType]="'user'"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+            </app-news-highlighted-text>
+        </div>
 
         @if (shouldShowMistakePatternReview()) {
             <app-mistake-pattern-review
+                id="results-mistake-pattern-review-panel"
                 class="mistake-pattern-review-panel"
                 [result]="result()"
                 [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()"
                 (activeComparisonIndexChange)="onMistakePatternActiveComparisonChanged($event)"
-                (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)">
+                (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)"
+                (loginToUnlockClick)="onProReviewLoginToUnlock()"
+                (upgradeToProClick)="onProReviewUpgradeToPro()">
             </app-mistake-pattern-review>
         }
 

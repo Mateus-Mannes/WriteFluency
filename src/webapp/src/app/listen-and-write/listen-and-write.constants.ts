@@ -12,3 +12,6 @@ export const submitAudioRemainingToleranceSeconds = 10;
 export const submitMinLoadingMs = 2000;
 export const proRequiredAccess = 'pro_required';
 export const accessGranted = 'granted';
+export const proReviewPendingRequestStorageKey = 'wf.listen-write.pro-review-pending.v1';
+export const proReviewPendingRequestExpiryMs = 15 * 60 * 1000;
+export const anonymousSampleResultsTourStorageKey = 'wf.listen-write.results-tour.anonymous-sample.v1';

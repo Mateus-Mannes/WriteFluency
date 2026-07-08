@@ -42,6 +42,10 @@ builder.Services.AddOptions<AiUsageOptions>()
     .Bind(builder.Configuration.GetSection(AiUsageOptions.Section))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<ProReviewTeaserOptions>()
+    .Bind(builder.Configuration.GetSection(ProReviewTeaserOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
@@ -67,6 +71,8 @@ builder.Services.AddTransient<DeterministicTextEquivalenceService>();
 builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
 builder.Services.AddTransient<IMistakePatternClassifier, OpenAiMistakePatternClassifier>();
 builder.Services.AddTransient<IAiUsageLimiter, EfAiUsageLimiter>();
+builder.Services.AddTransient<ProReviewEligibilityService>();
+builder.Services.AddTransient<AnonymousProReviewFingerprintService>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();

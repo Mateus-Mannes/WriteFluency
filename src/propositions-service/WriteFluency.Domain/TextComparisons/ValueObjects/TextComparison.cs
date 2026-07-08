@@ -44,7 +44,7 @@ public class TextComparison
     : this(
         new TextRange(0, originalText.Length - 1),
         originalText,
-        new TextRange(0, userText.Length - 1),
+        new TextRange(0, userText.Length < 1 ? 0 : userText.Length - 1),
         userText)
     {
     }
@@ -67,6 +67,7 @@ public class TextComparisonResult
     public IReadOnlyList<CorrectionTraceEntry>? CorrectionTrace { get; set; }
     public string MistakePatternStatus { get; set; }
     public string? MistakePatternMessage { get; set; }
+    public string MistakePatternReviewSource { get; set; }
 
     public TextComparisonResult(
         string originalText,
@@ -76,7 +77,8 @@ public class TextComparisonResult
         string correctionMode = CorrectionModes.Static,
         IReadOnlyList<CorrectionTraceEntry>? correctionTrace = null,
         string mistakePatternStatus = MistakePatternStatuses.NotApplicable,
-        string? mistakePatternMessage = null)
+        string? mistakePatternMessage = null,
+        string mistakePatternReviewSource = MistakePatternReviewSources.None)
     {
         OriginalText = originalText;
         UserText = userText;
@@ -86,6 +88,7 @@ public class TextComparisonResult
         CorrectionTrace = correctionTrace;
         MistakePatternStatus = mistakePatternStatus;
         MistakePatternMessage = mistakePatternMessage;
+        MistakePatternReviewSource = mistakePatternReviewSource;
     }
 }
 

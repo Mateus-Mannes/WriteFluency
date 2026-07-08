@@ -9,6 +9,7 @@ import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { Insights } from '../../telemetry/insights.service';
 import { GuestExerciseProgressTransferService } from '../core/services/guest-exercise-progress-transfer.service';
 import { FeedbackService } from './services/feedback.service';
+import { ResultsTourService } from './services/results-tour.service';
 import { TextComparisonsService } from 'src/api/listen-and-write';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import * as constants from './listen-and-write.constants';
@@ -23,6 +24,7 @@ describe('ListenAndWriteComponent', () => {
   let textComparisonsServiceMock: jasmine.SpyObj<TextComparisonsService>;
   let propositionsServiceMock: jasmine.SpyObj<PropositionsService>;
   let insightsMock: jasmine.SpyObj<Insights>;
+  let resultsTourServiceMock: jasmine.SpyObj<ResultsTourService>;
   let exerciseProgressTrackingMock: {
     trackStart: jasmine.Spy;
     trackComplete: jasmine.Spy;
@@ -36,10 +38,15 @@ describe('ListenAndWriteComponent', () => {
     window.localStorage.removeItem(constants.listenWriteFirstTimeKey);
     window.localStorage.removeItem(constants.guestBeginAttemptCountStorageKey);
     window.localStorage.removeItem(constants.guestBeginLoginModalLastShownStorageKey);
+    window.localStorage.removeItem(constants.anonymousSampleResultsTourStorageKey);
 
     routeParams$ = new Subject<Record<string, unknown>>();
     progressSyncNotificationSignal = signal<any>(null);
     insightsMock = jasmine.createSpyObj<Insights>('Insights', ['trackException', 'trackEvent']);
+    resultsTourServiceMock = jasmine.createSpyObj<ResultsTourService>(
+      'ResultsTourService',
+      ['maybeStartAnonymousSampleTour'],
+    );
     authSessionStoreMock = jasmine.createSpyObj<AuthSessionStore>(
       'AuthSessionStore',
       [
@@ -127,6 +134,10 @@ describe('ListenAndWriteComponent', () => {
         {
           provide: FeedbackService,
           useValue: feedbackServiceMock,
+        },
+        {
+          provide: ResultsTourService,
+          useValue: resultsTourServiceMock,
         },
         {
           provide: TextComparisonsService,
@@ -417,6 +428,99 @@ describe('ListenAndWriteComponent', () => {
       propositionId: 60,
       userText: 'submitted text',
     });
+  });
+
+  it('should schedule anonymous sample results tour after generated Pro review result', fakeAsync(() => {
+    textComparisonsServiceMock.apiTextComparisonCompareTextsPost.and.returnValue(of({
+      originalText: 'They may be ready',
+      userText: 'They maybe ready',
+      comparisons: [
+        {
+          originalTextRange: { initialIndex: 5, finalIndex: 10 },
+          originalText: 'may be',
+          userTextRange: { initialIndex: 5, finalIndex: 10 },
+          userText: 'maybe',
+          sourceComparisonIndex: 0,
+          mistakePatternTags: ['word_boundary'],
+          mistakePatternPhrase: 'Spacing changes the meaning here.',
+        },
+      ],
+      accuracyPercentage: 0.75,
+      mistakePatternStatus: 'generated',
+      mistakePatternReviewSource: 'anonymous_sample',
+    } as any) as any);
+
+    component.exerciseId = 62;
+    (component as any).exerciseStartedAtMs = Date.now() - 1000;
+    component.proposition.set({ id: 62, title: 'Exercise 62' } as any);
+    component.exerciseSectionComponent = {
+      text: () => 'They maybe ready',
+    } as any;
+    component.newsAudioComponent = {
+      audioEnded: true,
+      pauseAudio: jasmine.createSpy('pauseAudio'),
+      resetAudioToStart: jasmine.createSpy('resetAudioToStart'),
+      audioRef: { nativeElement: { duration: 50, currentTime: 50 } },
+    } as any;
+
+    component.onExerciseSubmit();
+    tick(constants.submitMinLoadingMs);
+    tick(0);
+
+    expect(resultsTourServiceMock.maybeStartAnonymousSampleTour).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        mistakePatternStatus: 'generated',
+        mistakePatternReviewSource: 'anonymous_sample',
+      }),
+      false,
+      jasmine.any(Boolean));
+  }));
+
+  it('should keep the mistake-pattern review column for generated results with no comparisons', () => {
+    component.result.set({
+      originalText: 'The original text',
+      userText: 'The original text',
+      comparisons: [],
+      accuracyPercentage: 1,
+      mistakePatternStatus: 'generated',
+    } as any);
+
+    expect(component.shouldShowMistakePatternReview()).toBeTrue();
+  });
+
+  it('should keep the mistake-pattern review column for not-applicable perfect results with no comparisons', () => {
+    component.result.set({
+      originalText: 'The original text',
+      userText: 'The original text',
+      comparisons: [],
+      accuracyPercentage: 1,
+      mistakePatternStatus: 'not_applicable',
+    } as any);
+
+    expect(component.shouldShowMistakePatternReview()).toBeTrue();
+  });
+
+  it('should keep the mistake-pattern review column for blank user text results', () => {
+    component.result.set({
+      originalText: 'The original text',
+      userText: '',
+      comparisons: [],
+      accuracyPercentage: 0,
+      mistakePatternStatus: 'not_applicable',
+    } as any);
+
+    expect(component.shouldShowMistakePatternReview()).toBeTrue();
+  });
+
+  it('should keep the mistake-pattern review column for restored blank user text results without review status', () => {
+    component.result.set({
+      originalText: 'The original text',
+      userText: '',
+      comparisons: [],
+      accuracyPercentage: 0,
+    } as any);
+
+    expect(component.shouldShowMistakePatternReview()).toBeTrue();
   });
 
   it('should not pause or reset audio when submit opens the warning modal', () => {

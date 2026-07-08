@@ -831,6 +831,8 @@
           "mistakePatternStatus": {
             "enum": [
               "generated",
+              "login_required_to_unlock_review",
+              "upgrade_required_to_unlock_review",
               "skipped_usage_limit",
               "skipped_disabled",
               "classifier_failed",
@@ -840,6 +842,17 @@
             "nullable": true
           },
           "mistakePatternMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "mistakePatternReviewSource": {
+            "enum": [
+              "none",
+              "anonymous_sample",
+              "free_intro",
+              "free_monthly",
+              "pro_paid"
+            ],
             "type": "string",
             "nullable": true
           }

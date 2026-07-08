@@ -1,4 +1,5 @@
 using Shouldly;
+using Microsoft.Extensions.Options;
 using WriteFluency.TextComparisons;
 
 namespace WriteFluency.Application.Tests.TextComparisons;
@@ -184,6 +185,149 @@ public class CorrectionOrchestrationServiceTests
     }
 
     [Fact]
+    public async Task CompareTextsAsync_ForAnonymousUserWithSampleCredit_ShouldRunFullProReview()
+    {
+        var classifier = CreateSingleAnnotationClassifier();
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            new CorrectionOrchestrationRequest(
+                "They may be ready",
+                "They maybe ready",
+                IsAuthenticated: false,
+                IsPro: false,
+                UserId: null,
+                AnonymousFingerprintHash: "fingerprint-1",
+                EnableFreeReviewTeaser: true),
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(1);
+        usageLimiter.LastReservationRequest.ShouldNotBeNull();
+        usageLimiter.LastReservationRequest.Feature.ShouldBe(
+            AiUsageFeatures.MistakePatternClassificationAnonymousSample);
+        usageLimiter.LastReservationRequest.UserId.ShouldBe("anonymous:fingerprint-1");
+        result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.AnonymousSample);
+        result.Comparisons.Single().MistakePatternTags.ShouldBe(["word_boundary"]);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForAnonymousUserAfterSampleCredit_ShouldReturnLoginRequiredAndSkipClassifier()
+    {
+        var classifier = CreateSingleAnnotationClassifier();
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: false);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            new CorrectionOrchestrationRequest(
+                "They may be ready",
+                "They maybe ready",
+                IsAuthenticated: false,
+                IsPro: false,
+                UserId: null,
+                AnonymousFingerprintHash: "fingerprint-1",
+                EnableFreeReviewTeaser: true),
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(0);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.LoginRequiredToUnlockReview);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.None);
+        result.MistakePatternMessage.ShouldNotBeNull();
+        result.MistakePatternMessage.ShouldContain("Log in");
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForLoggedInFreeUserWithIntroCredit_ShouldRunFullProReview()
+    {
+        var classifier = CreateSingleAnnotationClassifier();
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            new CorrectionOrchestrationRequest(
+                "They may be ready",
+                "They maybe ready",
+                IsAuthenticated: true,
+                IsPro: false,
+                UserId: "user-1",
+                AnonymousFingerprintHash: null,
+                EnableFreeReviewTeaser: true),
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(1);
+        usageLimiter.LastReservationRequest.ShouldNotBeNull();
+        usageLimiter.LastReservationRequest.Feature.ShouldBe(
+            AiUsageFeatures.MistakePatternClassificationFreeIntro);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.FreeIntro);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForLoggedInFreeUserWithMonthlyCredit_ShouldUseMonthlyCreditAfterIntroIsUsed()
+    {
+        var classifier = CreateSingleAnnotationClassifier();
+        var usageLimiter = new RecordingAiUsageLimiter(
+            request => request.Feature == AiUsageFeatures.MistakePatternClassificationFreeMonthly);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            new CorrectionOrchestrationRequest(
+                "They may be ready",
+                "They maybe ready",
+                IsAuthenticated: true,
+                IsPro: false,
+                UserId: "user-1",
+                AnonymousFingerprintHash: null,
+                EnableFreeReviewTeaser: true),
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(1);
+        usageLimiter.ReservationRequests.Select(request => request.Feature).ShouldBe([
+            AiUsageFeatures.MistakePatternClassificationFreeIntro,
+            AiUsageFeatures.MistakePatternClassificationFreeMonthly
+        ]);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.FreeMonthly);
+    }
+
+    [Fact]
+    public async Task CompareTextsAsync_ForLoggedInFreeUserWithoutCredit_ShouldReturnUpgradeRequiredAndSkipClassifier()
+    {
+        var classifier = CreateSingleAnnotationClassifier();
+        var usageLimiter = new RecordingAiUsageLimiter(isAllowed: false);
+        var service = CreateService(
+            mistakePatternClassifier: classifier,
+            aiUsageLimiter: usageLimiter);
+
+        var result = (await service.CompareTextsAsync(
+            new CorrectionOrchestrationRequest(
+                "They may be ready",
+                "They maybe ready",
+                IsAuthenticated: true,
+                IsPro: false,
+                UserId: "user-1",
+                AnonymousFingerprintHash: null,
+                EnableFreeReviewTeaser: true),
+            CancellationToken.None)).Result;
+
+        classifier.CallCount.ShouldBe(0);
+        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.UpgradeRequiredToUnlockReview);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.None);
+        result.MistakePatternMessage.ShouldNotBeNull();
+        result.MistakePatternMessage.ShouldContain("Upgrade");
+    }
+
+    [Fact]
     public async Task CompareTextsAsync_ForProUser_WhenClassifierSucceeds_ShouldRecordUsageCompletion()
     {
         var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
@@ -210,6 +354,7 @@ public class CorrectionOrchestrationServiceTests
             CancellationToken.None)).Result;
 
         result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.ProPaid);
         usageLimiter.CompletedCount.ShouldBe(1);
         usageLimiter.LastCompletion.ShouldNotBeNull();
         usageLimiter.LastCompletion.InputTokenCount.ShouldBe(123);
@@ -233,6 +378,7 @@ public class CorrectionOrchestrationServiceTests
             CancellationToken.None)).Result;
 
         result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.ClassifierFailed);
+        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.None);
         result.MistakePatternMessage.ShouldNotBeNullOrWhiteSpace();
         usageLimiter.CompletedCount.ShouldBe(0);
         usageLimiter.FailedCount.ShouldBe(1);
@@ -276,11 +422,15 @@ public class CorrectionOrchestrationServiceTests
         IMistakePatternClassifier? mistakePatternClassifier = null,
         IAiUsageLimiter? aiUsageLimiter = null)
     {
+        var usageLimiter = aiUsageLimiter ?? new RecordingAiUsageLimiter(isAllowed: true);
         return new CorrectionOrchestrationService(
             CreateTextComparisonService(),
             CreateDeterministicRefiner(),
             mistakePatternClassifier ?? new EmptyMistakePatternClassifier(),
-            aiUsageLimiter ?? new RecordingAiUsageLimiter(isAllowed: true));
+            usageLimiter,
+            new ProReviewEligibilityService(
+                usageLimiter,
+                Options.Create(new ProReviewTeaserOptions())));
     }
 
     private static DeterministicTextComparisonRefiner CreateDeterministicRefiner() =>
@@ -298,6 +448,16 @@ public class CorrectionOrchestrationServiceTests
                 new TokenAlignmentService()),
             new TokenComparisonService());
     }
+
+    private static RecordingMistakePatternClassifier CreateSingleAnnotationClassifier() =>
+        new(_ =>
+        [
+            new MistakePatternAnnotation(
+                0,
+                0,
+                ["word_boundary"],
+                "Word spacing changes the meaning here.")
+        ]);
 
     private sealed class RecordingMistakePatternClassifier : IMistakePatternClassifier
     {
@@ -361,14 +521,21 @@ public class CorrectionOrchestrationServiceTests
 
     private sealed class RecordingAiUsageLimiter : IAiUsageLimiter
     {
-        private readonly bool _isAllowed;
+        private readonly Func<AiUsageReservationRequest, bool> _isAllowed;
 
         public int ReservationCount { get; private set; }
         public int CompletedCount { get; private set; }
         public int FailedCount { get; private set; }
         public AiUsageCompletion? LastCompletion { get; private set; }
+        public AiUsageReservationRequest? LastReservationRequest { get; private set; }
+        public List<AiUsageReservationRequest> ReservationRequests { get; } = [];
 
         public RecordingAiUsageLimiter(bool isAllowed)
+        {
+            _isAllowed = _ => isAllowed;
+        }
+
+        public RecordingAiUsageLimiter(Func<AiUsageReservationRequest, bool> isAllowed)
         {
             _isAllowed = isAllowed;
         }
@@ -378,7 +545,9 @@ public class CorrectionOrchestrationServiceTests
             CancellationToken cancellationToken)
         {
             ReservationCount++;
-            var reservation = _isAllowed
+            LastReservationRequest = request;
+            ReservationRequests.Add(request);
+            var reservation = _isAllowed(request)
                 ? AiUsageReservation.Allowed(
                     request.UserId,
                     request.Feature,

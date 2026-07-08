@@ -68,6 +68,7 @@ public class PublicApiContractTests
         textComparisonResult.TryGetProperty("correctionTrace", out _).ShouldBeTrue();
         textComparisonResult.TryGetProperty("mistakePatternStatus", out _).ShouldBeTrue();
         textComparisonResult.TryGetProperty("mistakePatternMessage", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternReviewSource", out _).ShouldBeTrue();
         textComparisonResult.TryGetProperty("mistakePatternAnnotations", out _).ShouldBeFalse();
         components
             .GetProperty("schemas")

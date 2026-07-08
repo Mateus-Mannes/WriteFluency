@@ -376,6 +376,39 @@ public sealed class DeterministicTextComparisonRefinerTests
         result.Trace.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void Refine_WhenLargeParagraphsAreUnrelated_ShouldKeepSingleComparison()
+    {
+        const string originalText =
+            "A recent report from a big professional network shows that fewer people are getting jobs. " +
+            "Catherine Fisher, a career expert, says job seekers can do better by using artificial intelligence tools and trying new ways to find jobs. " +
+            "This is happening when there are many problems between countries like Iran and the United States. " +
+            "At the same time, the Tony Awards celebrated the best in entertainment. " +
+            "Sports fans are looking forward to the NFL games and the US men's soccer team for the next World Cup. " +
+            "These stories show how society is changing with new technology, politics, and culture.";
+        const string userText =
+            "Many people want to learn about how their bodies work, especially the lymphatic system. " +
+            "This system acts like a network of pipes that remove waste from the body. " +
+            "It helps fight infections, boosts immunity, and moves fats from food. " +
+            "It is made of small vessels that carry a clear fluid called lymph, which contains special white blood cells that fight germs. " +
+            "Sometimes, if the system does not work properly, swelling happens in the arms or legs. " +
+            "This condition is called lymphoedema and can occur from birth due to genes or later from damage caused by illnesses like cancer treatment. " +
+            "Recently, social media has talked about a process called lymphatic drainage, claiming it makes skin look better and healthier. " +
+            "Experts warn that even though the lymphatic system is important, manually draining it may not always be necessary or proven by science.";
+
+        var result = _refiner.Refine(
+            originalText,
+            userText,
+            [CreateComparison(originalText, userText)]);
+
+        result.HasChanges.ShouldBeFalse();
+        result.Trace.ShouldBeEmpty();
+        result.Comparisons.Count.ShouldBe(1);
+        result.Comparisons.Single().OriginalText.ShouldBe(originalText);
+        result.Comparisons.Single().UserText.ShouldBe(userText);
+        result.Comparisons.Single().IsDeterministicallyRefined.ShouldBeFalse();
+    }
+
     private static TextComparison CreateComparison(
         string originalText,
         string userText,

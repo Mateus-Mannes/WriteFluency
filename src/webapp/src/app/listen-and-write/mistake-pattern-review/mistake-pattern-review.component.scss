@@ -5,6 +5,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100%;
   max-height: var(--mistake-pattern-review-max-height, none);
   border: 1px solid rgba(58, 125, 255, 0.18);
   border-radius: 14px;
@@ -47,6 +48,113 @@
 .mistake-pattern-review-alert {
   border-color: rgba(244, 177, 33, 0.35);
   background: #fffaf0;
+}
+
+.mistake-pattern-review-empty {
+  background:
+    radial-gradient(circle at top right, rgba(0, 194, 168, 0.08), transparent 42%),
+    #fff;
+}
+
+.mistake-pattern-empty-state {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  text-align: center;
+
+  .material-symbols-outlined {
+    display: inline-grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 999px;
+    background: rgba(0, 194, 168, 0.12);
+    color: #078776;
+    font-size: 1.45rem;
+  }
+
+  h3 {
+    margin: 0.2rem 0 0;
+    color: #172036;
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  p {
+    max-width: 18rem;
+    margin: 0;
+    color: rgba(23, 32, 54, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.32;
+  }
+}
+
+.mistake-pattern-review-locked {
+  position: relative;
+  min-height: 0;
+}
+
+.mistake-pattern-locked-preview {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  filter: blur(3px);
+  opacity: 0.62;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mistake-pattern-lock-overlay {
+  position: absolute;
+  inset: 0.58rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1rem;
+  text-align: center;
+
+  h3 {
+    margin: 0;
+    color: #172036;
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(23, 32, 54, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.28;
+  }
+}
+
+.mistake-pattern-lock-button {
+  align-self: center;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3a7dff 0%, #2c5ed8 100%);
+  box-shadow: 0 8px 20px rgba(58, 125, 255, 0.22);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-top: 0.1rem;
+  padding: 0.5rem 0.9rem;
+}
+
+.mistake-pattern-lock-button:hover,
+.mistake-pattern-lock-button:focus-visible {
+  background: linear-gradient(135deg, #256dff 0%, #244fb8 100%);
+  outline: none;
 }
 
 .mistake-pattern-alert-message {
@@ -93,6 +201,12 @@
   }
 }
 
+.mistake-pattern-tag-static {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+}
+
 .mistake-pattern-tag-active {
   border-color: rgba(58, 125, 255, 0.48);
   background: rgba(58, 125, 255, 0.14);
@@ -101,6 +215,8 @@
 
 .mistake-pattern-list {
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   flex: 1 1 auto;
   gap: 0.34rem;
   margin-top: 0.5rem;
@@ -112,6 +228,8 @@
 
 .mistake-pattern-row {
   display: grid;
+  align-content: start;
+  align-self: start;
   gap: 0.26rem;
   width: 100%;
   border: 1px solid #e3e9f4;
@@ -133,6 +251,7 @@
 
 .mistake-pattern-text-pair {
   display: flex;
+  align-self: start;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.26rem;
@@ -162,6 +281,8 @@
 
 .mistake-pattern-row-tags {
   display: flex;
+  align-self: start;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.2rem;
 
@@ -176,6 +297,7 @@
 }
 
 .mistake-pattern-phrase {
+  align-self: start;
   color: rgba(23, 32, 54, 0.76);
   font-size: 0.74rem;
   line-height: 1.22;

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using WriteFluency.TextComparisons;
 
 namespace WriteFluency.Infrastructure.TextComparisons;
 
@@ -22,4 +23,11 @@ public sealed class AiUsageOptions
 
     [Range(typeof(decimal), "0", "100000")]
     public decimal OutputUsdPerMillionTokens { get; set; } = 0.40m;
+
+    public AiUsageLimitPolicy CreateDefaultPolicy() =>
+        new(
+            DailySubmissionLimit,
+            MonthlySubmissionLimit,
+            LifetimeSubmissionLimit: null,
+            MonthlyEstimatedCostLimitUsd);
 }

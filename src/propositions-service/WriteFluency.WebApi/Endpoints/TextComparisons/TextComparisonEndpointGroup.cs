@@ -33,6 +33,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         CorrectionOrchestrationService correctionOrchestrationService,
         PropositionService propositionService,
         IUsersSessionClient usersSessionClient,
+        AnonymousProReviewFingerprintService anonymousFingerprintService,
         IOptions<TextComparisonRefinementValidationOptions> validationOptions,
         ILogger<TextComparisonEndpointGroup> logger,
         CancellationToken cancellationToken)
@@ -75,11 +76,18 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                 return ProRequired(accessResult.Metadata);
             }
 
+            var anonymousFingerprintHash = session.IsAuthenticated
+                ? null
+                : anonymousFingerprintService.CreateFingerprintHash(request);
             var orchestrationResult = await correctionOrchestrationService.CompareTextsAsync(
-                accessResult.OriginalText,
-                compareTextsDto.UserText ?? string.Empty,
-                session.IsPro,
-                session.UserId,
+                new CorrectionOrchestrationRequest(
+                    accessResult.OriginalText,
+                    compareTextsDto.UserText ?? string.Empty,
+                    session.IsAuthenticated,
+                    session.IsPro,
+                    session.UserId,
+                    anonymousFingerprintHash,
+                    EnableFreeReviewTeaser: true),
                 cancellationToken);
             var result = orchestrationResult.Result;
 
@@ -94,15 +102,33 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                     result.Comparisons.Count);
             }
 
+            if (result.MistakePatternStatus is MistakePatternStatuses.LoginRequiredToUnlockReview
+                or MistakePatternStatuses.UpgradeRequiredToUnlockReview)
+            {
+                logger.LogInformation(
+                    "Pro review teaser locked for proposition {PropositionId}: IsAuthenticated={IsAuthenticated}, IsPro={IsPro}, Status={MistakePatternStatus}, ReviewSource={MistakePatternReviewSource}, UserTextLength={UserTextLength}, StaticComparisons={StaticComparisons}, FinalComparisons={FinalComparisons}, AnonymousFingerprintPresent={AnonymousFingerprintPresent}",
+                    compareTextsDto.PropositionId,
+                    session.IsAuthenticated,
+                    session.IsPro,
+                    result.MistakePatternStatus,
+                    result.MistakePatternReviewSource,
+                    userTextLength,
+                    orchestrationResult.StaticComparisonCount,
+                    result.Comparisons.Count,
+                    anonymousFingerprintHash is not null);
+            }
+
             logger.LogInformation(
-                "Comparison completed for proposition {PropositionId}: IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, MistakePatternStatus={MistakePatternStatus}, MistakePatternComparisons={MistakePatternComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
+                "Comparison completed for proposition {PropositionId}: IsAuthenticated={IsAuthenticated}, IsPro={IsPro}, CorrectionMode={CorrectionMode}, StaticComparisons={StaticComparisons}, RemovedComparisons={RemovedComparisons}, FinalComparisons={FinalComparisons}, MistakePatternStatus={MistakePatternStatus}, MistakePatternReviewSource={MistakePatternReviewSource}, MistakePatternComparisons={MistakePatternComparisons}, Accuracy={AccuracyPercentage}, DurationMs={DurationMs}",
                 compareTextsDto.PropositionId,
+                session.IsAuthenticated,
                 session.IsPro,
                 result.CorrectionMode,
                 orchestrationResult.StaticComparisonCount,
                 orchestrationResult.RemovedComparisonCount,
                 result.Comparisons.Count,
                 result.MistakePatternStatus,
+                result.MistakePatternReviewSource,
                 result.Comparisons.Count(comparison =>
                     comparison.MistakePatternTags?.Count > 0
                     && !string.IsNullOrWhiteSpace(comparison.MistakePatternPhrase)),

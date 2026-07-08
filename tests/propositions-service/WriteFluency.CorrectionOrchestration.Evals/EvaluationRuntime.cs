@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using WriteFluency.TextComparisons;
 
 namespace WriteFluency.CorrectionOrchestration.Evals;
@@ -34,15 +35,21 @@ public static class EvaluationRuntime
         return filteredCases;
     }
 
-    public static CorrectionOrchestrationEvaluator CreateEvaluator() =>
-        new(
+    public static CorrectionOrchestrationEvaluator CreateEvaluator()
+    {
+        var usageLimiter = new AllowingAiUsageLimiter();
+        return new CorrectionOrchestrationEvaluator(
             new CorrectionOrchestrationService(
                 CreateTextComparisonService(),
                 new DeterministicTextComparisonRefiner(
                     new DeterministicTextEquivalenceService(
                         new EnglishNumberNormalizer())),
                 new EmptyMistakePatternClassifier(),
-                new AllowingAiUsageLimiter()));
+                usageLimiter,
+                new ProReviewEligibilityService(
+                    usageLimiter,
+                    Options.Create(new ProReviewTeaserOptions()))));
+    }
 
     private static TextComparisonService CreateTextComparisonService()
     {

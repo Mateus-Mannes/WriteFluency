@@ -18,6 +18,7 @@ export interface TextComparisonResult {
     accuracyPercentage?: number;
     correctionMode?: 'static' | 'normalized' | string | null;
     correctionTrace?: Array<CorrectionTraceEntry> | null;
-    mistakePatternStatus?: 'generated' | 'skipped_usage_limit' | 'skipped_disabled' | 'classifier_failed' | 'not_applicable' | string | null;
+    mistakePatternStatus?: 'generated' | 'login_required_to_unlock_review' | 'upgrade_required_to_unlock_review' | 'skipped_usage_limit' | 'skipped_disabled' | 'classifier_failed' | 'not_applicable' | string | null;
     mistakePatternMessage?: string | null;
+    mistakePatternReviewSource?: 'none' | 'anonymous_sample' | 'free_intro' | 'free_monthly' | 'pro_paid' | string | null;
 }

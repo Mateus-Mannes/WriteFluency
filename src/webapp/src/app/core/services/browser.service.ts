@@ -45,6 +45,34 @@ export class BrowserService {
     }
   }
 
+  getSessionItem(key: string): string | null {
+    if (!this.isBrowser) return null;
+    try {
+      return sessionStorage.getItem(key);
+    } catch (error) {
+      console.error('Error accessing sessionStorage:', error);
+      return null;
+    }
+  }
+
+  setSessionItem(key: string, value: string): void {
+    if (!this.isBrowser) return;
+    try {
+      sessionStorage.setItem(key, value);
+    } catch (error) {
+      console.error('Error writing to sessionStorage:', error);
+    }
+  }
+
+  removeSessionItem(key: string): void {
+    if (!this.isBrowser) return;
+    try {
+      sessionStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from sessionStorage:', error);
+    }
+  }
+
   // Window methods
   scrollToTop(): void {
     if (!this.isBrowser) return;
