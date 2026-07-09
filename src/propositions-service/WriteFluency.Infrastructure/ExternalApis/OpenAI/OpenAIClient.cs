@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,6 +14,10 @@ namespace WriteFluency.Infrastructure.ExternalApis;
 
 public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
     private readonly OpenAIOptions _options;
     private readonly IChatClient _chatClient;
 
@@ -226,8 +232,13 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             new ChatMessage(ChatRole.User, userPrompt)
         ];
 
-    private static ChatOptions CreateChatOptions(int maxTokens, float temperature = 0.7f) =>
-        new() { MaxOutputTokens = maxTokens, Temperature = temperature };
+    private static ChatOptions CreateChatOptions(int maxTokens, float temperature = 0.7f, string? modelId = null) =>
+        new()
+        {
+            MaxOutputTokens = maxTokens,
+            Temperature = temperature,
+            ModelId = string.IsNullOrWhiteSpace(modelId) ? null : modelId
+        };
 
     private string ProperNameDefinitionSystemPrompt()
     => """
@@ -485,37 +496,34 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             Is this a valid title? Respond with only 'valid' or 'invalid'.
         ";
 
-    private async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
+    internal async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _chatClient.GetResponseAsync<string>(
+            var response = await _chatClient.GetResponseAsync<ArticleContentValidationResponse>(
                 [
                     new ChatMessage(ChatRole.System, ValidateArticleSystemPrompt()),
                     new ChatMessage(ChatRole.User, ValidateArticleUserPrompt(articleContent))
                 ],
-                CreateChatOptions(maxTokens: 100, temperature: 0.3f),
+                JsonOptions,
+                CreateChatOptions(maxTokens: 100, temperature: 0.3f, modelId: _options.ArticleValidationModel),
+                useJsonSchemaResponseFormat: true,
                 cancellationToken: cancellationToken);
 
-            // Parse the response - expecting "valid" or "invalid"
-            var result = response.Result.Trim().ToLowerInvariant();
-            
-            if (result.Contains("invalid"))
+            if (response.Result is null)
+            {
+                _logger.LogWarning("Article content validation: Empty structured response");
+                return Result.Ok(false);
+            }
+
+            if (!response.Result.IsValid)
             {
                 _logger.LogWarning("Article content validation: Invalid article detected by AI validation rules");
                 return Result.Ok(false);
             }
-            else if (result.Contains("valid"))
-            {
-                _logger.LogInformation("Article content validation: Valid article detected");
-                return Result.Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("Article content validation: Unexpected response format: {Response}", result);
-                // Default to invalid if response is unclear
-                return Result.Ok(false);
-            }
+
+            _logger.LogInformation("Article content validation: Valid article detected");
+            return Result.Ok(true);
         }
         catch (Exception ex)
         {
@@ -528,7 +536,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     => """
         You are a content validator that determines if a given text is a readable news article or just website navigation/boilerplate content.
 
-        Your task is to analyze the provided text and classify it as either "valid" or "invalid".
+        Your task is to analyze the provided text and classify it with a JSON response.
 
         A text is considered VALID if it contains:
         - Coherent sentences forming a narrative or informative content
@@ -561,7 +569,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Extreme or graphic violence, gore, torture, or dismemberment
 
         Output format:
-        - Respond with only one word: "valid" or "invalid"
+        - Respond with only this JSON shape: {"isValid": true} or {"isValid": false}
         - Do not include any additional explanation or commentary
     """;
 
@@ -572,8 +580,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             --- TEXT END ---
 
             Classify this text using the system rules.
-            Respond with only 'valid' or 'invalid'.
+            Respond with only the required JSON object.
         ";
+
+    public sealed record ArticleContentValidationResponse(bool IsValid);
 
     public async Task<Result<bool>> ValidateImageAsync(byte[] imageBytes, string articleTitle, CancellationToken cancellationToken = default)
     {

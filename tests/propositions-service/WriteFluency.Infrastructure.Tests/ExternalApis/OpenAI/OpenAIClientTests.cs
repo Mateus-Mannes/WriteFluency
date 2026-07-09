@@ -3,11 +3,31 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
+using WriteFluency.Propositions;
 
 namespace WriteFluency.Infrastructure.ExternalApis;
 
 public class OpenAIClientTests
 {
+    [Fact]
+    public async Task GenerateTextAsync_WhenArticleValidationReturnsStructuredInvalidResponse_ShouldRejectArticleWithoutValidationFailure()
+    {
+        var chatClient = Substitute.For<IChatClient>();
+        chatClient
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Is<ChatOptions>(options => options.ModelId == "test-validation-model"),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, """{"isValid":false}"""))));
+
+        var client = CreateClient(chatClient, articleValidationModel: "test-validation-model");
+
+        var result = await client.GenerateTextAsync(ComplexityEnum.Intermediate, "Navigation links and repeated menu text.");
+
+        result.IsFailed.ShouldBeTrue();
+        result.Errors.Select(error => error.Message).ShouldContain("Article content is invalid according to AI validation rules");
+    }
+
     [Fact]
     public async Task ValidateImageAsync_WhenModelReturnsInvalid_ShouldReturnFalse()
     {
@@ -27,13 +47,14 @@ public class OpenAIClientTests
         result.Value.ShouldBeFalse();
     }
 
-    private static OpenAIClient CreateClient(IChatClient chatClient)
+    private static OpenAIClient CreateClient(IChatClient chatClient, string articleValidationModel = "gpt-5.4-nano-2026-03-17")
     {
         var optionsMonitor = Substitute.For<IOptionsMonitor<OpenAIOptions>>();
         optionsMonitor.CurrentValue.Returns(new OpenAIOptions
         {
             Key = "test-key",
             BaseAddress = "https://example.test",
+            ArticleValidationModel = articleValidationModel,
             Routes = new OpenAIOptions.OpenAIRoutes
             {
                 Completion = "/completion",
