@@ -1,7 +1,7 @@
 import { ErrorHandler, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AngularPlugin } from '@microsoft/applicationinsights-angularplugin-js';
-import { ApplicationInsights, DistributedTracingModes } from '@microsoft/applicationinsights-web';
+import { ApplicationInsights, DistributedTracingModes, ITelemetryItem } from '@microsoft/applicationinsights-web';
 import { environment } from '../enviroments/enviroment';
 import { shouldUseAppInsights } from './insights.check';
 
@@ -12,6 +12,17 @@ export interface InsightsExceptionOptions {
     measurements?: InsightsMeasurements;
     severityLevel?: number;
 }
+
+type ExceptionTelemetryDetails = {
+    typeName?: string;
+    message?: string;
+    rawStack?: string;
+};
+
+type ExceptionTelemetryData = {
+    exceptions?: ExceptionTelemetryDetails[];
+    properties?: Record<string, unknown>;
+};
 
 @Injectable()
 export class Insights {
@@ -69,11 +80,17 @@ export class Insights {
         this.initialized = true;
 
         this.appInsights.addTelemetryInitializer((envelope) => {
-            if(!envelope.tags) {
+            if (this.shouldDropNoiseException(envelope)) {
+                return false;
+            }
+
+            if (!envelope.tags) {
                 envelope.tags = {};
             }
             envelope.tags['ai.cloud.role'] = 'wf-webapp'; 
             envelope.tags['ai.cloud.roleInstance'] = 'angular-client'; 
+
+            return true;
         });
 
         this.appInsights.loadAppInsights();
@@ -123,6 +140,36 @@ export class Insights {
             properties: options.properties,
             measurements: options.measurements,
         });
+    }
+
+    private shouldDropNoiseException(envelope: ITelemetryItem): boolean {
+        if (envelope.baseType !== 'ExceptionData') {
+            return false;
+        }
+
+        const exceptionData = envelope.baseData as ExceptionTelemetryData | undefined;
+        const exceptionDetails = exceptionData?.exceptions ?? [];
+        const properties = exceptionData?.properties ?? {};
+        const searchableText = [
+            envelope.name,
+            ...exceptionDetails.flatMap((exception) => [
+                exception.typeName,
+                exception.message,
+                exception.rawStack,
+            ]),
+            ...Object.values(properties).map((value) => String(value)),
+        ].filter(Boolean).join(' ');
+
+        return (
+            searchableText.includes('Failed to fetch dynamically imported module') ||
+            searchableText.includes('ResizeObserver loop completed with undelivered notifications') ||
+            searchableText.includes('ResizeObserver loop limit exceeded') ||
+            searchableText.includes('NG0750') ||
+            (
+                properties['operation'] === 'load_user_progress' &&
+                String(properties['http_status']) === '0'
+            )
+        );
     }
 
     private toError(error: unknown): Error {
