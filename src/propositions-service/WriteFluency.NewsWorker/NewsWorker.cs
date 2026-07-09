@@ -16,6 +16,7 @@ namespace WriteFluency.NewsWorker;
 public class NewsWorker : BackgroundService
 {
     private const string CacheWarmupHttpClientName = "cache-warmup";
+    private const int MinimumDailyGeneratedPropositions = 10;
     private const int WarmupRecentExercisesLimit = 20;
     private static readonly TimeSpan PollingInterval = TimeSpan.FromMinutes(1);
     private static readonly ActivitySource ActivitySource = new(nameof(NewsWorker));
@@ -189,7 +190,7 @@ public class NewsWorker : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var generator = scope.ServiceProvider.GetRequiredService<DailyPropositionGenerator>();
-            await generator.GenerateDailyPropositionsAsync(cancellationToken);
+            var generatedCount = await generator.GenerateDailyPropositionsAsync(cancellationToken);
 
             var purgeStatus = "skipped-development";
             var purgeErrors = string.Empty;
@@ -220,29 +221,50 @@ public class NewsWorker : BackgroundService
             activity?.SetTag("worker.completed_at_utc", DateTimeOffset.UtcNow.ToString("O"));
             activity?.SetTag("worker.duration_ms", stopwatch.ElapsedMilliseconds);
             activity?.SetTag("worker.purge_status", purgeStatus);
+            activity?.SetTag("worker.generated_count", generatedCount);
 
-            if (string.IsNullOrWhiteSpace(purgeErrors))
+            if (generatedCount < MinimumDailyGeneratedPropositions)
             {
-                _logger.LogInformation(
-                    "NewsWorker run completed. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus}",
+                var exception = new InvalidOperationException(
+                    $"Daily news worker generated fewer than {MinimumDailyGeneratedPropositions} propositions.");
+
+                activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+                _logger.LogError(
+                    exception,
+                    "NewsWorker generated too few propositions. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} GeneratedCount={GeneratedCount} MinimumGeneratedCount={MinimumGeneratedCount}",
                     runId,
                     trigger,
                     cronExpression,
                     scheduledAtUtc,
                     stopwatch.ElapsedMilliseconds,
-                    purgeStatus);
+                    generatedCount,
+                    MinimumDailyGeneratedPropositions);
             }
-            else
+
+            if (string.IsNullOrWhiteSpace(purgeErrors))
             {
-                activity?.SetTag("worker.purge_errors", purgeErrors);
-                _logger.LogWarning(
-                    "NewsWorker run completed with warnings. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus} PurgeErrors={PurgeErrors}",
+                _logger.LogInformation(
+                    "NewsWorker run completed. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus} GeneratedCount={GeneratedCount}",
                     runId,
                     trigger,
                     cronExpression,
                     scheduledAtUtc,
                     stopwatch.ElapsedMilliseconds,
                     purgeStatus,
+                    generatedCount);
+            }
+            else
+            {
+                activity?.SetTag("worker.purge_errors", purgeErrors);
+                _logger.LogWarning(
+                    "NewsWorker run completed with warnings. Event=daily-generation RunId={RunId} Trigger={Trigger} Cron={Cron} ScheduledAtUtc={ScheduledAtUtc} DurationMs={DurationMs} PurgeStatus={PurgeStatus} GeneratedCount={GeneratedCount} PurgeErrors={PurgeErrors}",
+                    runId,
+                    trigger,
+                    cronExpression,
+                    scheduledAtUtc,
+                    stopwatch.ElapsedMilliseconds,
+                    purgeStatus,
+                    generatedCount,
                     purgeErrors);
             }
 

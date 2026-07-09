@@ -462,7 +462,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate title");
+            _logger.LogError(
+                "Failed to validate title. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate title: {ex.Message}"));
         }
     }
@@ -527,7 +530,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate article content");
+            _logger.LogError(
+                "Failed to validate article content. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate article content: {ex.Message}"));
         }
     }
@@ -629,7 +635,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate image");
+            _logger.LogError(
+                "Failed to validate image. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate image: {ex.Message}"));
         }
     }

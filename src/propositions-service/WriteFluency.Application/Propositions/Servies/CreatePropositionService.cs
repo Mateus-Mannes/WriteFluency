@@ -93,7 +93,10 @@ public class CreatePropositionService
             if (propositionResult.IsSuccess) propositions.Add(propositionResult.Value);
             else
             {
-                _logger.LogError($"Failed to build proposition for article '{newsArticle.Url}': {string.Join(", ", propositionResult.Errors.Select(e => e.Message))}");
+                _logger.LogError(
+                    "Skipped article because proposition generation failed. Url={Url}. Errors={Errors}",
+                    newsArticle.Url,
+                    string.Join(", ", propositionResult.Errors.Select(e => e.Message)));
             }
         }
         return new CreatePropositionsResult(propositions, oldestFetchedPublishedOn, fetchedNews.Count);

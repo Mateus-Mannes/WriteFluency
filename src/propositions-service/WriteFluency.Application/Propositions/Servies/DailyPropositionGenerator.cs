@@ -27,28 +27,35 @@ public class DailyPropositionGenerator
     /// <summary>
     /// Create proposition based on the current date, considering the state of the database and configurations.
     /// </summary>
-    public async Task GenerateDailyPropositionsAsync(CancellationToken cancellationToken = default)
+    public async Task<int> GenerateDailyPropositionsAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation($"Starting daily proposition generation");
         try
         {
-            await GenerateAsync(cancellationToken);
-            _logger.LogInformation($"Daily proposition generation completed successfully");
+            var generatedCount = await GenerateAsync(cancellationToken);
+            _logger.LogInformation(
+                "Daily proposition generation completed successfully. GeneratedCount={GeneratedCount}",
+                generatedCount);
+
+            return generatedCount;
         }
         catch (OperationCanceledException)
         {
             _logger.LogWarning("Daily proposition generation was cancelled");
+            return 0;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred during daily proposition generation");
+            return 0;
         }
     }
 
-    private async Task GenerateAsync(CancellationToken cancellationToken = default)
+    private async Task<int> GenerateAsync(CancellationToken cancellationToken = default)
     {
         var latestPublishedBefore = TrimToSecond(DateTime.UtcNow);
         var latestWindowAttempts = new HashSet<(SubjectEnum SubjectId, ComplexityEnum ComplexityId)>();
+        var generatedCount = 0;
 
         // Get generation statistics for each subject/complexity combination
         var generationStats = await GetGenerationStatsAsync(cancellationToken);
@@ -161,10 +168,15 @@ public class DailyPropositionGenerator
                     
                     await _context.Propositions.AddRangeAsync(result.Propositions, cancellationToken);
                     await _context.SaveChangesAsync(cancellationToken);
+                    generatedCount += successCount;
                     
                     // Check and soft delete if over limit
                     await CleanupOldPropositionsAsync(dto.Subject, cancellationToken);
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -179,6 +191,8 @@ public class DailyPropositionGenerator
                 }
             }
         }
+
+        return generatedCount;
     }
 
     private async Task<List<GenerationStatsDto>> GetGenerationStatsAsync(CancellationToken cancellationToken = default)

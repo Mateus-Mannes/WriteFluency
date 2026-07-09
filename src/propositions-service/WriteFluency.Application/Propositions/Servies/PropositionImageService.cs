@@ -56,41 +56,41 @@ public sealed class PropositionImageService(
             return Result.Fail(new Error("Failed to download image").CausedBy(imageResult.Errors));
         }
 
-        var processedImageResult = await ProcessImageAsync(imageResult.Value, cancellationToken);
+        var processedImageResult = await ProcessImageAsync(imageUrl, imageResult.Value, cancellationToken);
         if (processedImageResult.IsFailed)
         {
-            return Result.Fail(new Error("Failed to process image").CausedBy(processedImageResult.Errors));
+            return Result.Fail(new Error($"Failed to process image. ImageUrl={imageUrl}").CausedBy(processedImageResult.Errors));
         }
 
         using var processedImage = processedImageResult.Value;
-        var imageContentValidation = ValidateImageContent(processedImage);
+        var imageContentValidation = ValidateImageContent(imageUrl, processedImage);
         if (imageContentValidation.IsFailed)
         {
-            return Result.Fail(new Error("Image failed deterministic content validation").CausedBy(imageContentValidation.Errors));
+            return Result.Fail(new Error($"Image failed deterministic content validation. ImageUrl={imageUrl}").CausedBy(imageContentValidation.Errors));
         }
 
-        var processedJpegResult = await EncodeJpegAsync(processedImage, cancellationToken);
+        var processedJpegResult = await EncodeJpegAsync(imageUrl, processedImage, cancellationToken);
         if (processedJpegResult.IsFailed)
         {
-            return Result.Fail(new Error("Failed to compress image").CausedBy(processedJpegResult.Errors));
+            return Result.Fail(new Error($"Failed to compress image. ImageUrl={imageUrl}").CausedBy(processedJpegResult.Errors));
         }
 
         var processedImageBytes = processedJpegResult.Value;
         if (processedImageBytes.Length > MaxOriginalJpegBytes)
         {
-            return Result.Fail(new Error($"Image exceeds max original size limit ({processedImageBytes.Length / 1024} KB > {MaxOriginalJpegBytes / 1024} KB)"));
+            return Result.Fail(new Error($"Image exceeds max original size limit ({processedImageBytes.Length / 1024} KB > {MaxOriginalJpegBytes / 1024} KB). ImageUrl={imageUrl}"));
         }
 
         var imageBaseId = Guid.NewGuid().ToString("N");
-        var optimizedVariantsResult = await GenerateOptimizedVariantsAsync(processedImage, cancellationToken);
+        var optimizedVariantsResult = await GenerateOptimizedVariantsAsync(imageUrl, processedImage, cancellationToken);
         if (optimizedVariantsResult.IsFailed)
         {
-            return Result.Fail(new Error("Failed to generate optimized image variants").CausedBy(optimizedVariantsResult.Errors));
+            return Result.Fail(new Error($"Failed to generate optimized image variants. ImageUrl={imageUrl}").CausedBy(optimizedVariantsResult.Errors));
         }
 
         if (optimizedVariantsResult.Value.Count != OptimizedImageVariants.Length)
         {
-            return Result.Fail(new Error($"Expected {OptimizedImageVariants.Length} optimized variants but generated {optimizedVariantsResult.Value.Count}"));
+            return Result.Fail(new Error($"Expected {OptimizedImageVariants.Length} optimized variants but generated {optimizedVariantsResult.Value.Count}. ImageUrl={imageUrl}"));
         }
 
         var oversizedVariant = optimizedVariantsResult.Value
@@ -101,7 +101,7 @@ public sealed class PropositionImageService(
         if (oversizedVariant.Variant is not null)
         {
             var maxBytes = MaxVariantBytesBySuffix[oversizedVariant.Variant.Suffix];
-            return Result.Fail(new Error($"Variant {oversizedVariant.Variant.Suffix} is too large ({oversizedVariant.Bytes.Length / 1024} KB > {maxBytes / 1024} KB)"));
+            return Result.Fail(new Error($"Variant {oversizedVariant.Variant.Suffix} is too large ({oversizedVariant.Bytes.Length / 1024} KB > {maxBytes / 1024} KB). ImageUrl={imageUrl}"));
         }
 
         var originalObjectName = $"{imageBaseId}.jpg";
@@ -114,7 +114,7 @@ public sealed class PropositionImageService(
 
         if (uploadOriginalResult.IsFailed)
         {
-            return Result.Fail(new Error("Failed to upload image").CausedBy(uploadOriginalResult.Errors));
+            return Result.Fail(new Error($"Failed to upload image. ImageUrl={imageUrl}").CausedBy(uploadOriginalResult.Errors));
         }
 
         foreach (var (variant, variantBytes) in optimizedVariantsResult.Value)
@@ -129,14 +129,14 @@ public sealed class PropositionImageService(
 
             if (uploadVariantResult.IsFailed)
             {
-                return Result.Fail(new Error($"Failed to upload optimized image variant {variantObjectName}").CausedBy(uploadVariantResult.Errors));
+                return Result.Fail(new Error($"Failed to upload optimized image variant {variantObjectName}. ImageUrl={imageUrl}").CausedBy(uploadVariantResult.Errors));
             }
         }
 
         return Result.Ok(uploadOriginalResult.Value);
     }
 
-    private async Task<Result<Image>> ProcessImageAsync(byte[] imageBytes, CancellationToken cancellationToken = default)
+    private async Task<Result<Image>> ProcessImageAsync(string imageUrl, byte[] imageBytes, CancellationToken cancellationToken = default)
     {
         Image? image = null;
 
@@ -158,18 +158,22 @@ public sealed class PropositionImageService(
         catch (UnknownImageFormatException)
         {
             image?.Dispose();
-            logger.LogWarning("Skipping image processing because the source image format is unsupported.");
-            return Result.Fail(new Error("Unsupported image format"));
+            logger.LogWarning("Skipping image processing because the source image format is unsupported. ImageUrl={ImageUrl}", imageUrl);
+            return Result.Fail(new Error($"Unsupported image format. ImageUrl={imageUrl}"));
         }
         catch (Exception ex)
         {
             image?.Dispose();
-            logger.LogWarning(ex, "Failed to process image");
-            return Result.Fail(new Error("Failed to process image").CausedBy(ex));
+            logger.LogWarning(
+                "Failed to process image. ImageUrl={ImageUrl} ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                imageUrl,
+                ex.GetType().Name,
+                ex.Message);
+            return Result.Fail(new Error($"Failed to process image. ImageUrl={imageUrl}").CausedBy(ex));
         }
     }
 
-    private Result ValidateImageContent(Image image)
+    private Result ValidateImageContent(string imageUrl, Image image)
     {
         try
         {
@@ -200,7 +204,7 @@ public sealed class PropositionImageService(
 
             if (sampleCount == 0)
             {
-                return Result.Fail(new Error("Image has no analyzable pixels"));
+                return Result.Fail(new Error($"Image has no analyzable pixels. ImageUrl={imageUrl}"));
             }
 
             var mean = luminanceSum / sampleCount;
@@ -210,20 +214,24 @@ public sealed class PropositionImageService(
 
             if (stdDev < MinimumLuminanceStdDev)
             {
-                return Result.Fail(new Error($"Image appears blank or nearly uniform. LuminanceStdDev={stdDev:F2}"));
+                return Result.Fail(new Error($"Image appears blank or nearly uniform. LuminanceStdDev={stdDev:F2}. ImageUrl={imageUrl}"));
             }
 
             if (colorBuckets.Count < MinimumQuantizedColorBuckets && dominantColorRatio > MaximumDominantColorRatio)
             {
-                return Result.Fail(new Error($"Image appears to be a logo, placeholder, or low-content graphic. ColorBuckets={colorBuckets.Count}, DominantColorRatio={dominantColorRatio:F2}"));
+                return Result.Fail(new Error($"Image appears to be a logo, placeholder, or low-content graphic. ColorBuckets={colorBuckets.Count}, DominantColorRatio={dominantColorRatio:F2}. ImageUrl={imageUrl}"));
             }
 
             return Result.Ok();
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to run deterministic image content validation");
-            return Result.Fail(new Error("Failed to validate image content").CausedBy(ex));
+            logger.LogWarning(
+                "Failed to run deterministic image content validation. ImageUrl={ImageUrl} ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                imageUrl,
+                ex.GetType().Name,
+                ex.Message);
+            return Result.Fail(new Error($"Failed to validate image content. ImageUrl={imageUrl}").CausedBy(ex));
         }
     }
 
@@ -238,7 +246,7 @@ public sealed class PropositionImageService(
         return (r << 6) | (g << 3) | b;
     }
 
-    private async Task<Result<byte[]>> EncodeJpegAsync(Image image, CancellationToken cancellationToken = default)
+    private async Task<Result<byte[]>> EncodeJpegAsync(string imageUrl, Image image, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -248,19 +256,24 @@ public sealed class PropositionImageService(
 
             if (compressedBytes.Length > MaxValidationImageBytes)
             {
-                return Result.Fail(new Error($"Image exceeds maximum size of {MaxValidationImageBytes / 1024} KB after compression ({compressedBytes.Length / 1024} KB)"));
+                return Result.Fail(new Error($"Image exceeds maximum size of {MaxValidationImageBytes / 1024} KB after compression ({compressedBytes.Length / 1024} KB). ImageUrl={imageUrl}"));
             }
 
             return Result.Ok(compressedBytes);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to encode image");
-            return Result.Fail(new Error("Failed to compress image").CausedBy(ex));
+            logger.LogWarning(
+                "Failed to encode image. ImageUrl={ImageUrl} ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                imageUrl,
+                ex.GetType().Name,
+                ex.Message);
+            return Result.Fail(new Error($"Failed to compress image. ImageUrl={imageUrl}").CausedBy(ex));
         }
     }
 
     private async Task<Result<IReadOnlyList<(ImageVariant Variant, byte[] Bytes)>>> GenerateOptimizedVariantsAsync(
+        string imageUrl,
         Image baseImage,
         CancellationToken cancellationToken = default)
     {
@@ -286,8 +299,12 @@ public sealed class PropositionImageService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to generate optimized image variants");
-            return Result.Fail(new Error("Failed to generate optimized image variants").CausedBy(ex));
+            logger.LogWarning(
+                "Failed to generate optimized image variants. ImageUrl={ImageUrl} ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                imageUrl,
+                ex.GetType().Name,
+                ex.Message);
+            return Result.Fail(new Error($"Failed to generate optimized image variants. ImageUrl={imageUrl}").CausedBy(ex));
         }
     }
 }
