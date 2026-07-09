@@ -1,7 +1,9 @@
 using System.Net.Http.Headers;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using WriteFluency.Common;
 using WriteFluency.Data;
@@ -14,6 +16,7 @@ using WriteFluency.WebApi;
 using WriteFluency.WebApi.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.Sources.Insert(0, CreateSharedAppSettingsSource(builder.Environment.ContentRootPath));
 
 builder.AddServiceDefaults();
 
@@ -180,3 +183,24 @@ app.MapDefaultEndpoints();
 app.UseEndpoints();
 
 app.Run();
+
+static JsonConfigurationSource CreateSharedAppSettingsSource(string contentRootPath)
+{
+    var sharedAppSettingsPath = ResolveSharedAppSettingsPath(contentRootPath);
+    return new JsonConfigurationSource
+    {
+        FileProvider = new PhysicalFileProvider(Path.GetDirectoryName(sharedAppSettingsPath)!),
+        Path = Path.GetFileName(sharedAppSettingsPath),
+        Optional = false,
+        ReloadOnChange = true
+    };
+}
+
+static string ResolveSharedAppSettingsPath(string contentRootPath)
+{
+    var publishedPath = Path.Combine(contentRootPath, "appsettings.shared.json");
+    if (File.Exists(publishedPath))
+        return publishedPath;
+
+    return Path.GetFullPath(Path.Combine(contentRootPath, "..", "appsettings.json"));
+}

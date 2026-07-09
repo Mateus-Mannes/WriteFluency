@@ -6,6 +6,7 @@ public class OpenAIOptions
 
     public required string Key { get; set; }
     public required string BaseAddress { get; set; }
+    public string ParagraphGenerationModel { get; set; } = "gpt-5.4-mini";
     public string ArticleValidationModel { get; set; } = "gpt-5.4-nano-2026-03-17";
     public required OpenAIRoutes Routes { get; set; }
 

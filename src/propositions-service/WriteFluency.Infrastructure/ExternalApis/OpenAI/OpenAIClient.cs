@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using FluentResults;
@@ -6,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteFluency.Infrastructure.Http.Services;
 using WriteFluency.Propositions;
-using WriteFluency.Shared;
 using WriteFluency.TextComparisons;
 using Microsoft.Extensions.AI;
 
@@ -31,51 +29,6 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         _options = options.CurrentValue;
         _chatClient = chatClient;
     }
-
-    [Obsolete]
-    public async Task<string> GenerateTextAsync(GetPropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default)
-    {
-        var request = new CompletionRequest
-        {
-            Model = "gpt-3.5-turbo",
-            Messages = new List<RequestMessage>()
-                { new RequestMessage() {
-                    Content = GenerateTextPrompt(generateTextDto)
-                    } },
-            MaxTokens = 1200,
-            Temperature = 1.0m
-        };
-
-        var response = await _httpClient.PostAsJsonAsync(_options.Routes.Completion, request, cancellationToken);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var result = await response.Content.ReadFromJsonAsync<CompletionResponse>(cancellationToken)
-                ?? throw new HttpRequestException("Error fetching data from OpenAI API");
-            return result.Choices[0].Message.Content;
-        }
-        else
-        {
-            await Task.Delay(1000);
-            if (attempt == 1) return await GenerateTextAsync(generateTextDto, 2, cancellationToken);
-            else throw new HttpRequestException($"Error fetching data from OpenAI API: {response.StatusCode}");
-        }
-    }
-
-    private string GenerateTextPrompt(GetPropositionDto dto)
-        => @$"
-            Write about some subject related to {dto.Subject.GetDescription()}.
-            Maximum of one paragraph, from 250 to 600 characteres.
-            Write it in a way that normal people can understand well, without specialist vocabulary.
-            Write just the text please.
-            Without titles.
-            Without identation, like paragraphs.
-            Without line breaks.
-            Without special characters, like quotes. 
-            Don't use $100, use '100 dollars'.
-            Be creative.
-            {dto.Complexity.GetDescription()}
-        ";
 
     public async Task<Result<AIGeneratedTextDto>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
     {
@@ -161,7 +114,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     {
         var response = await _chatClient.GetResponseAsync<string>(
             CreateMessages(GenerateTextSystemPrompt(), GenerateTextUserPrompt(articleContent)),
-            CreateChatOptions(maxTokens: 1200),
+            CreateChatOptions(maxTokens: 1200, modelId: _options.ParagraphGenerationModel),
             cancellationToken: cancellationToken);
 
         return response.Result;
@@ -297,9 +250,6 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
                 - Do not use line breaks, paragraph spacing, or formatting.
 
                 - The users are Advanced and fluent English learners, so use natural and sophisticated language.
-
-            If the article is primarily a product list, product comparison, buying guide, affiliate content, or review, return null.
-            If the article does not provide enough clear, interesting, or informative content to generate a meaningful paragraph and title, return null.
         ";
 
     private string GenerateTextUserPrompt(string articleContent)

@@ -11,6 +11,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="../appsettings.json" Link="appsettings.shared.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../WriteFluency.Application/WriteFluency.Application.csproj" />
     <ProjectReference Include="../WriteFluency.Infrastructure/WriteFluency.Infrastructure.csproj" />
     <ProjectReference Include="../../host/WriteFluency.ServiceDefaults/WriteFluency.ServiceDefaults.csproj" />

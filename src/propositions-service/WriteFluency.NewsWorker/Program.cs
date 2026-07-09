@@ -12,9 +12,12 @@ using Microsoft.EntityFrameworkCore;
 using WriteFluency.Data;
 using Microsoft.Extensions.AI;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.Sources.Insert(0, CreateSharedAppSettingsSource(builder.Environment.ContentRootPath));
 
 builder.AddServiceDefaults();
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
@@ -122,3 +125,24 @@ host.UseOutputCache();
 host.MapDefaultEndpoints();
 
 host.Run();
+
+static JsonConfigurationSource CreateSharedAppSettingsSource(string contentRootPath)
+{
+    var sharedAppSettingsPath = ResolveSharedAppSettingsPath(contentRootPath);
+    return new JsonConfigurationSource
+    {
+        FileProvider = new PhysicalFileProvider(Path.GetDirectoryName(sharedAppSettingsPath)!),
+        Path = Path.GetFileName(sharedAppSettingsPath),
+        Optional = false,
+        ReloadOnChange = true
+    };
+}
+
+static string ResolveSharedAppSettingsPath(string contentRootPath)
+{
+    var publishedPath = Path.Combine(contentRootPath, "appsettings.shared.json");
+    if (File.Exists(publishedPath))
+        return publishedPath;
+
+    return Path.GetFullPath(Path.Combine(contentRootPath, "..", "appsettings.json"));
+}

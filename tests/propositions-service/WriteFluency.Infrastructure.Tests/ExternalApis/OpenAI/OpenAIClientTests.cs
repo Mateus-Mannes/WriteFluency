@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -47,13 +48,33 @@ public class OpenAIClientTests
         result.Value.ShouldBeFalse();
     }
 
-    private static OpenAIClient CreateClient(IChatClient chatClient, string articleValidationModel = "gpt-5.4-nano-2026-03-17")
+    [Fact]
+    public async Task GenerateTextAsync_WhenGeneratingInitialParagraph_ShouldUseConfiguredParagraphGenerationModel()
+    {
+        var chatClient = new CapturingChatClient();
+
+        var client = CreateClient(
+            chatClient,
+            articleValidationModel: "test-validation-model",
+            paragraphGenerationModel: "gpt-5.4-mini");
+
+        await client.GenerateTextAsync(ComplexityEnum.Advanced, "Article text with enough readable information.");
+
+        chatClient.CapturedOptions.ShouldContain(options =>
+            options != null && options.ModelId == "gpt-5.4-mini" && options.MaxOutputTokens == 1200);
+    }
+
+    private static OpenAIClient CreateClient(
+        IChatClient chatClient,
+        string articleValidationModel = "gpt-5.4-nano-2026-03-17",
+        string paragraphGenerationModel = "gpt-5.4-mini")
     {
         var optionsMonitor = Substitute.For<IOptionsMonitor<OpenAIOptions>>();
         optionsMonitor.CurrentValue.Returns(new OpenAIOptions
         {
             Key = "test-key",
             BaseAddress = "https://example.test",
+            ParagraphGenerationModel = paragraphGenerationModel,
             ArticleValidationModel = articleValidationModel,
             Routes = new OpenAIOptions.OpenAIRoutes
             {
@@ -67,5 +88,46 @@ public class OpenAIClientTests
             NullLogger<OpenAIClient>.Instance,
             optionsMonitor,
             chatClient);
+    }
+
+    private sealed class CapturingChatClient : IChatClient
+    {
+        public List<ChatOptions?> CapturedOptions { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            CapturedOptions.Add(options);
+            if (CapturedOptions.Count == 1)
+                return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, """{"isValid":true}""")));
+
+            var response = options?.ModelId switch
+            {
+                "gpt-5.4-mini" => "\"A clear paragraph about a local community project.\"",
+                _ when options?.MaxOutputTokens == 200 => "\"Alice\"",
+                _ when options?.MaxOutputTokens == 300 => "\"Alice Shares Local Project With Community Members\"",
+                _ when options?.MaxOutputTokens == 80 => "\"valid\"",
+                _ => "\"\""
+            };
+
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, response)));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.CompletedTask;
+            yield break;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose()
+        {
+        }
     }
 }
