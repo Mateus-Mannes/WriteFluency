@@ -49,6 +49,10 @@ builder.Services.AddOptions<ProReviewTeaserOptions>()
     .Bind(builder.Configuration.GetSection(ProReviewTeaserOptions.Section))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<CatalogAccessTeaserOptions>()
+    .Bind(builder.Configuration.GetSection(CatalogAccessTeaserOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
@@ -76,6 +80,8 @@ builder.Services.AddTransient<IMistakePatternClassifier, OpenAiMistakePatternCla
 builder.Services.AddTransient<IAiUsageLimiter, EfAiUsageLimiter>();
 builder.Services.AddTransient<ProReviewEligibilityService>();
 builder.Services.AddTransient<AnonymousProReviewFingerprintService>();
+builder.Services.AddTransient<CatalogAccessTeaserService>();
+builder.Services.AddTransient<AnonymousCatalogAccessFingerprintService>();
 builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
@@ -204,3 +210,5 @@ static string ResolveSharedAppSettingsPath(string contentRootPath)
 
     return Path.GetFullPath(Path.Combine(contentRootPath, "..", "appsettings.json"));
 }
+
+public partial class Program;

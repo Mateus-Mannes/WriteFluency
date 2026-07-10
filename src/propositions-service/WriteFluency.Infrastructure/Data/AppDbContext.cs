@@ -15,6 +15,8 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
     public DbSet<PropositionGenerationLog> PropositionGenerationLogs { get; set; }
     public DbSet<AppSettings> AppSettings { get; set; }
     public DbSet<AiUsageCounter> AiUsageCounters { get; set; }
+    public DbSet<CatalogAccessCounter> CatalogAccessCounters { get; set; }
+    public DbSet<CatalogExerciseGrant> CatalogExerciseGrants { get; set; }
     public AppDbContext(DbContextOptions opts) : base(opts) { }
     
     protected override void OnModelCreating(ModelBuilder builder)
@@ -29,6 +31,8 @@ public class AppDbContext : IdentityDbContext<IdentityUser>, IAppDbContext
         builder.ApplyConfiguration(new PropositionEfConfiguration(Database.IsNpgsql()));
         builder.ApplyConfiguration(new PropositionGenerationLogEfConfiguration());
         builder.ApplyConfiguration(new AiUsageCounterEfConfiguration());
+        builder.ApplyConfiguration(new CatalogAccessCounterEfConfiguration());
+        builder.ApplyConfiguration(new CatalogExerciseGrantEfConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

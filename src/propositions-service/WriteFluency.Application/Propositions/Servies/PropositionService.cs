@@ -24,6 +24,7 @@ public class PropositionService
     private readonly IFileService _fileService;
     private readonly IGenerativeAIClient _generativeAIClient;
     private readonly ITextToSpeechClient _textToSpeechClient;
+    private readonly CatalogAccessTeaserService _catalogAccessTeaserService;
     private readonly ILogger<PropositionService> _logger;
 
     private sealed record PropositionAccessRow(
@@ -43,12 +44,14 @@ public class PropositionService
         IFileService fileService,
         IGenerativeAIClient generativeAIClient,
         ITextToSpeechClient textToSpeechClient,
+        CatalogAccessTeaserService catalogAccessTeaserService,
         ILogger<PropositionService> logger)
     {
         _context = context;
         _fileService = fileService;
         _generativeAIClient = generativeAIClient;
         _textToSpeechClient = textToSpeechClient;
+        _catalogAccessTeaserService = catalogAccessTeaserService;
         _logger = logger;
     }
 
@@ -85,43 +88,17 @@ public class PropositionService
         bool isPro,
         CancellationToken cancellationToken = default)
     {
-        var proposition = await GetAccessRowAsync(id, cancellationToken);
-
-        if (proposition is null)
-        {
-            return null;
-        }
-
-        var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
-        var metadata = ToMetadata(proposition, requiresPro);
-
-        if (!CanAccessExercise(requiresPro, isPro))
-        {
-            return new BeginExerciseResultDto(AccessProRequired, null, null, metadata);
-        }
-
-        var audioExpiresAtUtc = DateTimeOffset.UtcNow.Add(AudioPresignedUrlLifetime);
-        var audioUrlResult = await _fileService.CreatePresignedGetUrlAsync(
-            Proposition.AudioBucketName,
-            proposition.AudioFileId,
-            AudioPresignedUrlLifetime,
-            cancellationToken);
-
-        if (audioUrlResult.IsFailed)
-        {
-            _logger.LogError(
-                "Failed to create presigned audio URL for proposition {PropositionId}: {Errors}",
-                id,
-                string.Join(", ", audioUrlResult.Errors.Select(e => e.Message)));
-            throw new InvalidOperationException("Unable to create exercise audio URL.");
-        }
-
-        return new BeginExerciseResultDto(AccessGranted, audioUrlResult.Value, audioExpiresAtUtc, metadata);
+        var accessContext = new PropositionAccessContext(
+            IsAuthenticated: isPro,
+            IsPro: isPro,
+            UserId: isPro ? "pro-user" : null,
+            AnonymousFingerprintHash: null);
+        return await BeginExerciseAsync(id, accessContext, cancellationToken);
     }
 
-    public async Task<ExerciseComparisonAccessResult?> GetExerciseForComparisonAsync(
+    public async Task<PreviewExerciseAccessResultDto?> PreviewExerciseAccessAsync(
         int id,
-        bool isPro,
+        PropositionAccessContext accessContext,
         CancellationToken cancellationToken = default)
     {
         var proposition = await GetAccessRowAsync(id, cancellationToken);
@@ -132,7 +109,90 @@ public class PropositionService
         }
 
         var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
-        var isGranted = CanAccessExercise(requiresPro, isPro);
+        var metadata = ToMetadata(proposition, requiresPro);
+        var decision = await _catalogAccessTeaserService.DecidePreviewAsync(
+            accessContext,
+            id,
+            requiresPro,
+            cancellationToken);
+
+        if (!decision.AllowsAudio)
+        {
+            return new PreviewExerciseAccessResultDto(
+                decision.AccessStatus,
+                AudioUrl: null,
+                AudioExpiresAtUtc: null,
+                metadata);
+        }
+
+        var audioAccess = await CreateAudioAccessAsync(proposition, cancellationToken);
+        return new PreviewExerciseAccessResultDto(
+            decision.AccessStatus,
+            audioAccess.AudioUrl,
+            audioAccess.AudioExpiresAtUtc,
+            metadata);
+    }
+
+    public async Task<BeginExerciseResultDto?> BeginExerciseAsync(
+        int id,
+        PropositionAccessContext accessContext,
+        CancellationToken cancellationToken = default)
+    {
+        var proposition = await GetAccessRowAsync(id, cancellationToken);
+
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
+        var metadata = ToMetadata(proposition, requiresPro);
+        var decision = await _catalogAccessTeaserService.ClaimBeginAsync(
+            accessContext,
+            id,
+            requiresPro,
+            cancellationToken);
+
+        if (!decision.AllowsAudio)
+        {
+            return new BeginExerciseResultDto(decision.AccessStatus, null, null, metadata);
+        }
+
+        var audioAccess = await CreateAudioAccessAsync(proposition, cancellationToken);
+        return new BeginExerciseResultDto(AccessGranted, audioAccess.AudioUrl, audioAccess.AudioExpiresAtUtc, metadata);
+    }
+
+    public async Task<ExerciseComparisonAccessResult?> GetExerciseForComparisonAsync(
+        int id,
+        bool isPro,
+        CancellationToken cancellationToken = default)
+    {
+        var accessContext = new PropositionAccessContext(
+            IsAuthenticated: isPro,
+            IsPro: isPro,
+            UserId: isPro ? "pro-user" : null,
+            AnonymousFingerprintHash: null);
+        return await GetExerciseForComparisonAsync(id, accessContext, cancellationToken);
+    }
+
+    public async Task<ExerciseComparisonAccessResult?> GetExerciseForComparisonAsync(
+        int id,
+        PropositionAccessContext accessContext,
+        CancellationToken cancellationToken = default)
+    {
+        var proposition = await GetAccessRowAsync(id, cancellationToken);
+
+        if (proposition is null)
+        {
+            return null;
+        }
+
+        var requiresPro = !await IsInFreeCatalogWindowAsync(id, cancellationToken);
+        var isGranted = await _catalogAccessTeaserService.CanCompareAsync(
+            accessContext,
+            id,
+            requiresPro,
+            cancellationToken);
 
         return new ExerciseComparisonAccessResult(
             isGranted,
@@ -419,7 +479,30 @@ public class PropositionService
             ? 0
             : text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 
-    private static bool CanAccessExercise(bool requiresPro, bool isPro) => !requiresPro || isPro;
+    private async Task<AudioAccess> CreateAudioAccessAsync(
+        PropositionAccessRow proposition,
+        CancellationToken cancellationToken)
+    {
+        var audioExpiresAtUtc = DateTimeOffset.UtcNow.Add(AudioPresignedUrlLifetime);
+        var audioUrlResult = await _fileService.CreatePresignedGetUrlAsync(
+            Proposition.AudioBucketName,
+            proposition.AudioFileId,
+            AudioPresignedUrlLifetime,
+            cancellationToken);
+
+        if (audioUrlResult.IsFailed)
+        {
+            _logger.LogError(
+                "Failed to create presigned audio URL for proposition {PropositionId}: {Errors}",
+                proposition.Id,
+                string.Join(", ", audioUrlResult.Errors.Select(e => e.Message)));
+            throw new InvalidOperationException("Unable to create exercise audio URL.");
+        }
+
+        return new AudioAccess(audioUrlResult.Value, audioExpiresAtUtc);
+    }
+
+    private sealed record AudioAccess(string AudioUrl, DateTimeOffset AudioExpiresAtUtc);
 
     private static List<ExerciseListItemDto> SpreadExercisesByTopicAndLevel(List<ExerciseListItemDto> items)
     {

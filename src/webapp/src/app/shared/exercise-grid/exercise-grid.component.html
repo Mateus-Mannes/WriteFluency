@@ -132,22 +132,12 @@
   } @else {
     @for (exercise of exercises(); track exercise.id; let i = $index) {
       <mat-card class="exercise-card">
-        @if (isExerciseRestricted(exercise)) {
-          <button
-            type="button"
-            class="exercise-card-link exercise-card-button"
-            [attr.aria-label]="'Upgrade to Pro to open ' + exercise.title"
-            (click)="openProUpgradeModal(exercise)">
-            <ng-container *ngTemplateOutlet="exerciseCardContent; context: { $implicit: exercise, index: i }"></ng-container>
-          </button>
-        } @else {
-          <a
-            [routerLink]="['/english-writing-exercise', exercise.id]"
-            [state]="{ initialProposition: getInitialPropositionState(exercise) }"
-            class="exercise-card-link">
-            <ng-container *ngTemplateOutlet="exerciseCardContent; context: { $implicit: exercise, index: i }"></ng-container>
-          </a>
-        }
+        <a
+          [routerLink]="['/english-writing-exercise', exercise.id]"
+          [state]="{ initialProposition: getInitialPropositionState(exercise) }"
+          class="exercise-card-link">
+          <ng-container *ngTemplateOutlet="exerciseCardContent; context: { $implicit: exercise, index: i }"></ng-container>
+        </a>
       </mat-card>
     } @empty {
       <div class="empty-state">
@@ -169,47 +159,4 @@
     (page)="onPageChange($event)"
     aria-label="Select page">
   </mat-paginator>
-}
-
-@if (selectedRestrictedExercise()) {
-  <div class="pro-modal-backdrop" (click)="closeProUpgradeModal()">
-    <section
-      class="pro-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="pro-modal-title"
-      (click)="$event.stopPropagation()">
-      <button
-        type="button"
-        class="pro-modal-close"
-        aria-label="Close upgrade dialog"
-        (click)="closeProUpgradeModal()">
-        <mat-icon>close</mat-icon>
-      </button>
-
-      <div class="pro-modal-badge">
-        Pro
-      </div>
-
-      <h2 id="pro-modal-title">This exercise is available on Pro</h2>
-      <p>Free gives you the latest 18 exercises. Pro unlocks the full catalog, including this one, plus AI correction.</p>
-
-      <div class="pro-modal-actions">
-        <button
-          type="button"
-          mat-flat-button
-          color="primary"
-          class="pro-modal-primary"
-          (click)="viewAvailablePlans()">
-          See available plans
-        </button>
-        <button
-          type="button"
-          mat-button
-          (click)="closeProUpgradeModal()">
-          Keep browsing
-        </button>
-      </div>
-    </section>
-  </div>
 }

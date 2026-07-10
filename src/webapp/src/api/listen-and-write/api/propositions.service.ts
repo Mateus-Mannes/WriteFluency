@@ -23,6 +23,8 @@ import { ExerciseListItemDtoPagedResultDto } from '../model/exerciseListItemDtoP
 // @ts-ignore
 import { Proposition } from '../model/proposition';
 // @ts-ignore
+import { PreviewExerciseAccessResultDto } from '../model/previewExerciseAccessResultDto';
+// @ts-ignore
 import { TopicsDtoResult } from '../model/topicsDtoResult';
 
 // @ts-ignore
@@ -256,6 +258,62 @@ export class PropositionsService extends BaseService {
         let localVarPath = `/api/proposition/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int32"})}/begin`;
         const { basePath } = this.configuration;
         return this.httpClient.request<BeginExerciseResultDto>('post', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                responseType: <any>responseType_,
+                withCredentials: true,
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * @endpoint post /api/proposition/{id}/preview-access
+     * @param id
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public apiPropositionIdPreviewAccessPost(id: number, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<PreviewExerciseAccessResultDto>;
+    public apiPropositionIdPreviewAccessPost(id: number, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<PreviewExerciseAccessResultDto>>;
+    public apiPropositionIdPreviewAccessPost(id: number, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<PreviewExerciseAccessResultDto>>;
+    public apiPropositionIdPreviewAccessPost(id: number, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling apiPropositionIdPreviewAccessPost.');
+        }
+
+        let localVarHeaders = this.defaultHeaders;
+
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? false;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/api/proposition/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "number", dataFormat: "int32"})}/preview-access`;
+        const { basePath } = this.configuration;
+        return this.httpClient.request<PreviewExerciseAccessResultDto>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,

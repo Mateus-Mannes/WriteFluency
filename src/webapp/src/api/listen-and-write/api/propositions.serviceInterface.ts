@@ -16,6 +16,7 @@ import { ExerciseListItemDtoPagedResultDto } from '../model/models';
 import { GetPropositionDto } from '../model/models';
 import { Proposition } from '../model/models';
 import { PropositionDto } from '../model/models';
+import { PreviewExerciseAccessResultDto } from '../model/models';
 import { TopicsDtoResult } from '../model/models';
 
 
@@ -63,6 +64,14 @@ export interface PropositionsServiceInterface {
      * @param id
      */
     apiPropositionIdBeginPost(id: number, extraHttpRequestParams?: any): Observable<BeginExerciseResultDto>;
+
+    /**
+     *
+     *
+     * @endpoint post /api/proposition/{id}/preview-access
+     * @param id
+     */
+    apiPropositionIdPreviewAccessPost(id: number, extraHttpRequestParams?: any): Observable<PreviewExerciseAccessResultDto>;
 
     /**
      * 

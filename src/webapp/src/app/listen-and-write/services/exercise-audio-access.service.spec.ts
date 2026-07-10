@@ -21,7 +21,7 @@ describe('ExerciseAudioAccessService', () => {
   beforeEach(() => {
     propositionsServiceMock = jasmine.createSpyObj<PropositionsService>(
       'PropositionsService',
-      ['apiPropositionIdBeginPost'],
+      ['apiPropositionIdBeginPost', 'apiPropositionIdPreviewAccessPost'],
     );
     trackingMock = jasmine.createSpyObj<ExerciseSessionTrackingService>(
       'ExerciseSessionTrackingService',
@@ -66,6 +66,8 @@ describe('ExerciseAudioAccessService', () => {
     });
 
     expect(service.audioUrl()).toBe('https://audio.test/exercise.mp3');
+    expect(service.audioAccessMode()).toBe('begin_granted');
+    expect(service.canStartWithResolvedAudio()).toBeTrue();
     expect(service.getAudioExpiresAtUtc()).toBe('2026-06-05T12:00:00.000Z');
     expect(service.isResolving()).toBeFalse();
     expect(service.isBeginningExercise()).toBeFalse();
@@ -89,8 +91,9 @@ describe('ExerciseAudioAccessService', () => {
     });
 
     expect(service.audioUrl()).toBeNull();
+    expect(service.audioAccessMode()).toBe('none');
     expect(service.getAudioExpiresAtUtc()).toBeNull();
-    expect(callbacks.onProRequired).toHaveBeenCalled();
+    expect(callbacks.onProRequired).toHaveBeenCalledWith('pro_required');
     expect(callbacks.onGranted).not.toHaveBeenCalled();
   });
 
@@ -137,6 +140,8 @@ describe('ExerciseAudioAccessService', () => {
       hasHydrated: false,
       isBrowserEnvironment: true,
       hasProposition: true,
+      isPro: false,
+      requiresPro: false,
       exerciseState: 'intro',
       callbacks,
     });
@@ -148,6 +153,8 @@ describe('ExerciseAudioAccessService', () => {
       hasHydrated: true,
       isBrowserEnvironment: true,
       hasProposition: true,
+      isPro: false,
+      requiresPro: false,
       exerciseState: 'intro',
       callbacks,
     });
@@ -156,10 +163,65 @@ describe('ExerciseAudioAccessService', () => {
       hasHydrated: true,
       isBrowserEnvironment: true,
       hasProposition: true,
+      isPro: false,
+      requiresPro: false,
       exerciseState: 'intro',
       callbacks,
     });
 
     expect(propositionsServiceMock.apiPropositionIdBeginPost).toHaveBeenCalledTimes(1);
+  });
+
+  it('should use preview access for hydrated restricted non-Pro exercises without consuming begin', () => {
+    const metadata = { id: 46, title: 'Exercise 46', requiresPro: true } as any;
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.and.returnValue(of({
+      accessStatus: 'preview_available_free_intro',
+      audioUrl: 'https://audio.test/preview.mp3',
+      audioExpiresAtUtc: '2026-06-05T13:00:00.000Z',
+      metadata,
+    } as any) as any);
+
+    service.tryResolveAfterHydration({
+      exerciseId: 46,
+      hasHydrated: true,
+      isBrowserEnvironment: true,
+      hasProposition: true,
+      isPro: false,
+      requiresPro: true,
+      exerciseState: 'intro',
+      callbacks,
+    });
+
+    expect(propositionsServiceMock.apiPropositionIdPreviewAccessPost).toHaveBeenCalledWith(46);
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+    expect(service.audioUrl()).toBe('https://audio.test/preview.mp3');
+    expect(service.audioAccessMode()).toBe('preview_only');
+    expect(service.canStartWithResolvedAudio()).toBeFalse();
+    expect(callbacks.onMetadata).toHaveBeenCalledWith(metadata);
+    expect(callbacks.onGranted).not.toHaveBeenCalled();
+  });
+
+  it('should surface preview denial statuses to the access callback', () => {
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.and.returnValue(of({
+      accessStatus: 'login_required_to_unlock_exercise',
+      audioUrl: null,
+      audioExpiresAtUtc: null,
+      metadata: { id: 47, title: 'Exercise 47', requiresPro: true },
+    } as any) as any);
+
+    service.tryResolveAfterHydration({
+      exerciseId: 47,
+      hasHydrated: true,
+      isBrowserEnvironment: true,
+      hasProposition: true,
+      isPro: false,
+      requiresPro: true,
+      exerciseState: 'intro',
+      callbacks,
+    });
+
+    expect(service.audioUrl()).toBeNull();
+    expect(service.audioAccessMode()).toBe('none');
+    expect(callbacks.onProRequired).toHaveBeenCalledWith('login_required_to_unlock_exercise');
   });
 });

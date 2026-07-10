@@ -237,13 +237,13 @@ public class PropositionServiceTests : ApplicationTestBase
 
         result.ShouldNotBeNull();
         result.Access.ShouldBe("granted");
-        result.AudioUrl.ShouldContain($"/{Proposition.AudioBucketName}/{proposition.AudioFileId}");
+        result.AudioUrl!.ShouldContain($"/{Proposition.AudioBucketName}/{proposition.AudioFileId}");
         result.AudioExpiresAtUtc.ShouldNotBeNull();
         result.Metadata.RequiresPro.ShouldBeFalse();
     }
 
     [Fact]
-    public async Task BeginExerciseAsync_WhenRestrictedAndFreeUser_ShouldReturnProRequiredWithoutAudio()
+    public async Task BeginExerciseAsync_WhenRestrictedAndAnonymousHasNoFingerprint_ShouldReturnLoginRequiredWithoutAudio()
     {
         var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
         var propositions = Enumerable.Range(1, 19)
@@ -258,10 +258,103 @@ public class PropositionServiceTests : ApplicationTestBase
         var result = await _service.BeginExerciseAsync(propositions[0].Id, isPro: false);
 
         result.ShouldNotBeNull();
-        result.Access.ShouldBe("pro_required");
+        result.Access.ShouldBe(CatalogAccessStatuses.LoginRequiredToUnlockExercise);
         result.AudioUrl.ShouldBeNull();
         result.AudioExpiresAtUtc.ShouldBeNull();
         result.Metadata.RequiresPro.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task PreviewExerciseAccessAsync_WhenAnonymousRestrictedQuotaUnused_ShouldReturnAudioWithoutConsumingQuota()
+    {
+        var propositions = await SeedCatalogPropositionsAsync(19);
+        var accessContext = AnonymousContext();
+
+        var result = await _service.PreviewExerciseAccessAsync(propositions[0].Id, accessContext);
+
+        result.ShouldNotBeNull();
+        result.AccessStatus.ShouldBe(CatalogAccessStatuses.PreviewAvailableAnonymousSample);
+        result.AudioUrl!.ShouldContain($"/{Proposition.AudioBucketName}/{propositions[0].AudioFileId}");
+        result.AudioExpiresAtUtc.ShouldNotBeNull();
+        result.Metadata.RequiresPro.ShouldBeTrue();
+        (await _context.CatalogAccessCounters.CountAsync()).ShouldBe(0);
+        (await _context.CatalogExerciseGrants.CountAsync()).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenAnonymousRestrictedQuotaUnused_ShouldConsumeQuotaAndCreatePermanentGrant()
+    {
+        var propositions = await SeedCatalogPropositionsAsync(20);
+        var accessContext = AnonymousContext();
+
+        var result = await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+
+        result.ShouldNotBeNull();
+        result.Access.ShouldBe("granted");
+        result.AudioUrl.ShouldNotBeNullOrWhiteSpace();
+        result.Metadata.RequiresPro.ShouldBeTrue();
+
+        var counter = await _context.CatalogAccessCounters.SingleAsync();
+        counter.SubjectType.ShouldBe("anonymous");
+        counter.SubjectKey.ShouldBe("anon-fingerprint-1");
+        counter.Feature.ShouldBe(CatalogAccessFeatures.AnonymousSample);
+        counter.UsedCount.ShouldBe(1);
+
+        var grant = await _context.CatalogExerciseGrants.SingleAsync();
+        grant.SubjectType.ShouldBe("anonymous");
+        grant.SubjectKey.ShouldBe("anon-fingerprint-1");
+        grant.PropositionId.ShouldBe(propositions[0].Id);
+        grant.Source.ShouldBe(CatalogAccessFeatures.AnonymousSample);
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenAnonymousQuotaUsed_ShouldAllowGrantedExerciseAndRequireLoginForAnother()
+    {
+        var propositions = await SeedCatalogPropositionsAsync(20);
+        var accessContext = AnonymousContext();
+
+        await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+
+        var sameExerciseResult = await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+        var otherRestrictedResult = await _service.BeginExerciseAsync(propositions[1].Id, accessContext);
+
+        sameExerciseResult.ShouldNotBeNull();
+        sameExerciseResult.Access.ShouldBe("granted");
+        sameExerciseResult.AudioUrl.ShouldNotBeNullOrWhiteSpace();
+        otherRestrictedResult.ShouldNotBeNull();
+        otherRestrictedResult.Access.ShouldBe(CatalogAccessStatuses.LoginRequiredToUnlockExercise);
+        otherRestrictedResult.AudioUrl.ShouldBeNull();
+        (await _context.CatalogAccessCounters.SingleAsync()).UsedCount.ShouldBe(1);
+        (await _context.CatalogExerciseGrants.CountAsync()).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task BeginExerciseAsync_WhenLoggedInFreeQuotaUsed_ShouldAllowGrantedExerciseAndRequireUpgradeForAnother()
+    {
+        var propositions = await SeedCatalogPropositionsAsync(20);
+        var accessContext = LoggedInFreeContext();
+
+        var preview = await _service.PreviewExerciseAccessAsync(propositions[0].Id, accessContext);
+        var firstBegin = await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+        var sameExerciseResult = await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+        var otherRestrictedResult = await _service.BeginExerciseAsync(propositions[1].Id, accessContext);
+
+        preview.ShouldNotBeNull();
+        preview.AccessStatus.ShouldBe(CatalogAccessStatuses.PreviewAvailableFreeIntro);
+        firstBegin.ShouldNotBeNull();
+        firstBegin.Access.ShouldBe("granted");
+        sameExerciseResult.ShouldNotBeNull();
+        sameExerciseResult.Access.ShouldBe("granted");
+        otherRestrictedResult.ShouldNotBeNull();
+        otherRestrictedResult.Access.ShouldBe(CatalogAccessStatuses.UpgradeRequiredToUnlockExercise);
+        otherRestrictedResult.AudioUrl.ShouldBeNull();
+
+        var counter = await _context.CatalogAccessCounters.SingleAsync();
+        counter.SubjectType.ShouldBe("user");
+        counter.SubjectKey.ShouldBe("user-1");
+        counter.Feature.ShouldBe(CatalogAccessFeatures.FreeIntro);
+        counter.UsedCount.ShouldBe(1);
+        (await _context.CatalogExerciseGrants.CountAsync()).ShouldBe(1);
     }
 
     [Fact]
@@ -321,6 +414,22 @@ public class PropositionServiceTests : ApplicationTestBase
         result.Metadata.RequiresPro.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task GetExerciseForComparisonAsync_WhenRestrictedAndGranted_ShouldReturnOriginalText()
+    {
+        var propositions = await SeedCatalogPropositionsAsync(19, index => $"Server text {index}.");
+        var accessContext = LoggedInFreeContext();
+
+        await _service.BeginExerciseAsync(propositions[0].Id, accessContext);
+
+        var result = await _service.GetExerciseForComparisonAsync(propositions[0].Id, accessContext);
+
+        result.ShouldNotBeNull();
+        result.IsGranted.ShouldBeTrue();
+        result.OriginalText.ShouldBe("Server text 1.");
+        result.Metadata.RequiresPro.ShouldBeTrue();
+    }
+
     private static Proposition CreateProposition(
         string title,
         DateTime? publishedOn = null,
@@ -351,4 +460,35 @@ public class PropositionServiceTests : ApplicationTestBase
                 TextLength = "Test article text.".Length
             }
         };
+
+    private async Task<Proposition[]> SeedCatalogPropositionsAsync(
+        int count,
+        Func<int, string>? textFactory = null)
+    {
+        var createdAt = new DateTime(2026, 5, 1, 10, 0, 0, DateTimeKind.Utc);
+        var propositions = Enumerable.Range(1, count)
+            .Select(index => CreateProposition(
+                title: $"Exercise {index}",
+                createdAt: createdAt.AddMinutes(index),
+                text: textFactory?.Invoke(index) ?? $"Server text {index}."))
+            .ToArray();
+
+        await _context.Propositions.AddRangeAsync(propositions);
+        await _context.SaveChangesAsync();
+        return propositions;
+    }
+
+    private static PropositionAccessContext AnonymousContext(string fingerprint = "anon-fingerprint-1") =>
+        new(
+            IsAuthenticated: false,
+            IsPro: false,
+            UserId: null,
+            AnonymousFingerprintHash: fingerprint);
+
+    private static PropositionAccessContext LoggedInFreeContext(string userId = "user-1") =>
+        new(
+            IsAuthenticated: true,
+            IsPro: false,
+            UserId: userId,
+            AnonymousFingerprintHash: null);
 }

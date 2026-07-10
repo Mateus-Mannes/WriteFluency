@@ -87,6 +87,7 @@
             class="exercise-intro-section"
             [isLoading]="isRestoringExercise() || isBeginningExercise() || isResolvingAudioAccess()"
             [loadingTooltip]="getBeginExerciseLoadingTooltip()"
+            [buttonLabel]="beginExerciseLabel()"
             (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
@@ -157,33 +158,35 @@
 </div>
 
 @if (isProUpgradeModalOpen()) {
-    <div class="pro-upgrade-modal-backdrop" (click)="closeProUpgradeModal()">
+    <div class="pro-upgrade-modal-backdrop" (click)="dismissProUpgradeModal()">
         <section
             class="pro-upgrade-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="pro-upgrade-modal-title"
             (click)="$event.stopPropagation()">
+            @if (!isCatalogAccessBlockingModal()) {
             <button
                 type="button"
                 class="pro-upgrade-modal-close"
                 aria-label="Close Pro plans dialog"
-                (click)="closeProUpgradeModal()">
+                (click)="dismissProUpgradeModal()">
                 <span class="material-symbols-outlined" aria-hidden="true">close</span>
             </button>
+            }
 
-            <div class="pro-upgrade-modal-badge">Pro</div>
-            <h2 id="pro-upgrade-modal-title">This exercise is available on Pro</h2>
+            <div class="pro-upgrade-modal-badge">{{ getCatalogAccessModalBadge() }}</div>
+            <h2 id="pro-upgrade-modal-title">{{ getCatalogAccessModalTitle() }}</h2>
             <p>
-                Free includes the latest 18 exercises. Pro unlocks the full catalog, including this one, plus AI correction.
+                {{ getCatalogAccessModalDescription() }}
             </p>
 
             <div class="pro-upgrade-modal-actions">
                 <button
                     type="button"
                     class="pro-upgrade-modal-primary text-body"
-                    (click)="viewAvailablePlans()">
-                    See available plans
+                    (click)="onCatalogAccessPrimaryCta()">
+                    {{ getCatalogAccessPrimaryCtaLabel() }}
                 </button>
                 <button
                     type="button"

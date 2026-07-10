@@ -9,11 +9,11 @@
  */
 import { Proposition } from './proposition';
 
-export interface BeginExerciseResultDto {
-    access?: 'granted' | 'pro_required' | 'login_required_to_unlock_exercise' | 'upgrade_required_to_unlock_exercise' | string;
+export interface PreviewExerciseAccessResultDto {
+    accessStatus?: 'granted_free_window' | 'granted_pro' | 'preview_available_anonymous_sample' | 'preview_available_free_intro' | 'granted_catalog_teaser' | 'login_required_to_unlock_exercise' | 'upgrade_required_to_unlock_exercise' | string;
     audioUrl?: string | null;
     audioExpiresAtUtc?: string | null;
     metadata?: Proposition;
 }
-export namespace BeginExerciseResultDto {
+export namespace PreviewExerciseAccessResultDto {
 }

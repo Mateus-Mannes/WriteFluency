@@ -38,6 +38,14 @@ public class ApplicationTestBase : IDisposable
         services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
             opts.UseSqlite(_connection));
 
+        services.AddSingleton(Options.Create(new CatalogAccessTeaserOptions
+        {
+            Enabled = true,
+            AnonymousFingerprintSalt = "test-catalog-access-teaser-salt",
+            AnonymousSampleLifetimeLimit = 1,
+            FreeIntroLifetimeLimit = 1
+        }));
+        services.AddTransient<CatalogAccessTeaserService>();
         services.AddTransient<PropositionService>();
         services.AddSingleton<IPropositionImageService, FastPropositionImageService>();
         services.AddTransient<CreatePropositionService>();

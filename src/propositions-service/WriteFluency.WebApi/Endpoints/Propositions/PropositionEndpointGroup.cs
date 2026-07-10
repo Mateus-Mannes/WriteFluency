@@ -16,6 +16,8 @@ public class PropositionEndpointGroup : IEndpointMapper
             .Produces<PropositionMetadataDto>();
         group.MapPost("/{id}/begin", BeginExerciseAsync)
             .Produces<BeginExerciseResultDto>();
+        group.MapPost("/{id}/preview-access", PreviewExerciseAccessAsync)
+            .Produces<PreviewExerciseAccessResultDto>();
         group.MapGet("/exercises", GetExercisesAsync)
             .Produces<PagedResultDto<ExerciseListItemDto>>();
         
@@ -60,6 +62,7 @@ public class PropositionEndpointGroup : IEndpointMapper
         HttpResponse response,
         PropositionService propositionService,
         IUsersSessionClient usersSessionClient,
+        AnonymousCatalogAccessFingerprintService anonymousFingerprintService,
         ILogger<PropositionEndpointGroup> logger,
         CancellationToken cancellationToken)
     {
@@ -68,7 +71,8 @@ public class PropositionEndpointGroup : IEndpointMapper
         try
         {
             var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
-            var result = await propositionService.BeginExerciseAsync(id, session.IsPro, cancellationToken);
+            var accessContext = CreateAccessContext(session, request, anonymousFingerprintService);
+            var result = await propositionService.BeginExerciseAsync(id, accessContext, cancellationToken);
 
             if (result is null)
             {
@@ -81,6 +85,38 @@ public class PropositionEndpointGroup : IEndpointMapper
         {
             logger.LogError(e, "Error beginning proposition {PropositionId}", id);
             return TypedResults.InternalServerError("Unable to begin exercise");
+        }
+    }
+
+    public async Task<Results<Ok<PreviewExerciseAccessResultDto>, InternalServerError<string>, NotFound<string>>> PreviewExerciseAccessAsync(
+        int id,
+        HttpRequest request,
+        HttpResponse response,
+        PropositionService propositionService,
+        IUsersSessionClient usersSessionClient,
+        AnonymousCatalogAccessFingerprintService anonymousFingerprintService,
+        ILogger<PropositionEndpointGroup> logger,
+        CancellationToken cancellationToken)
+    {
+        response.Headers.CacheControl = NoStoreCacheControl;
+
+        try
+        {
+            var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
+            var accessContext = CreateAccessContext(session, request, anonymousFingerprintService);
+            var result = await propositionService.PreviewExerciseAccessAsync(id, accessContext, cancellationToken);
+
+            if (result is null)
+            {
+                return TypedResults.NotFound("Proposition not found");
+            }
+
+            return TypedResults.Ok(result);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Error previewing proposition access {PropositionId}", id);
+            return TypedResults.InternalServerError("Unable to preview exercise access");
         }
     }
 
@@ -138,5 +174,21 @@ public class PropositionEndpointGroup : IEndpointMapper
             logger.LogError(e, "Error retrieving exercises list");
             return TypedResults.InternalServerError("Unable to retrieve exercises");
         }
+    }
+
+    private static PropositionAccessContext CreateAccessContext(
+        UsersSession session,
+        HttpRequest request,
+        AnonymousCatalogAccessFingerprintService anonymousFingerprintService)
+    {
+        var anonymousFingerprintHash = session.IsAuthenticated
+            ? null
+            : anonymousFingerprintService.CreateFingerprintHash(request);
+
+        return new PropositionAccessContext(
+            session.IsAuthenticated,
+            session.IsPro,
+            session.UserId,
+            anonymousFingerprintHash);
     }
 }

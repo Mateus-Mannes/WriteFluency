@@ -98,6 +98,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   proposition = signal<Proposition | null>(null);
   exerciseAudioUrl = this.exerciseAudioAccess.audioUrl;
+  beginExerciseLabel = signal('Begin Exercise');
 
   result = signal<TextComparisonResult | null>(null);
   activeMistakePatternComparisonIndex = signal<number | null>(null);
@@ -148,6 +149,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   isRestoringExercise = this.exerciseStateRestore.isRestoring;
   isGuestLoginModalOpen = this.guestExerciseLoginPrompt.isOpen;
   isProUpgradeModalOpen = signal<boolean>(false);
+  catalogAccessDenialStatus = signal<string | null>(null);
 
   initialText = signal<string | null>(null);
   
@@ -200,6 +202,7 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.exerciseSessionTracking.endSession('route_changed');
         this.exerciseId = parsedId;
         this.guestExerciseLoginPrompt.reset();
+        this.catalogAccessDenialStatus.set(null);
         this.exerciseSessionTracking.startSession({
           exerciseId: this.exerciseId,
           source: 'route_navigation'
@@ -425,7 +428,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       return;
     }
 
-    if (this.exerciseAudioUrl()) {
+    if (this.exerciseAudioAccess.canStartWithResolvedAudio()) {
       this.startWritingExercise(context);
       return;
     }
@@ -437,11 +440,19 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   private tryResolveAudioAccessAfterHydration(): void {
+    const proposition = this.proposition();
+
+    if (!proposition || proposition.requiresPro == null) {
+      return;
+    }
+
     this.exerciseAudioAccess.tryResolveAfterHydration({
       exerciseId: this.exerciseId,
       hasHydrated: this.hasHydrated,
       isBrowserEnvironment: this.browserService.isBrowserEnvironment(),
-      hasProposition: Boolean(this.proposition()),
+      hasProposition: true,
+      isPro: this.authSessionStore.isPro(),
+      requiresPro: proposition.requiresPro === true,
       exerciseState: this.exerciseState(),
       callbacks: this.buildAudioAccessCallbacks(),
     });
@@ -466,14 +477,15 @@ export class ListenAndWriteComponent implements OnDestroy {
   private buildAudioAccessCallbacks(): AudioAccessCallbacks {
     return {
       onMetadata: (metadata: Proposition) => this.proposition.set(metadata),
-      onProRequired: () => {
+      onProRequired: (accessStatus?: string) => {
         this.exerciseAudioController.clearAutoPauseTimer();
         if (this.exerciseState() !== 'intro') {
           this.setNewState('intro');
         }
-        this.openProUpgradeModal();
+        this.openProUpgradeModal(accessStatus);
       },
       onGranted: (context?: models.BeginExerciseContext) => {
+        this.catalogAccessDenialStatus.set(null);
         if (context) {
           this.startWritingExercise(context);
         }
@@ -540,7 +552,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.browserService.scrollToTop();
   }
 
-  openProUpgradeModal(): void {
+  openProUpgradeModal(accessStatus: string = constants.proRequiredAccess): void {
+    this.catalogAccessDenialStatus.set(accessStatus);
     this.isProUpgradeModalOpen.set(true);
   }
 
@@ -548,13 +561,47 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.isProUpgradeModalOpen.set(false);
   }
 
+  dismissProUpgradeModal(): void {
+    if (this.isCatalogAccessBlockingModal()) {
+      return;
+    }
+
+    this.closeProUpgradeModal();
+  }
+
+  isCatalogAccessBlockingModal(): boolean {
+    const accessStatus = this.catalogAccessDenialStatus();
+    return accessStatus === constants.catalogLoginRequiredAccess
+      || accessStatus === constants.catalogUpgradeRequiredAccess;
+  }
+
   async viewAvailablePlans(): Promise<void> {
     this.closeProUpgradeModal();
     await this.router.navigate(['/plans'], {
       queryParams: {
-        source: 'pro_exercise_begin',
+        source: 'catalog_access_upgrade_cta',
+        returnUrl: this.getPostLoginReturnUrl(),
       },
     });
+  }
+
+  async onCatalogAccessLoginToUnlock(): Promise<void> {
+    this.closeProUpgradeModal();
+    await this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl: this.getPostLoginReturnUrl(),
+        source: 'catalog_access_login_cta',
+      }
+    });
+  }
+
+  async onCatalogAccessPrimaryCta(): Promise<void> {
+    if (this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess) {
+      await this.onCatalogAccessLoginToUnlock();
+      return;
+    }
+
+    await this.viewAvailablePlans();
   }
 
   async keepPracticingFreeExercises(): Promise<void> {
@@ -564,6 +611,30 @@ export class ListenAndWriteComponent implements OnDestroy {
         source: 'pro_exercise_begin',
       },
     });
+  }
+
+  getCatalogAccessModalBadge(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in'
+      : 'Pro';
+  }
+
+  getCatalogAccessModalTitle(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in to unlock this exercise'
+      : 'This exercise is available on Pro';
+  }
+
+  getCatalogAccessModalDescription(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Sign in to use your free full-catalog exercise and keep practicing from this page.'
+      : 'Free includes the latest 18 exercises. Pro unlocks the full catalog, including this one, plus AI correction.';
+  }
+
+  getCatalogAccessPrimaryCtaLabel(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in to unlock'
+      : 'See available plans';
   }
 
   private trackExerciseStart(): void {

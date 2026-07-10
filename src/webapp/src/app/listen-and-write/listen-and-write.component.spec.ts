@@ -54,6 +54,7 @@ describe('ListenAndWriteComponent', () => {
         'hasReliableSessionState',
         'listenWriteTutorialCompleted',
         'userId',
+        'isPro',
         'markListenWriteTutorialCompletedInBackground',
       ],
     );
@@ -61,6 +62,7 @@ describe('ListenAndWriteComponent', () => {
     authSessionStoreMock.hasReliableSessionState.and.returnValue(true);
     authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(null);
     authSessionStoreMock.userId.and.returnValue('user-1');
+    authSessionStoreMock.isPro.and.returnValue(false);
     feedbackServiceMock = jasmine.createSpyObj<FeedbackService>(
       'FeedbackService',
       ['shouldShowPrompt', 'consumePromptOpportunity', 'markDismissed', 'submitFeedback'],
@@ -69,7 +71,7 @@ describe('ListenAndWriteComponent', () => {
     feedbackServiceMock.consumePromptOpportunity.and.returnValue(false);
     propositionsServiceMock = jasmine.createSpyObj<PropositionsService>(
       'PropositionsService',
-      ['apiPropositionIdGet', 'apiPropositionIdBeginPost'],
+      ['apiPropositionIdGet', 'apiPropositionIdBeginPost', 'apiPropositionIdPreviewAccessPost'],
     );
     propositionsServiceMock.apiPropositionIdGet.and.returnValue(of({
       id: 1,
@@ -92,6 +94,20 @@ describe('ListenAndWriteComponent', () => {
         audioDurationSeconds: 60,
         newsUrl: 'https://example.com/news',
         requiresPro: false,
+      },
+    } as any) as any);
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.and.callFake((id: number) => of({
+      accessStatus: 'preview_available_free_intro',
+      audioUrl: 'https://minio.test/propositions/preview-audio.mp3?signature=test',
+      audioExpiresAtUtc: '2026-04-20T20:00:00.000Z',
+      metadata: {
+        id,
+        title: `Exercise ${id}`,
+        subjectId: 'Business',
+        complexityId: 'Beginner',
+        audioDurationSeconds: 60,
+        newsUrl: 'https://example.com/news',
+        requiresPro: true,
       },
     } as any) as any);
     textComparisonsServiceMock = jasmine.createSpyObj<TextComparisonsService>(
@@ -1025,20 +1041,61 @@ describe('ListenAndWriteComponent', () => {
     (component as any).hasHydrated = true;
     component.exerciseId = 42;
     component.exerciseState.set('intro');
-    component.proposition.set({ id: 42, title: 'Exercise 42' } as any);
+    component.proposition.set({ id: 42, title: 'Exercise 42', requiresPro: false } as any);
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.calls.reset();
 
     (component as any).tryResolveAudioAccessAfterHydration();
 
     expect(propositionsServiceMock.apiPropositionIdBeginPost).toHaveBeenCalledWith(42);
+    expect(propositionsServiceMock.apiPropositionIdPreviewAccessPost).not.toHaveBeenCalled();
     expect(component.exerciseAudioUrl()).toBe('https://minio.test/propositions/audio.mp3?signature=test');
     expect(component.shouldShowAudioPanel()).toBeTrue();
     expect(component.exerciseState()).toBe('intro');
     expect(exerciseProgressTrackingMock.trackStart).not.toHaveBeenCalled();
   });
 
+  it('should wait for requiresPro metadata before resolving hydrated audio access', () => {
+    (component as any).hasHydrated = true;
+    component.exerciseId = 51;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 51, title: 'Exercise 51' } as any);
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.calls.reset();
+
+    (component as any).tryResolveAudioAccessAfterHydration();
+
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+    expect(propositionsServiceMock.apiPropositionIdPreviewAccessPost).not.toHaveBeenCalled();
+
+    component.proposition.set({ id: 51, title: 'Exercise 51', requiresPro: true } as any);
+
+    (component as any).tryResolveAudioAccessAfterHydration();
+
+    expect(propositionsServiceMock.apiPropositionIdPreviewAccessPost).toHaveBeenCalledWith(51);
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+  });
+
+  it('should preview restricted non-Pro audio after hydration without beginning', () => {
+    (component as any).hasHydrated = true;
+    component.exerciseId = 49;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 49, title: 'Exercise 49', requiresPro: true } as any);
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.calls.reset();
+
+    (component as any).tryResolveAudioAccessAfterHydration();
+
+    expect(propositionsServiceMock.apiPropositionIdPreviewAccessPost).toHaveBeenCalledWith(49);
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).not.toHaveBeenCalled();
+    expect(component.exerciseAudioUrl()).toBe('https://minio.test/propositions/preview-audio.mp3?signature=test');
+    expect(component.beginExerciseLabel()).toBe('Begin Exercise');
+    expect(component.exerciseState()).toBe('intro');
+  });
+
   it('should open the Pro modal when hydrated audio access is denied', () => {
-    propositionsServiceMock.apiPropositionIdBeginPost.and.returnValue(of({
-      access: 'pro_required',
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.and.returnValue(of({
+      accessStatus: 'upgrade_required_to_unlock_exercise',
       audioUrl: null,
       audioExpiresAtUtc: null,
       metadata: {
@@ -1055,18 +1112,22 @@ describe('ListenAndWriteComponent', () => {
     component.exerciseId = 43;
     component.exerciseState.set('exercise');
     component.proposition.set({ id: 43, title: 'Exercise 43', requiresPro: true } as any);
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+    propositionsServiceMock.apiPropositionIdPreviewAccessPost.calls.reset();
 
     (component as any).tryResolveAudioAccessAfterHydration();
 
     expect(component.exerciseAudioUrl()).toBeNull();
     expect(component.shouldShowAudioPanel()).toBeTrue();
     expect(component.isProUpgradeModalOpen()).toBeTrue();
+    expect(component.catalogAccessDenialStatus()).toBe('upgrade_required_to_unlock_exercise');
     expect(component.exerciseState()).toBe('intro');
   });
 
   it('should close the Pro modal and navigate to plans from the upgrade CTA', async () => {
     const router = (component as any).router;
     const navigateSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.exerciseId = 43;
     component.isProUpgradeModalOpen.set(true);
 
     await component.viewAvailablePlans();
@@ -1074,9 +1135,54 @@ describe('ListenAndWriteComponent', () => {
     expect(component.isProUpgradeModalOpen()).toBeFalse();
     expect(navigateSpy).toHaveBeenCalledWith(['/plans'], {
       queryParams: {
-        source: 'pro_exercise_begin',
+        source: 'catalog_access_upgrade_cta',
+        returnUrl: '/english-writing-exercise/43',
       },
     });
+  });
+
+  it('should route catalog login-required CTA to login with returnUrl', async () => {
+    const router = (component as any).router;
+    const navigateSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.exerciseId = 50;
+    component.openProUpgradeModal(constants.catalogLoginRequiredAccess);
+
+    await component.onCatalogAccessPrimaryCta();
+
+    expect(component.isProUpgradeModalOpen()).toBeFalse();
+    expect(navigateSpy).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: {
+        returnUrl: '/english-writing-exercise/50',
+        source: 'catalog_access_login_cta',
+      }
+    });
+  });
+
+  it('should not allow catalog access login-required modal to be dismissed', () => {
+    component.openProUpgradeModal(constants.catalogLoginRequiredAccess);
+
+    component.dismissProUpgradeModal();
+
+    expect(component.isProUpgradeModalOpen()).toBeTrue();
+
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.pro-upgrade-modal-close')).toBeNull();
+  });
+
+  it('should not allow catalog access upgrade-required modal to be dismissed', () => {
+    component.openProUpgradeModal(constants.catalogUpgradeRequiredAccess);
+
+    component.dismissProUpgradeModal();
+
+    expect(component.isProUpgradeModalOpen()).toBeTrue();
+  });
+
+  it('should still allow the regular Pro modal to be dismissed', () => {
+    component.openProUpgradeModal(constants.proRequiredAccess);
+
+    component.dismissProUpgradeModal();
+
+    expect(component.isProUpgradeModalOpen()).toBeFalse();
   });
 
   it('should close the Pro modal and navigate to exercises from the free practice CTA', async () => {
@@ -1104,6 +1210,7 @@ describe('ListenAndWriteComponent', () => {
     component.exerciseState.set('intro');
     component.proposition.set({ id: 44, title: 'Exercise 44' } as any);
     component.exerciseAudioUrl.set('https://minio.test/propositions/audio.mp3?signature=test');
+    (component as any).exerciseAudioAccess.audioAccessMode.set('begin_granted');
     component.newsAudioComponent = {
       audioEnded: false,
       pauseAudio,
@@ -1122,6 +1229,30 @@ describe('ListenAndWriteComponent', () => {
     expect(exerciseProgressTrackingMock.trackStart).toHaveBeenCalledWith(
       jasmine.objectContaining({ id: 44 }),
     );
+  });
+
+  it('should call begin before starting when audio access came from preview', () => {
+    authSessionStoreMock.isAuthenticated.and.returnValue(true);
+    authSessionStoreMock.listenWriteTutorialCompleted.and.returnValue(true);
+    window.localStorage.setItem(constants.listenWriteFirstTimeKey, 'false');
+    component.exerciseId = 48;
+    component.exerciseState.set('intro');
+    component.proposition.set({ id: 48, title: 'Exercise 48', requiresPro: true } as any);
+    component.exerciseAudioUrl.set('https://minio.test/propositions/preview-audio.mp3?signature=test');
+    (component as any).exerciseAudioAccess.audioAccessMode.set('preview_only');
+    component.newsAudioComponent = {
+      audioEnded: false,
+      pauseAudio: jasmine.createSpy('pauseAudio'),
+      resetAudioToStart: jasmine.createSpy('resetAudioToStart'),
+      playAudio: jasmine.createSpy('playAudio'),
+      audioRef: { nativeElement: { currentTime: 0 } },
+    } as any;
+    propositionsServiceMock.apiPropositionIdBeginPost.calls.reset();
+
+    component.beginExercise();
+
+    expect(propositionsServiceMock.apiPropositionIdBeginPost).toHaveBeenCalledWith(48);
+    expect(component.exerciseState()).toBe('exercise');
   });
 
   it('should show listen-first prompt before first-time users start without completing audio', () => {

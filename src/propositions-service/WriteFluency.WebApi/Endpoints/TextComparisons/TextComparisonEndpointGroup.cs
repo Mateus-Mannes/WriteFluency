@@ -34,6 +34,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         PropositionService propositionService,
         IUsersSessionClient usersSessionClient,
         AnonymousProReviewFingerprintService anonymousFingerprintService,
+        AnonymousCatalogAccessFingerprintService anonymousCatalogAccessFingerprintService,
         IOptions<TextComparisonRefinementValidationOptions> validationOptions,
         ILogger<TextComparisonEndpointGroup> logger,
         CancellationToken cancellationToken)
@@ -61,9 +62,17 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         try
         {
             var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
+            var catalogAnonymousFingerprintHash = session.IsAuthenticated
+                ? null
+                : anonymousCatalogAccessFingerprintService.CreateFingerprintHash(request);
+            var accessContext = new PropositionAccessContext(
+                session.IsAuthenticated,
+                session.IsPro,
+                session.UserId,
+                catalogAnonymousFingerprintHash);
             var accessResult = await propositionService.GetExerciseForComparisonAsync(
                 compareTextsDto.PropositionId,
-                session.IsPro,
+                accessContext,
                 cancellationToken);
 
             if (accessResult is null)

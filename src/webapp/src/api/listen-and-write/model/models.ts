@@ -13,6 +13,7 @@ export * from './iSuccess';
 export * from './newsInfo';
 export * from './proposition';
 export * from './propositionGenerationLog';
+export * from './previewExerciseAccessResultDto';
 export * from './proRequiredResultDto';
 export * from './subject';
 export * from './subjectEnum';

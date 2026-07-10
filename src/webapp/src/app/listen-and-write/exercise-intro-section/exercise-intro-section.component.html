@@ -11,7 +11,7 @@
             [class.cta-button-loading]="isLoading()"
             [disabled]="isLoading()">
             <mat-icon>play_arrow</mat-icon>
-            <span class="cta-button__text text-body">Begin Exercise</span>
+            <span class="cta-button__text text-body">{{ buttonLabel() }}</span>
         </button>
     </span>
 </div>

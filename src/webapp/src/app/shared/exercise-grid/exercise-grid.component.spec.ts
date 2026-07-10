@@ -169,18 +169,15 @@ describe('ExerciseGridComponent', () => {
     expect(component.pageSize()).toBe(18);
   }));
 
-  it('should render a Pro badge and open upgrade modal instead of navigating for anonymous restricted cards', () => {
+  it('should render a Pro badge and link anonymous restricted cards to the exercise page', () => {
     setExercises([exerciseItem({ requiresPro: true })]);
     createComponent();
-    routerSpy.navigate.calls.reset();
 
-    const restrictedButton: HTMLButtonElement = fixture.nativeElement.querySelector('.exercise-card-button');
-    restrictedButton.click();
-    fixture.detectChanges();
-
+    expect(fixture.nativeElement.querySelector('.exercise-card-button')).toBeNull();
     expect(fixture.nativeElement.querySelector('.pro-badge mat-icon')?.textContent).toContain('workspace_premium');
-    expect(fixture.nativeElement.querySelector('.pro-modal')).not.toBeNull();
-    expect(routerSpy.navigate).not.toHaveBeenCalled();
+    const restrictedLink: HTMLAnchorElement = fixture.nativeElement.querySelector('a.exercise-card-link');
+    expect(restrictedLink).not.toBeNull();
+    expect(component.getInitialPropositionState(component.exercises()[0]).requiresPro).toBeTrue();
   });
 
   it('should let Pro users open API-marked Pro cards normally', () => {
@@ -200,25 +197,4 @@ describe('ExerciseGridComponent', () => {
     expect(playableLink).not.toBeNull();
   });
 
-  it('should send users to the plans page from the modal CTA', fakeAsync(() => {
-    authStateSignal.set({
-      ...authStateSignal(),
-      isAuthenticated: true,
-      userId: 'user-1',
-      email: 'free@example.com',
-    });
-    setExercises([exerciseItem({ requiresPro: true })]);
-    createComponent();
-
-    component.openProUpgradeModal(component.exercises()[0]);
-    fixture.detectChanges();
-    component.viewAvailablePlans();
-    tick();
-
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/plans'], {
-      queryParams: {
-        source: 'pro_catalog_modal',
-      },
-    });
-  }));
 });

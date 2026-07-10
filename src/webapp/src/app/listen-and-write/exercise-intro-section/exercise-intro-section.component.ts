@@ -13,6 +13,7 @@ export class ExerciseIntroSectionComponent {
 
   isLoading = input.required<boolean>();
   loadingTooltip = input<string>('Starting exercise...');
+  buttonLabel = input<string>('Begin Exercise');
   beginExerciseClick = output<void>();
 
   beginExercise() {

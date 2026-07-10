@@ -16,7 +16,6 @@ import { ComplexityEnum } from '../../../api/listen-and-write/model/complexityEn
 import { PropositionsService } from '../../../api/listen-and-write/api/propositions.service';
 import { minioVariantImageLoader } from '../image-loaders/minio-variant-image.loader';
 import { ImagePlaceholderDirective } from '../directives/image-placeholder.directive';
-import { AuthSessionStore } from '../../auth/services/auth-session.store';
 
 export interface Exercise {
   id: number;
@@ -65,7 +64,6 @@ export class ExerciseGridComponent implements OnInit, OnDestroy {
   private propositionsService = inject(PropositionsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private authSessionStore = inject(AuthSessionStore);
 
   // Input parameters for customization
   @Input() maxItems?: number; // Limit number of items (for home page preview)
@@ -88,9 +86,6 @@ export class ExerciseGridComponent implements OnInit, OnDestroy {
   searchInput = signal<string>('');
   private searchDebounceHandle?: ReturnType<typeof setTimeout>;
 
-  readonly authState = this.authSessionStore.state;
-  selectedRestrictedExercise = signal<Exercise | null>(null);
-  
   // Pagination signals
   pageIndex = signal<number>(0);
   pageSize = signal<number>(18);
@@ -331,26 +326,6 @@ export class ExerciseGridComponent implements OnInit, OnDestroy {
     this.pageSize.set(18);
   }
 
-  isExerciseRestricted(exercise: Exercise): boolean {
-    return exercise.requiresPro === true && this.authState().isPro !== true;
-  }
-
-  openProUpgradeModal(exercise: Exercise): void {
-    this.selectedRestrictedExercise.set(exercise);
-  }
-
-  closeProUpgradeModal(): void {
-    this.selectedRestrictedExercise.set(null);
-  }
-
-  async viewAvailablePlans(): Promise<void> {
-    await this.router.navigate(['/plans'], {
-      queryParams: {
-        source: 'pro_catalog_modal',
-      },
-    });
-  }
-
   hasSearch(): boolean {
     return !!this.normalizeSearchText(this.searchText());
   }
@@ -400,6 +375,7 @@ export class ExerciseGridComponent implements OnInit, OnDestroy {
       complexityId: exercise.level,
       imageFileId: exercise.imageFileId,
       newsUrl: exercise.newsUrl,
+      requiresPro: exercise.requiresPro,
       date: exercise.date
     };
   }
