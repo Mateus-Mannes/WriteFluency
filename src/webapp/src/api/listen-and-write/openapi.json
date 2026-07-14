@@ -55,6 +55,106 @@
         }
       }
     },
+    "/api/proposition/{id}/begin": {
+      "post": {
+        "tags": [
+          "Propositions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeginExerciseResultDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposition/{id}/preview-access": {
+      "post": {
+        "tags": [
+          "Propositions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewExerciseAccessResultDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/proposition/exercises": {
       "get": {
         "tags": [
@@ -238,6 +338,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProRequiredResultDto"
+                }
+              }
+            }
           }
         }
       }
@@ -245,21 +355,61 @@
   },
   "components": {
     "schemas": {
+      "BeginExerciseResultDto": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioExpiresAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Proposition"
+          }
+        },
+        "additionalProperties": false
+      },
       "CompareTextsDto": {
         "type": "object",
         "properties": {
-          "originalText": {
-            "type": "string",
-            "nullable": true
-          },
-          "userText": {
-            "type": "string",
-            "nullable": true
-          },
           "propositionId": {
             "type": "integer",
-            "format": "int32",
+            "format": "int32"
+          },
+          "userText": {
+            "maxLength": 3000,
+            "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PreviewExerciseAccessResultDto": {
+        "type": "object",
+        "properties": {
+          "accessStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "audioExpiresAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Proposition"
           }
         },
         "additionalProperties": false
@@ -318,6 +468,9 @@
           "newsUrl": {
             "type": "string",
             "nullable": true
+          },
+          "requiresPro": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -482,26 +635,7 @@
           "complexityId": {
             "$ref": "#/components/schemas/ComplexityEnum"
           },
-          "audioFileId": {
-            "maxLength": 50,
-            "type": "string",
-            "nullable": true
-          },
-          "voice": {
-            "maxLength": 50,
-            "type": "string",
-            "nullable": true
-          },
           "audioDurationSeconds": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "text": {
-            "maxLength": 3000,
-            "type": "string",
-            "nullable": true
-          },
-          "textLength": {
             "type": "integer",
             "format": "int32"
           },
@@ -515,34 +649,29 @@
             "type": "string",
             "nullable": true
           },
-          "createdAt": {
+          "newsUrl": {
             "type": "string",
-            "format": "date-time"
+            "nullable": true
           },
-          "isDeleted": {
+          "requiresPro": {
             "type": "boolean"
           },
-          "deletedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "propositionGenerationLogId": {
+          "originalWordCount": {
             "type": "integer",
-            "format": "int32",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProRequiredResultDto": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "string",
             "nullable": true
           },
-          "propositionGenerationLog": {
-            "$ref": "#/components/schemas/PropositionGenerationLog"
-          },
-          "newsInfo": {
-            "$ref": "#/components/schemas/NewsInfo"
-          },
-          "complexity": {
-            "$ref": "#/components/schemas/Complexity"
-          },
-          "subject": {
-            "$ref": "#/components/schemas/Subject"
+          "metadata": {
+            "$ref": "#/components/schemas/Proposition"
           }
         },
         "additionalProperties": false
@@ -623,6 +752,17 @@
       "TextComparison": {
         "type": "object",
         "properties": {
+          "comparisonIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceComparisonIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isDeterministicallyRefined": {
+            "type": "boolean"
+          },
           "originalTextRange": {
             "$ref": "#/components/schemas/TextRange"
           },
@@ -636,6 +776,89 @@
           "userText": {
             "type": "string",
             "nullable": true
+          },
+          "mistakePatternTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "mistakePatternPhrase": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ComparisonSnapshot": {
+        "type": "object",
+        "properties": {
+          "originalTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "originalText": {
+            "type": "string",
+            "nullable": true
+          },
+          "userTextRange": {
+            "$ref": "#/components/schemas/TextRange"
+          },
+          "userText": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectionStageTrace": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "nullable": true
+          },
+          "reasonCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSnapshot"
+            },
+            "nullable": true
+          },
+          "validationStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "proposedOutput": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSnapshot"
+            },
+            "nullable": true
+          },
+          "validationFailureReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectionTraceEntry": {
+        "type": "object",
+        "properties": {
+          "sourceComparisonIndex": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "initial": {
+            "$ref": "#/components/schemas/ComparisonSnapshot"
+          },
+          "deterministic": {
+            "$ref": "#/components/schemas/CorrectionStageTrace"
           }
         },
         "additionalProperties": false
@@ -661,6 +884,49 @@
           "accuracyPercentage": {
             "type": "number",
             "format": "double"
+          },
+          "correctionMode": {
+            "enum": [
+              "static",
+              "normalized"
+            ],
+            "type": "string",
+            "nullable": true
+          },
+          "correctionTrace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorrectionTraceEntry"
+            },
+            "nullable": true
+          },
+          "mistakePatternStatus": {
+            "enum": [
+              "generated",
+              "login_required_to_unlock_review",
+              "upgrade_required_to_unlock_review",
+              "skipped_usage_limit",
+              "skipped_disabled",
+              "classifier_failed",
+              "not_applicable"
+            ],
+            "type": "string",
+            "nullable": true
+          },
+          "mistakePatternMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "mistakePatternReviewSource": {
+            "enum": [
+              "none",
+              "anonymous_sample",
+              "free_intro",
+              "free_monthly",
+              "pro_paid"
+            ],
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

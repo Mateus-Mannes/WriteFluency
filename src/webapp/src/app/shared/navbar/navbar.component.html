@@ -29,6 +29,10 @@
         <mat-icon aria-hidden="true">support_agent</mat-icon>
         <span>Support</span>
       </a>
+      <a class="nav-link" routerLink="/plans" routerLinkActive="active" aria-label="Plans" (click)="onNavClick('plans', '/plans')">
+        <mat-icon aria-hidden="true">your_trips</mat-icon>
+        <span>Plans</span>
+      </a>
 
       @if (authSessionStore.isAuthenticated()) {
         <a class="nav-link" routerLink="/user" routerLinkActive="active" aria-label="My Progress" (click)="onNavClick('user', '/user')">

@@ -20,7 +20,7 @@ public class TextComparisonService
 
     public TextComparisonResult CompareTexts(string originalText, string userText)
     {
-        if (!IsMinimalSimilar(originalText, userText))
+        if (string.IsNullOrWhiteSpace(userText) || !IsMinimalSimilar(originalText, userText))
             return new TextComparisonResult(originalText, userText, 0, [ new TextComparison(originalText, userText) ]);
 
         var alignedTokens = _textAlignmentService.AlignTexts(originalText, userText);

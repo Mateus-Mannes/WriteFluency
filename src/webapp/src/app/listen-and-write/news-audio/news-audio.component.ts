@@ -1,7 +1,5 @@
 import { Component, ViewChild, ElementRef, output, input, signal, OnDestroy, computed, PLATFORM_ID, inject, effect, HostListener } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Proposition } from 'src/api/listen-and-write';
-import { environment } from 'src/enviroments/enviroment';
 
 @Component({
   selector: 'app-news-audio',
@@ -15,14 +13,8 @@ export class NewsAudioComponent implements OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private isBrowser = isPlatformBrowser(this.platformId);
 
-  proposition = input<Proposition | null>();
-
-  audioUrl = computed(() => {
-    if (!this.proposition() || !this.proposition()?.audioFileId) {
-      return '';
-    }
-    return environment.minioUrl + '/propositions/' + this.proposition()?.audioFileId;
-  });
+  audioUrl = input<string | null>('');
+  loading = input<boolean>(false);
   isAudioLoading = signal(false);
   currentTime = signal(0);
   duration = signal(0);
@@ -47,7 +39,7 @@ export class NewsAudioComponent implements OnDestroy {
 
   private readonly resetAudioLoading = effect(() => {
     const url = this.audioUrl();
-    this.isAudioLoading.set(!!url);
+    this.isAudioLoading.set(this.loading() || !!url);
     this.currentTime.set(0);
     this.duration.set(0);
     this.playbackRate.set(1);
@@ -135,6 +127,7 @@ export class NewsAudioComponent implements OnDestroy {
 
   togglePlayPause() {
     if (!this.isBrowser) return;
+    if (!this.audioUrl() || this.isAudioLoading()) return;
     const audio = this.audioRef?.nativeElement;
     if (!audio) return;
 
@@ -215,6 +208,16 @@ export class NewsAudioComponent implements OnDestroy {
   pauseAudio() {
     if (!this.isBrowser) return;
     this.audioRef?.nativeElement?.pause();
+  }
+
+  resetAudioToStart() {
+    if (!this.isBrowser) return;
+    const audio = this.audioRef?.nativeElement;
+    if (audio) {
+      audio.currentTime = 0;
+      this.currentTime.set(0);
+      this.audioEnded = false;
+    }
   }
 
   rewindAudio(seconds: number) {

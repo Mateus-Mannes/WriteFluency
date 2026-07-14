@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
 using Testcontainers.PostgreSql;
@@ -322,6 +323,15 @@ public sealed class PropositionSearchPostgresFixture : IAsyncLifetime
             Substitute.For<IFileService>(),
             Substitute.For<IGenerativeAIClient>(),
             Substitute.For<ITextToSpeechClient>(),
+            new CatalogAccessTeaserService(
+                context,
+                Options.Create(new CatalogAccessTeaserOptions
+                {
+                    Enabled = true,
+                    AnonymousFingerprintSalt = "postgres-search-test-salt",
+                    AnonymousSampleLifetimeLimit = 1,
+                    FreeIntroLifetimeLimit = 1
+                })),
             Substitute.For<ILogger<PropositionService>>());
     }
 

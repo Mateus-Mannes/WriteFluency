@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender } from '@angular/core';
+import { Component, signal, ViewChild, HostListener, effect, OnDestroy, Optional, afterNextRender, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NewsInfoComponent } from './news-info/news-info.component';
@@ -11,66 +11,31 @@ import { ListenFirstTourService } from './services/listen-first-tour.service';
 import { ExerciseTourService } from './services/exercise-tour.service';
 import { SubmitTourService } from './services/submit-tour.service';
 import { NewsHighlightedTextComponent } from './news-highlighted-text/news-highlighted-text.component';
+import { MistakePatternReviewComponent } from './mistake-pattern-review/mistake-pattern-review.component';
 import { PropositionsService } from '../../api/listen-and-write/api/propositions.service';
 import { Proposition } from '../../api/listen-and-write/model/proposition';
-import { TextComparisonResult, TextComparisonsService } from 'src/api/listen-and-write';
-import { environment } from 'src/enviroments/enviroment';
+import { TextComparisonResult } from 'src/api/listen-and-write';
 import { BrowserService } from '../core/services/browser.service';
-import { SeoService } from '../core/services/seo.service';
+import { GuestExerciseProgressTransferService } from '../core/services/guest-exercise-progress-transfer.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
-import { FeedbackService, ExerciseFeedbackEvent } from './services/feedback.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
+import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
+import { ExerciseAudioControllerService } from './services/exercise-audio-controller.service';
+import { ExerciseFeedbackFlowService } from './services/exercise-feedback-flow.service';
+import { ExerciseLocalStateStorageService } from './services/exercise-local-state-storage.service';
+import { ExerciseSeoService } from './services/exercise-seo.service';
+import { ExerciseStateRestoreService } from './services/exercise-state-restore.service';
+import { ExerciseSubmissionService, type SubmitAudioState } from './services/exercise-submission.service';
+import { GuestExerciseLoginPromptService } from './services/guest-exercise-login-prompt.service';
+import { ProReviewPendingRequestService } from './services/pro-review-pending-request.service';
+import { ResultsTourService } from './services/results-tour.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
-import { ProgressStateResponse } from '../user/models/user-progress.model';
 import { Insights } from '../../telemetry/insights.service';
-import {
-  FeedbackModalComponent,
-  FeedbackModalInteractionEvent,
-  FeedbackModalSubmission
-} from '../shared/feedback-modal/feedback-modal.component';
-import { TutorialVideoModalComponent } from '../shared/tutorial-video-modal/tutorial-video-modal.component';
-import {
-  TutorialVideoSource,
-  tutorialVideoConfig,
-} from '../core/config/tutorial-video.config';
-
-export type ExerciseState = 'intro' | 'exercise' | 'results';
-
-export const LISTEN_WRITE_FIRST_TIME_KEY = 'listen-write-first-time';
-const EXERCISE_SUBMIT_CONVERSION_SEND_TO = 'AW-17978787910/L3txCNWKosYcEMaQ-vxC';
-const restoreServerStateTimeoutMs = 3000;
-const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
-const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
-const guestBeginLoginModalAttemptThreshold = 2;
-const guestBeginLoginModalCooldownMs = 24 * 60 * 60 * 1000;
-const submitTelemetryTextMaxLength = 4000;
-const submitAudioRemainingToleranceSeconds = 10;
-const postLoginCompleteSyncStorageKey = 'wf.auth.post-login-complete-sync.v1';
-type GtagEvent = (command: 'event', eventName: string, params: Record<string, unknown>) => void;
-type AudioPlaySource = 'manual_click' | 'keyboard_shortcut' | 'listen_first_prompt';
-type GuestLoginModalDismissReason = 'continue_as_guest' | 'backdrop';
-
-interface BeginExerciseContext {
-  isFirstTimeUser: boolean;
-  audioEndedBeforeBegin: boolean;
-  guestBeginAttemptCount: number | null;
-  guestLoginModalShownBeforeStart: boolean;
-}
-
-interface GuestLoginModalDecision {
-  shouldShow: boolean;
-  reason: 'authenticated' | 'below_threshold' | 'cooldown_active' | 'eligible';
-  cooldownRemainingMs: number;
-}
-
-interface LocalExerciseSnapshot {
-  state: ExerciseState | null;
-  userText: string | null;
-  autoPauseSeconds: number | null;
-  pausedTimeSeconds: number | null;
-  result: TextComparisonResult | null;
-  savedAtUtc: string | null;
-}
+import * as feedbackModal from '../shared/feedback-modal/feedback-modal.component';
+import * as tutorialVideoModal from '../shared/tutorial-video-modal/tutorial-video-modal.component';
+import * as tutorialVideoConfig from '../core/config/tutorial-video.config';
+import * as constants from './listen-and-write.constants';
+import * as models from './listen-and-write.models';
 
 @Component({
   selector: 'app-listen-and-write',
@@ -82,47 +47,109 @@ interface LocalExerciseSnapshot {
     ExerciseSectionComponent,
     ExerciseResultsSectionComponent,
     NewsHighlightedTextComponent,
-    FeedbackModalComponent,
-    TutorialVideoModalComponent
+    MistakePatternReviewComponent,
+    feedbackModal.FeedbackModalComponent,
+    tutorialVideoModal.TutorialVideoModalComponent
   ],
   templateUrl: './listen-and-write.component.html',
   styleUrls: ['./listen-and-write.component.scss'],
+  providers: [
+    ExerciseAudioAccessService,
+    ExerciseAudioControllerService,
+    ExerciseFeedbackFlowService,
+    ExerciseSeoService,
+    ExerciseStateRestoreService,
+    ExerciseSubmissionService,
+    GuestExerciseLoginPromptService,
+  ],
 })
 export class ListenAndWriteComponent implements OnDestroy {
+  private readonly exerciseAudioAccess = inject(ExerciseAudioAccessService);
+  private readonly exerciseAudioController = inject(ExerciseAudioControllerService);
+  private readonly exerciseFeedbackFlow = inject(ExerciseFeedbackFlowService);
+  private readonly exerciseLocalStateStorage = inject(ExerciseLocalStateStorageService);
+  private readonly exerciseSeo = inject(ExerciseSeoService);
+  private readonly exerciseStateRestore = inject(ExerciseStateRestoreService);
+  private readonly exerciseSubmission = inject(ExerciseSubmissionService);
+  private readonly guestProgressTransfer = inject(GuestExerciseProgressTransferService);
+  private readonly guestExerciseLoginPrompt = inject(GuestExerciseLoginPromptService);
+  private readonly proReviewPendingRequest = inject(ProReviewPendingRequestService);
+  private readonly resultsTourService = inject(ResultsTourService);
 
   @ViewChild(ExerciseSectionComponent) exerciseSectionComponent!: ExerciseSectionComponent;
 
   private newsAudioComponentRef: NewsAudioComponent | null = null;
-  private pendingPausedTimeSeconds: number | null = null;
-  private restoreRequestToken = 0;
   private hasCompletedInitialBrowserRender = false;
 
   @ViewChild(NewsAudioComponent)
   set newsAudioComponent(component: NewsAudioComponent | undefined) {
     this.newsAudioComponentRef = component ?? null;
-    this.applyPendingPausedTimeIfNeeded();
+    this.exerciseAudioController.applyPendingPausedTimeIfNeeded(this.newsAudioComponentRef);
   }
 
   get newsAudioComponent(): NewsAudioComponent {
     return this.newsAudioComponentRef as NewsAudioComponent;
   }
 
-  private autoPauseTimer: any = null;
-  private pendingAudioPlaySource: AudioPlaySource | null = null;
-  private pendingAudioPlaySourceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  exerciseState = signal<ExerciseState>('intro');
+  exerciseState = signal<models.ExerciseState>('intro');
 
   stateAnimOn = signal(false);
   stateAnimEnabled = signal(false);
 
   proposition = signal<Proposition | null>(null);
+  exerciseAudioUrl = this.exerciseAudioAccess.audioUrl;
+  beginExerciseLabel = signal('Begin Exercise');
 
   result = signal<TextComparisonResult | null>(null);
+  activeMistakePatternComparisonIndex = signal<number | null>(null);
+  pinnedMistakePatternComparisonIndex = signal<number | null>(null);
+  highlightedMistakePatternComparisonIndex = computed(() =>
+    this.pinnedMistakePatternComparisonIndex()
+    ?? this.activeMistakePatternComparisonIndex());
+  shouldShowMistakePatternReview = computed(() => {
+    const result = this.result();
+    if (!result) {
+      return false;
+    }
 
-  isSubmitting = signal<boolean>(false);
-  isRestoringExercise = signal<boolean>(false);
-  isGuestLoginModalOpen = signal<boolean>(false);
+    const mistakePatternStatus = result.mistakePatternStatus ?? 'not_applicable';
+
+    if (mistakePatternStatus === 'generated'
+        || mistakePatternStatus === 'skipped_usage_limit'
+        || mistakePatternStatus === 'login_required_to_unlock_review'
+        || mistakePatternStatus === 'upgrade_required_to_unlock_review') {
+      return true;
+    }
+
+    if (mistakePatternStatus === 'not_applicable'
+        && (result.comparisons ?? []).length === 0
+        && (result.accuracyPercentage ?? 0) >= 0.999) {
+      return true;
+    }
+
+    if (mistakePatternStatus === 'not_applicable'
+        && !result.userText?.trim()) {
+      return true;
+    }
+
+    return (result.comparisons ?? []).some(comparison => {
+      const hasTag = (comparison.mistakePatternTags ?? [])
+        .some(tag => Boolean(tag?.trim()));
+      return hasTag && Boolean(comparison.mistakePatternPhrase?.trim());
+    });
+  });
+
+  isSubmitting = this.exerciseSubmission.isSubmitting;
+  isBeginningExercise = this.exerciseAudioAccess.isBeginningExercise;
+  isResolvingAudioAccess = this.exerciseAudioAccess.isResolving;
+  shouldShowAudioPanel = computed(() =>
+    Boolean(this.exerciseAudioUrl())
+    || this.isResolvingAudioAccess()
+    || (this.exerciseState() === 'intro' && Boolean(this.proposition())));
+  isRestoringExercise = this.exerciseStateRestore.isRestoring;
+  isGuestLoginModalOpen = this.guestExerciseLoginPrompt.isOpen;
+  isProUpgradeModalOpen = signal<boolean>(false);
+  catalogAccessDenialStatus = signal<string | null>(null);
 
   initialText = signal<string | null>(null);
   
@@ -130,25 +157,22 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   userText = signal<string>('');
 
-  isFeedbackModalOpen = signal<boolean>(false);
+  isFeedbackModalOpen = this.exerciseFeedbackFlow.isModalOpen;
   isTutorialVideoModalOpen = signal<boolean>(false);
 
   exerciseId: number | null = null;
-  readonly beginExerciseLoadingTooltip = 'Finishing exercise loading...';
-  readonly tutorialVideoEmbedUrl = tutorialVideoConfig.embedUrl;
-  readonly tutorialVideoWatchUrl = tutorialVideoConfig.watchUrl;
-  readonly tutorialVideoTitle = tutorialVideoConfig.title;
+  readonly tutorialVideoEmbedUrl = tutorialVideoConfig.tutorialVideoConfig.embedUrl;
+  readonly tutorialVideoWatchUrl = tutorialVideoConfig.tutorialVideoConfig.watchUrl;
+  readonly tutorialVideoTitle = tutorialVideoConfig.tutorialVideoConfig.title;
 
-  private pendingLeaveAction: (() => void) | null = null;
-  private pendingRouteLeaveResolver: ((allow: boolean) => void) | null = null;
-  private pendingBeginExerciseContext: BeginExerciseContext | null = null;
   private hasTrackedResultsLoginCtaView = false;
   private exerciseStartedAtMs: number | null = null;
-  private shouldSyncCompletedResultAfterRestore = false;
   private shouldResetCompletedStateOnNextStart = false;
   private hasLoggedTutorialSuppressedException = false;
   private readonly tutorialBackfillRequestedUsers = new Set<string>();
-  private tutorialVideoSource: TutorialVideoSource | null = null;
+  private tutorialVideoSource: tutorialVideoConfig.TutorialVideoSource | null = null;
+  private hasHydrated = false;
+  private pendingProReviewRestoreInFlight = false;
 
   constructor(
     private listenFirstTourService: ListenFirstTourService,
@@ -157,16 +181,13 @@ export class ListenAndWriteComponent implements OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private propositionsService: PropositionsService,
-    private textComparisonsService: TextComparisonsService,
     private browserService: BrowserService,
-    private seoService: SeoService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
-    private feedbackService: FeedbackService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
     private authSessionStore: AuthSessionStore,
     @Optional() private readonly insights: Insights | null = null,
   ) {
-    let lastState: ExerciseState | null = null;
+    let lastState: models.ExerciseState | null = null;
     // Get the exercise ID from route parameters
     this.route.params.pipe(
       takeUntilDestroyed()
@@ -180,15 +201,14 @@ export class ListenAndWriteComponent implements OnDestroy {
 
         this.exerciseSessionTracking.endSession('route_changed');
         this.exerciseId = parsedId;
-        this.isGuestLoginModalOpen.set(false);
-        this.pendingBeginExerciseContext = null;
+        this.guestExerciseLoginPrompt.reset();
+        this.catalogAccessDenialStatus.set(null);
         this.exerciseSessionTracking.startSession({
           exerciseId: this.exerciseId,
           source: 'route_navigation'
         });
         this.hasTrackedResultsLoginCtaView = false;
         this.exerciseStartedAtMs = null;
-        this.shouldSyncCompletedResultAfterRestore = false;
         this.shouldResetCompletedStateOnNextStart = false;
         this.exerciseState.set('intro');
         this.stateAnimOn.set(false);
@@ -197,8 +217,12 @@ export class ListenAndWriteComponent implements OnDestroy {
         this.initialText.set(null);
         this.initialAutoPause.set(null);
         this.userText.set('');
+        this.activeMistakePatternComparisonIndex.set(null);
+        this.pinnedMistakePatternComparisonIndex.set(null);
+        this.exerciseAudioController.reset();
+        this.exerciseAudioAccess.reset();
+        this.exerciseStateRestore.resetForExercise(this.exerciseId);
         this.result.set(null);
-        this.pendingPausedTimeSeconds = null;
         if(this.browserService.isBrowserEnvironment()) {
           const initialProposition = this.getInitialPropositionFromState();
           if (initialProposition && initialProposition.id === this.exerciseId) {
@@ -234,9 +258,19 @@ export class ListenAndWriteComponent implements OnDestroy {
 
     afterNextRender(() => {
       this.hasCompletedInitialBrowserRender = true;
-      this.applyPendingPausedTimeIfNeeded();
+      this.hasHydrated = true;
+      this.tryResolveAudioAccessAfterHydration();
+      this.exerciseAudioController.applyPendingPausedTimeIfNeeded(this.newsAudioComponentRef);
       queueMicrotask(() => this.stateAnimEnabled.set(true));
       void this.restoreExerciseState();
+    });
+
+    effect(() => {
+      const isAuthenticated = this.authSessionStore.isAuthenticated();
+      const hasReliableSessionState = this.authSessionStore.hasReliableSessionState();
+      if (isAuthenticated && hasReliableSessionState) {
+        queueMicrotask(() => this.tryRestorePendingProReviewRequest());
+      }
     });
   }
 
@@ -248,18 +282,16 @@ export class ListenAndWriteComponent implements OnDestroy {
     }
     const proposition = initialProposition as Proposition;
     proposition.publishedOn = initialProposition.date;
-    proposition.newsInfo = { url: initialProposition.newsUrl };
+    proposition.newsUrl = initialProposition.newsUrl;
     return proposition;
   }
 
   private getExerciseStateKey(exerciseId: number | null = this.exerciseId): string | null {
-    if (!exerciseId) return null;
-    return `exercise-section-state-${exerciseId}`;
+    return this.exerciseLocalStateStorage.getCurrentSnapshotKey(exerciseId);
   }
 
   private getStateKey(exerciseId: number | null = this.exerciseId): string | null {
-    if (!exerciseId) return null;
-    return `listen-write-state-${exerciseId}`;
+    return this.exerciseLocalStateStorage.getCurrentStateKey(exerciseId);
   }
 
   loadProposition(id: number): void {
@@ -275,62 +307,21 @@ export class ListenAndWriteComponent implements OnDestroy {
         });
         this.exerciseSessionTracking.trackEvent('exercise_content_loaded', {
           title: data.title,
-          subject: data.subject?.description ?? '',
-          complexity: data.complexity?.description ?? ''
+          subject: data.subjectId ?? '',
+          complexity: data.complexityId ?? ''
         }, {
           audio_duration_seconds: data.audioDurationSeconds ?? 0
         });
-        
-        // Update SEO meta tags for this specific exercise
-        const complexityDesc = data.complexity?.description || 'Intermediate';
-        const subjectDesc = data.subject?.description || 'News';
-        const duration = data.audioDurationSeconds 
-          ? `${Math.ceil(data.audioDurationSeconds / 60)} min`
-          : '1-2 min';
-        const exerciseImageUrl = this.getExerciseImageUrl(data.imageFileId);
-        
-        this.seoService.updateMetaTags({
-          title: `${data.title} - ${complexityDesc} Level Exercise | WriteFluency`,
-          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise about ${subjectDesc}. Listen to real news audio and improve your dictation skills. Duration: ${duration}.`,
-          keywords: `${subjectDesc}, ${complexityDesc} level, English writing exercise, listening comprehension, dictation practice`,
-          type: 'article',
-          url: `/english-writing-exercise/${id}`,
-          image: exerciseImageUrl,
-          publishedTime: data.publishedOn || undefined
-        });
-
-        // Add structured data for this exercise
-        const exerciseData = this.seoService.generateExerciseStructuredData({
-          id: id,
-          title: data.title || 'English Writing Exercise',
-          topic: subjectDesc,
-          level: complexityDesc,
-          duration: duration,
-          imageUrl: exerciseImageUrl,
-          description: `Practice your English writing with this ${complexityDesc.toLowerCase()} level listening exercise.`
-        });
-
-        // Add breadcrumb structured data
-        const breadcrumbData = this.seoService.generateBreadcrumbStructuredData([
-          { name: 'Home', url: '/' },
-          { name: 'Exercises', url: '/exercises' },
-          { name: data.title || 'Exercise', url: `/english-writing-exercise/${id}` }
-        ]);
-
-        // Combine structured data
-        const structuredData = {
-          '@context': 'https://schema.org',
-          '@graph': [exerciseData, breadcrumbData]
-        };
-        this.seoService.addStructuredData(structuredData);
-        this.hydrateRestoredResultOriginalText(data);
+        this.exerciseSeo.applyExerciseSeo(id, data);
         this.syncCompletedResultAfterRestoreIfNeeded(data);
+        this.tryResolveAudioAccessAfterHydration();
+        this.tryRestorePendingProReviewRequest();
       },
       error: (error) => {
         if (this.exerciseId !== id) {
           return;
         }
-
+        
         console.error('Error loading proposition:', error);
         // notify the user and back to the home page
         alert('Error loading exercise. Returning to home page.');
@@ -339,599 +330,192 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
   }
 
-  private getExerciseImageUrl(imageFileId?: string | null): string | undefined {
-    if (!imageFileId) {
-      return undefined;
-    }
-
-    return `${environment.minioUrl}/images/${imageFileId}`;
-  }
-
   async restoreExerciseState(): Promise<void> {
-    const exerciseId = this.exerciseId;
-    if (!exerciseId) {
-      return;
-    }
-
-    const restoreToken = ++this.restoreRequestToken;
-    this.pendingPausedTimeSeconds = null;
-
-    if (!this.authSessionStore.isAuthenticated()) {
-      this.isRestoringExercise.set(false);
-      this.restoreStateFromLocalStorage(exerciseId, restoreToken);
-      return;
-    }
-
-    this.isRestoringExercise.set(true);
-
-    try {
-      const serverState = await this.loadServerStateWithTimeout(exerciseId);
-      if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
-        return;
-      }
-
-      const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
-      const shouldSyncCompletedAfterLogin = this.consumePendingCompletedSyncRequest(exerciseId, localSnapshot);
-      if (shouldSyncCompletedAfterLogin) {
-        this.applyLocalExerciseSnapshot(localSnapshot!);
-        this.shouldSyncCompletedResultAfterRestore = true;
-        const proposition = this.proposition();
-        if (proposition) {
-          this.syncCompletedResultAfterRestoreIfNeeded(proposition);
-        }
-        return;
-      }
-
-      if (this.shouldPreferLocalCompletedState(serverState, localSnapshot)) {
-        this.applyLocalExerciseSnapshot(localSnapshot!);
-        this.shouldSyncCompletedResultAfterRestore = false;
-        return;
-      }
-
-      if (serverState) {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.applyServerState(serverState);
-        return;
-      }
-
-      if (localSnapshot) {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.applyLocalExerciseSnapshot(localSnapshot);
-      } else {
-        this.shouldSyncCompletedResultAfterRestore = false;
-        this.restoreStateFromLocalStorage(exerciseId, restoreToken);
-      }
-    } finally {
-      if (this.isRestoreTokenActive(restoreToken, exerciseId)) {
-        this.isRestoringExercise.set(false);
-      }
-    }
-  }
-
-  private async loadServerStateWithTimeout(exerciseId: number) {
-    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<null>((resolve) => {
-      timeoutHandle = setTimeout(() => resolve(null), restoreServerStateTimeoutMs);
+    await this.exerciseStateRestore.restore({
+      exerciseId: this.exerciseId,
+      applySnapshot: (snapshot) => this.applyRestoredExerciseSnapshot(snapshot),
+      resetPendingPausedTime: () => this.exerciseAudioController.resetPendingPausedTime(),
     });
 
-    try {
-      return await Promise.race([
-        this.exerciseProgressTracking.loadState(exerciseId),
-        timeoutPromise,
-      ]);
-    } finally {
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-      }
-    }
+    this.syncCompletedResultAfterRestoreIfNeeded(this.proposition());
   }
 
-  private applyServerState(serverState: ProgressStateResponse): void {
-    const restoredExerciseState = this.normalizeExerciseState(serverState.exerciseState);
-    if (restoredExerciseState) {
-      this.exerciseState.set(restoredExerciseState);
-      if (restoredExerciseState === 'exercise' && this.exerciseStartedAtMs === null) {
+  private applyRestoredExerciseSnapshot(snapshot: models.RestoredExerciseSnapshot): void {
+    if (snapshot.state) {
+      this.exerciseState.set(snapshot.state);
+      if (snapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
         this.exerciseStartedAtMs = Date.now();
       }
     }
 
-    this.initialText.set(serverState.userText ?? null);
-    this.initialAutoPause.set(serverState.autoPauseSeconds ?? 2);
-    this.result.set(this.buildRestoredResult(serverState, restoredExerciseState));
-    this.setPendingPausedTime(serverState.pausedTimeSeconds);
+    this.initialText.set(snapshot.userText);
+    this.initialAutoPause.set(snapshot.autoPauseSeconds ?? 2);
+    this.setPendingPausedTime(snapshot.pausedTimeSeconds);
+    this.result.set(snapshot.result);
   }
 
-  private buildRestoredResult(
-    serverState: ProgressStateResponse,
-    restoredExerciseState: ExerciseState | null,
-  ): TextComparisonResult | null {
-    if (restoredExerciseState !== 'results') {
-      return null;
-    }
-
-    return {
-      originalText: serverState.originalText ?? this.proposition()?.text ?? null,
-      userText: serverState.userText,
-      comparisons: serverState.comparisons ?? [],
-      accuracyPercentage: serverState.accuracyPercentage ?? 0,
-    };
-  }
-
-  private hydrateRestoredResultOriginalText(proposition: Proposition): void {
-    const restoredResult = this.result();
-    if (this.exerciseState() !== 'results' || !restoredResult || restoredResult.originalText) {
-      return;
-    }
-
-    this.result.set({
-      ...restoredResult,
-      originalText: proposition.text ?? null,
+  private syncCompletedResultAfterRestoreIfNeeded(proposition: Proposition | null): void {
+    this.exerciseStateRestore.syncCompletedResultAfterRestoreIfNeeded({
+      proposition,
+      exerciseState: this.exerciseState(),
+      result: this.result(),
     });
-  }
-
-  private restoreStateFromLocalStorage(exerciseId: number, restoreToken: number): void {
-    if (!this.isRestoreTokenActive(restoreToken, exerciseId)) {
-      return;
-    }
-
-    const localSnapshot = this.readLocalExerciseSnapshot(exerciseId);
-    if (!localSnapshot) {
-      return;
-    }
-
-    this.applyLocalExerciseSnapshot(localSnapshot);
-  }
-
-  private applyLocalExerciseSnapshot(localSnapshot: LocalExerciseSnapshot): void {
-    if (localSnapshot.state) {
-      this.exerciseState.set(localSnapshot.state);
-      if (localSnapshot.state === 'exercise' && this.exerciseStartedAtMs === null) {
-        this.exerciseStartedAtMs = Date.now();
-      }
-    }
-
-    this.initialText.set(localSnapshot.userText);
-    this.initialAutoPause.set(localSnapshot.autoPauseSeconds ?? 2);
-    this.setPendingPausedTime(localSnapshot.pausedTimeSeconds);
-    this.result.set(localSnapshot.result);
-  }
-
-  private readLocalExerciseSnapshot(exerciseId: number): LocalExerciseSnapshot | null {
-    const stateKey = this.getStateKey(exerciseId);
-    const exerciseState = stateKey
-      ? this.normalizeExerciseState(this.browserService.getItem(stateKey))
-      : null;
-
-    const exerciseStateKey = this.getExerciseStateKey(exerciseId);
-    if (!exerciseStateKey) {
-      return null;
-    }
-
-    const serializedState = this.browserService.getItem(exerciseStateKey);
-    if (!serializedState) {
-      return exerciseState
-        ? {
-            state: exerciseState,
-            userText: null,
-            autoPauseSeconds: null,
-            pausedTimeSeconds: null,
-            result: null,
-            savedAtUtc: null,
-          }
-        : null;
-    }
-
-    try {
-      const parsed = JSON.parse(serializedState) as {
-        userText?: string | null;
-        autoPause?: number | null;
-        pausedTime?: number | null;
-        result?: TextComparisonResult | null;
-        savedAtUtc?: string | null;
-      };
-
-      return {
-        state: exerciseState,
-        userText: parsed.userText || null,
-        autoPauseSeconds: parsed.autoPause ?? null,
-        pausedTimeSeconds: parsed.pausedTime ?? null,
-        result: parsed.result ?? null,
-        savedAtUtc: parsed.savedAtUtc ?? null,
-      };
-    } catch {
-      this.browserService.removeItem(exerciseStateKey);
-      return exerciseState
-        ? {
-            state: exerciseState,
-            userText: null,
-            autoPauseSeconds: null,
-            pausedTimeSeconds: null,
-            result: null,
-            savedAtUtc: null,
-          }
-        : null;
-    }
-  }
-
-  private shouldPreferLocalCompletedState(
-    serverState: ProgressStateResponse | null,
-    localSnapshot: LocalExerciseSnapshot | null,
-  ): boolean {
-    if (!serverState || !localSnapshot) {
-      return false;
-    }
-
-    if (localSnapshot.state !== 'results' || !localSnapshot.result) {
-      return false;
-    }
-
-    const localSavedAtMs = this.parseTimestamp(localSnapshot.savedAtUtc);
-    const serverUpdatedAtMs = this.parseTimestamp(serverState.updatedAtUtc);
-    if (localSavedAtMs !== null && serverUpdatedAtMs !== null) {
-      return localSavedAtMs > serverUpdatedAtMs;
-    }
-
-    if (localSavedAtMs !== null && serverUpdatedAtMs === null) {
-      return true;
-    }
-
-    const normalizedServerState = this.normalizeExerciseState(serverState.exerciseState);
-    const serverHasDraftText = Boolean(serverState.userText?.trim());
-    const serverHasRestorableDraft =
-      normalizedServerState === 'exercise'
-      || serverHasDraftText
-      || serverState.autoPauseSeconds !== null
-      || serverState.pausedTimeSeconds !== null;
-
-    return !serverHasRestorableDraft;
-  }
-
-  private parseTimestamp(value: string | null | undefined): number | null {
-    if (!value) {
-      return null;
-    }
-
-    const parsed = Date.parse(value);
-    if (!Number.isFinite(parsed)) {
-      return null;
-    }
-
-    return parsed;
-  }
-
-  private setPendingCompletedSyncRequest(exerciseId: number | null): void {
-    if (!exerciseId || !this.browserService.isBrowserEnvironment()) {
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem(
-        postLoginCompleteSyncStorageKey,
-        JSON.stringify({
-          exerciseId,
-          createdAtUtc: new Date().toISOString(),
-        }));
-    } catch {
-      // noop
-    }
-  }
-
-  private consumePendingCompletedSyncRequest(
-    exerciseId: number,
-    localSnapshot: LocalExerciseSnapshot | null,
-  ): boolean {
-    if (!this.browserService.isBrowserEnvironment()) {
-      return false;
-    }
-
-    let pendingExerciseId: number | null = null;
-    try {
-      const rawValue = window.sessionStorage.getItem(postLoginCompleteSyncStorageKey);
-      if (!rawValue) {
-        return false;
-      }
-
-      const parsed = JSON.parse(rawValue) as { exerciseId?: unknown };
-      if (typeof parsed.exerciseId === 'number' && Number.isFinite(parsed.exerciseId)) {
-        pendingExerciseId = parsed.exerciseId;
-      }
-    } catch {
-      // noop
-    }
-
-    if (pendingExerciseId !== exerciseId) {
-      return false;
-    }
-
-    try {
-      window.sessionStorage.removeItem(postLoginCompleteSyncStorageKey);
-    } catch {
-      // noop
-    }
-
-    return localSnapshot?.state === 'results' && localSnapshot.result !== null;
-  }
-
-  private syncCompletedResultAfterRestoreIfNeeded(proposition: Proposition): void {
-    if (!this.shouldSyncCompletedResultAfterRestore || !this.authSessionStore.isAuthenticated()) {
-      return;
-    }
-
-    this.shouldSyncCompletedResultAfterRestore = false;
-
-    const restoredResult = this.result();
-    if (this.exerciseState() !== 'results' || !restoredResult) {
-      return;
-    }
-
-    this.exerciseProgressTracking.trackComplete(proposition, restoredResult);
   }
 
   private setPendingPausedTime(pausedTimeSeconds: number | null): void {
-    if (!pausedTimeSeconds || pausedTimeSeconds <= 0) {
-      this.pendingPausedTimeSeconds = null;
-      return;
-    }
-
-    this.pendingPausedTimeSeconds = pausedTimeSeconds;
-    this.applyPendingPausedTimeIfNeeded();
-  }
-
-  private applyPendingPausedTimeIfNeeded(): void {
-    if (!this.pendingPausedTimeSeconds || !this.newsAudioComponentRef) {
-      return;
-    }
-
-    this.newsAudioComponentRef.forwardAudio(this.pendingPausedTimeSeconds);
-    this.pendingPausedTimeSeconds = null;
-  }
-
-  private isRestoreTokenActive(restoreToken: number, exerciseId: number): boolean {
-    return this.restoreRequestToken === restoreToken && this.exerciseId === exerciseId;
-  }
-
-  private normalizeExerciseState(value: string | null | undefined): ExerciseState | null {
-    if (!value) {
-      return null;
-    }
-
-    if (value === 'intro' || value === 'exercise' || value === 'results') {
-      return value;
-    }
-
-    return null;
+    this.exerciseAudioController.setPendingPausedTime(pausedTimeSeconds, this.newsAudioComponentRef);
   }
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (this.exerciseState() !== 'exercise') return;
-    
-    const modifierKey = event.ctrlKey || event.metaKey;
-    
-    // Play/Pause: Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac)
-    if (modifierKey && event.key === 'Enter') {
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_enter',
-        action: this.newsAudioComponent.isAudioPlaying() ? 'pause' : 'play'
-      });
-      if (this.newsAudioComponent.isAudioPlaying()) {
-        this.pauseAudioWithTimerClear();
-      } else {
-        this.markNextAudioPlaySource('keyboard_shortcut');
-        this.playAudioWithAutoPause();
-        // Finish the tutorial if active
-        this.exerciseTourService.finishTour();
-      }
-    }
-    // Rewind: Ctrl+ArrowLeft (Windows/Linux) or Cmd+ArrowLeft (Mac)
-    if (modifierKey && event.code === 'ArrowLeft') {
-      const seekSeconds = this.getShortcutSeekSeconds();
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_arrow_left',
-        action: 'rewind'
-      }, {
-        seek_seconds: seekSeconds
-      });
-      this.newsAudioComponent.rewindAudio(seekSeconds);
-    }
-    // Forward: Ctrl+ArrowRight (Windows/Linux) or Cmd+ArrowRight (Mac)
-    if (modifierKey && event.code === 'ArrowRight') {
-      const seekSeconds = this.getShortcutSeekSeconds();
-      event.preventDefault();
-      this.exerciseSessionTracking.trackEvent('audio_shortcut_used', {
-        shortcut: 'ctrl_or_cmd_arrow_right',
-        action: 'forward'
-      }, {
-        seek_seconds: seekSeconds
-      });
-      this.newsAudioComponent.forwardAudio(seekSeconds);
-    }
+    this.exerciseAudioController.handleKeyboardEvent(event, this.getAudioControlContext());
   }
 
-  private getShortcutSeekSeconds(): number {
-    const selectedAutoPause = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
-    return selectedAutoPause > 0 ? selectedAutoPause : 3;
+  getBeginExerciseLoadingTooltip(): string {
+    return this.isResolvingAudioAccess()
+      ? 'Loading audio...'
+      : 'Starting exercise...';
   }
 
   playAudioWithAutoPause() {
-    this.newsAudioComponent.playAudio();
-    this.applyAutoPause();
+    this.exerciseAudioController.playAudioWithAutoPause(this.getAudioControlContext());
   }
 
   pauseAudioWithTimerClear() {
-    this.newsAudioComponent.pauseAudio();
-    this.clearAutoPauseTimer();
+    this.exerciseAudioController.pauseAudioWithTimerClear(this.newsAudioComponentRef);
   }
 
   clearAutoPauseTimer() {
-    if (this.autoPauseTimer) {
-      clearTimeout(this.autoPauseTimer);
-      this.autoPauseTimer = null;
-    }
+    this.exerciseAudioController.clearAutoPauseTimer();
   }
 
   beginExercise() {
-    const beginContext = this.buildBeginExerciseContext();
-    const modalDecision = this.evaluateGuestLoginModalDecision(beginContext);
+    const audioEndedBeforeBegin = this.newsAudioComponentRef?.audioEnded ?? false;
 
-    this.exerciseSessionTracking.trackEvent('begin_exercise_clicked', {
-      is_first_time: beginContext.isFirstTimeUser,
-      audio_ended_before_begin: beginContext.audioEndedBeforeBegin,
-      is_authenticated: this.authSessionStore.isAuthenticated(),
-      guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
-      guest_login_modal_decision: modalDecision.reason,
-    }, {
-      guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
-      guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
+    const beginPrompt = this.guestExerciseLoginPrompt.prepareBeginExercise({
+      isFirstTimeUser: this.isFirstTime(),
+      audioEndedBeforeBegin,
     });
 
-    if (modalDecision.shouldShow) {
-      this.openGuestLoginModal(beginContext);
+    if (beginPrompt.decision.shouldShow) {
+      this.guestExerciseLoginPrompt.open(beginPrompt.context);
       return;
     }
 
-    if (!this.authSessionStore.isAuthenticated() && modalDecision.reason !== 'authenticated') {
-      this.exerciseSessionTracking.trackEvent('guest_login_modal_not_shown', {
-        reason: modalDecision.reason,
-        guest_begin_attempt_count: beginContext.guestBeginAttemptCount,
-      }, {
-        guest_begin_attempt_count: beginContext.guestBeginAttemptCount ?? 0,
-        guest_login_modal_cooldown_remaining_minutes: Math.ceil(modalDecision.cooldownRemainingMs / 60000),
-      });
-    }
-
-    this.startExerciseFromContext(beginContext);
+    this.startExerciseFromContext(beginPrompt.context);
   }
 
   onGuestLoginModalSignIn(): void {
-    const beginContext = this.pendingBeginExerciseContext;
-    const returnUrl = this.getPostLoginReturnUrl();
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_login_clicked', {
-      source: 'begin_exercise',
-      return_url: returnUrl,
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
-    }, {
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
-    });
-
-    this.isGuestLoginModalOpen.set(false);
-    this.pendingBeginExerciseContext = null;
-
-    void this.router.navigate(['/auth/login'], {
-      queryParams: {
-        returnUrl,
-        source: 'begin_exercise_modal',
-      }
-    });
+    this.guestExerciseLoginPrompt.signIn(this.getPostLoginReturnUrl());
   }
 
   onGuestLoginModalContinueAsGuest(): void {
-    this.dismissGuestLoginModal('continue_as_guest');
+    const beginContext = this.guestExerciseLoginPrompt.continueAsGuest();
+    if (beginContext) {
+      this.startExerciseFromContext(beginContext);
+    }
   }
 
   onGuestLoginModalBackdropClick(): void {
-    this.dismissGuestLoginModal('backdrop');
-  }
-
-  private dismissGuestLoginModal(reason: GuestLoginModalDismissReason): void {
-    const beginContext = this.pendingBeginExerciseContext;
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_dismissed', {
-      reason,
-      source: 'begin_exercise',
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount,
-    }, {
-      guest_begin_attempt_count: beginContext?.guestBeginAttemptCount ?? 0,
-    });
-
-    this.isGuestLoginModalOpen.set(false);
-    this.pendingBeginExerciseContext = null;
-
+    const beginContext = this.guestExerciseLoginPrompt.dismissBackdrop();
     if (beginContext) {
-      this.startExerciseFromContext({
-        ...beginContext,
-        guestLoginModalShownBeforeStart: true,
-      });
+      this.startExerciseFromContext(beginContext);
     }
   }
 
-  private buildBeginExerciseContext(): BeginExerciseContext {
-    return {
-      isFirstTimeUser: this.isFirstTime(),
-      audioEndedBeforeBegin: this.newsAudioComponent.audioEnded,
-      guestBeginAttemptCount: this.incrementGuestBeginAttemptCountIfGuest(),
-      guestLoginModalShownBeforeStart: false,
-    };
-  }
-
-  private evaluateGuestLoginModalDecision(context: BeginExerciseContext): GuestLoginModalDecision {
-    if (this.authSessionStore.isAuthenticated()) {
-      return {
-        shouldShow: false,
-        reason: 'authenticated',
-        cooldownRemainingMs: 0,
-      };
+  private startExerciseFromContext(context: models.BeginExerciseContext): void {
+    if (!this.exerciseId) {
+      return;
     }
 
-    const guestAttempt = context.guestBeginAttemptCount ?? 0;
-    if (guestAttempt < guestBeginLoginModalAttemptThreshold) {
-      return {
-        shouldShow: false,
-        reason: 'below_threshold',
-        cooldownRemainingMs: 0,
-      };
+    if (this.exerciseAudioAccess.canStartWithResolvedAudio()) {
+      this.startWritingExercise(context);
+      return;
     }
 
-    const cooldownRemainingMs = this.getGuestLoginModalCooldownRemainingMs(Date.now());
-    if (cooldownRemainingMs > 0) {
-      return {
-        shouldShow: false,
-        reason: 'cooldown_active',
-        cooldownRemainingMs,
-      };
-    }
-
-    return {
-      shouldShow: true,
-      reason: 'eligible',
-      cooldownRemainingMs: 0,
-    };
-  }
-
-  private openGuestLoginModal(context: BeginExerciseContext): void {
-    this.pendingBeginExerciseContext = context;
-    this.isGuestLoginModalOpen.set(true);
-    this.browserService.setItem(guestBeginLoginModalLastShownStorageKey, new Date().toISOString());
-
-    this.exerciseSessionTracking.trackEvent('guest_login_modal_shown', {
-      source: 'begin_exercise',
-      guest_begin_attempt_count: context.guestBeginAttemptCount,
-      is_first_time: context.isFirstTimeUser,
-      audio_ended_before_begin: context.audioEndedBeforeBegin,
-    }, {
-      guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
-      guest_login_modal_cooldown_hours: guestBeginLoginModalCooldownMs / (60 * 60 * 1000),
+    this.resolveExerciseAudioAccess({
+      context,
+      startWritingWhenGranted: true,
     });
   }
 
-  private startExerciseFromContext(context: BeginExerciseContext): void {
-    this.newsAudioComponent.pauseAudio();
-    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
-    this.clearAutoPauseTimer();
+  private tryResolveAudioAccessAfterHydration(): void {
+    const proposition = this.proposition();
+
+    if (!proposition || proposition.requiresPro == null) {
+      return;
+    }
+
+    this.exerciseAudioAccess.tryResolveAfterHydration({
+      exerciseId: this.exerciseId,
+      hasHydrated: this.hasHydrated,
+      isBrowserEnvironment: this.browserService.isBrowserEnvironment(),
+      hasProposition: true,
+      isPro: this.authSessionStore.isPro(),
+      requiresPro: proposition.requiresPro === true,
+      exerciseState: this.exerciseState(),
+      callbacks: this.buildAudioAccessCallbacks(),
+    });
+  }
+
+  private resolveExerciseAudioAccess(options: {
+    startWritingWhenGranted: boolean;
+    context?: models.BeginExerciseContext;
+  }): void {
+    if (!this.exerciseId) {
+      return;
+    }
+
+    this.exerciseAudioAccess.resolve({
+      exerciseId: this.exerciseId,
+      startWritingWhenGranted: options.startWritingWhenGranted,
+      context: options.context,
+      callbacks: this.buildAudioAccessCallbacks(),
+    });
+  }
+
+  private buildAudioAccessCallbacks(): AudioAccessCallbacks {
+    return {
+      onMetadata: (metadata: Proposition) => this.proposition.set(metadata),
+      onProRequired: (accessStatus?: string) => {
+        this.exerciseAudioController.clearAutoPauseTimer();
+        if (this.exerciseState() !== 'intro') {
+          this.setNewState('intro');
+        }
+        this.openProUpgradeModal(accessStatus);
+      },
+      onGranted: (context?: models.BeginExerciseContext) => {
+        this.catalogAccessDenialStatus.set(null);
+        if (context) {
+          this.startWritingExercise(context);
+        }
+      },
+      onMissingAudio: (startWritingWhenGranted: boolean) => {
+        if (startWritingWhenGranted) {
+          alert('Error starting exercise. Please try again.');
+        }
+      },
+      onError: (_error: unknown, startWritingWhenGranted: boolean) => {
+        if (startWritingWhenGranted) {
+          alert('Error starting exercise. Please try again.');
+        }
+      },
+    };
+  }
+
+  private startWritingExercise(context: models.BeginExerciseContext): void {
+    if (!this.exerciseAudioUrl()) {
+      this.resolveExerciseAudioAccess({
+        context,
+        startWritingWhenGranted: true,
+      });
+      return;
+    }
+
+    this.exerciseAudioController.pauseAndResetAudio(this.newsAudioComponentRef);
 
     if (context.audioEndedBeforeBegin) {
-      this.exerciseSessionTracking.trackEvent('exercise_started', {
-        start_mode: 'audio_already_completed',
-        guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
-      }, {
-        guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
-      });
-      this.trackExerciseStart();
-      this.setNewState('exercise');
-      this.browserService.scrollToTop();
+      this.completeExerciseStart(context, 'audio_already_completed');
       return;
     }
 
@@ -943,34 +527,114 @@ export class ListenAndWriteComponent implements OnDestroy {
       });
       this.listenFirstTourService.prompt(
         '#newsAudio',
-        () => {
-          this.markNextAudioPlaySource('listen_first_prompt');
-          this.newsAudioComponent.playAudio();
-        },
-        () => {
-          this.exerciseSessionTracking.trackEvent('exercise_started', {
-            start_mode: 'skip_listen_first_prompt',
-            guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
-          }, {
-            guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
-          });
-          this.trackExerciseStart();
-          this.setNewState('exercise');
-          this.browserService.scrollToTop();
-        }
+        () => this.exerciseAudioController.playAudioFromListenFirstPrompt(this.newsAudioComponentRef),
+        () => this.completeExerciseStart(context, 'skip_listen_first_prompt'),
       );
       return;
     }
 
+    this.completeExerciseStart(context, 'direct_start');
+  }
+
+  private completeExerciseStart(
+    context: models.BeginExerciseContext,
+    startMode: 'audio_already_completed' | 'skip_listen_first_prompt' | 'direct_start',
+  ): void {
     this.exerciseSessionTracking.trackEvent('exercise_started', {
-      start_mode: 'direct_start',
+      start_mode: startMode,
       guest_login_modal_shown_before_start: context.guestLoginModalShownBeforeStart,
+      audio_url_expires_at_utc: this.exerciseAudioAccess.getAudioExpiresAtUtc() ?? '',
     }, {
       guest_begin_attempt_count: context.guestBeginAttemptCount ?? 0,
     });
     this.trackExerciseStart();
     this.setNewState('exercise');
     this.browserService.scrollToTop();
+  }
+
+  openProUpgradeModal(accessStatus: string = constants.proRequiredAccess): void {
+    this.catalogAccessDenialStatus.set(accessStatus);
+    this.isProUpgradeModalOpen.set(true);
+  }
+
+  closeProUpgradeModal(): void {
+    this.isProUpgradeModalOpen.set(false);
+  }
+
+  dismissProUpgradeModal(): void {
+    if (this.isCatalogAccessBlockingModal()) {
+      return;
+    }
+
+    this.closeProUpgradeModal();
+  }
+
+  isCatalogAccessBlockingModal(): boolean {
+    const accessStatus = this.catalogAccessDenialStatus();
+    return accessStatus === constants.catalogLoginRequiredAccess
+      || accessStatus === constants.catalogUpgradeRequiredAccess;
+  }
+
+  async viewAvailablePlans(): Promise<void> {
+    this.closeProUpgradeModal();
+    await this.router.navigate(['/plans'], {
+      queryParams: {
+        source: 'catalog_access_upgrade_cta',
+        returnUrl: this.getPostLoginReturnUrl(),
+      },
+    });
+  }
+
+  async onCatalogAccessLoginToUnlock(): Promise<void> {
+    this.closeProUpgradeModal();
+    await this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl: this.getPostLoginReturnUrl(),
+        source: 'catalog_access_login_cta',
+      }
+    });
+  }
+
+  async onCatalogAccessPrimaryCta(): Promise<void> {
+    if (this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess) {
+      await this.onCatalogAccessLoginToUnlock();
+      return;
+    }
+
+    await this.viewAvailablePlans();
+  }
+
+  async keepPracticingFreeExercises(): Promise<void> {
+    this.closeProUpgradeModal();
+    await this.router.navigate(['/exercises'], {
+      queryParams: {
+        source: 'pro_exercise_begin',
+      },
+    });
+  }
+
+  getCatalogAccessModalBadge(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in'
+      : 'Pro';
+  }
+
+  getCatalogAccessModalTitle(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in to unlock this exercise'
+      : 'This exercise is available on Pro';
+  }
+
+  getCatalogAccessModalDescription(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Sign in to use your free full-catalog exercise and keep practicing from this page.'
+      : 'Free includes the latest 18 exercises. Pro unlocks the full catalog, including this one, plus AI correction.';
+  }
+
+  getCatalogAccessPrimaryCtaLabel(): string {
+    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+      ? 'Log in to unlock'
+      : 'See available plans';
   }
 
   private trackExerciseStart(): void {
@@ -983,59 +647,8 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.exerciseProgressTracking.trackStart(this.proposition());
   }
 
-  private incrementGuestBeginAttemptCountIfGuest(): number | null {
-    if (this.authSessionStore.isAuthenticated()) {
-      return null;
-    }
-
-    const currentAttempt = this.readPositiveIntFromStorage(guestBeginAttemptCountStorageKey);
-    const nextAttempt = currentAttempt + 1;
-    this.browserService.setItem(guestBeginAttemptCountStorageKey, String(nextAttempt));
-    return nextAttempt;
-  }
-
-  private getGuestLoginModalCooldownRemainingMs(nowMs: number): number {
-    const rawLastShown = this.browserService.getItem(guestBeginLoginModalLastShownStorageKey);
-    if (!rawLastShown) {
-      return 0;
-    }
-
-    const lastShownMs = Date.parse(rawLastShown);
-    if (!Number.isFinite(lastShownMs)) {
-      return 0;
-    }
-
-    const elapsedMs = Math.max(0, nowMs - lastShownMs);
-    return Math.max(0, guestBeginLoginModalCooldownMs - elapsedMs);
-  }
-
-  private readPositiveIntFromStorage(key: string): number {
-    const raw = this.browserService.getItem(key);
-    if (!raw) {
-      return 0;
-    }
-
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      return 0;
-    }
-
-    return parsed;
-  }
-
   onAudioPlayClicked() {
-    const playSource = this.consumePendingAudioPlaySource();
-    this.exerciseSessionTracking.trackEvent('audio_play_clicked', {
-      exercise_state: this.exerciseState(),
-      play_source: playSource
-    });
-    this.cancelTour();
-    
-    // Apply auto-pause logic if in exercise state
-    if (this.exerciseState() === 'exercise') {
-      this.applyAutoPause();
-      this.onSaveExerciseState();
-    }
+    this.exerciseAudioController.onAudioPlayClicked(this.getAudioControlContext());
   }
 
   cancelTour() {
@@ -1047,29 +660,12 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   applyAutoPause() {
-    this.clearAutoPauseTimer();
-    if (this.isMobileLayout()) return;
-    // Remove focus from textarea when audio starts
-    this.exerciseSectionComponent?.blurTextArea();
-    // Native audio controls can keep focus and swallow shortcuts after a mouse click.
-    this.browserService.blurActiveElement();
-    // Get auto-pause duration from exercise section
-    const duration = this.exerciseSectionComponent?.selectedAutoPause?.() ?? 0;
-    if (duration > 0) {
-      this.autoPauseTimer = setTimeout(() => {
-        if (this.newsAudioComponent.isAudioPlaying()) {
-          this.newsAudioComponent.pauseAudio();
-        }
-        this.clearAutoPauseTimer();
-      }, duration * 1000);
-    }
+    this.exerciseAudioController.applyAutoPause(this.getAudioControlContext());
   }
 
   onExerciseSubmit() {
     const submitWarning = this.getSubmitWarningMessage();
-    this.exerciseSessionTracking.trackEvent('exercise_submit_clicked', {
-      has_submit_warning: Boolean(submitWarning)
-    });
+    this.exerciseSubmission.trackSubmitClicked(Boolean(submitWarning));
 
     if (submitWarning) {
       queueMicrotask(() => {
@@ -1083,230 +679,167 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   private submitExercise() {
     const proposition = this.proposition();
-    if (!proposition) {
-      this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
-        reason: 'missing_proposition'
-      });
-      alert('Error processing your exercise. Please try again.');
-      return;
-    }
-
     const submittedUserText = this.exerciseSectionComponent.text();
-    const submittedOriginalText = proposition.text ?? '';
-    this.newsAudioComponent.pauseAudio();
-    this.isSubmitting.set(true);
-    this.exerciseSessionTracking.markSubmitted();
-    this.exerciseSessionTracking.trackTextChanged(submittedUserText);
+    this.exerciseAudioController.pauseAndResetAudio(this.newsAudioComponentRef);
 
-    const submitConfirmedMetadata = this.buildSubmitTelemetryMetadata(
+    this.exerciseSubmission.submit({
+      proposition,
+      exerciseId: this.exerciseId,
       submittedUserText,
-      submittedOriginalText,
-      null
-    );
-    this.exerciseSessionTracking.trackEvent('exercise_submit_confirmed', {
-      ...submitConfirmedMetadata.properties,
-      text_snapshot: submittedUserText.slice(0, 1200),
-      text_truncated: submittedUserText.length > 1200
-    }, {
-      ...submitConfirmedMetadata.measurements,
-      text_char_count: submittedUserText.length,
-      text_word_count: this.countWords(submittedUserText)
-    });
-    const submitRequestedAtMs = Date.now();
-    const minLoadingTime = 2000; // 2 seconds minimum
-
-    this.textComparisonsService.apiTextComparisonCompareTextsPost({
-      originalText: submittedOriginalText,
-      userText: submittedUserText,
-      propositionId: proposition.id ?? null
-    }).subscribe({
-      next: (result: TextComparisonResult) => {
-        const apiElapsedMs = Date.now() - submitRequestedAtMs;
-        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
-        
-        setTimeout(() => {
-          const finalUserText = result.userText ?? submittedUserText;
-          const finalOriginalText = result.originalText ?? submittedOriginalText;
-          const submitSuccessMetadata = this.buildSubmitTelemetryMetadata(
-            finalUserText,
-            finalOriginalText,
-            result.accuracyPercentage
-          );
-
-          this.trackExerciseSubmitConversion(result.accuracyPercentage);
-          this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded', {
-            ...submitSuccessMetadata.properties,
-            comparison_count: result.comparisons?.length ?? 0,
-          }, {
-            ...submitSuccessMetadata.measurements,
-            submit_api_latency_ms: apiElapsedMs,
-            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
-          });
-          this.userText.set(submittedUserText);
-          this.result.set(result);
-          this.exerciseProgressTracking.trackComplete(proposition, result);
-          this.onSaveExerciseState();
-          this.setNewState('results');
-          this.browserService.scrollToTop();
-          this.isSubmitting.set(false);
-        }, remainingTime);
-      },
-      error: (error) => {
-        const apiElapsedMs = Date.now() - submitRequestedAtMs;
-        const remainingTime = Math.max(0, minLoadingTime - apiElapsedMs);
-        
-        setTimeout(() => {
-          const submitFailureMetadata = this.buildSubmitTelemetryMetadata(
-            submittedUserText,
-            submittedOriginalText,
-            null
-          );
-
-          this.exerciseSessionTracking.trackEvent('exercise_submit_failed', {
-            ...submitFailureMetadata.properties,
-            error: error?.message ?? 'unknown_error'
-          }, {
-            ...submitFailureMetadata.measurements,
-            submit_api_latency_ms: apiElapsedMs,
-            submit_flow_elapsed_ms: Date.now() - submitRequestedAtMs,
-          });
-          this.isSubmitting.set(false);
-          alert('Error processing your exercise. Please try again.');
-        }, remainingTime);
-      }
+      exerciseTimeUsedMs: this.getExerciseTimeUsedMs(),
+      onSuccess: (result, finalSubmittedUserText) => this.applySubmitSuccess(
+        proposition,
+        result,
+        finalSubmittedUserText,
+      ),
+      onProRequired: () => this.openProUpgradeModal(),
+      onFailure: (message?: string) => alert(
+        message ?? 'Error processing your exercise. Please try again.'),
     });
   }
 
-  private trackExerciseSubmitConversion(accuracyPercentage: number | null | undefined): void {
-    if (!Number.isFinite(accuracyPercentage) || (accuracyPercentage ?? 0) < 0.1) {
+  private applySubmitSuccess(
+    proposition: Proposition | null,
+    result: TextComparisonResult,
+    submittedUserText: string,
+  ): void {
+    if (!proposition) {
       return;
     }
 
+    this.userText.set(submittedUserText);
+    this.result.set(result);
+    this.trackProReviewCtaShownIfNeeded(result);
+    this.activeMistakePatternComparisonIndex.set(null);
+    this.pinnedMistakePatternComparisonIndex.set(null);
+    this.exerciseProgressTracking.trackComplete(proposition, result);
+    this.onSaveExerciseState();
+    this.setNewState('results');
+    this.browserService.scrollToTop();
+    this.scheduleAnonymousSampleResultsTour(result);
+  }
+
+  private scheduleAnonymousSampleResultsTour(result: TextComparisonResult): void {
     if (!this.browserService.isBrowserEnvironment()) {
       return;
     }
 
-    const gtag = (globalThis as typeof globalThis & { gtag?: GtagEvent }).gtag;
-    if (typeof gtag !== 'function') {
+    queueMicrotask(() => {
+      window.setTimeout(() => {
+        this.resultsTourService.maybeStartAnonymousSampleTour(
+          result,
+          this.authSessionStore.isAuthenticated(),
+          this.isMobileLayout());
+      }, 0);
+    });
+  }
+
+  private trackProReviewCtaShownIfNeeded(result: TextComparisonResult): void {
+    const status = result.mistakePatternStatus;
+    const ctaType = status === 'login_required_to_unlock_review'
+      ? 'login_to_unlock'
+      : status === 'upgrade_required_to_unlock_review'
+        ? 'upgrade_to_pro'
+        : status === 'skipped_usage_limit'
+          ? 'usage_limit'
+          : null;
+    if (!ctaType) {
       return;
     }
 
-    gtag('event', 'conversion', {
-      send_to: EXERCISE_SUBMIT_CONVERSION_SEND_TO,
-      value: 1.0,
-      currency: 'BRL'
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_shown', {
+      cta_type: ctaType,
+      exercise_id: String(this.exerciseId ?? ''),
+      review_status: status ?? '',
+    }, {
+      comparison_count: result.comparisons?.length ?? 0,
+    });
+  }
+
+  private tryRestorePendingProReviewRequest(): void {
+    if (this.pendingProReviewRestoreInFlight
+        || !this.exerciseId
+        || !this.proposition()
+        || !this.authSessionStore.hasReliableSessionState()
+        || !this.authSessionStore.isAuthenticated()) {
+      return;
+    }
+
+    const pendingRequest = this.proReviewPendingRequest.peek();
+    if (!pendingRequest || pendingRequest.exerciseId !== this.exerciseId) {
+      return;
+    }
+
+    const isExpired = this.proReviewPendingRequest.isExpired(pendingRequest);
+    this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_attempted', {
+      exercise_id: String(this.exerciseId),
+      source: pendingRequest.source,
+      is_expired: String(isExpired),
+      has_draft_user_text: String(Boolean(pendingRequest.draftUserText.trim())),
+    });
+
+    if (isExpired || !pendingRequest.draftUserText.trim()) {
+      this.proReviewPendingRequest.clear();
+      this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_expired', {
+        exercise_id: String(this.exerciseId),
+        source: pendingRequest.source,
+      });
+      return;
+    }
+
+    const consumedRequest = this.proReviewPendingRequest.consumeForExercise(this.exerciseId);
+    if (!consumedRequest) {
+      return;
+    }
+
+    this.pendingProReviewRestoreInFlight = true;
+    this.userText.set(consumedRequest.draftUserText);
+    this.exerciseSubmission.submit({
+      proposition: this.proposition(),
+      exerciseId: this.exerciseId,
+      submittedUserText: consumedRequest.draftUserText,
+      exerciseTimeUsedMs: null,
+      onSuccess: (result, finalSubmittedUserText) => {
+        this.pendingProReviewRestoreInFlight = false;
+        this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_completed', {
+          exercise_id: String(this.exerciseId ?? ''),
+          review_status: result.mistakePatternStatus ?? '',
+        });
+        this.applySubmitSuccess(
+          this.proposition(),
+          result,
+          finalSubmittedUserText);
+      },
+      onProRequired: () => {
+        this.pendingProReviewRestoreInFlight = false;
+        this.openProUpgradeModal();
+      },
+      onFailure: () => {
+        this.pendingProReviewRestoreInFlight = false;
+        alert('Unable to unlock your Pro review. Please try again.');
+      },
     });
   }
 
   private getSubmitWarningMessage(): string | null {
-    const warnings: string[] = [];
-
-    if (!this.hasCompletedAudioPlayback()) {
-      warnings.push('We strongly recommend listening through the audio before submitting. You can skip words or write what you think you heard.');
-      warnings.push('If you submit too early, the accuracy percentage can be less precise and you may lose points.');
-      warnings.push('If auto-pause is enabled, press play again after each pause using Ctrl/Cmd + Enter.');
-    }
-
-    const minimumWords = this.getMinimumWordsForSubmit();
-    const userWords = this.exerciseSectionComponent?.wordCount ?? 0;
-    if (minimumWords > 0 && userWords < minimumWords) {
-      warnings.push(`Your text is still short (${userWords} words). Partial answers can reduce correction accuracy.`);
-    }
-
-    if (warnings.length === 0) {
-      return null;
-    }
-
-    warnings.unshift('Goal: write as much of the full audio text as you can.');
-
-    return `Quick reminder before submitting:\n\n- ${warnings.join('\n\n- ')}`;
+    return this.exerciseSubmission.getSubmitWarningMessage(
+      this.getSubmitAudioState(),
+      this.proposition()?.originalWordCount,
+      this.exerciseSectionComponent?.wordCount ?? 0,
+    );
   }
 
   private hasCompletedAudioPlayback(): boolean {
-    if (this.newsAudioComponent?.audioEnded) {
-      return true;
-    }
+    return this.exerciseSubmission.hasCompletedAudioPlayback(this.getSubmitAudioState());
+  }
 
+  private getSubmitAudioState(): SubmitAudioState {
     const audio = this.newsAudioComponent?.audioRef?.nativeElement;
-    if (!audio) {
-      return false;
-    }
-
-    const duration = audio.duration;
-    if (!Number.isFinite(duration) || duration <= 0) {
-      return false;
-    }
-
-    return audio.currentTime >= Math.max(0, duration - submitAudioRemainingToleranceSeconds);
-  }
-
-  private getMinimumWordsForSubmit(): number {
-    const originalWords = this.countWords(this.proposition()?.text);
-    if (originalWords === 0) {
-      return 0;
-    }
-
-    return Math.max(3, Math.ceil(originalWords * 0.2));
-  }
-
-  private countWords(text: string | null | undefined): number {
-    return (text || '').trim().split(/\s+/).filter(Boolean).length;
-  }
-
-  private buildSubmitTelemetryMetadata(
-    userText: string | null | undefined,
-    originalText: string | null | undefined,
-    accuracyPercentage: number | null | undefined
-  ): {
-    properties: Record<string, string | number | boolean>;
-    measurements: Record<string, number>;
-  } {
-    const normalizedUserText = userText ?? '';
-    const normalizedOriginalText = originalText ?? '';
-    const userTextTelemetry = this.toTelemetryText(normalizedUserText);
-    const originalTextTelemetry = this.toTelemetryText(normalizedOriginalText);
-    const exerciseTimeUsedMs = this.getExerciseTimeUsedMs();
-
-    const properties: Record<string, string | number | boolean> = {
-      exercise_id: this.exerciseId ?? this.proposition()?.id ?? '',
-      proposition_id: this.proposition()?.id ?? '',
-      user_text: userTextTelemetry.text,
-      user_text_truncated: userTextTelemetry.truncated,
-      original_text: originalTextTelemetry.text,
-      original_text_truncated: originalTextTelemetry.truncated,
-      has_exercise_time_used: exerciseTimeUsedMs !== null,
-    };
-
-    const measurements: Record<string, number> = {
-      user_text_char_count: normalizedUserText.length,
-      user_text_word_count: this.countWords(normalizedUserText),
-      original_text_char_count: normalizedOriginalText.length,
-      original_text_word_count: this.countWords(normalizedOriginalText),
-    };
-
-    if (exerciseTimeUsedMs !== null) {
-      measurements['exercise_time_used_ms'] = exerciseTimeUsedMs;
-      measurements['exercise_time_used_seconds'] = Number((exerciseTimeUsedMs / 1000).toFixed(2));
-    }
-
-    if (typeof accuracyPercentage === 'number' && Number.isFinite(accuracyPercentage)) {
-      measurements['accuracy_percentage'] = accuracyPercentage;
-    }
 
     return {
-      properties,
-      measurements
-    };
-  }
-
-  private toTelemetryText(text: string): { text: string; truncated: boolean } {
-    if (text.length <= submitTelemetryTextMaxLength) {
-      return { text, truncated: false };
-    }
-
-    return {
-      text: text.slice(0, submitTelemetryTextMaxLength),
-      truncated: true
+      audioEnded: this.newsAudioComponent?.audioEnded ?? false,
+      currentTime: audio?.currentTime ?? null,
+      duration: audio?.duration ?? null,
     };
   }
 
@@ -1319,30 +852,13 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.pendingRouteLeaveResolver) {
-      this.pendingRouteLeaveResolver(true);
-      this.pendingRouteLeaveResolver = null;
-    }
-
-    this.pendingLeaveAction = null;
-    this.clearPendingAudioPlaySource();
+    this.exerciseFeedbackFlow.destroy();
     this.exerciseSessionTracking.endSession('component_destroyed');
-    // Clean up timer to prevent memory leaks
-    this.clearAutoPauseTimer();
+    this.exerciseAudioController.reset();
   }
 
   canDeactivateFromRoute(): boolean | Promise<boolean> {
-    if (!this.shouldPromptFeedbackOnLeave()) {
-      return true;
-    }
-
-    if (!this.openFeedbackModalIfEligible()) {
-      return true;
-    }
-
-    return new Promise<boolean>((resolve) => {
-      this.pendingRouteLeaveResolver = resolve;
-    });
+    return this.exerciseFeedbackFlow.canDeactivateFromRoute(this.exerciseState());
   }
 
   onTryAgain() {
@@ -1366,7 +882,7 @@ export class ListenAndWriteComponent implements OnDestroy {
 
   onSignInToSaveProgress(): void {
     const returnUrl = this.getPostLoginReturnUrl();
-    this.setPendingCompletedSyncRequest(this.exerciseId);
+    this.guestProgressTransfer.request(this.exerciseId);
     this.exerciseSessionTracking.trackEvent('results_login_cta_clicked', {
       return_url: returnUrl,
       exercise_id: String(this.exerciseId ?? ''),
@@ -1381,19 +897,53 @@ export class ListenAndWriteComponent implements OnDestroy {
     });
   }
 
-  onAudioPaused() {
-    if (this.exerciseState() !== 'exercise') return;
-    this.onSaveExerciseState();
-    // When the user pauses via native controls, restore focus so shortcuts keep working.
-    this.exerciseSectionComponent?.focusTextArea();
-  }
-
-  onAudioSeeked() {
-    if (this.exerciseState() !== 'exercise') {
+  onProReviewLoginToUnlock(): void {
+    if (!this.exerciseId) {
       return;
     }
 
-    this.onSaveExerciseState();
+    const returnUrl = this.getPostLoginReturnUrl();
+    this.proReviewPendingRequest.save(
+      this.exerciseId,
+      this.userText(),
+      returnUrl);
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_clicked', {
+      cta_type: 'login_to_unlock',
+      exercise_id: String(this.exerciseId),
+      review_status: this.result()?.mistakePatternStatus ?? '',
+      return_url_present: 'true',
+    });
+
+    void this.router.navigate(['/auth/login'], {
+      queryParams: {
+        returnUrl,
+        source: 'pro_review_login_cta',
+      }
+    });
+  }
+
+  onProReviewUpgradeToPro(): void {
+    this.exerciseSessionTracking.trackEvent('pro_review_cta_clicked', {
+      cta_type: 'upgrade_to_pro',
+      exercise_id: String(this.exerciseId ?? ''),
+      review_status: this.result()?.mistakePatternStatus ?? '',
+      return_url_present: 'true',
+    });
+
+    void this.router.navigate(['/plans'], {
+      queryParams: {
+        source: 'pro_review_upgrade_cta',
+        returnUrl: this.getPostLoginReturnUrl(),
+      }
+    });
+  }
+
+  onAudioPaused() {
+    this.exerciseAudioController.onAudioPaused(this.getAudioControlContext());
+  }
+
+  onAudioSeeked() {
+    this.exerciseAudioController.onAudioSeeked(this.getAudioControlContext());
   }
 
   onSaveExerciseState() {
@@ -1436,6 +986,15 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.exerciseSessionTracking.trackTextChanged(text);
   }
 
+  onMistakePatternActiveComparisonChanged(comparisonIndex: number | null): void {
+    this.activeMistakePatternComparisonIndex.set(comparisonIndex);
+  }
+
+  onMistakePatternPinnedComparisonChanged(comparisonIndex: number | null): void {
+    this.pinnedMistakePatternComparisonIndex.update(current =>
+      current === comparisonIndex ? null : comparisonIndex);
+  }
+
   onExerciseTutorialVideoRequested(): void {
     this.openTutorialVideoFromSource('exercise_help_icon');
   }
@@ -1461,7 +1020,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.isTutorialVideoModalOpen.set(false);
   }
 
-  setNewState(state: ExerciseState) {
+  setNewState(state: models.ExerciseState) {
     const previousState = this.exerciseState();
 
     if (state === 'intro') {
@@ -1502,7 +1061,7 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   isFirstTime(): boolean {
-    const localTutorialKey = this.browserService.getItem(LISTEN_WRITE_FIRST_TIME_KEY);
+    const localTutorialKey = this.browserService.getItem(constants.listenWriteFirstTimeKey);
     const hasLocalDone = localTutorialKey !== null;
     const isAuthenticated = this.authSessionStore.isAuthenticated();
     const hasReliableSessionState = this.authSessionStore.hasReliableSessionState();
@@ -1575,143 +1134,43 @@ export class ListenAndWriteComponent implements OnDestroy {
     return width > 0 && width <= 900;
   }
 
-  private markNextAudioPlaySource(source: AudioPlaySource): void {
-    this.clearPendingAudioPlaySource();
-    this.pendingAudioPlaySource = source;
-    this.pendingAudioPlaySourceTimer = setTimeout(() => {
-      this.pendingAudioPlaySource = null;
-      this.pendingAudioPlaySourceTimer = null;
-    }, 2000);
-  }
-
-  private consumePendingAudioPlaySource(): AudioPlaySource {
-    const source = this.pendingAudioPlaySource ?? 'manual_click';
-    this.clearPendingAudioPlaySource();
-    return source;
-  }
-
-  private clearPendingAudioPlaySource(): void {
-    if (this.pendingAudioPlaySourceTimer) {
-      clearTimeout(this.pendingAudioPlaySourceTimer);
-      this.pendingAudioPlaySourceTimer = null;
-    }
-    this.pendingAudioPlaySource = null;
+  private getAudioControlContext() {
+    return {
+      exerciseState: this.exerciseState(),
+      audio: this.newsAudioComponentRef,
+      section: this.exerciseSectionComponent ?? null,
+      isMobileLayout: this.isMobileLayout(),
+      onSaveExerciseState: () => this.onSaveExerciseState(),
+      onCancelListenFirstTour: () => this.cancelTour(),
+      onFinishExerciseTour: () => this.exerciseTourService.finishTour(),
+    };
   }
 
   onFeedbackDismissed(_reason: 'not_now' | 'close'): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_dismissed', {
-      reason: _reason
-    });
-    this.feedbackService.markDismissed();
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(true);
+    this.exerciseFeedbackFlow.onDismissed(_reason);
   }
 
-  onFeedbackSubmitted(submission: FeedbackModalSubmission): void {
-    const proposition = this.proposition();
-    const feedbackEvent: ExerciseFeedbackEvent = {
-      rating: submission.rating,
-      tags: submission.tags,
-      comment: submission.comment,
-      exerciseId: String(proposition?.id ?? this.exerciseId ?? ''),
-      difficulty: proposition?.complexity?.description ?? '',
-      topic: proposition?.subject?.description ?? '',
-      sessionId: this.exerciseSessionTracking.getCurrentSessionId() ?? '',
-      userId: this.authSessionStore.userId() ?? '',
-      timestamp: new Date().toISOString()
-    };
-
-    this.exerciseSessionTracking.trackEvent('feedback_modal_submitted', {
-      rating: submission.rating,
-      tags_count: submission.tags.length,
-      has_comment: Boolean(submission.comment)
-    }, {
-      feedback_rating: submission.rating,
-      feedback_tags_count: submission.tags.length,
-      feedback_comment_length: submission.comment?.length ?? 0
+  onFeedbackSubmitted(submission: feedbackModal.FeedbackModalSubmission): void {
+    this.exerciseFeedbackFlow.onSubmitted(submission, {
+      proposition: this.proposition(),
+      exerciseId: this.exerciseId,
     });
-
-    this.feedbackService.submitFeedback(feedbackEvent);
   }
 
-  onFeedbackInteraction(event: FeedbackModalInteractionEvent): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_interaction', {
-      action: event.action,
-      rating: event.rating,
-      tag: event.tag,
-      tag_selected: event.tagSelected,
-      tags_count: event.tagsCount,
-      has_comment: event.hasComment
-    }, {
-      feedback_comment_length: event.commentLength ?? 0
-    });
+  onFeedbackInteraction(event: feedbackModal.FeedbackModalInteractionEvent): void {
+    this.exerciseFeedbackFlow.onInteraction(event);
   }
 
   onFeedbackClosedAfterSubmit(): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_closed_after_submit');
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(true);
+    this.exerciseFeedbackFlow.onClosedAfterSubmit();
   }
 
   onFeedbackFindAnotherExercise(): void {
-    this.exerciseSessionTracking.trackEvent('feedback_modal_find_another_exercise_clicked');
-    this.closeFeedbackModal();
-    this.continuePendingLeaveFlow(false);
-    this.navigateToExercises();
+    this.exerciseFeedbackFlow.onFindAnotherExercise(() => this.navigateToExercises());
   }
 
   private attemptLeaveResults(action: () => void): void {
-    if (!this.shouldPromptFeedbackOnLeave()) {
-      action();
-      return;
-    }
-
-    if (!this.openFeedbackModalIfEligible()) {
-      action();
-      return;
-    }
-
-    this.pendingLeaveAction = action;
-  }
-
-  private shouldPromptFeedbackOnLeave(): boolean {
-    return this.exerciseState() === 'results' && this.feedbackService.shouldShowPrompt();
-  }
-
-  private openFeedbackModalIfEligible(): boolean {
-    if (this.isFeedbackModalOpen()) {
-      return true;
-    }
-
-    if (!this.feedbackService.consumePromptOpportunity()) {
-      return false;
-    }
-
-    this.exerciseSessionTracking.trackEvent('feedback_modal_opened');
-    this.isFeedbackModalOpen.set(true);
-    return true;
-  }
-
-  private closeFeedbackModal(): void {
-    this.isFeedbackModalOpen.set(false);
-  }
-
-  private continuePendingLeaveFlow(allowPendingAction: boolean): void {
-    const routeResolver = this.pendingRouteLeaveResolver;
-    this.pendingRouteLeaveResolver = null;
-
-    if (routeResolver) {
-      routeResolver(allowPendingAction);
-      this.pendingLeaveAction = null;
-      return;
-    }
-
-    const leaveAction = this.pendingLeaveAction;
-    this.pendingLeaveAction = null;
-
-    if (allowPendingAction) {
-      leaveAction?.();
-    }
+    this.exerciseFeedbackFlow.attemptLeaveResults(this.exerciseState(), action);
   }
 
   private resetExerciseForTryAgain(): void {
@@ -1724,7 +1183,9 @@ export class ListenAndWriteComponent implements OnDestroy {
     this.initialAutoPause.set(null);
     this.result.set(null);
     this.shouldResetCompletedStateOnNextStart = true;
-    this.newsAudioComponent.audioRef.nativeElement.currentTime = 0;
+    if (this.newsAudioComponentRef?.audioRef?.nativeElement) {
+      this.newsAudioComponentRef.audioRef.nativeElement.currentTime = 0;
+    }
     this.setNewState('intro');
   }
 
@@ -1746,7 +1207,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     return '/exercises';
   }
 
-  private openTutorialVideoFromSource(source: TutorialVideoSource): void {
+  private openTutorialVideoFromSource(source: tutorialVideoConfig.TutorialVideoSource): void {
     this.tutorialVideoSource = source;
     this.exerciseSessionTracking.trackEvent('tutorial_video_cta_clicked', {
       source,

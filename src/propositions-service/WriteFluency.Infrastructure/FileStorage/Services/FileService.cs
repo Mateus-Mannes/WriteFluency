@@ -9,6 +9,8 @@ namespace WriteFluency.Infrastructure.FileStorage;
 public class FileService : IFileService
 {
     private const string ImmutableAssetCacheControl = "public, max-age=31536000, immutable";
+    private const int MinPresignedUrlLifetimeSeconds = 1;
+    private const int MaxPresignedUrlLifetimeSeconds = 604800;
 
     private readonly IMinioClient _minioClient;
     private readonly ILogger<FileService> _logger;
@@ -45,7 +47,7 @@ public class FileService : IFileService
             ? Guid.NewGuid().ToString()
             : $"{Guid.NewGuid()}.{fileExtension}";
 
-        return await UploadFileInternalAsync(bucketName, file, objectName, contentType);
+        return await UploadFileInternalAsync(bucketName, file, objectName, contentType, cancellationToken);
     }
 
     public async Task<Result<string>> UploadFileWithObjectNameAsync(
@@ -55,18 +57,19 @@ public class FileService : IFileService
         string? contentType = null,
         CancellationToken cancellationToken = default)
     {
-        return await UploadFileInternalAsync(bucketName, file, objectName, contentType);
+        return await UploadFileInternalAsync(bucketName, file, objectName, contentType, cancellationToken);
     }
 
     private async Task<Result<string>> UploadFileInternalAsync(
         string bucketName,
         byte[] file,
         string objectName,
-        string? contentType)
+        string? contentType,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await EnsureBucketExistsAsync(bucketName);
+            await EnsureBucketExistsAsync(bucketName, cancellationToken);
 
             var headers = new Dictionary<string, string>
             {
@@ -80,7 +83,8 @@ public class FileService : IFileService
                 .WithStreamData(stream)
                 .WithObjectSize(stream.Length)
                 .WithContentType(contentType ?? "application/octet-stream")
-                .WithHeaders(headers));
+                .WithHeaders(headers),
+                cancellationToken);
 
             return Result.Ok(objectName);
         }
@@ -91,14 +95,15 @@ public class FileService : IFileService
         }
     }
 
-    private async Task EnsureBucketExistsAsync(string bucketName)
+    private async Task EnsureBucketExistsAsync(string bucketName, CancellationToken cancellationToken)
     {
         var bucketExists = await _minioClient.BucketExistsAsync(
-            new BucketExistsArgs().WithBucket(bucketName));
+            new BucketExistsArgs().WithBucket(bucketName),
+            cancellationToken);
 
         if (!bucketExists)
         {
-            await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
+            await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName), cancellationToken);
         }
     }
 
@@ -143,5 +148,40 @@ public class FileService : IFileService
             .WithObject(objectName)
             .WithCallbackStream(stream => stream.CopyTo(memoryStream)), cancellationToken);
         return memoryStream.ToArray();
+    }
+
+    public async Task<Result<string>> CreatePresignedGetUrlAsync(
+        string bucketName,
+        string objectName,
+        TimeSpan expiresIn,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await EnsureBucketExistsAsync(bucketName, cancellationToken);
+
+            var expiresInSeconds = NormalizePresignedUrlLifetime(expiresIn);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var url = await _minioClient.PresignedGetObjectAsync(new PresignedGetObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(objectName)
+                .WithExpiry(expiresInSeconds));
+
+            return Result.Ok(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating presigned URL for MinIO object {BucketName}/{ObjectName}", bucketName, objectName);
+            return Result.Fail<string>($"Error creating presigned URL for MinIO object: {ex.Message}");
+        }
+    }
+
+    private static int NormalizePresignedUrlLifetime(TimeSpan expiresIn)
+    {
+        return Math.Clamp(
+            (int)Math.Ceiling(expiresIn.TotalSeconds),
+            MinPresignedUrlLifetimeSeconds,
+            MaxPresignedUrlLifetimeSeconds);
     }
 }

@@ -72,6 +72,52 @@
 
 <!-- Exercise cards grid -->
 <div class="exercises-grid">
+  <ng-template #exerciseCardContent let-exercise let-i="index">
+    <!-- Thumbnail -->
+    <div class="exercise-thumbnail">
+      @if (exercise.requiresPro) {
+        <span class="pro-badge" aria-label="Pro exercise">
+          <mat-icon fontSet="material-symbols-outlined">workspace_premium</mat-icon>
+        </span>
+      }
+
+      @if (exercise.imageBaseId && !exercise.imageLoadFailed) {
+        <img [ngSrc]="exercise.imageBaseId"
+             ngSrcset="320w, 640w"
+             [loaderParams]="imageLoaderParams"
+             sizes="(max-width: 600px) 92vw, (max-width: 992px) 48vw, 320px"
+             fill
+             [appImagePlaceholder]="exercise.imageBaseId"
+             (error)="onOptimizedImageError(exercise.id)"
+             [alt]="'Thumbnail for ' + exercise.title + ' - ' + exercise.level + ' level ' + exercise.topic + ' exercise'"
+             [priority]="!maxItems && i === 0"
+             decoding="async"/>
+      } @else {
+        <div class="exercise-placeholder">
+          <mat-icon>article</mat-icon>
+          <span class="placeholder-text">{{ getTopicInitial(exercise.topic) }}</span>
+        </div>
+      }
+    </div>
+
+    <mat-card-content>
+      <!-- Title -->
+      <h3 class="exercise-title text-heading">{{ exercise.title }}</h3>
+
+      <!-- Meta info -->
+      <div class="exercise-meta">
+        <span class="meta-topic">{{ exercise.topic }}</span>
+        <span class="meta-level" [class]="'level-' + exercise.level.toLowerCase()">
+          {{ exercise.level }}
+        </span>
+        <span class="meta-duration">
+          <mat-icon>timer</mat-icon>
+          {{ exercise.duration }}
+        </span>
+      </div>
+    </mat-card-content>
+  </ng-template>
+
   @if (isLoading()) {
     <div class="loading-state">
       <mat-spinner></mat-spinner>
@@ -90,43 +136,7 @@
           [routerLink]="['/english-writing-exercise', exercise.id]"
           [state]="{ initialProposition: getInitialPropositionState(exercise) }"
           class="exercise-card-link">
-          <!-- Thumbnail -->
-          <div class="exercise-thumbnail">
-            @if (exercise.imageBaseId && !exercise.imageLoadFailed) {
-              <img [ngSrc]="exercise.imageBaseId"
-                   ngSrcset="320w, 640w"
-                   [loaderParams]="imageLoaderParams"
-                   sizes="(max-width: 600px) 92vw, (max-width: 992px) 48vw, 320px"
-                   fill
-                   [appImagePlaceholder]="exercise.imageBaseId"
-                   (error)="onOptimizedImageError(exercise.id)"
-                   [alt]="'Thumbnail for ' + exercise.title + ' - ' + exercise.level + ' level ' + exercise.topic + ' exercise'" 
-                   [priority]="!maxItems && i === 0"
-                   decoding="async"/>
-            } @else {
-              <div class="exercise-placeholder">
-                <mat-icon>article</mat-icon>
-                <span class="placeholder-text">{{ getTopicInitial(exercise.topic) }}</span>
-              </div>
-            }
-          </div>
-          
-          <mat-card-content>
-            <!-- Title -->
-            <h3 class="exercise-title text-heading">{{ exercise.title }}</h3>
-            
-            <!-- Meta info -->
-            <div class="exercise-meta">
-              <span class="meta-topic">{{ exercise.topic }}</span>
-              <span class="meta-level" [class]="'level-' + exercise.level.toLowerCase()">
-                {{ exercise.level }}
-              </span>
-              <span class="meta-duration">
-                <mat-icon>timer</mat-icon>
-                {{ exercise.duration }}
-              </span>
-            </div>
-          </mat-card-content>
+          <ng-container *ngTemplateOutlet="exerciseCardContent; context: { $implicit: exercise, index: i }"></ng-container>
         </a>
       </mat-card>
     } @empty {

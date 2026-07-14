@@ -1,0 +1,156 @@
+@if (isUsageLimitSkipped()) {
+  <section class="mistake-pattern-review mistake-pattern-review-alert" aria-label="Pro review limit">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>AI review limit reached</h2>
+      </div>
+    </div>
+    <p class="mistake-pattern-alert-message">{{ usageLimitMessage() }}</p>
+    <a class="mistake-pattern-alert-link" routerLink="/support">Contact support</a>
+  </section>
+} @else if (shouldShowLockedMock()) {
+  <section class="mistake-pattern-review mistake-pattern-review-locked" aria-label="Locked Pro review preview">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>Unlock mistake patterns</h2>
+      </div>
+      <p class="mistake-pattern-review-count">Preview</p>
+    </div>
+
+    <div class="mistake-pattern-locked-preview" aria-hidden="true">
+      <div class="mistake-pattern-tags">
+        <span class="mistake-pattern-tag mistake-pattern-tag-static">All</span>
+        <span class="mistake-pattern-tag mistake-pattern-tag-static">word boundary <span>1</span></span>
+        <span class="mistake-pattern-tag mistake-pattern-tag-static">spelling <span>1</span></span>
+      </div>
+
+      <div class="mistake-pattern-list">
+        @for (row of mockRows; track row.comparisonIndex) {
+          <div class="mistake-pattern-row">
+            <span class="mistake-pattern-text-pair">
+              <span class="mistake-pattern-user-text" [title]="row.userText">{{ formatTextPairSnippet(row.userText) }}</span>
+              <span class="mistake-pattern-arrow" aria-hidden="true">&rarr;</span>
+              <span class="mistake-pattern-original-text" [title]="row.originalText">{{ formatTextPairSnippet(row.originalText) }}</span>
+            </span>
+            <span class="mistake-pattern-row-tags">
+              @for (tag of row.tags; track tag) {
+                <span>{{ formatTag(tag) }}</span>
+              }
+            </span>
+            <span class="mistake-pattern-phrase">{{ row.studentPhrase }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="mistake-pattern-lock-overlay">
+      @if (isLoginRequired()) {
+        <h3>Log in to unlock your free Pro review</h3>
+        <p>Your highlights are ready. Sign in to unlock this Pro review for free and see your mistakes grouped with short explanations.</p>
+        <button type="button" class="mistake-pattern-lock-button" (click)="onLoginToUnlockClick()">
+          Log in to unlock
+        </button>
+      } @else {
+        <h3>Upgrade to review every attempt</h3>
+        <p>Pro groups your mistakes by pattern and adds short explanations connected to your highlights.</p>
+        <button type="button" class="mistake-pattern-lock-button" (click)="onUpgradeToProClick()">
+          Upgrade to Pro
+        </button>
+      }
+    </div>
+  </section>
+} @else if (rows().length > 0) {
+  <section class="mistake-pattern-review" aria-label="Mistake patterns">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>Patterns in this attempt</h2>
+      </div>
+      <p class="mistake-pattern-review-count">{{ rows().length }} corrections</p>
+    </div>
+
+    <div class="mistake-pattern-tags" aria-label="Filter mistake patterns">
+      <button
+        type="button"
+        class="mistake-pattern-tag"
+        [class.mistake-pattern-tag-active]="selectedTag() === null"
+        (click)="selectTag(null)">
+        All
+      </button>
+      @for (item of tagCounts(); track item.tag) {
+        <button
+          type="button"
+          class="mistake-pattern-tag"
+          [class.mistake-pattern-tag-active]="selectedTag() === item.tag"
+          (click)="selectTag(item.tag)">
+          {{ formatTag(item.tag) }} <span>{{ item.count }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="mistake-pattern-list">
+      @for (row of filteredRows(); track row.comparisonIndex) {
+        <button
+          type="button"
+          class="mistake-pattern-row"
+          [ngClass]="{ 'mistake-pattern-row-active': isActive(row) }"
+          (mouseenter)="setActiveComparison(row.comparisonIndex)"
+          (mouseleave)="setActiveComparison(null)"
+          (focus)="setActiveComparison(row.comparisonIndex)"
+          (blur)="setActiveComparison(null)"
+          (click)="togglePinnedComparison(row.comparisonIndex)">
+          <span class="mistake-pattern-text-pair">
+            <span class="mistake-pattern-user-text" [title]="row.userText">{{ formatTextPairSnippet(row.userText) }}</span>
+            <span class="mistake-pattern-arrow" aria-hidden="true">&rarr;</span>
+            <span class="mistake-pattern-original-text" [title]="row.originalText">{{ formatTextPairSnippet(row.originalText) }}</span>
+          </span>
+          <span class="mistake-pattern-row-tags">
+            @for (tag of row.tags; track tag) {
+              <span>{{ formatTag(tag) }}</span>
+            }
+          </span>
+          <span class="mistake-pattern-phrase">{{ row.studentPhrase }}</span>
+        </button>
+      }
+    </div>
+  </section>
+} @else if (shouldShowNoUserText()) {
+  <section class="mistake-pattern-review mistake-pattern-review-empty" aria-label="No user text to review">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>No text to review</h2>
+      </div>
+      <p class="mistake-pattern-review-count">0 corrections</p>
+    </div>
+
+    <div class="mistake-pattern-empty-state">
+      <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+      <h3>No answer submitted</h3>
+      <p>No comparisons were evaluated because there was no user text.</p>
+    </div>
+  </section>
+} @else if (shouldShowNoCorrections()) {
+  <section class="mistake-pattern-review mistake-pattern-review-empty" aria-label="No mistake patterns">
+    <div class="mistake-pattern-review-header">
+      <div>
+        <p class="mistake-pattern-review-kicker">Pro review</p>
+        <h2>No correction patterns</h2>
+      </div>
+      <p class="mistake-pattern-review-count">0 corrections</p>
+    </div>
+
+    <div class="mistake-pattern-empty-state">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      @if (isPerfectResult()) {
+        <h3>Perfect match</h3>
+        <p>You matched the original text, so there are no mistake patterns to review.</p>
+      } @else {
+        <h3>No review items</h3>
+        <p>There are no correction patterns to show for this attempt.</p>
+      }
+    </div>
+  </section>
+}

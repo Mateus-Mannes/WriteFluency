@@ -26,6 +26,10 @@ public sealed class UserProgressRecord
 
     public IReadOnlyList<ProgressTextComparison>? CompletedComparisons { get; set; }
 
+    public string? CompletedCorrectionMode { get; set; }
+
+    public IReadOnlyList<ProgressCorrectionTraceEntry>? CompletedCorrectionTrace { get; set; }
+
     public int? CurrentWordCount { get; set; }
 
     public int? OriginalWordCount { get; set; }
@@ -74,6 +78,16 @@ public sealed class UserAttemptRecord
     public string? Subject { get; set; }
 
     public string? Complexity { get; set; }
+
+    public string? OriginalText { get; set; }
+
+    public string? UserText { get; set; }
+
+    public IReadOnlyList<ProgressTextComparison>? Comparisons { get; set; }
+
+    public string? CorrectionMode { get; set; }
+
+    public IReadOnlyList<ProgressCorrectionTraceEntry>? CorrectionTrace { get; set; }
 
     public DateTimeOffset CreatedAtUtc { get; set; }
 }

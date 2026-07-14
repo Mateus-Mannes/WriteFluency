@@ -99,6 +99,14 @@ public class UsersServiceCollectionExtensionsTests
         supportRequestOptions.RecipientEmails.ShouldBe(["support-1@writefluency.local", "support-2@writefluency.local", "support-3@writefluency.local"]);
         supportRequestOptions.MaxRequestsPerWindowPerIp.ShouldBe(3);
         supportRequestOptions.RequestWindowMinutes.ShouldBe(15);
+
+        var stripeOptions = scope.ServiceProvider.GetRequiredService<IOptions<StripeOptions>>().Value;
+        stripeOptions.ProMonthlyPriceId.ShouldBe("price_test_pro_monthly");
+        stripeOptions.SuccessUrl.ShouldBe("https://writefluency.local/user?checkout=success&session_id={CHECKOUT_SESSION_ID}");
+        stripeOptions.CancelUrl.ShouldBe("https://writefluency.local/user?checkout=cancelled");
+        stripeOptions.PortalConfigurationId.ShouldBe("bpc_test_writefluency");
+        stripeOptions.PortalReturnUrl.ShouldBe("https://writefluency.local/user?billing=returned");
+        stripeOptions.WebhookSecret.ShouldBe("whsec_test_writefluency");
     }
 
     [Fact]
@@ -150,9 +158,44 @@ public class UsersServiceCollectionExtensionsTests
         scope.ServiceProvider.GetRequiredService<IClientIpResolver>().ShouldNotBeNull();
     }
 
+    [Fact]
+    public void AddUsersPersistence_WhenProductionAndPortalConfigurationIsMissing_ShouldFailStripeValidation()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(
+            BuildConfiguration(overrides: new Dictionary<string, string?>
+            {
+                ["Stripe:PortalConfigurationId"] = ""
+            }),
+            isProduction: true);
+
+        using var provider = services.BuildServiceProvider();
+
+        Should.Throw<OptionsValidationException>(() => provider.GetRequiredService<IOptions<StripeOptions>>().Value);
+    }
+
+    [Fact]
+    public void AddUsersPersistence_WhenProductionAndWebhookSecretIsMissing_ShouldFailStripeValidation()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddUsersPersistence(
+            BuildConfiguration(overrides: new Dictionary<string, string?>
+            {
+                ["Stripe:WebhookSecret"] = ""
+            }),
+            isProduction: true);
+
+        using var provider = services.BuildServiceProvider();
+
+        Should.Throw<OptionsValidationException>(() => provider.GetRequiredService<IOptions<StripeOptions>>().Value);
+    }
+
     private static IConfiguration BuildConfiguration(
         string? connectionString = null,
-        bool enableExternalProviders = true)
+        bool enableExternalProviders = true,
+        IReadOnlyDictionary<string, string?>? overrides = null)
     {
         var config = new Dictionary<string, string?>
         {
@@ -187,7 +230,14 @@ public class UsersServiceCollectionExtensionsTests
             ["SharedAuthCookie:CookieDomain"] = ".writefluency.com",
             ["SharedDataProtection:ApplicationName"] = "WriteFluency.SharedAuth",
             ["Authentication:ConfirmationRedirectUrl"] = "https://writefluency.local/auth/confirm-email",
-            ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html"
+            ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
+            ["Stripe:SecretKey"] = "sk_test_writefluency",
+            ["Stripe:ProMonthlyPriceId"] = "price_test_pro_monthly",
+            ["Stripe:SuccessUrl"] = "https://writefluency.local/user?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+            ["Stripe:CancelUrl"] = "https://writefluency.local/user?checkout=cancelled",
+            ["Stripe:PortalConfigurationId"] = "bpc_test_writefluency",
+            ["Stripe:PortalReturnUrl"] = "https://writefluency.local/user?billing=returned",
+            ["Stripe:WebhookSecret"] = "whsec_test_writefluency"
         };
 
         if (enableExternalProviders)
@@ -196,6 +246,14 @@ public class UsersServiceCollectionExtensionsTests
             config["Authentication:Google:ClientSecret"] = "google-secret";
             config["Authentication:Microsoft:ClientId"] = "microsoft-client-id";
             config["Authentication:Microsoft:ClientSecret"] = "microsoft-secret";
+        }
+
+        if (overrides is not null)
+        {
+            foreach (var overrideEntry in overrides)
+            {
+                config[overrideEntry.Key] = overrideEntry.Value;
+            }
         }
 
         return new ConfigurationBuilder()

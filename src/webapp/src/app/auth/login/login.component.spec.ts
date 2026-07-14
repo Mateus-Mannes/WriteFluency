@@ -5,6 +5,7 @@ import { LoginComponent } from './login.component';
 import { AuthApiService } from '../services/auth-api.service';
 import { AuthSessionStore } from '../services/auth-session.store';
 import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
+import { GuestExerciseProgressTransferService } from '../../core/services/guest-exercise-progress-transfer.service';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -13,6 +14,7 @@ describe('LoginComponent', () => {
   let authSessionStoreSpy: jasmine.SpyObj<AuthSessionStore>;
   let routerSpy: jasmine.SpyObj<Router>;
   let googleAdsConversionServiceSpy: jasmine.SpyObj<GoogleAdsConversionService>;
+  let guestProgressTransferSpy: jasmine.SpyObj<GuestExerciseProgressTransferService>;
 
   beforeEach(async () => {
     authApiServiceSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', [
@@ -23,9 +25,13 @@ describe('LoginComponent', () => {
       'verifyOtp',
       'externalProviders',
     ]);
-    authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
+    authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession', 'userId']);
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     googleAdsConversionServiceSpy = jasmine.createSpyObj<GoogleAdsConversionService>('GoogleAdsConversionService', ['trackSignup']);
+    guestProgressTransferSpy = jasmine.createSpyObj<GuestExerciseProgressTransferService>(
+      'GuestExerciseProgressTransferService',
+      ['markAccountCreationStarted', 'resolveSuccessfulLogin'],
+    );
 
     authApiServiceSpy.externalProviders.and.returnValue(of([]));
     authApiServiceSpy.loginPassword.and.returnValue(of({}));
@@ -34,6 +40,7 @@ describe('LoginComponent', () => {
     authApiServiceSpy.requestOtp.and.returnValue(of({ message: 'Code sent.' }));
     authApiServiceSpy.verifyOtp.and.returnValue(of({ isNewUser: false }));
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
+    authSessionStoreSpy.userId.and.returnValue('user-1');
     routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
     window.sessionStorage.removeItem('wf.auth.post-login-return-url.v1');
 
@@ -44,6 +51,7 @@ describe('LoginComponent', () => {
         { provide: AuthSessionStore, useValue: authSessionStoreSpy },
         { provide: Router, useValue: routerSpy },
         { provide: GoogleAdsConversionService, useValue: googleAdsConversionServiceSpy },
+        { provide: GuestExerciseProgressTransferService, useValue: guestProgressTransferSpy },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -72,6 +80,11 @@ describe('LoginComponent', () => {
 
     expect(authApiServiceSpy.continueWithPassword).toHaveBeenCalledWith('user@test.com', 'Passw0rd!', true);
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
+    expect(guestProgressTransferSpy.resolveSuccessfulLogin).toHaveBeenCalledWith(
+      'direct',
+      false,
+      'user-1',
+    );
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
   });
 
@@ -115,6 +128,11 @@ describe('LoginComponent', () => {
     await component.verifyOtp();
 
     expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('new@test.com');
+    expect(guestProgressTransferSpy.resolveSuccessfulLogin).toHaveBeenCalledWith(
+      'direct',
+      true,
+      'user-1',
+    );
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
   });
@@ -163,6 +181,7 @@ describe('LoginComponent', () => {
     expect(authApiServiceSpy.continueWithPassword).toHaveBeenCalledWith('new@test.com', 'Passw0rd!', true);
     expect(authApiServiceSpy.register).not.toHaveBeenCalled();
     expect(googleAdsConversionServiceSpy.trackSignup).toHaveBeenCalledWith('new@test.com');
+    expect(guestProgressTransferSpy.markAccountCreationStarted).toHaveBeenCalledWith('direct');
     expect(component.passwordSuccessMessage()).toContain('Account created');
     expect(component.awaitingEmailConfirmation()).toBe('new@test.com');
     expect(component.passwordForm.controls.password.getRawValue()).toBe('Passw0rd!');

@@ -18,6 +18,8 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
 
     public TestingLoginGeoLookupService LoginGeoLookupService { get; } = new();
 
+    public TestingStripeBillingClient StripeBillingClient { get; } = new();
+
     public bool IsAvailable => Factory is not null;
 
     public string? UnavailableReason { get; private set; }
@@ -46,7 +48,8 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
                 _postgres.GetConnectionString(),
                 _redis.GetConnectionString(),
                 EmailSender,
-                LoginGeoLookupService);
+                LoginGeoLookupService,
+                StripeBillingClient);
 
             await Factory.ResetStateAsync();
         }
@@ -65,6 +68,7 @@ public sealed class UsersApiIntegrationFixture : IAsyncLifetime
 
         EmailSender.Clear();
         LoginGeoLookupService.Reset();
+        StripeBillingClient.Reset();
         await _redisConnection!.GetDatabase().ExecuteAsync("FLUSHDB");
     }
 

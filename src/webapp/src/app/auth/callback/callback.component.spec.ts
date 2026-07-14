@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CallbackComponent } from './callback.component';
 import { AuthSessionStore } from '../services/auth-session.store';
 import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
+import { GuestExerciseProgressTransferService } from '../../core/services/guest-exercise-progress-transfer.service';
 
 const postLoginReturnUrlStorageKey = 'wf.auth.post-login-return-url.v1';
 
@@ -13,14 +14,22 @@ describe('CallbackComponent', () => {
   let authSessionStoreSpy: jasmine.SpyObj<AuthSessionStore>;
   let routerSpy: jasmine.SpyObj<Router>;
   let googleAdsConversionServiceSpy: jasmine.SpyObj<GoogleAdsConversionService>;
+  let guestProgressTransferSpy: jasmine.SpyObj<GuestExerciseProgressTransferService>;
 
   async function setupWithQuery(query: Record<string, string>): Promise<void> {
     authSessionStoreSpy = jasmine.createSpyObj<AuthSessionStore>('AuthSessionStore', ['refreshSession']);
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     googleAdsConversionServiceSpy = jasmine.createSpyObj<GoogleAdsConversionService>('GoogleAdsConversionService', ['trackSignup']);
+    guestProgressTransferSpy = jasmine.createSpyObj<GuestExerciseProgressTransferService>(
+      'GuestExerciseProgressTransferService',
+      ['resolveSuccessfulLogin'],
+    );
     authSessionStoreSpy.refreshSession.and.returnValue(Promise.resolve());
     Object.defineProperty(authSessionStoreSpy, 'email', {
       value: signal<string | null>('social@test.com'),
+    });
+    Object.defineProperty(authSessionStoreSpy, 'userId', {
+      value: signal<string | null>('social-user'),
     });
     routerSpy.navigateByUrl.and.returnValue(Promise.resolve(true));
     window.sessionStorage.removeItem(postLoginReturnUrlStorageKey);
@@ -32,6 +41,7 @@ describe('CallbackComponent', () => {
         { provide: AuthSessionStore, useValue: authSessionStoreSpy },
         { provide: Router, useValue: routerSpy },
         { provide: GoogleAdsConversionService, useValue: googleAdsConversionServiceSpy },
+        { provide: GuestExerciseProgressTransferService, useValue: guestProgressTransferSpy },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -55,6 +65,11 @@ describe('CallbackComponent', () => {
     await component.ngOnInit();
 
     expect(authSessionStoreSpy.refreshSession).toHaveBeenCalled();
+    expect(guestProgressTransferSpy.resolveSuccessfulLogin).toHaveBeenCalledWith(
+      'direct',
+      false,
+      'social-user',
+    );
     expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/user');
     expect(component.isSuccess()).toBeTrue();
   });

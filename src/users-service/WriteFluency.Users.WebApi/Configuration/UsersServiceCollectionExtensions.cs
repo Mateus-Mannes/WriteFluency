@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Users.WebApi.Authentication;
+using WriteFluency.Users.WebApi.Billing;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Email;
 using WriteFluency.Users.WebApi.Options;
@@ -100,6 +101,14 @@ public static class UsersServiceCollectionExtensions
             .Validate(options => options.BlobMetadataRefreshMinutes > 0, "LoginLocation:BlobMetadataRefreshMinutes must be greater than zero")
             .ValidateOnStart();
 
+        services.AddOptions<StripeOptions>()
+            .Bind(configuration.GetSection(StripeOptions.SectionName))
+            .Validate(options => !isProduction || IsStripeConfigured(options), "Stripe SecretKey, ProMonthlyPriceId, SuccessUrl, CancelUrl, PortalConfigurationId, PortalReturnUrl, and WebhookSecret are required in production")
+            .Validate(options => IsOptionalAbsoluteHttpUrl(options.SuccessUrl), "Stripe SuccessUrl must be an absolute HTTP(S) URL when configured")
+            .Validate(options => IsOptionalAbsoluteHttpUrl(options.CancelUrl), "Stripe CancelUrl must be an absolute HTTP(S) URL when configured")
+            .Validate(options => IsOptionalAbsoluteHttpUrl(options.PortalReturnUrl), "Stripe PortalReturnUrl must be an absolute HTTP(S) URL when configured")
+            .ValidateOnStart();
+
         var externalAuthOptions = configuration.GetSection(ExternalAuthenticationOptions.SectionName).Get<ExternalAuthenticationOptions>()
             ?? throw new InvalidOperationException("Authentication configuration section is required.");
         var sharedAuthCookieOptions = configuration.GetSection(SharedAuthCookieOptions.SectionName).Get<SharedAuthCookieOptions>()
@@ -184,6 +193,9 @@ public static class UsersServiceCollectionExtensions
         services.AddScoped<ILoginActivityRecorder, LoginActivityRecorder>();
         services.AddSingleton<IClientIpResolver, ClientIpResolver>();
         services.AddSingleton<SupportRequestRateLimiter>();
+        services.AddScoped<IStripeBillingClient, StripeBillingClient>();
+        services.AddScoped<BillingSubscriptionSynchronizer>();
+        services.AddScoped<StripeWebhookProcessor>();
 
         services.AddSingleton<ILoginGeoLocationDataSource, MaxMindGeoLocationDataSource>();
         services.AddSingleton<ILoginGeoLookupService, LoginGeoLookupService>();
@@ -316,6 +328,33 @@ public static class UsersServiceCollectionExtensions
         }
 
         return uri.Scheme == Uri.UriSchemeHttps;
+    }
+
+    private static bool IsStripeConfigured(StripeOptions options)
+    {
+        return !string.IsNullOrWhiteSpace(options.SecretKey)
+            && !string.IsNullOrWhiteSpace(options.ProMonthlyPriceId)
+            && !string.IsNullOrWhiteSpace(options.SuccessUrl)
+            && !string.IsNullOrWhiteSpace(options.CancelUrl)
+            && !string.IsNullOrWhiteSpace(options.PortalConfigurationId)
+            && !string.IsNullOrWhiteSpace(options.PortalReturnUrl)
+            && !string.IsNullOrWhiteSpace(options.WebhookSecret);
+    }
+
+    private static bool IsOptionalAbsoluteHttpUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        return (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            && string.IsNullOrEmpty(uri.Fragment);
     }
 
     private static bool IsValidEmail(string? email)

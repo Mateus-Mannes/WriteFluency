@@ -202,6 +202,21 @@ namespace WriteFluency.Users.WebApi.Data.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<string>("StripeCustomerId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("StripeSubscriptionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTimeOffset?>("StripeSubscriptionLastEventCreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StripeSubscriptionStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<bool>("SubscriptionCancelAtPeriodEnd")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -234,6 +249,40 @@ namespace WriteFluency.Users.WebApi.Data.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("WriteFluency.Users.WebApi.Data.StripeWebhookEvent", b =>
+                {
+                    b.Property<string>("StripeEventId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProcessingStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("StripeEventId");
+
+                    b.ToTable("StripeWebhookEvents", (string)null);
                 });
 
             modelBuilder.Entity("WriteFluency.Users.WebApi.Data.UserFeedbackPromptState", b =>

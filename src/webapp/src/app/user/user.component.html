@@ -5,9 +5,60 @@
   </header>
 
   <mat-card class="account-card">
-    <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
-    <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
+    <div class="account-details">
+      <p><strong>Email:</strong> {{ authState().email || '—' }}</p>
+      <p><strong>User ID:</strong> {{ authState().userId || '—' }}</p>
+      <p><strong>Plan:</strong> {{ planStatusLabel(authState().entitlementStatus) }}</p>
+      @if (authState().entitlementStatus === 'pro_canceling') {
+        <p class="plan-note">
+          Access until {{ formatBillingDate(authState().currentPeriodEndUtc) }}.
+        </p>
+      }
+    </div>
+
+    <div class="subscription-actions">
+      @if (canManageSubscription()) {
+        <button
+          mat-stroked-button
+          class="subscription-manage-button"
+          [class.subscription-manage-button-loading]="isSubscriptionManagementLoading()"
+          type="button"
+          [disabled]="isSubscriptionManagementDisabled()"
+          (click)="startSubscriptionManagement()"
+          aria-label="Manage subscription">
+          <span class="subscription-manage-button__label">Manage my subscription</span>
+          @if (isSubscriptionManagementLoading()) {
+            <span class="subscription-manage-button__loading" aria-hidden="true">
+              <mat-spinner diameter="18"></mat-spinner>
+            </span>
+          }
+        </button>
+      } @else {
+        <a
+          mat-flat-button
+          class="pro-upgrade-button"
+          routerLink="/plans"
+          aria-label="View Pro plans">
+          Subscribe to Pro
+        </a>
+      }
+    </div>
   </mat-card>
+
+  @if (billingMessage()) {
+    <mat-card class="billing-message-card" aria-live="polite">
+      <p>{{ billingMessage() }}</p>
+    </mat-card>
+  }
+
+  @if (billingError()) {
+    <mat-card class="billing-error-card" aria-live="assertive">
+      <p>{{ billingError() }}</p>
+      @if (canSubscribeToPro()) {
+        <a mat-flat-button color="primary" routerLink="/plans">View plans</a>
+      }
+    </mat-card>
+  }
 
   @if (isLoading()) {
     <div class="loading-state" aria-live="polite">

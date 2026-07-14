@@ -140,4 +140,13 @@ describe('NavbarComponent', () => {
     expect(supportLink?.getAttribute('href')).toContain('/support');
     expect(supportLink?.textContent).toContain('Support');
   });
+
+  it('should render plans navigation link with requested icon', () => {
+    const links = Array.from(fixture.nativeElement.querySelectorAll('a')) as HTMLAnchorElement[];
+    const plansLink = links.find((link) => link.textContent?.includes('Plans'));
+
+    expect(plansLink).toBeTruthy();
+    expect(plansLink?.getAttribute('href')).toContain('/plans');
+    expect(plansLink?.querySelector('mat-icon')?.textContent?.trim()).toBe('your_trips');
+  });
 });

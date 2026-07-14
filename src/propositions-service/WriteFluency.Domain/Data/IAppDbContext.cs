@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WriteFluency.Domain.App;
 using WriteFluency.Propositions;
+using WriteFluency.TextComparisons;
 
 namespace WriteFluency.Data;
 
@@ -11,6 +12,9 @@ public interface IAppDbContext
     public DbSet<Proposition> Propositions { get; set; }
     public DbSet<PropositionGenerationLog> PropositionGenerationLogs { get; set; }
     public DbSet<AppSettings> AppSettings { get; set; }
+    public DbSet<AiUsageCounter> AiUsageCounters { get; set; }
+    public DbSet<CatalogAccessCounter> CatalogAccessCounters { get; set; }
+    public DbSet<CatalogExerciseGrant> CatalogExerciseGrants { get; set; }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

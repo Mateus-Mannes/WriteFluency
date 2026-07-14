@@ -60,6 +60,7 @@
     'exercise-intro-container': exerciseState() == 'intro',
     'exercise-container': exerciseState() == 'exercise',
     'exercise-results-container': exerciseState() == 'results',
+    'exercise-results-container--with-review': exerciseState() == 'results' && shouldShowMistakePatternReview(),
     'state-anim': stateAnimOn()
 }">
     <app-news-info class="news-info" 
@@ -68,21 +69,25 @@
         [class.compact]="exerciseState() == 'results'"
         ></app-news-info>
 
+    @if (shouldShowAudioPanel()) {
     <div class="news-audio">
         <app-news-audio id="newsAudio"
-            [proposition]="proposition()"
+            [audioUrl]="exerciseAudioUrl()"
+            [loading]="isResolvingAudioAccess()"
             (playClicked)="onAudioPlayClicked()"
-            [listenSuggestion]="exerciseState() == 'intro'"
+            [listenSuggestion]="exerciseState() === 'intro'"
             (seeked)="onAudioSeeked()"
             (paused)="onAudioPaused()"></app-news-audio>
     </div>
+    }
 
     @if(exerciseState() === 'intro') {
         <app-news-image class="news-image" [proposition]="proposition()"></app-news-image>
         <app-exercise-intro-section
             class="exercise-intro-section"
-            [isLoading]="isRestoringExercise()"
-            [loadingTooltip]="beginExerciseLoadingTooltip"
+            [isLoading]="isRestoringExercise() || isBeginningExercise() || isResolvingAudioAccess()"
+            [loadingTooltip]="getBeginExerciseLoadingTooltip()"
+            [buttonLabel]="beginExerciseLabel()"
             (beginExerciseClick)="beginExercise()">
         </app-exercise-intro-section>
     }
@@ -101,12 +106,39 @@
     }
 
     @if(exerciseState() === 'results') {
-        <app-exercise-results-section [result]="result()" class="exercise-results-section">
+        <app-exercise-results-section id="results-summary-panel" [result]="result()" class="exercise-results-section">
         </app-exercise-results-section>
 
-        <app-news-highlighted-text class="exercise-original-text" [textType]="'original'" [result]="result()"></app-news-highlighted-text>
-        
-        <app-news-highlighted-text class="exercise-user-text" [textType]="'user'" [result]="result()"></app-news-highlighted-text>
+        <div id="results-highlighted-text-panels" class="exercise-highlighted-texts">
+            <app-news-highlighted-text
+                id="results-original-highlight-panel"
+                class="exercise-original-text"
+                [textType]="'original'"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+            </app-news-highlighted-text>
+            
+            <app-news-highlighted-text
+                id="results-user-highlight-panel"
+                class="exercise-user-text"
+                [textType]="'user'"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()">
+            </app-news-highlighted-text>
+        </div>
+
+        @if (shouldShowMistakePatternReview()) {
+            <app-mistake-pattern-review
+                id="results-mistake-pattern-review-panel"
+                class="mistake-pattern-review-panel"
+                [result]="result()"
+                [activeComparisonIndex]="highlightedMistakePatternComparisonIndex()"
+                (activeComparisonIndexChange)="onMistakePatternActiveComparisonChanged($event)"
+                (pinnedComparisonIndexChange)="onMistakePatternPinnedComparisonChanged($event)"
+                (loginToUnlockClick)="onProReviewLoginToUnlock()"
+                (upgradeToProClick)="onProReviewUpgradeToPro()">
+            </app-mistake-pattern-review>
+        }
 
         <div
             class="exercise-results-actions"
@@ -124,6 +156,48 @@
     }
 
 </div>
+
+@if (isProUpgradeModalOpen()) {
+    <div class="pro-upgrade-modal-backdrop" (click)="dismissProUpgradeModal()">
+        <section
+            class="pro-upgrade-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pro-upgrade-modal-title"
+            (click)="$event.stopPropagation()">
+            @if (!isCatalogAccessBlockingModal()) {
+            <button
+                type="button"
+                class="pro-upgrade-modal-close"
+                aria-label="Close Pro plans dialog"
+                (click)="dismissProUpgradeModal()">
+                <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+            }
+
+            <div class="pro-upgrade-modal-badge">{{ getCatalogAccessModalBadge() }}</div>
+            <h2 id="pro-upgrade-modal-title">{{ getCatalogAccessModalTitle() }}</h2>
+            <p>
+                {{ getCatalogAccessModalDescription() }}
+            </p>
+
+            <div class="pro-upgrade-modal-actions">
+                <button
+                    type="button"
+                    class="pro-upgrade-modal-primary text-body"
+                    (click)="onCatalogAccessPrimaryCta()">
+                    {{ getCatalogAccessPrimaryCtaLabel() }}
+                </button>
+                <button
+                    type="button"
+                    class="pro-upgrade-modal-secondary text-body"
+                    (click)="keepPracticingFreeExercises()">
+                    Keep practicing free exercises
+                </button>
+            </div>
+        </section>
+    </div>
+}
 
 <app-feedback-modal
     [isOpen]="isFeedbackModalOpen()"

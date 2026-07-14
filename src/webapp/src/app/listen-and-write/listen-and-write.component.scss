@@ -1,5 +1,7 @@
 @use '../../styles/variables' as vars;
 
+$results-desktop-height: 600px;
+
 // Background gradient for the entire page
 :host {
     min-height: calc(100vh - vars.$nav-bar-height);
@@ -194,6 +196,97 @@
     background: rgba(58, 125, 255, 0.13);
 }
 
+.pro-upgrade-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10045;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(12, 20, 33, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.pro-upgrade-modal {
+    position: relative;
+    width: min(520px, calc(100vw - 2.5rem));
+    border-radius: 16px;
+    border: 1px solid rgba(58, 125, 255, 0.2);
+    background: #fff;
+    box-shadow: 0 24px 48px rgba(9, 18, 31, 0.3);
+    padding: 1.35rem;
+
+    h2 {
+        margin: 0.75rem 0 0;
+        color: #172036;
+        font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+        line-height: 1.15;
+    }
+
+    p {
+        margin: 0.65rem 0 0;
+        color: rgba(23, 32, 54, 0.78);
+        line-height: 1.45;
+    }
+}
+
+.pro-upgrade-modal-close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    display: inline-grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 0;
+    border-radius: 999px;
+    color: #4d5a73;
+    background: rgba(58, 125, 255, 0.08);
+    cursor: pointer;
+}
+
+.pro-upgrade-modal-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0.28rem 0.7rem;
+    background: rgba(58, 125, 255, 0.1);
+    color: vars.$color-primary-dark;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pro-upgrade-modal-actions {
+    margin-top: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.pro-upgrade-modal-primary,
+.pro-upgrade-modal-secondary {
+    min-height: 2.75rem;
+    border-radius: 12px;
+    border: 0;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.72rem 1rem;
+}
+
+.pro-upgrade-modal-primary {
+    color: #fff;
+    background: linear-gradient(135deg, vars.$color-primary 0%, vars.$color-primary-dark 100%);
+    box-shadow: 0 5px 14px rgba(58, 125, 255, 0.24);
+}
+
+.pro-upgrade-modal-secondary {
+    color: #1d3960;
+    background: rgba(58, 125, 255, 0.1);
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -219,7 +312,9 @@
 .container app-exercise-intro-section,
 .container app-exercise-section,
 .container app-exercise-results-section,
-.container app-news-highlighted-text {
+.container app-news-highlighted-text,
+.container app-mistake-pattern-review,
+.container .exercise-highlighted-texts {
     display: block;
     width: 100%;
 }
@@ -245,7 +340,7 @@
     display: grid;
     gap: 2rem;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     grid-template-areas:
         "news-info  news-image"
         "news-audio news-image"
@@ -322,7 +417,8 @@
     grid-template-areas:
         "exercise-results-section  news-info"
         "exercise-results-section  news-audio"
-        "exercise-user-text  exercise-original-text"
+        "exercise-highlighted-texts exercise-highlighted-texts"
+        "mistake-pattern-review-panel mistake-pattern-review-panel"
         "exercise-results-actions  exercise-results-actions";
 
     .news-info {
@@ -343,6 +439,22 @@
         height: 100%;
     }
 
+    .exercise-highlighted-texts {
+        grid-area: exercise-highlighted-texts;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "exercise-user-text exercise-original-text";
+        column-gap: 1rem;
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+    }
+
+    .exercise-highlighted-texts > app-news-highlighted-text {
+        max-width: 500px;
+        width: 100%;
+    }
+
     .exercise-original-text {
         grid-area: exercise-original-text;
         justify-self: start;
@@ -351,6 +463,14 @@
     .exercise-user-text {
         grid-area: exercise-user-text;
         justify-self: end;
+    }
+
+    .mistake-pattern-review-panel {
+        grid-area: mistake-pattern-review-panel;
+        justify-self: stretch;
+        width: 100%;
+        max-width: none;
+        margin-top: 0.65rem;
     }
 
     .exercise-results-actions {
@@ -445,6 +565,96 @@
     }
 }
 
+@media (min-width: 1200px) {
+    .exercise-results-container {
+        align-self: center;
+        width: min(calc(100vw - 3rem), 1032px);
+        box-sizing: border-box;
+        height: min(#{$results-desktop-height}, calc(100dvh - #{vars.$nav-bar-height} - 0.75rem));
+        min-height: 0;
+        margin-top: 0;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        grid-template-rows: auto auto minmax(0, 1fr) minmax(3.25rem, auto);
+    }
+
+    .exercise-results-container.exercise-results-container--with-review {
+        width: min(calc(100vw - 3rem), 1360px);
+        max-width: none;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(340px, 390px);
+        grid-template-areas:
+            "exercise-results-section  news-info              mistake-pattern-review-panel"
+            "exercise-results-section  news-audio             mistake-pattern-review-panel"
+            "exercise-highlighted-texts exercise-highlighted-texts mistake-pattern-review-panel"
+            "exercise-results-actions  exercise-results-actions mistake-pattern-review-panel";
+        column-gap: 1rem;
+        row-gap: 0.75rem;
+        align-items: start;
+    }
+
+    .exercise-results-container.exercise-results-container--with-review > * {
+        max-width: none;
+    }
+
+    .exercise-results-container.exercise-results-container--with-review .exercise-highlighted-texts {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        max-width: none;
+    }
+
+    .exercise-results-container.exercise-results-container--with-review .exercise-highlighted-texts > app-news-highlighted-text {
+        max-width: none;
+    }
+
+    .exercise-results-container {
+        .exercise-highlighted-texts {
+            height: 100%;
+            min-height: 0;
+        }
+
+        .exercise-user-text,
+        .exercise-original-text {
+            height: 100%;
+            min-height: 0;
+            --highlighted-text-height: 100%;
+            --highlighted-text-font-size: 0.84rem;
+            --highlighted-text-line-height: 1.45;
+            --highlighted-text-padding: 12px 14px;
+        }
+
+        .exercise-results-actions {
+            align-self: center;
+            min-height: 3.25rem;
+            margin-top: 0;
+        }
+    }
+
+    .exercise-results-container.exercise-results-container--with-review {
+        .exercise-results-section,
+        .exercise-highlighted-texts,
+        .exercise-user-text,
+        .exercise-original-text,
+        .exercise-results-actions {
+            justify-self: stretch;
+        }
+
+        .news-info,
+        .news-audio {
+            max-width: 500px;
+        }
+
+        .mistake-pattern-review-panel {
+            position: sticky;
+            top: calc(vars.$nav-bar-height + 1rem);
+            align-self: start;
+            height: 100%;
+            min-height: 0;
+            margin-top: 0;
+            --mistake-pattern-review-max-height: min(#{$results-desktop-height}, calc(100dvh - #{vars.$nav-bar-height} - 0.75rem));
+            --mistake-pattern-list-max-height: none;
+        }
+    }
+}
+
 .state-anim {
   animation: stateFade 800ms ease;
 }
@@ -500,8 +710,10 @@
     .exercise-results-container .news-info,
     .exercise-results-container .news-audio,
     .exercise-results-container .exercise-results-section,
+    .exercise-results-container .exercise-highlighted-texts,
     .exercise-results-container .exercise-original-text,
     .exercise-results-container .exercise-user-text,
+    .exercise-results-container .mistake-pattern-review-panel,
     .exercise-results-container .exercise-results-actions {
         justify-self: stretch;
     }
@@ -539,12 +751,24 @@
             "news-info"
             "news-audio"
             "exercise-results-section"
-            "exercise-user-text"
-            "exercise-original-text"
+            "exercise-highlighted-texts"
+            "mistake-pattern-review-panel"
             "exercise-results-actions";
     }
 
     .exercise-results-container {
+        .exercise-highlighted-texts {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "exercise-user-text"
+                "exercise-original-text";
+            gap: 1rem;
+        }
+
+        .exercise-highlighted-texts > app-news-highlighted-text {
+            max-width: 100%;
+        }
+
         .exercise-results-actions {
             justify-self: stretch;
             flex-direction: column;
@@ -579,6 +803,11 @@
     .guest-login-modal-primary,
     .guest-login-modal-secondary {
         width: 100%;
+    }
+
+    .pro-upgrade-modal-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

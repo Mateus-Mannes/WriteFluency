@@ -8,6 +8,7 @@
  * Do not edit the class manually.
  */
 import { TextComparison } from './textComparison';
+import { CorrectionTraceEntry } from './correctionTraceEntry';
 
 
 export interface TextComparisonResult { 
@@ -15,5 +16,9 @@ export interface TextComparisonResult {
     userText?: string | null;
     comparisons?: Array<TextComparison> | null;
     accuracyPercentage?: number;
+    correctionMode?: 'static' | 'normalized' | string | null;
+    correctionTrace?: Array<CorrectionTraceEntry> | null;
+    mistakePatternStatus?: 'generated' | 'login_required_to_unlock_review' | 'upgrade_required_to_unlock_review' | 'skipped_usage_limit' | 'skipped_disabled' | 'classifier_failed' | 'not_applicable' | string | null;
+    mistakePatternMessage?: string | null;
+    mistakePatternReviewSource?: 'none' | 'anonymous_sample' | 'free_intro' | 'free_monthly' | 'pro_paid' | string | null;
 }
-

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using StackExchange.Redis;
 using WriteFluency.Users.WebApi.Authentication;
+using WriteFluency.Users.WebApi.Billing;
 using WriteFluency.Users.WebApi.Configuration;
 using WriteFluency.Users.WebApi.Support;
 
@@ -85,6 +86,12 @@ app.Use(async (context, next) =>
         return;
     }
 
+    if (IsStripeWebhookRequest(context.Request))
+    {
+        await next();
+        return;
+    }
+
     if (IsRequestFromAllowedOrigin(context.Request, allowedOriginSet))
     {
         await next();
@@ -100,6 +107,7 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 
 usersApi.MapAuthEndpoints();
+usersApi.MapBillingEndpoints();
 usersApi.MapSupportRequestEndpoints();
 app.MapDefaultEndpoints();
 
@@ -116,6 +124,12 @@ static bool IsStateChangingUsersRequest(HttpRequest request)
         || HttpMethods.IsPut(request.Method)
         || HttpMethods.IsPatch(request.Method)
         || HttpMethods.IsDelete(request.Method);
+}
+
+static bool IsStripeWebhookRequest(HttpRequest request)
+{
+    return HttpMethods.IsPost(request.Method)
+        && request.Path.Equals("/users/billing/stripe-webhook", StringComparison.OrdinalIgnoreCase);
 }
 
 static bool IsRequestFromAllowedOrigin(HttpRequest request, HashSet<string> allowedOrigins)

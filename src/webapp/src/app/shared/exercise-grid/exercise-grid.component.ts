@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, effect, inject, OnInit, Input, OnDestroy } from '@angular/core';
 import { CommonModule, IMAGE_LOADER, NgOptimizedImage } from '@angular/common';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,6 +28,7 @@ export interface Exercise {
   imageBaseId?: string;
   imageLoadFailed?: boolean;
   newsUrl?: string;
+  requiresPro: boolean;
 }
 
 @Component({
@@ -59,7 +60,7 @@ export interface Exercise {
     }
   ],
 })
-export class ExerciseGridComponent implements OnInit {
+export class ExerciseGridComponent implements OnInit, OnDestroy {
   private propositionsService = inject(PropositionsService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -84,7 +85,7 @@ export class ExerciseGridComponent implements OnInit {
   searchText = signal<string>('');
   searchInput = signal<string>('');
   private searchDebounceHandle?: ReturnType<typeof setTimeout>;
-  
+
   // Pagination signals
   pageIndex = signal<number>(0);
   pageSize = signal<number>(18);
@@ -140,6 +141,12 @@ export class ExerciseGridComponent implements OnInit {
     // Manually trigger initial load
     this.loadExercises();
   }
+
+  ngOnDestroy(): void {
+    if (this.searchDebounceHandle) {
+      clearTimeout(this.searchDebounceHandle);
+    }
+  }
   
   private loadExercises(): void {
     this.isLoading.set(true);
@@ -170,7 +177,8 @@ export class ExerciseGridComponent implements OnInit {
             ? this.getImageBaseId(item.imageFileId)
             : undefined,
           imageLoadFailed: false,
-          newsUrl: item.newsUrl ?? ''
+          newsUrl: item.newsUrl ?? '',
+          requiresPro: item.requiresPro === true
         }));
         
         this.exercises.set(exercises);
@@ -367,6 +375,7 @@ export class ExerciseGridComponent implements OnInit {
       complexityId: exercise.level,
       imageFileId: exercise.imageFileId,
       newsUrl: exercise.newsUrl,
+      requiresPro: exercise.requiresPro,
       date: exercise.date
     };
   }

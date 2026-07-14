@@ -1,10 +1,10 @@
-using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WriteFluency.Infrastructure.Http.Services;
 using WriteFluency.Propositions;
-using WriteFluency.Shared;
 using WriteFluency.TextComparisons;
 using Microsoft.Extensions.AI;
 
@@ -12,6 +12,10 @@ namespace WriteFluency.Infrastructure.ExternalApis;
 
 public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+    };
     private readonly OpenAIOptions _options;
     private readonly IChatClient _chatClient;
 
@@ -25,51 +29,6 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         _options = options.CurrentValue;
         _chatClient = chatClient;
     }
-
-    [Obsolete]
-    public async Task<string> GenerateTextAsync(GetPropositionDto generateTextDto, int attempt = 1, CancellationToken cancellationToken = default)
-    {
-        var request = new CompletionRequest
-        {
-            Model = "gpt-3.5-turbo",
-            Messages = new List<RequestMessage>()
-                { new RequestMessage() {
-                    Content = GenerateTextPrompt(generateTextDto)
-                    } },
-            MaxTokens = 1200,
-            Temperature = 1.0m
-        };
-
-        var response = await _httpClient.PostAsJsonAsync(_options.Routes.Completion, request, cancellationToken);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var result = await response.Content.ReadFromJsonAsync<CompletionResponse>(cancellationToken)
-                ?? throw new HttpRequestException("Error fetching data from OpenAI API");
-            return result.Choices[0].Message.Content;
-        }
-        else
-        {
-            await Task.Delay(1000);
-            if (attempt == 1) return await GenerateTextAsync(generateTextDto, 2, cancellationToken);
-            else throw new HttpRequestException($"Error fetching data from OpenAI API: {response.StatusCode}");
-        }
-    }
-
-    private string GenerateTextPrompt(GetPropositionDto dto)
-        => @$"
-            Write about some subject related to {dto.Subject.GetDescription()}.
-            Maximum of one paragraph, from 250 to 600 characteres.
-            Write it in a way that normal people can understand well, without specialist vocabulary.
-            Write just the text please.
-            Without titles.
-            Without identation, like paragraphs.
-            Without line breaks.
-            Without special characters, like quotes. 
-            Don't use $100, use '100 dollars'.
-            Be creative.
-            {dto.Complexity.GetDescription()}
-        ";
 
     public async Task<Result<AIGeneratedTextDto>> GenerateTextAsync(ComplexityEnum complexity, string articleContent, CancellationToken cancellationToken = default)
     {
@@ -155,7 +114,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     {
         var response = await _chatClient.GetResponseAsync<string>(
             CreateMessages(GenerateTextSystemPrompt(), GenerateTextUserPrompt(articleContent)),
-            CreateChatOptions(maxTokens: 1200),
+            CreateChatOptions(maxTokens: 1200, modelId: _options.ParagraphGenerationModel),
             cancellationToken: cancellationToken);
 
         return response.Result;
@@ -226,8 +185,13 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             new ChatMessage(ChatRole.User, userPrompt)
         ];
 
-    private static ChatOptions CreateChatOptions(int maxTokens, float temperature = 0.7f) =>
-        new() { MaxOutputTokens = maxTokens, Temperature = temperature };
+    private static ChatOptions CreateChatOptions(int maxTokens, float temperature = 0.7f, string? modelId = null) =>
+        new()
+        {
+            MaxOutputTokens = maxTokens,
+            Temperature = temperature,
+            ModelId = string.IsNullOrWhiteSpace(modelId) ? null : modelId
+        };
 
     private string ProperNameDefinitionSystemPrompt()
     => """
@@ -286,9 +250,6 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
                 - Do not use line breaks, paragraph spacing, or formatting.
 
                 - The users are Advanced and fluent English learners, so use natural and sophisticated language.
-
-            If the article is primarily a product list, product comparison, buying guide, affiliate content, or review, return null.
-            If the article does not provide enough clear, interesting, or informative content to generate a meaningful paragraph and title, return null.
         ";
 
     private string GenerateTextUserPrompt(string articleContent)
@@ -451,7 +412,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate title");
+            _logger.LogError(
+                "Failed to validate title. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate title: {ex.Message}"));
         }
     }
@@ -485,41 +449,41 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             Is this a valid title? Respond with only 'valid' or 'invalid'.
         ";
 
-    private async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
+    internal async Task<Result<bool>> ValidateArticleContentAsync(string articleContent, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _chatClient.GetResponseAsync<string>(
+            var response = await _chatClient.GetResponseAsync<ArticleContentValidationResponse>(
                 [
                     new ChatMessage(ChatRole.System, ValidateArticleSystemPrompt()),
                     new ChatMessage(ChatRole.User, ValidateArticleUserPrompt(articleContent))
                 ],
-                CreateChatOptions(maxTokens: 100, temperature: 0.3f),
+                JsonOptions,
+                CreateChatOptions(maxTokens: 100, temperature: 0.3f, modelId: _options.ArticleValidationModel),
+                useJsonSchemaResponseFormat: true,
                 cancellationToken: cancellationToken);
 
-            // Parse the response - expecting "valid" or "invalid"
-            var result = response.Result.Trim().ToLowerInvariant();
-            
-            if (result.Contains("invalid"))
+            if (response.Result is null)
+            {
+                _logger.LogWarning("Article content validation: Empty structured response");
+                return Result.Ok(false);
+            }
+
+            if (!response.Result.IsValid)
             {
                 _logger.LogWarning("Article content validation: Invalid article detected by AI validation rules");
                 return Result.Ok(false);
             }
-            else if (result.Contains("valid"))
-            {
-                _logger.LogInformation("Article content validation: Valid article detected");
-                return Result.Ok(true);
-            }
-            else
-            {
-                _logger.LogWarning("Article content validation: Unexpected response format: {Response}", result);
-                // Default to invalid if response is unclear
-                return Result.Ok(false);
-            }
+
+            _logger.LogInformation("Article content validation: Valid article detected");
+            return Result.Ok(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate article content");
+            _logger.LogError(
+                "Failed to validate article content. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate article content: {ex.Message}"));
         }
     }
@@ -528,7 +492,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
     => """
         You are a content validator that determines if a given text is a readable news article or just website navigation/boilerplate content.
 
-        Your task is to analyze the provided text and classify it as either "valid" or "invalid".
+        Your task is to analyze the provided text and classify it with a JSON response.
 
         A text is considered VALID if it contains:
         - Coherent sentences forming a narrative or informative content
@@ -561,7 +525,7 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         - Extreme or graphic violence, gore, torture, or dismemberment
 
         Output format:
-        - Respond with only one word: "valid" or "invalid"
+        - Respond with only this JSON shape: {"isValid": true} or {"isValid": false}
         - Do not include any additional explanation or commentary
     """;
 
@@ -572,8 +536,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
             --- TEXT END ---
 
             Classify this text using the system rules.
-            Respond with only 'valid' or 'invalid'.
+            Respond with only the required JSON object.
         ";
+
+    public sealed record ArticleContentValidationResponse(bool IsValid);
 
     public async Task<Result<bool>> ValidateImageAsync(byte[] imageBytes, string articleTitle, CancellationToken cancellationToken = default)
     {
@@ -619,7 +585,10 @@ public class OpenAIClient : BaseHttpClientService, IGenerativeAIClient
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to validate image");
+            _logger.LogError(
+                "Failed to validate image. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error($"Failed to validate image: {ex.Message}"));
         }
     }

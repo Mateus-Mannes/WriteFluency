@@ -1,16 +1,22 @@
 using System.Net.Http.Headers;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using WriteFluency.Common;
 using WriteFluency.Data;
 using WriteFluency.Infrastructure.ExternalApis;
 using WriteFluency.Infrastructure.FileStorage;
+using WriteFluency.Infrastructure.TextComparisons;
 using WriteFluency.Propositions;
 using WriteFluency.TextComparisons;
 using WriteFluency.WebApi;
+using WriteFluency.WebApi.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.Sources.Insert(0, CreateSharedAppSettingsSource(builder.Environment.ContentRootPath));
 
 builder.AddServiceDefaults();
 
@@ -21,12 +27,37 @@ builder.Services.AddAppSwagger();
 // Options configuration
 builder.Services.AddOptions<OpenAIOptions>().Bind(builder.Configuration.GetSection(OpenAIOptions.Section)).ValidateOnStart();
 builder.Services.AddOptions<PropositionOptions>().Bind(builder.Configuration.GetSection(PropositionOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<UsersServiceOptions>()
+    .Bind(builder.Configuration.GetSection(UsersServiceOptions.Section))
+    .Validate(options => options.HasValidBaseUrl(), "UsersService:BaseUrl must be an absolute HTTP(S) URL.")
+    .ValidateOnStart();
 
 builder.Services.AddOptions<TextToSpeechOptions>().Bind(builder.Configuration.GetSection(TextToSpeechOptions.Section)).ValidateOnStart();
+builder.Services.AddOptions<TextComparisonRefinementValidationOptions>()
+    .Bind(builder.Configuration.GetSection(TextComparisonRefinementValidationOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<MistakePatternClassificationOptions>()
+    .Bind(builder.Configuration.GetSection(MistakePatternClassificationOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<AiUsageOptions>()
+    .Bind(builder.Configuration.GetSection(AiUsageOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<ProReviewTeaserOptions>()
+    .Bind(builder.Configuration.GetSection(ProReviewTeaserOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<CatalogAccessTeaserOptions>()
+    .Bind(builder.Configuration.GetSection(CatalogAccessTeaserOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddScoped<ITextToSpeechClient, TextToSpeechClient>();
 
 // Adds the database context
-builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
+builder.Services.AddScoped<IAppDbContext>(serviceProvider => serviceProvider.GetRequiredService<AppDbContext>());
 
 builder.EnrichNpgsqlDbContext<AppDbContext>(
     configureSettings: settings =>
@@ -42,6 +73,16 @@ builder.Services.AddTransient<TokenAlignmentService>();
 builder.Services.AddTransient<TokenizeTextService>();
 builder.Services.AddTransient<NeedlemanWunschAlignmentService>();
 builder.Services.AddTransient<TextComparisonService>();
+builder.Services.AddTransient<EnglishNumberNormalizer>();
+builder.Services.AddTransient<DeterministicTextEquivalenceService>();
+builder.Services.AddTransient<DeterministicTextComparisonRefiner>();
+builder.Services.AddTransient<IMistakePatternClassifier, OpenAiMistakePatternClassifier>();
+builder.Services.AddTransient<IAiUsageLimiter, EfAiUsageLimiter>();
+builder.Services.AddTransient<ProReviewEligibilityService>();
+builder.Services.AddTransient<AnonymousProReviewFingerprintService>();
+builder.Services.AddTransient<CatalogAccessTeaserService>();
+builder.Services.AddTransient<AnonymousCatalogAccessFingerprintService>();
+builder.Services.AddTransient<CorrectionOrchestrationService>();
 builder.Services.AddTransient<TextAlignmentService>();
 builder.Services.AddTransient<TokenComparisonService>();
 builder.Services.AddTransient<PropositionService>();
@@ -56,6 +97,15 @@ builder.Services.AddHttpClient<IGenerativeAIClient, OpenAIClient>(client =>
     client.DefaultRequestHeaders.Accept.Clear();
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", openAIOptions.Key);
+});
+
+builder.Services.AddHttpClient<IUsersSessionClient, UsersSessionClient>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<UsersServiceOptions>>().Value;
+    var baseUrl = options.BaseUrl.TrimEnd('/') + "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.Accept.Clear();
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
 
 // Using new microsoft AI abstraction
@@ -88,7 +138,8 @@ app.UseCors(opts =>
     if (clients![0] != "*")
         opts.WithOrigins(clients)
         .AllowAnyMethod()
-        .AllowAnyHeader();
+        .AllowAnyHeader()
+        .AllowCredentials();
     else opts.AllowAnyOrigin()
         .AllowAnyMethod()
         .AllowAnyHeader();
@@ -138,3 +189,26 @@ app.MapDefaultEndpoints();
 app.UseEndpoints();
 
 app.Run();
+
+static JsonConfigurationSource CreateSharedAppSettingsSource(string contentRootPath)
+{
+    var sharedAppSettingsPath = ResolveSharedAppSettingsPath(contentRootPath);
+    return new JsonConfigurationSource
+    {
+        FileProvider = new PhysicalFileProvider(Path.GetDirectoryName(sharedAppSettingsPath)!),
+        Path = Path.GetFileName(sharedAppSettingsPath),
+        Optional = false,
+        ReloadOnChange = true
+    };
+}
+
+static string ResolveSharedAppSettingsPath(string contentRootPath)
+{
+    var publishedPath = Path.Combine(contentRootPath, "appsettings.shared.json");
+    if (File.Exists(publishedPath))
+        return publishedPath;
+
+    return Path.GetFullPath(Path.Combine(contentRootPath, "..", "appsettings.json"));
+}
+
+public partial class Program;

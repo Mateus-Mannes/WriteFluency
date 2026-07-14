@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { AuthSessionStore } from '../services/auth-session.store';
 import { Insights, InsightsMeasurements } from '../../../telemetry/insights.service';
 import { GoogleAdsConversionService } from '../../core/services/google-ads-conversion.service';
+import { GuestExerciseProgressTransferService } from '../../core/services/guest-exercise-progress-transfer.service';
 
 const postLoginReturnUrlStorageKey = 'wf.auth.post-login-return-url.v1';
 const postLoginSourceStorageKey = 'wf.auth.post-login-source.v1';
@@ -40,6 +41,7 @@ export class CallbackComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly insights = inject(Insights, { optional: true });
   private readonly googleAdsConversionService = inject(GoogleAdsConversionService);
+  private readonly guestProgressTransfer = inject(GuestExerciseProgressTransferService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private callbackSource = 'direct';
 
@@ -92,6 +94,11 @@ export class CallbackComponent implements OnInit {
     }
 
     const email = this.authSessionStore.email();
+    this.guestProgressTransfer.resolveSuccessfulLogin(
+      this.callbackSource,
+      isNewUser,
+      this.authSessionStore.userId(),
+    );
     if (isNewUser && email) {
       this.googleAdsConversionService.trackSignup(email);
     }

@@ -1,0 +1,137 @@
+[
+  {
+    "caseId": "valid_noaa_hurricane_outlook",
+    "category": "valid_real_public_news",
+    "expectedValid": true,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.noaa.gov/news-release/noaa-predicts-below-normal-2026-atlantic-hurricane-season",
+    "reason": "Coherent public news release with forecast details and agency context.",
+    "articleContent": "NOAA forecasters said the 2026 Atlantic hurricane season is likely to be below normal. The seasonal outlook covers the period from June through November and compares the forecast with long-term activity in the Atlantic basin. Officials said El Nino conditions are expected to increase wind shear, which can limit storm formation. The agency still urged coastal communities to prepare because one storm can create serious local impacts even during a quieter season."
+  },
+  {
+    "caseId": "valid_nasa_artemis_architecture",
+    "category": "valid_real_public_news",
+    "expectedValid": true,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.nasa.gov/directorates/esdmd/nasa-strengthens-artemis-adds-mission-refines-overall-architecture/",
+    "reason": "Coherent science and space program update with specific events and entities.",
+    "articleContent": "NASA announced changes to its Artemis exploration plans, including an added demonstration mission in low Earth orbit. The update is intended to test docking and lander-related systems before later lunar surface missions. Agency officials said the revised sequence gives teams more time to validate spacecraft operations and commercial partner hardware. The Artemis campaign remains focused on returning astronauts to the Moon and preparing for future Mars exploration."
+  },
+  {
+    "caseId": "valid_fda_drug_manufacturing_pilot",
+    "category": "valid_real_public_news",
+    "expectedValid": true,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.fda.gov/news-events/fda-newsroom",
+    "reason": "Coherent public health agency news with a clear topic and action.",
+    "articleContent": "The FDA selected participants for a PreCheck pilot program designed to support domestic drug manufacturing. The program is meant to help companies address facility design, quality systems, and regulatory expectations earlier in development. Agency officials said the pilot could improve communication before production begins and reduce delays in bringing important medicines to patients. The announcement is part of broader work to strengthen the pharmaceutical supply chain."
+  },
+  {
+    "caseId": "valid_usgs_earthquake_research_grants",
+    "category": "valid_real_public_news",
+    "expectedValid": true,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.usgs.gov/news/technical-announcement/usgs-seeks-earthquake-hazards-research-proposals-7",
+    "reason": "Coherent government science announcement with who, what, and why.",
+    "articleContent": "The U.S. Geological Survey opened a request for earthquake hazards research proposals for fiscal year grants. The program supports studies that improve understanding of earthquake processes, monitoring, and risk reduction. Researchers can submit projects that help communities, engineers, and emergency planners use better scientific information. USGS said the grants are part of a long-running national effort to reduce losses from future earthquakes."
+  },
+  {
+    "caseId": "valid_fda_food_traceability_rule",
+    "category": "valid_real_public_news",
+    "expectedValid": true,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.fda.gov/food/food-safety-modernization-act-fsma/fsma-final-rule-requirements-additional-traceability-records-certain-foods",
+    "reason": "Coherent regulatory news content with a public safety purpose.",
+    "articleContent": "The FDA described final traceability requirements for certain foods as part of the Food Safety Modernization Act. The rule requires additional records so investigators can more quickly identify the source of contaminated products. Officials said better records can support faster recalls and reduce the time unsafe food remains on the market. The agency provided implementation information for businesses that handle foods covered by the rule."
+  },
+  {
+    "caseId": "invalid_amazon_prime_day_deals",
+    "category": "invalid_real_commercial_deals",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.aboutamazon.com/news/retail/best-early-prime-day-deals-2026",
+    "reason": "Deal roundup and shopping promotion, not article content for the exercise.",
+    "articleContent": "Prime members can shop early Prime Day deals across devices, groceries, fashion, books, and travel before the official event begins. The promotion highlights savings on Amazon devices, Kindle titles, and household products. Readers are encouraged to browse limited-time offers, compare discounts, and use Prime benefits. The page also mentions earning Amazon gift cards through a Prime Visa approval."
+  },
+  {
+    "caseId": "invalid_wsj_best_deals",
+    "category": "invalid_real_commercial_deals",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.wsj.com/buyside/shopping-holidays/deals-sales/best-deals-right-now",
+    "reason": "Deals list with discounts and product recommendations.",
+    "articleContent": "This shopping guide lists the best online deals available today, including discounts on coffee makers, clothing, travel gear, cookware, bedding, headphones, and shoes. Each section points readers toward a sale or limited-time offer from a retailer. The page emphasizes percentage discounts, promo codes, and lowest-price claims rather than a news narrative with public-interest reporting."
+  },
+  {
+    "caseId": "invalid_nordstrom_sale_preview",
+    "category": "invalid_real_commercial_deals",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://nypost.com/shopping/nordstrom-anniversary-sale-preview-dates-early-deals-2026/",
+    "reason": "Sale preview and shopping advice.",
+    "articleContent": "The Nordstrom Anniversary Sale preview explains dates, early access windows, and products shoppers may want to watch. It highlights fashion, beauty, home goods, and lifestyle brands expected in the sale. The article advises readers to look for investment pieces and early deals before prices return to normal. The focus is commercial shopping guidance, discounts, and sale timing."
+  },
+  {
+    "caseId": "invalid_best_laptops_buying_guide",
+    "category": "invalid_real_product_listicle",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://www.techradar.com/computing/laptops/ive-reviewed-hundreds-of-laptops-these-are-the-best-ones-that-have-launched-so-far-in-2026",
+    "reason": "Product ranking and buying guide.",
+    "articleContent": "A reviewer ranks the best laptops released so far this year, comparing premium, budget, and gaming models. The guide discusses display quality, processors, battery life, prices, and which shoppers might prefer each device. It includes opinions about value and purchasing tradeoffs. This is a product listicle and buying guide rather than a general news article."
+  },
+  {
+    "caseId": "invalid_coupon_hunt_press_release",
+    "category": "invalid_real_commercial_promotion",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://investors.beyond.com/news-events/press-releases/news-details/2026/Bed-Bath--Beyond-Launches-Legendary-Coupon-Hunt/default.aspx",
+    "reason": "Coupon and giveaway promotion.",
+    "articleContent": "Bed Bath and Beyond announced a coupon hunt that lets customers bring coupons to participating stores for a chance to win prizes. The promotion includes a home transformation grand prize, gift cards, and smaller awards. The release tells customers how to participate and describes the event as a major shopping opportunity. The content is centered on coupons, giveaway entries, and retail marketing."
+  },
+  {
+    "caseId": "invalid_vpn_affiliate_programs",
+    "category": "invalid_real_affiliate_marketing",
+    "expectedValid": false,
+    "sourceType": "real_source_summary",
+    "sourceUrl": "https://propellerads.com/blog/adv-vpn-affiliate-programs/",
+    "reason": "Affiliate marketing content.",
+    "articleContent": "This guide explains how bloggers and marketers can choose VPN affiliate programs. It compares commission rates, payout methods, cookie duration, and conversion potential. The article encourages readers to evaluate offers and traffic sources to maximize earnings. The focus is affiliate marketing strategy and monetization, not a readable news story for learners."
+  },
+  {
+    "caseId": "invalid_html_tags_only",
+    "category": "invalid_mock_malformed_extraction",
+    "expectedValid": false,
+    "sourceType": "mocked_extraction_failure",
+    "sourceUrl": null,
+    "reason": "Represents an extractor failure that returned markup instead of article text.",
+    "articleContent": "<html><head><title>Article</title></head><body><main><article><p></p></article></main><script>window.__DATA__ = {};</script></body></html>"
+  },
+  {
+    "caseId": "invalid_navigation_links_only",
+    "category": "invalid_mock_boilerplate",
+    "expectedValid": false,
+    "sourceType": "mocked_extraction_failure",
+    "sourceUrl": null,
+    "reason": "Navigation and link labels without narrative article content.",
+    "articleContent": "Home News World Politics Business Technology Sports Entertainment Video Weather Subscribe Sign In Newsletters Podcasts Contact Privacy Policy Terms of Use Advertise About Careers"
+  },
+  {
+    "caseId": "invalid_cookie_banner_and_ui",
+    "category": "invalid_mock_boilerplate",
+    "expectedValid": false,
+    "sourceType": "mocked_extraction_failure",
+    "sourceUrl": null,
+    "reason": "Consent banner and UI controls without substantive content.",
+    "articleContent": "We use cookies to improve your experience. Accept all Reject all Manage choices Save preferences Continue to site. Open menu Close menu Share Save Print Listen. Sign up for breaking news alerts."
+  },
+  {
+    "caseId": "invalid_tag_cloud",
+    "category": "invalid_mock_boilerplate",
+    "expectedValid": false,
+    "sourceType": "mocked_extraction_failure",
+    "sourceUrl": null,
+    "reason": "Disconnected tags and category labels instead of coherent sentences.",
+    "articleContent": "Trending Latest Updates Editor Picks Local National Global Science Health Tech Opinion Photos Videos Live Blog Analysis Explainer Timeline Related Stories Most Read Recommended Sponsored"
+  }
+]

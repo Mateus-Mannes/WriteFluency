@@ -42,15 +42,19 @@ export class ExerciseSectionComponent implements OnInit {
   private isMobileMode = false;
   private lastDesktopAutoPause = 2;
   selectedAutoPause = signal(2);
-  shortcutSeekSeconds = computed(() => {
+  forwardSeekSeconds = computed(() => {
     const selected = this.selectedAutoPause();
-    return selected > 0 ? selected : 3;
+    return selected > 0 ? selected : 2;
   });
+  rewindSeekSeconds = computed(() => this.forwardSeekSeconds() + 1);
 
   maxWords = computed(() => {
-    return this.proposition()?.text?.trim().split(/\s+/).filter(Boolean).length || 0;
+    const originalWordCount = this.proposition()?.originalWordCount;
+    return Number.isFinite(originalWordCount) && (originalWordCount ?? 0) > 0
+      ? Math.floor(originalWordCount!)
+      : 0;
   });
-  
+
   text = signal('');
 
   get wordCount(): number {

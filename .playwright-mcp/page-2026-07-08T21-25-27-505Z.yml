@@ -1,0 +1,61 @@
+- generic [ref=e2]:
+  - navigation "Main navigation" [ref=e4]:
+    - generic [ref=e5]:
+      - link "WriteFluency Home" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img "WriteFluency logo" [ref=e7]
+        - generic [ref=e8]: WriteFluency
+      - navigation [ref=e9]:
+        - link "Home" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]: home
+          - generic [ref=e12]: Home
+        - link "Exercises" [ref=e13] [cursor=pointer]:
+          - /url: /exercises
+          - img [ref=e14]: library_books
+          - generic [ref=e15]: Exercises
+        - link "About" [ref=e16] [cursor=pointer]:
+          - /url: /about
+          - img [ref=e17]: info
+          - generic [ref=e18]: About
+        - link "Support" [ref=e19] [cursor=pointer]:
+          - /url: /support
+          - img [ref=e20]: support_agent
+          - generic [ref=e21]: Support
+        - link "Plans" [ref=e22] [cursor=pointer]:
+          - /url: /plans
+          - img [ref=e23]: your_trips
+          - generic [ref=e24]: Plans
+        - link "Login" [ref=e25] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e26]: person
+          - generic [ref=e27]: Login
+  - main [ref=e28]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: News Title
+        - heading "Catherine Fisher Discusses Impact of Iran, United States, Tony Awards, and NFL on Global Trends" [level=1] [ref=e33]
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - img [ref=e36]: public
+            - paragraph [ref=e37]: General
+          - generic [ref=e38]:
+            - img [ref=e39]: looks_one
+            - paragraph [ref=e40]: Beginner
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: "Suggestion: Listen for the full audio before getting started:"
+        - generic [ref=e45]:
+          - button "Play audio" [ref=e46] [cursor=pointer]:
+            - img [ref=e47]
+          - generic [ref=e49]: 0:00 / 0:36
+          - slider "Audio progress" [ref=e50] [cursor=pointer]: "0"
+          - button "Audio options" [ref=e52] [cursor=pointer]:
+            - img [ref=e53]
+      - generic [ref=e57]:
+        - img "News image" [ref=e59]
+        - generic [ref=e60]:
+          - paragraph [ref=e61]: "Font: https://www.cbsnews.com/video/career-expert-tackles-job-search-struggles-from-experience-to-ai/"
+          - paragraph [ref=e62]: June 08, 2026
+      - button "Begin Exercise" [ref=e66] [cursor=pointer]:
+        - img [ref=e67]: play_arrow
+        - generic [ref=e68]: Begin Exercise

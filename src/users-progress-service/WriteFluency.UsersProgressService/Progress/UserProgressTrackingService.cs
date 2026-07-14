@@ -61,6 +61,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
                 progress.DraftUserText = null;
                 progress.CompletedOriginalText = null;
                 progress.CompletedComparisons = null;
+                progress.CompletedCorrectionMode = null;
+                progress.CompletedCorrectionTrace = null;
                 progress.DraftAutoPauseSeconds = null;
                 progress.DraftPausedTimeSeconds = null;
             }
@@ -141,6 +143,11 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             ExerciseTitle = request.ExerciseTitle,
             Subject = request.Subject,
             Complexity = request.Complexity,
+            OriginalText = NormalizeDraftText(request.OriginalText),
+            UserText = NormalizeDraftText(request.UserText),
+            Comparisons = NormalizeComparisons(request.Comparisons),
+            CorrectionMode = NormalizeCorrectionMode(request.CorrectionMode),
+            CorrectionTrace = NormalizeCorrectionTrace(request.CorrectionTrace),
             CreatedAtUtc = now
         };
 
@@ -159,6 +166,8 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         progress.DraftUserText = NormalizeDraftText(request.UserText);
         progress.CompletedOriginalText = NormalizeDraftText(request.OriginalText);
         progress.CompletedComparisons = NormalizeComparisons(request.Comparisons);
+        progress.CompletedCorrectionMode = NormalizeCorrectionMode(request.CorrectionMode);
+        progress.CompletedCorrectionTrace = NormalizeCorrectionTrace(request.CorrectionTrace);
         progress.DraftAutoPauseSeconds = null;
         progress.DraftPausedTimeSeconds = null;
 
@@ -290,7 +299,9 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
             UpdatedAtUtc: current.UpdatedAtUtc,
             AccuracyPercentage: current.LatestAccuracyPercentage,
             OriginalText: NormalizeDraftText(current.CompletedOriginalText),
-            Comparisons: NormalizeComparisons(current.CompletedComparisons));
+            Comparisons: NormalizeComparisons(current.CompletedComparisons),
+            CorrectionMode: NormalizeCorrectionMode(current.CompletedCorrectionMode),
+            CorrectionTrace: NormalizeCorrectionTrace(current.CompletedCorrectionTrace));
     }
 
     public async Task<ProgressSummaryResponse> GetSummaryAsync(string userId, CancellationToken cancellationToken)
@@ -573,12 +584,134 @@ public sealed class UserProgressTrackingService : IUserProgressTrackingService
         }
 
         return comparisons
-            .Select(comparison => new ProgressTextComparison(
-                NormalizeTextRange(comparison.OriginalTextRange),
-                NormalizeDraftText(comparison.OriginalText),
-                NormalizeTextRange(comparison.UserTextRange),
-                NormalizeDraftText(comparison.UserText)))
+            .Select(comparison =>
+            {
+                var tags = NormalizeMistakePatternTags(comparison.MistakePatternTags);
+                var phrase = NormalizeMistakePatternPhrase(comparison.MistakePatternPhrase);
+                if (tags is null || phrase is null)
+                {
+                    tags = null;
+                    phrase = null;
+                }
+
+                return new ProgressTextComparison(
+                    NormalizeTextRange(comparison.OriginalTextRange),
+                    NormalizeDraftText(comparison.OriginalText),
+                    NormalizeTextRange(comparison.UserTextRange),
+                    NormalizeDraftText(comparison.UserText),
+                    NormalizeSourceComparisonIndex(comparison.SourceComparisonIndex),
+                    comparison.IsDeterministicallyRefined,
+                    tags,
+                    phrase);
+            })
             .ToArray();
+    }
+
+    private static IReadOnlyList<ProgressCorrectionTraceEntry>? NormalizeCorrectionTrace(
+        IReadOnlyList<ProgressCorrectionTraceEntry>? trace)
+    {
+        if (trace is null || trace.Count == 0)
+        {
+            return null;
+        }
+
+        return trace
+            .Where(entry => entry.Initial is not null
+                            && entry.Deterministic is not null)
+            .Select(entry => new ProgressCorrectionTraceEntry(
+                NormalizeSourceComparisonIndex(entry.SourceComparisonIndex),
+                NormalizeSnapshot(entry.Initial),
+                NormalizeStage(entry.Deterministic)))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string>? NormalizeMistakePatternTags(
+        IReadOnlyList<string>? tags)
+    {
+        if (tags is null || tags.Count == 0)
+        {
+            return null;
+        }
+
+        var normalized = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tag in tags)
+        {
+            var normalizedTag = NormalizeShortValue(tag)?.ToLowerInvariant();
+            if (normalizedTag is null || !seen.Add(normalizedTag))
+            {
+                continue;
+            }
+
+            normalized.Add(normalizedTag);
+            if (normalized.Count == 3)
+            {
+                break;
+            }
+        }
+
+        return normalized.Count == 0 ? null : normalized;
+    }
+
+    private static string? NormalizeMistakePatternPhrase(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= 2500 ? trimmed : null;
+    }
+
+    private static ProgressCorrectionStageTrace? NormalizeStage(
+        ProgressCorrectionStageTrace? stage)
+    {
+        if (stage is null)
+        {
+            return null;
+        }
+
+        return new ProgressCorrectionStageTrace(
+            NormalizeShortValue(stage.Action),
+            NormalizeShortValue(stage.ReasonCode),
+            NormalizeSnapshots(stage.Output),
+            NormalizeShortValue(stage.ValidationStatus),
+            NormalizeSnapshots(stage.ProposedOutput),
+            NormalizeShortValue(stage.ValidationFailureReason));
+    }
+
+    private static IReadOnlyList<ProgressComparisonSnapshot>? NormalizeSnapshots(
+        IReadOnlyList<ProgressComparisonSnapshot>? snapshots) =>
+        snapshots?.Select(NormalizeSnapshot).Where(snapshot => snapshot is not null)
+            .Cast<ProgressComparisonSnapshot>()
+            .ToArray();
+
+    private static ProgressComparisonSnapshot? NormalizeSnapshot(
+        ProgressComparisonSnapshot? snapshot) =>
+        snapshot is null
+            ? null
+            : new ProgressComparisonSnapshot(
+                NormalizeTextRange(snapshot.OriginalTextRange),
+                NormalizeDraftText(snapshot.OriginalText),
+                NormalizeTextRange(snapshot.UserTextRange),
+                NormalizeDraftText(snapshot.UserText));
+
+    private static int? NormalizeSourceComparisonIndex(int? value) =>
+        value.HasValue ? Math.Max(0, value.Value) : null;
+
+    private static string? NormalizeCorrectionMode(string? value) =>
+        NormalizeShortValue(value);
+
+    private static string? NormalizeShortValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= 100 ? trimmed : trimmed[..100];
     }
 
     private static ProgressTextRange? NormalizeTextRange(ProgressTextRange? range)

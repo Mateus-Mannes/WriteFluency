@@ -11,4 +11,12 @@ public class ApplicationUser : IdentityUser
     public DateTimeOffset? SubscriptionCurrentPeriodEndUtc { get; set; }
 
     public bool SubscriptionCancelAtPeriodEnd { get; set; }
+
+    public string? StripeCustomerId { get; set; }
+
+    public string? StripeSubscriptionId { get; set; }
+
+    public string? StripeSubscriptionStatus { get; set; }
+
+    public DateTimeOffset? StripeSubscriptionLastEventCreatedUtc { get; set; }
 }

@@ -3,7 +3,7 @@ import { offset } from '@floating-ui/dom';
 import { ShepherdService } from 'angular-shepherd';
 import { BrowserService } from '../../core/services/browser.service';
 import { AuthSessionStore } from '../../auth/services/auth-session.store';
-import { LISTEN_WRITE_FIRST_TIME_KEY } from '../listen-and-write.component';
+import * as constants from '../listen-and-write.constants';
 import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
 
 interface ExerciseTourOptions {
@@ -261,7 +261,7 @@ export class ExerciseTourService {
           tour_name: 'exercise-tour',
           outcome: 'complete'
         });
-        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(constants.listenWriteFirstTimeKey, 'false');
         this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
       this.shepherd.tourObject?.on('cancel', () => {
@@ -269,7 +269,7 @@ export class ExerciseTourService {
           tour_name: 'exercise-tour',
           outcome: 'cancel'
         });
-        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(constants.listenWriteFirstTimeKey, 'false');
         this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
 
@@ -432,7 +432,7 @@ export class ExerciseTourService {
           tour_name: 'exercise-tour-mobile',
           outcome: 'complete'
         });
-        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(constants.listenWriteFirstTimeKey, 'false');
         this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
       this.shepherd.tourObject?.on('cancel', () => {
@@ -440,7 +440,7 @@ export class ExerciseTourService {
           tour_name: 'exercise-tour-mobile',
           outcome: 'cancel'
         });
-        this.browserService.setItem(LISTEN_WRITE_FIRST_TIME_KEY, 'false');
+        this.browserService.setItem(constants.listenWriteFirstTimeKey, 'false');
         this.authSessionStore.markListenWriteTutorialCompletedInBackground();
       });
 

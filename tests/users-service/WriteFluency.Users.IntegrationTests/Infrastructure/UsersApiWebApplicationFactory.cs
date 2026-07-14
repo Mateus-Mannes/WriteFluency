@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using WriteFluency.Users.WebApi.Authentication;
+using WriteFluency.Users.WebApi.Billing;
 using WriteFluency.Users.WebApi.Data;
 using WriteFluency.Users.WebApi.Email;
 
@@ -20,17 +21,20 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
     private readonly string _redisConnectionString;
     private readonly TestEmailSender _testEmailSender;
     private readonly TestingLoginGeoLookupService _loginGeoLookupService;
+    private readonly TestingStripeBillingClient _stripeBillingClient;
 
     public UsersApiWebApplicationFactory(
         string postgresConnectionString,
         string redisConnectionString,
         TestEmailSender testEmailSender,
-        TestingLoginGeoLookupService loginGeoLookupService)
+        TestingLoginGeoLookupService loginGeoLookupService,
+        TestingStripeBillingClient stripeBillingClient)
     {
         _postgresConnectionString = postgresConnectionString;
         _redisConnectionString = redisConnectionString;
         _testEmailSender = testEmailSender;
         _loginGeoLookupService = loginGeoLookupService;
+        _stripeBillingClient = stripeBillingClient;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -69,12 +73,19 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
                 ["Authentication:ConfirmationRedirectUrl"] = "http://localhost:4200/auth/confirm-email",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:0"] = "/users/swagger/index.html",
                 ["Authentication:ExternalRedirect:AllowedReturnUrls:1"] = "http://localhost:4200/auth/callback",
+                ["Stripe:SecretKey"] = "sk_test_writefluency",
+                ["Stripe:ProMonthlyPriceId"] = "price_test_pro_monthly",
+                ["Stripe:SuccessUrl"] = "http://localhost:4200/user?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+                ["Stripe:CancelUrl"] = "http://localhost:4200/user?checkout=cancelled",
                 ["SharedDataProtection:ApplicationName"] = "WriteFluency.Users.IntegrationTests",
                 ["SharedDataProtection:BlobUri"] = string.Empty,
                 ["SharedDataProtection:KeyIdentifier"] = string.Empty,
                 ["LoginLocation:Enabled"] = "false",
                 ["LoginLocation:GeoLite2CityBlobUri"] = string.Empty,
-                ["LoginLocation:GeoLite2CityDbPath"] = string.Empty
+                ["LoginLocation:GeoLite2CityDbPath"] = string.Empty,
+                ["Stripe:PortalConfigurationId"] = "bpc_test_writefluency",
+                ["Stripe:PortalReturnUrl"] = "http://localhost:4200/user?billing=returned",
+                ["Stripe:WebhookSecret"] = "whsec_test_writefluency"
             });
         });
 
@@ -103,6 +114,9 @@ public sealed class UsersApiWebApplicationFactory : WebApplicationFactory<Progra
 
             services.RemoveAll<ILoginGeoLookupService>();
             services.AddSingleton<ILoginGeoLookupService>(_loginGeoLookupService);
+
+            services.RemoveAll<IStripeBillingClient>();
+            services.AddSingleton<IStripeBillingClient>(_stripeBillingClient);
         });
     }
 

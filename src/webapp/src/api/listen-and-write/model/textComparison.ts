@@ -11,9 +11,13 @@ import { TextRange } from './textRange';
 
 
 export interface TextComparison { 
+    comparisonIndex?: number;
+    sourceComparisonIndex?: number;
+    isDeterministicallyRefined?: boolean;
     originalTextRange?: TextRange;
     originalText?: string | null;
     userTextRange?: TextRange;
     userText?: string | null;
+    mistakePatternTags?: Array<string> | null;
+    mistakePatternPhrase?: string | null;
 }
-

@@ -1,11 +1,15 @@
-import { signal } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { WritableSignal, signal } from '@angular/core';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { Subject, of, throwError } from 'rxjs';
 import { FeedbackPromptStatusResponse } from '../auth/models/feedback-prompt.model';
+import { AuthSessionState } from '../auth/models/auth-session.model';
 import { AuthApiService } from '../auth/services/auth-api.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
+import { BrowserService } from '../core/services/browser.service';
+import { BillingApiService } from './services/billing-api.service';
+import { PortalSessionResponse } from './models/billing.model';
 import { UserProgressApiService } from './services/user-progress-api.service';
 import { UserComponent } from './user.component';
 import { Insights } from '../../telemetry/insights.service';
@@ -14,10 +18,17 @@ describe('UserComponent', () => {
   let component: UserComponent;
   let fixture: ComponentFixture<UserComponent>;
   let authApiSpy: jasmine.SpyObj<AuthApiService>;
+  let billingApiSpy: jasmine.SpyObj<BillingApiService>;
+  let browserServiceSpy: jasmine.SpyObj<BrowserService>;
   let userProgressApiSpy: jasmine.SpyObj<UserProgressApiService>;
   let insightsSpy: jasmine.SpyObj<Insights>;
   let router: Router;
-  let authSessionStoreMock: Pick<AuthSessionStore, 'state' | 'invalidateSession'>;
+  let activatedRouteStub: { snapshot: { queryParamMap: ReturnType<typeof convertToParamMap> } };
+  let authSessionStoreMock: {
+    state: WritableSignal<AuthSessionState>;
+    invalidateSession: jasmine.Spy;
+    refreshSession: jasmine.Spy<() => Promise<void>>;
+  };
 
   beforeEach(async () => {
     authApiSpy = jasmine.createSpyObj<AuthApiService>('AuthApiService', [
@@ -26,8 +37,19 @@ describe('UserComponent', () => {
       'markFeedbackPromptDismissed',
       'markFeedbackPromptSubmitted',
     ]);
+    billingApiSpy = jasmine.createSpyObj<BillingApiService>('BillingApiService', [
+      'confirmCheckoutSession',
+      'createPortalSession',
+      'syncSubscription',
+    ]);
+    browserServiceSpy = jasmine.createSpyObj<BrowserService>('BrowserService', ['navigateTo']);
     userProgressApiSpy = jasmine.createSpyObj<UserProgressApiService>('UserProgressApiService', ['summary', 'items']);
     insightsSpy = jasmine.createSpyObj<Insights>('Insights', ['trackException', 'trackEvent']);
+    activatedRouteStub = {
+      snapshot: {
+        queryParamMap: convertToParamMap({}),
+      },
+    };
     authSessionStoreMock = {
       state: signal({
         isAuthenticated: true,
@@ -47,12 +69,30 @@ describe('UserComponent', () => {
         error: null,
       }),
       invalidateSession: jasmine.createSpy('invalidateSession'),
+      refreshSession: jasmine.createSpy('refreshSession').and.resolveTo(),
     };
 
     authApiSpy.feedbackPromptStatus.and.returnValue(of(createFeedbackPromptStatus(false)));
     authApiSpy.markFeedbackPromptShown.and.returnValue(of(createFeedbackPromptStatus(true)));
     authApiSpy.markFeedbackPromptDismissed.and.returnValue(of(createFeedbackPromptStatus(false)));
     authApiSpy.markFeedbackPromptSubmitted.and.returnValue(of(createFeedbackPromptStatus(false)));
+    billingApiSpy.confirmCheckoutSession.and.returnValue(of({
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+      currentPeriodEndUtc: new Date('2030-01-01T00:00:00.000Z').toISOString(),
+      cancelAtPeriodEnd: false,
+    }));
+    billingApiSpy.createPortalSession.and.returnValue(of({
+      portalUrl: 'https://billing.stripe.test/session',
+    }));
+    billingApiSpy.syncSubscription.and.returnValue(of({
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+      currentPeriodEndUtc: new Date('2030-01-01T00:00:00.000Z').toISOString(),
+      cancelAtPeriodEnd: false,
+    }));
     userProgressApiSpy.summary.and.returnValue(of({
       trackingEnabled: true,
       totalItems: 2,
@@ -109,8 +149,11 @@ describe('UserComponent', () => {
         },
         { provide: UserProgressApiService, useValue: userProgressApiSpy },
         { provide: AuthApiService, useValue: authApiSpy },
+        { provide: BillingApiService, useValue: billingApiSpy },
+        { provide: BrowserService, useValue: browserServiceSpy },
         { provide: Insights, useValue: insightsSpy },
         provideRouter([]),
+        { provide: ActivatedRoute, useValue: activatedRouteStub },
       ],
     }).compileComponents();
 
@@ -143,6 +186,225 @@ describe('UserComponent', () => {
     expect(root.textContent).toContain('24/120');
     expect(userProgressApiSpy.summary).toHaveBeenCalled();
     expect(userProgressApiSpy.items).toHaveBeenCalled();
+  });
+
+  it('should render subscribe action for authenticated free users', () => {
+    const root: HTMLElement = fixture.nativeElement;
+    const subscribeLink = root.querySelector('.pro-upgrade-button') as HTMLAnchorElement;
+
+    expect(root.textContent).toContain('Plan: Free');
+    expect(root.textContent).toContain('Subscribe to Pro');
+    expect(subscribeLink?.getAttribute('href')).toContain('/plans');
+  });
+
+  it('should render manage subscription action for Pro users', () => {
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+    });
+    fixture.detectChanges();
+
+    const root: HTMLElement = fixture.nativeElement;
+    const manageButton = root.querySelector('.subscription-manage-button') as HTMLButtonElement;
+
+    expect(root.textContent).toContain('Plan: Pro active');
+    expect(root.textContent).toContain('Manage my subscription');
+    expect(root.textContent).not.toContain('Subscribe to Pro');
+    expect(manageButton.disabled).toBeFalse();
+  });
+
+  it('should render canceling Pro state with access end date', () => {
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_canceling',
+      isPro: true,
+      currentPeriodEndUtc: '2030-01-01T00:00:00.000Z',
+      cancelAtPeriodEnd: true,
+    });
+    fixture.detectChanges();
+
+    const root: HTMLElement = fixture.nativeElement;
+
+    expect(root.textContent).toContain('Plan: Pro canceling');
+    expect(root.textContent).toContain('Access until');
+    expect(root.textContent).toContain('Manage my subscription');
+  });
+
+  it('should render expired Pro state without manage action', () => {
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_expired',
+      isPro: false,
+      currentPeriodEndUtc: '2020-01-01T00:00:00.000Z',
+      cancelAtPeriodEnd: false,
+    });
+    fixture.detectChanges();
+
+    const root: HTMLElement = fixture.nativeElement;
+
+    expect(root.textContent).toContain('Plan: Pro expired');
+    expect(root.textContent).toContain('Subscribe to Pro');
+    expect(root.textContent).not.toContain('Manage my subscription');
+  });
+
+  it('should open subscription management for Pro users and keep loading for 8 seconds', fakeAsync(() => {
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+    });
+    fixture.detectChanges();
+
+    void component.startSubscriptionManagement();
+    flushMicrotasks();
+
+    expect(billingApiSpy.createPortalSession).toHaveBeenCalledTimes(1);
+    expect(browserServiceSpy.navigateTo).toHaveBeenCalledWith('https://billing.stripe.test/session');
+    expect(component.isSubscriptionManagementLoading()).toBeTrue();
+
+    tick(7999);
+    expect(component.isSubscriptionManagementLoading()).toBeTrue();
+
+    tick(1);
+    expect(component.isSubscriptionManagementLoading()).toBeFalse();
+  }));
+
+  it('should disable manage button and prevent duplicate portal requests while loading', async () => {
+    const portalResponse = new Subject<PortalSessionResponse>();
+    billingApiSpy.createPortalSession.and.returnValue(portalResponse);
+    authSessionStoreMock.state.set({
+      ...authSessionStoreMock.state(),
+      plan: 'pro',
+      entitlementStatus: 'pro_active',
+      isPro: true,
+    });
+    fixture.detectChanges();
+
+    void component.startSubscriptionManagement();
+    fixture.detectChanges();
+
+    const manageButton = fixture.nativeElement.querySelector('.subscription-manage-button') as HTMLButtonElement;
+    expect(component.isSubscriptionManagementLoading()).toBeTrue();
+    expect(manageButton.disabled).toBeTrue();
+
+    await component.startSubscriptionManagement();
+
+    expect(billingApiSpy.createPortalSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('should confirm checkout success, refresh session, and show success state', async () => {
+    activatedRouteStub.snapshot.queryParamMap = convertToParamMap({
+      checkout: 'success',
+      session_id: 'cs_test_123',
+    });
+    billingApiSpy.confirmCheckoutSession.calls.reset();
+    authSessionStoreMock.refreshSession.calls.reset();
+    (router.navigate as jasmine.Spy).calls.reset();
+
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(billingApiSpy.confirmCheckoutSession).toHaveBeenCalledWith('cs_test_123');
+    expect(authSessionStoreMock.refreshSession).toHaveBeenCalled();
+    expect(component.billingMessage()).toBe('Your Pro subscription is active.');
+    expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({
+      queryParams: {
+        checkout: null,
+        session_id: null,
+        billing: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    }));
+  });
+
+  it('should show cancellation state without confirming checkout', async () => {
+    activatedRouteStub.snapshot.queryParamMap = convertToParamMap({ checkout: 'cancelled' });
+    billingApiSpy.confirmCheckoutSession.calls.reset();
+    (router.navigate as jasmine.Spy).calls.reset();
+
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(billingApiSpy.confirmCheckoutSession).not.toHaveBeenCalled();
+    expect(component.billingMessage()).toBe('Checkout was cancelled.');
+    expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({
+      queryParams: {
+        checkout: null,
+        session_id: null,
+        billing: null,
+      },
+    }));
+  });
+
+  it('should show recoverable error when checkout confirmation fails', async () => {
+    const confirmError = new HttpErrorResponse({ status: 400, statusText: 'Bad Request' });
+    activatedRouteStub.snapshot.queryParamMap = convertToParamMap({
+      checkout: 'success',
+      session_id: 'cs_test_bad',
+    });
+    billingApiSpy.confirmCheckoutSession.and.returnValue(throwError(() => confirmError));
+
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.billingError()).toBe('Could not confirm checkout. Please try again.');
+    expect(authSessionStoreMock.refreshSession).toHaveBeenCalledTimes(0);
+    expect(insightsSpy.trackException).toHaveBeenCalledWith(confirmError, jasmine.objectContaining({
+      properties: jasmine.objectContaining({
+        area: 'billing',
+        operation: 'confirm_checkout',
+        http_status: '400',
+      }),
+    }));
+  });
+
+  it('should sync subscription after returning from billing portal', async () => {
+    activatedRouteStub.snapshot.queryParamMap = convertToParamMap({ billing: 'returned' });
+    billingApiSpy.syncSubscription.calls.reset();
+    authSessionStoreMock.refreshSession.calls.reset();
+    (router.navigate as jasmine.Spy).calls.reset();
+
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(billingApiSpy.syncSubscription).toHaveBeenCalledTimes(1);
+    expect(authSessionStoreMock.refreshSession).toHaveBeenCalled();
+    expect(component.billingMessage()).toBe('Subscription details updated.');
+    expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({
+      queryParams: {
+        checkout: null,
+        session_id: null,
+        billing: null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    }));
+  });
+
+  it('should show recoverable error when portal return sync fails', async () => {
+    const syncError = new HttpErrorResponse({ status: 502, statusText: 'Bad Gateway' });
+    activatedRouteStub.snapshot.queryParamMap = convertToParamMap({ billing: 'returned' });
+    billingApiSpy.syncSubscription.and.returnValue(throwError(() => syncError));
+
+    await component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.billingError()).toBe('Could not refresh subscription status. Please try again.');
+    expect(userProgressApiSpy.summary).toHaveBeenCalled();
+    expect(userProgressApiSpy.items).toHaveBeenCalled();
+    expect(insightsSpy.trackException).toHaveBeenCalledWith(syncError, jasmine.objectContaining({
+      properties: jasmine.objectContaining({
+        area: 'billing',
+        operation: 'sync_subscription',
+        http_status: '502',
+      }),
+    }));
   });
 
   it('should not request progress feedback prompt before 3 completed exercises', () => {

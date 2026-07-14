@@ -38,6 +38,14 @@ public class ApplicationTestBase : IDisposable
         services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
             opts.UseSqlite(_connection));
 
+        services.AddSingleton(Options.Create(new CatalogAccessTeaserOptions
+        {
+            Enabled = true,
+            AnonymousFingerprintSalt = "test-catalog-access-teaser-salt",
+            AnonymousSampleLifetimeLimit = 1,
+            FreeIntroLifetimeLimit = 1
+        }));
+        services.AddTransient<CatalogAccessTeaserService>();
         services.AddTransient<PropositionService>();
         services.AddSingleton<IPropositionImageService, FastPropositionImageService>();
         services.AddTransient<CreatePropositionService>();
@@ -117,6 +125,11 @@ public class ApplicationTestBase : IDisposable
                 UploadedFiles[objectName] = callInfo.ArgAt<byte[]>(1);
                 return Result.Ok(objectName);
             });
+
+        fileServiceMock
+            .CreatePresignedGetUrlAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+                Result.Ok($"https://minio.test/{callInfo.ArgAt<string>(0)}/{callInfo.ArgAt<string>(1)}?signature=test"));
 
         services.AddSingleton(fileServiceMock);
 

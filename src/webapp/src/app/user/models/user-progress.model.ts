@@ -1,4 +1,4 @@
-import { TextComparison } from 'src/api/listen-and-write';
+import { CorrectionTraceEntry, TextComparison } from 'src/api/listen-and-write';
 
 export type ProgressStatus = 'in_progress' | 'completed' | 'disabled';
 
@@ -22,6 +22,8 @@ export interface CompleteProgressRequest {
   userText?: string | null;
   originalText?: string | null;
   comparisons?: Array<TextComparison> | null;
+  correctionMode?: string | null;
+  correctionTrace?: Array<CorrectionTraceEntry> | null;
 }
 
 export interface SaveProgressStateRequest {
@@ -57,6 +59,8 @@ export interface ProgressStateResponse {
   accuracyPercentage?: number | null;
   originalText?: string | null;
   comparisons?: Array<TextComparison> | null;
+  correctionMode?: string | null;
+  correctionTrace?: Array<CorrectionTraceEntry> | null;
 }
 
 export interface ProgressSummaryResponse {

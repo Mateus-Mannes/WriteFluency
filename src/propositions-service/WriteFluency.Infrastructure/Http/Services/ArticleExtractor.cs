@@ -68,15 +68,21 @@ public class ArticleExtractor : IArticleExtractor
         catch (HttpRequestException ex)
         {
             _logger.LogWarning(
-                "Article content was rejected or unavailable. Url={Url}, StatusCode={StatusCode}.",
+                "Article content was rejected or unavailable. Url={Url}, StatusCode={StatusCode}, ExceptionType={ExceptionType}, ExceptionMessage={ExceptionMessage}.",
                 url,
-                ex.StatusCode);
+                ex.StatusCode,
+                ex.GetType().Name,
+                ex.Message);
 
             return Result.Fail(new Error("Failed to extract visible text").CausedBy(ex));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to extract visible text from {Url}", url);
+            _logger.LogError(
+                "Failed to extract visible text from {Url}. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                url,
+                ex.GetType().Name,
+                ex.Message);
             return Result.Fail(new Error("Failed to extract visible text").CausedBy(ex));
         }
 

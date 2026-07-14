@@ -10,7 +10,6 @@
 
 
 export interface CompareTextsDto { 
-    originalText?: string | null;
+    propositionId?: number;
     userText?: string | null;
-    propositionId?: number | null;
 }

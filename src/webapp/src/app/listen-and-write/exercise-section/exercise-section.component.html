@@ -11,7 +11,8 @@
 
     <div class="exercise-header-actions">
         <div id="exercise-word-count">
-            <span class="text-body">Word Count: </span><b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
+            <span class="text-body">Word Count: </span>
+            <b class="text-body" [ngClass]="wordCountClass">{{ wordCount }}/{{ maxWords() }}</b>
         </div>
 
         <button
@@ -36,8 +37,8 @@
     <div class="exercise-instructions" id="exercise-shortcuts">
         <div class="text-label"><mat-icon class="icon">play_arrow</mat-icon> <span class="label">Play/Pause</span> <span class="shortcut">Ctrl/⌘ + Enter</span></div>
         <div class="shortcuts-row">
-            <div class="text-label"><mat-icon class="icon">fast_rewind</mat-icon> <span class="label">Rewind {{ shortcutSeekSeconds() }}s</span> <span class="shortcut">Ctrl/⌘ + ←</span></div>
-            <div class="text-label"><mat-icon class="icon">fast_forward</mat-icon> <span class="label">Forward {{ shortcutSeekSeconds() }}s</span> <span class="shortcut">Ctrl/⌘ + →</span></div>
+            <div class="text-label"><mat-icon class="icon">fast_rewind</mat-icon> <span class="label">Rewind {{ rewindSeekSeconds() }}s</span> <span class="shortcut">Ctrl/⌘ + ←</span></div>
+            <div class="text-label"><mat-icon class="icon">fast_forward</mat-icon> <span class="label">Forward {{ forwardSeekSeconds() }}s</span> <span class="shortcut">Ctrl/⌘ + →</span></div>
         </div>
     </div>
 

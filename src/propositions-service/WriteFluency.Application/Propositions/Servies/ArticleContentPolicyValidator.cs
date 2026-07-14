@@ -27,7 +27,6 @@ public class ArticleContentPolicyValidator : IArticleContentPolicyValidator
         "assault",
         "exploit",
         "exploitation",
-        "attack",
         "offender",
         "sexual abuse of children",
         "sexual abuse of minors",

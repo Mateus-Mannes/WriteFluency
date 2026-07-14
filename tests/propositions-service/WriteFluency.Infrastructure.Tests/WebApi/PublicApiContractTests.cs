@@ -59,6 +59,30 @@ public class PublicApiContractTests
 
         var components = root.GetProperty("components");
         components.TryGetProperty("securitySchemes", out _).ShouldBeFalse();
+        var textComparisonResult = components
+            .GetProperty("schemas")
+            .GetProperty("TextComparisonResult")
+            .GetProperty("properties");
+        textComparisonResult.TryGetProperty("correctionMode", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("aiAttempted", out _).ShouldBeFalse();
+        textComparisonResult.TryGetProperty("correctionTrace", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternStatus", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternMessage", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternReviewSource", out _).ShouldBeTrue();
+        textComparisonResult.TryGetProperty("mistakePatternAnnotations", out _).ShouldBeFalse();
+        components
+            .GetProperty("schemas")
+            .TryGetProperty("MistakePatternAnnotation", out _)
+            .ShouldBeFalse();
+        var textComparison = components
+            .GetProperty("schemas")
+            .GetProperty("TextComparison")
+            .GetProperty("properties");
+        textComparison.TryGetProperty("sourceComparisonIndex", out _).ShouldBeTrue();
+        textComparison.TryGetProperty("isDeterministicallyRefined", out _).ShouldBeTrue();
+        textComparison.TryGetProperty("isAiRefined", out _).ShouldBeFalse();
+        textComparison.TryGetProperty("mistakePatternTags", out _).ShouldBeTrue();
+        textComparison.TryGetProperty("mistakePatternPhrase", out _).ShouldBeTrue();
         root.TryGetProperty("security", out _).ShouldBeFalse();
     }
 

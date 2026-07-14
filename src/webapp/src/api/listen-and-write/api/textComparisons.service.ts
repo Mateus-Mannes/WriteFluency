@@ -63,7 +63,7 @@ export class TextComparisonsService extends BaseService {
 
         const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
 
-        const localVarTransferCache: boolean = options?.transferCache ?? true;
+        const localVarTransferCache: boolean = options?.transferCache ?? false;
 
 
         // to determine the Content-Type header
@@ -87,13 +87,13 @@ export class TextComparisonsService extends BaseService {
         }
 
         let localVarPath = `/api/text-comparison/compare-texts`;
-        const { basePath, withCredentials } = this.configuration;
+        const { basePath } = this.configuration;
         return this.httpClient.request<TextComparisonResult>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: compareTextsDto,
                 responseType: <any>responseType_,
-                ...(withCredentials ? { withCredentials } : {}),
+                withCredentials: true,
                 headers: localVarHeaders,
                 observe: observe,
                 ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),

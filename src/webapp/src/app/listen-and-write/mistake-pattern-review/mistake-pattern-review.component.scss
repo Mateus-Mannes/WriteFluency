@@ -1,0 +1,304 @@
+@use '../../../styles/variables' as vars;
+
+.mistake-pattern-review {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-height: var(--mistake-pattern-review-max-height, none);
+  border: 1px solid rgba(58, 125, 255, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.03);
+  padding: 0.58rem;
+  overflow: hidden;
+}
+
+.mistake-pattern-review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  h2 {
+    margin: 0.08rem 0 0;
+    color: #172036;
+    font-size: 0.9rem;
+    line-height: 1.16;
+  }
+}
+
+.mistake-pattern-review-kicker,
+.mistake-pattern-review-count {
+  margin: 0;
+  color: rgba(23, 32, 54, 0.64);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mistake-pattern-review-count {
+  white-space: nowrap;
+}
+
+.mistake-pattern-review-alert {
+  border-color: rgba(244, 177, 33, 0.35);
+  background: #fffaf0;
+}
+
+.mistake-pattern-review-empty {
+  background:
+    radial-gradient(circle at top right, rgba(0, 194, 168, 0.08), transparent 42%),
+    #fff;
+}
+
+.mistake-pattern-empty-state {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  text-align: center;
+
+  .material-symbols-outlined {
+    display: inline-grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 999px;
+    background: rgba(0, 194, 168, 0.12);
+    color: #078776;
+    font-size: 1.45rem;
+  }
+
+  h3 {
+    margin: 0.2rem 0 0;
+    color: #172036;
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  p {
+    max-width: 18rem;
+    margin: 0;
+    color: rgba(23, 32, 54, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.32;
+  }
+}
+
+.mistake-pattern-review-locked {
+  position: relative;
+  min-height: 0;
+}
+
+.mistake-pattern-locked-preview {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  filter: blur(3px);
+  opacity: 0.62;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mistake-pattern-lock-overlay {
+  position: absolute;
+  inset: 0.58rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1rem;
+  text-align: center;
+
+  h3 {
+    margin: 0;
+    color: #172036;
+    font-size: 0.92rem;
+    line-height: 1.18;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(23, 32, 54, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.28;
+  }
+}
+
+.mistake-pattern-lock-button {
+  align-self: center;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3a7dff 0%, #2c5ed8 100%);
+  box-shadow: 0 8px 20px rgba(58, 125, 255, 0.22);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-top: 0.1rem;
+  padding: 0.5rem 0.9rem;
+}
+
+.mistake-pattern-lock-button:hover,
+.mistake-pattern-lock-button:focus-visible {
+  background: linear-gradient(135deg, #256dff 0%, #244fb8 100%);
+  outline: none;
+}
+
+.mistake-pattern-alert-message {
+  margin: 0.45rem 0 0;
+  color: rgba(23, 32, 54, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.26;
+}
+
+.mistake-pattern-alert-link {
+  align-self: flex-start;
+  margin-top: 0.45rem;
+  color: vars.$color-primary-dark;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.mistake-pattern-alert-link:hover,
+.mistake-pattern-alert-link:focus-visible {
+  text-decoration: underline;
+}
+
+.mistake-pattern-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.45rem;
+}
+
+.mistake-pattern-tag {
+  border: 1px solid rgba(58, 125, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(58, 125, 255, 0.06);
+  color: #1d3960;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.38rem;
+
+  span {
+    color: rgba(29, 57, 96, 0.68);
+    margin-left: 0.18rem;
+  }
+}
+
+.mistake-pattern-tag-static {
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+}
+
+.mistake-pattern-tag-active {
+  border-color: rgba(58, 125, 255, 0.48);
+  background: rgba(58, 125, 255, 0.14);
+  color: vars.$color-primary-dark;
+}
+
+.mistake-pattern-list {
+  display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
+  flex: 1 1 auto;
+  gap: 0.34rem;
+  margin-top: 0.5rem;
+  min-height: 0;
+  max-height: var(--mistake-pattern-list-max-height, 420px);
+  overflow: auto;
+  padding-right: 0.1rem;
+}
+
+.mistake-pattern-row {
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 0.26rem;
+  width: 100%;
+  border: 1px solid #e3e9f4;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  color: #172036;
+  cursor: pointer;
+  padding: 0.42rem;
+  text-align: left;
+}
+
+.mistake-pattern-row:hover,
+.mistake-pattern-row:focus-visible,
+.mistake-pattern-row-active {
+  border-color: rgba(58, 125, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(58, 125, 255, 0.1);
+  outline: none;
+}
+
+.mistake-pattern-text-pair {
+  display: flex;
+  align-self: start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.26rem;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 0.74rem;
+}
+
+.mistake-pattern-user-text,
+.mistake-pattern-original-text {
+  border-radius: 7px;
+  padding: 0.12rem 0.26rem;
+  overflow-wrap: anywhere;
+}
+
+.mistake-pattern-user-text {
+  background: rgba(255, 214, 107, 0.32);
+}
+
+.mistake-pattern-original-text {
+  background: rgba(0, 194, 168, 0.13);
+}
+
+.mistake-pattern-arrow {
+  color: rgba(23, 32, 54, 0.46);
+}
+
+.mistake-pattern-row-tags {
+  display: flex;
+  align-self: start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+
+  span {
+    border-radius: 999px;
+    background: rgba(58, 125, 255, 0.09);
+    color: #274d80;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.12rem 0.3rem;
+  }
+}
+
+.mistake-pattern-phrase {
+  align-self: start;
+  color: rgba(23, 32, 54, 0.76);
+  font-size: 0.74rem;
+  line-height: 1.22;
+}

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 var minioUser = builder.AddParameter("wf-infra-minio-user", "minioadmin");
@@ -100,8 +102,46 @@ else
 
 usersApi.WithEnvironment("RESOURCE_NAME", usersApi.Resource.Name);
 
+api.WaitFor(usersApi)
+    .WithEnvironment(
+        "UsersService__BaseUrl",
+        builder.ExecutionContext.IsRunMode
+            ? "https://localhost:5101/users"
+            : "http://wf-users-api:8080/users");
+
 if (builder.ExecutionContext.IsRunMode)
 {
+    var stripeSecretKeyValue = builder.Configuration["Stripe:SecretKey"];
+    if (string.IsNullOrWhiteSpace(stripeSecretKeyValue))
+    {
+        throw new InvalidOperationException(
+            "Stripe:SecretKey must be configured in AppHost user secrets to start local Stripe webhook forwarding.");
+    }
+
+    var stripeSecretKey = builder.AddParameterFromConfiguration(
+        "wf-local-stripe-secret-key",
+        "Stripe:SecretKey",
+        secret: true);
+
+    var stripeWebhookSecret = builder.AddParameter(
+        "wf-local-stripe-webhook-secret",
+        await GetStripeWebhookSecretAsync(stripeSecretKeyValue),
+        secret: true);
+
+    usersApi.WithEnvironment("Stripe__WebhookSecret", stripeWebhookSecret);
+
+    var stripeWebhooks = builder.AddContainer("wf-local-stripe-webhooks", "stripe/stripe-cli")
+        .WithArgs(
+            "listen",
+            "--events",
+            "checkout.session.completed,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed",
+            "--forward-to",
+            "https://host.docker.internal:5101/users/billing/stripe-webhook",
+            "--skip-verify")
+        .WaitFor(usersApi);
+
+    stripeWebhooks.WithEnvironment("STRIPE_API_KEY", stripeSecretKey);
+
     // Mutate the default Functions HTTP endpoint so Aspire uses a stable local port.
     builder.AddAzureFunctionsProject<Projects.WriteFluency_UsersProgressService>("wf-users-progress-api")
         .WithEndpoint("http", endpoint =>
@@ -121,3 +161,70 @@ builder.AddNpmApp("wf-webapp", "../../webapp")
 
 
 builder.Build().Run();
+
+static async Task<string> GetStripeWebhookSecretAsync(string stripeSecretKey)
+{
+    using var process = new Process
+    {
+        StartInfo = new ProcessStartInfo
+        {
+            FileName = "docker",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }
+    };
+
+    process.StartInfo.ArgumentList.Add("run");
+    process.StartInfo.ArgumentList.Add("--rm");
+    process.StartInfo.ArgumentList.Add("-e");
+    process.StartInfo.ArgumentList.Add("STRIPE_API_KEY");
+    process.StartInfo.ArgumentList.Add("stripe/stripe-cli");
+    process.StartInfo.ArgumentList.Add("listen");
+    process.StartInfo.ArgumentList.Add("--print-secret");
+    process.StartInfo.ArgumentList.Add("--skip-update");
+    process.StartInfo.Environment["STRIPE_API_KEY"] = stripeSecretKey;
+
+    try
+    {
+        process.Start();
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException(
+            "Unable to start Docker to obtain the local Stripe webhook signing secret. Ensure Docker is installed and running.",
+            ex);
+    }
+
+    var outputTask = process.StandardOutput.ReadToEndAsync();
+    var errorTask = process.StandardError.ReadToEndAsync();
+
+    using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+    try
+    {
+        await process.WaitForExitAsync(timeout.Token);
+    }
+    catch (OperationCanceledException)
+    {
+        process.Kill(entireProcessTree: true);
+        throw new InvalidOperationException(
+            "Timed out while obtaining the local Stripe webhook signing secret from Stripe CLI.");
+    }
+
+    var output = (await outputTask).Trim();
+    var error = (await errorTask).Trim();
+    if (process.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"Stripe CLI could not obtain the local webhook signing secret. {error}");
+    }
+
+    if (!output.StartsWith("whsec_", StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException(
+            "Stripe CLI returned an invalid local webhook signing secret.");
+    }
+
+    return output;
+}

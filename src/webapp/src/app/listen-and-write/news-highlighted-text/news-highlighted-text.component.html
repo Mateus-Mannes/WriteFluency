@@ -3,7 +3,7 @@
     @for (part of textParts(); track part) {
         @if(part.highlight) {
             <span matTooltip="{{ part.correction }}" matTooltipPositionAtOrigin="true" [matTooltipClass]="tooltipClass"
-                [ngClass]="highlightClass">{{ part.text }}</span>
+                [ngClass]="[highlightClass, isActivePart(part) ? 'active-highlighted-text' : '']">{{ part.text }}</span>
         } @else {
             <span>{{ part.text }}</span>
         }

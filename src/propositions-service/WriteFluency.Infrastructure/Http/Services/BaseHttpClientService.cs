@@ -98,14 +98,22 @@ public abstract class BaseHttpClientService
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Network error when calling {Context} API", context);
+            _logger.LogError(
+                "Network error when calling {Context} API. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                context,
+                ex.GetType().Name,
+                ex.Message);
             if (attempt == maxAttempts) return Fail($"Network error when calling {context} API");
             await Task.Delay(1000);
             return await RequestAsync(context, sendRequest, validator, maxAttempts, attempt + 1, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during {Context} request", context);
+            _logger.LogError(
+                "Unexpected error during {Context} request. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                context,
+                ex.GetType().Name,
+                ex.Message);
             return Fail($"Unexpected error during {context} request: {ex.Message}");
         }
     }
@@ -131,7 +139,11 @@ public abstract class BaseHttpClientService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize {Context} response", context);
+            _logger.LogError(
+                "Failed to deserialize {Context} response. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                context,
+                ex.GetType().Name,
+                ex.Message);
             return Fail($"Failed to deserialize response: {ex.Message}");
         }
     }
@@ -153,7 +165,11 @@ public abstract class BaseHttpClientService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize {Context} response", context);
+            _logger.LogError(
+                "Failed to deserialize {Context} response. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
+                context,
+                ex.GetType().Name,
+                ex.Message);
             return Fail($"Failed to deserialize response: {ex.Message}");
         }
     }
