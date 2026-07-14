@@ -108,8 +108,22 @@ builder.Services.AddTransient<DailyPropositionGenerator>();
 
 builder.AddMinioClient("wf-infra-minio", configureSettings: options =>
 {
-    options.Endpoint = new Uri(options.Endpoint!.OriginalString!.Replace("localhost", "127.0.0.1"));
-    options.UseSsl = false;
+    if (options.Endpoint is null)
+    {
+        return;
+    }
+
+    var endpoint = options.Endpoint;
+    if (string.Equals(endpoint.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+    {
+        endpoint = new UriBuilder(endpoint)
+        {
+            Host = "127.0.0.1"
+        }.Uri;
+    }
+
+    options.Endpoint = endpoint;
+    options.UseSsl = string.Equals(endpoint.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
 });
 builder.AddMinioHealthChecks();
 

@@ -52,6 +52,7 @@ news_key="${ExternalApis__News__Key:-}"
 app_insights_connection_string="${APPLICATIONINSIGHTS_CONNECTION_STRING:-}"
 postgres_password="${POSTGRES_PASSWORD:-}"
 minio_password="${MINIO_ROOT_PASSWORD:-}"
+minio_client_endpoint="${MINIO_CLIENT_ENDPOINT:-https://minioapi.writefluency.com}"
 redis_password="${REDIS_PASSWORD:-}"
 cloud_flare_token="${CLOUDFLARE_API_TOKEN:-}"
 cloud_flare_cache_token="${CLOUDFLARE_API_TOKEN_CACHE:-${CLOUDFLARE_API_TOKEN:-}}"
@@ -146,7 +147,7 @@ stringData:
   POSTGRES_PASSWORD: "$postgres_password"
   NODE_ENV: production
   ConnectionStrings__wf-propositions-postgresdb: Host=wf-infra-postgres;Port=5432;Username=postgres;Password=$postgres_password;Database=wf-propositions-postgresdb
-  ConnectionStrings__wf-infra-minio: Endpoint=http://wf-infra-minio:9000;AccessKey=minioadmin;SecretKey=$minio_password
+  ConnectionStrings__wf-infra-minio: Endpoint=$minio_client_endpoint;AccessKey=minioadmin;SecretKey=$minio_password
   APPLICATIONINSIGHTS_CONNECTION_STRING: "$app_insights_connection_string"
   Propositions__DailyRequestsLimit: "$propositions_daily_requests_limit"
   Propositions__LimitPerTopic: "$propositions_limit_per_topic"
