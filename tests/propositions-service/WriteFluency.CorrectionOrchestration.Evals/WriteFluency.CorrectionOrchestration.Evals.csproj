@@ -19,7 +19,7 @@
     <None Update="orchestration-eval-cases.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="../../../src/propositions-service/WriteFluency.WebApi/appsettings.json"
+    <None Include="../../../src/propositions-service/appsettings.json"
           Link="appsettings.webapi.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
