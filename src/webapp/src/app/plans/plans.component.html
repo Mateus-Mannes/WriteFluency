@@ -8,6 +8,12 @@
     </p>
   </header>
 
+  @if (checkoutError()) {
+    <mat-card class="plans-error" aria-live="assertive">
+      <p>{{ checkoutError() }}</p>
+    </mat-card>
+  }
+
   <section class="plan-cards" aria-label="Plan comparison">
     <mat-card class="plan-card plan-card-free">
       <div class="plan-card-header">
@@ -234,9 +240,4 @@
     </div>
   </section>
 
-  @if (checkoutError()) {
-    <mat-card class="plans-error" aria-live="assertive">
-      <p>{{ checkoutError() }}</p>
-    </mat-card>
-  }
 </section>
