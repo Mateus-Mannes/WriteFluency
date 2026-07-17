@@ -38,6 +38,7 @@
           mat-flat-button
           class="pro-upgrade-button"
           routerLink="/plans"
+          (click)="onSubscribeToProClick('account_card')"
           aria-label="View Pro plans">
           Subscribe to Pro
         </a>
@@ -55,7 +56,13 @@
     <mat-card class="billing-error-card" aria-live="assertive">
       <p>{{ billingError() }}</p>
       @if (canSubscribeToPro()) {
-        <a mat-flat-button color="primary" routerLink="/plans">View plans</a>
+        <a
+          mat-flat-button
+          color="primary"
+          routerLink="/plans"
+          (click)="onSubscribeToProClick('billing_error')">
+          View plans
+        </a>
       }
     </mat-card>
   }

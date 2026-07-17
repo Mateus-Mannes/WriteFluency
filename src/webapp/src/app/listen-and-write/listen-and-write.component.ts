@@ -17,6 +17,7 @@ import { Proposition } from '../../api/listen-and-write/model/proposition';
 import { TextComparisonResult } from 'src/api/listen-and-write';
 import { BrowserService } from '../core/services/browser.service';
 import { GuestExerciseProgressTransferService } from '../core/services/guest-exercise-progress-transfer.service';
+import { ProCtaTelemetryService } from '../core/services/pro-cta-telemetry.service';
 import { ExerciseSessionTrackingService } from './services/exercise-session-tracking.service';
 import { ExerciseProgressTrackingService, ProgressSyncNotification } from './services/exercise-progress-tracking.service';
 import { ExerciseAudioAccessService, type AudioAccessCallbacks } from './services/exercise-audio-access.service';
@@ -182,6 +183,7 @@ export class ListenAndWriteComponent implements OnDestroy {
     private router: Router,
     private propositionsService: PropositionsService,
     private browserService: BrowserService,
+    private proCtaTelemetry: ProCtaTelemetryService,
     private exerciseSessionTracking: ExerciseSessionTrackingService,
     private exerciseProgressTracking: ExerciseProgressTrackingService,
     private authSessionStore: AuthSessionStore,
@@ -555,6 +557,16 @@ export class ListenAndWriteComponent implements OnDestroy {
   openProUpgradeModal(accessStatus: string = constants.proRequiredAccess): void {
     this.catalogAccessDenialStatus.set(accessStatus);
     this.isProUpgradeModalOpen.set(true);
+    this.proCtaTelemetry.trackShown({
+      ctaId: this.getCatalogAccessPrimaryCtaId(accessStatus),
+      location: 'listen_write_access_modal',
+      label: this.getCatalogAccessPrimaryCtaLabelForStatus(accessStatus),
+      destination: accessStatus === constants.catalogLoginRequiredAccess ? '/auth/login' : '/plans',
+      source: this.getCatalogAccessSourceForStatus(accessStatus),
+      accessStatus,
+      exerciseId: this.exerciseId,
+      returnUrl: this.getPostLoginReturnUrl(),
+    });
   }
 
   closeProUpgradeModal(): void {
@@ -576,6 +588,17 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   async viewAvailablePlans(): Promise<void> {
+    const accessStatus = this.catalogAccessDenialStatus();
+    this.proCtaTelemetry.trackClicked({
+      ctaId: this.getCatalogAccessPrimaryCtaId(accessStatus),
+      location: 'listen_write_access_modal',
+      label: this.getCatalogAccessPrimaryCtaLabelForStatus(accessStatus),
+      destination: '/plans',
+      source: this.getCatalogAccessSourceForStatus(accessStatus),
+      accessStatus,
+      exerciseId: this.exerciseId,
+      returnUrl: this.getPostLoginReturnUrl(),
+    });
     this.closeProUpgradeModal();
     await this.router.navigate(['/plans'], {
       queryParams: {
@@ -586,6 +609,17 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   async onCatalogAccessLoginToUnlock(): Promise<void> {
+    const accessStatus = this.catalogAccessDenialStatus();
+    this.proCtaTelemetry.trackClicked({
+      ctaId: this.getCatalogAccessPrimaryCtaId(accessStatus),
+      location: 'listen_write_access_modal',
+      label: this.getCatalogAccessPrimaryCtaLabelForStatus(accessStatus),
+      destination: '/auth/login',
+      source: 'catalog_access_login_cta',
+      accessStatus,
+      exerciseId: this.exerciseId,
+      returnUrl: this.getPostLoginReturnUrl(),
+    });
     this.closeProUpgradeModal();
     await this.router.navigate(['/auth/login'], {
       queryParams: {
@@ -605,6 +639,16 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   async keepPracticingFreeExercises(): Promise<void> {
+    const accessStatus = this.catalogAccessDenialStatus();
+    this.proCtaTelemetry.trackClicked({
+      ctaId: 'catalog_access_keep_practicing_free',
+      location: 'listen_write_access_modal',
+      label: 'Keep practicing free exercises',
+      destination: '/exercises',
+      source: 'pro_exercise_begin',
+      accessStatus,
+      exerciseId: this.exerciseId,
+    });
     this.closeProUpgradeModal();
     await this.router.navigate(['/exercises'], {
       queryParams: {
@@ -632,9 +676,31 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   getCatalogAccessPrimaryCtaLabel(): string {
-    return this.catalogAccessDenialStatus() === constants.catalogLoginRequiredAccess
+    return this.getCatalogAccessPrimaryCtaLabelForStatus(this.catalogAccessDenialStatus());
+  }
+
+  private getCatalogAccessPrimaryCtaLabelForStatus(accessStatus: string | null): string {
+    return accessStatus === constants.catalogLoginRequiredAccess
       ? 'Log in to unlock'
       : 'See available plans';
+  }
+
+  private getCatalogAccessPrimaryCtaId(accessStatus: string | null): string {
+    if (accessStatus === constants.catalogLoginRequiredAccess) {
+      return 'catalog_access_login_to_unlock';
+    }
+
+    if (accessStatus === constants.catalogUpgradeRequiredAccess) {
+      return 'catalog_access_see_available_plans';
+    }
+
+    return 'pro_required_see_available_plans';
+  }
+
+  private getCatalogAccessSourceForStatus(accessStatus: string | null): string {
+    return accessStatus === constants.catalogLoginRequiredAccess
+      ? 'catalog_access_login_cta'
+      : 'catalog_access_upgrade_cta';
   }
 
   private trackExerciseStart(): void {
@@ -753,6 +819,31 @@ export class ListenAndWriteComponent implements OnDestroy {
       review_status: status ?? '',
     }, {
       comparison_count: result.comparisons?.length ?? 0,
+    });
+    this.proCtaTelemetry.trackShown({
+      ctaId: ctaType === 'login_to_unlock'
+        ? 'pro_review_login_to_unlock'
+        : ctaType === 'upgrade_to_pro'
+          ? 'pro_review_upgrade_to_pro'
+          : 'pro_review_usage_limit',
+      location: 'listen_write_results_pro_review',
+      label: ctaType === 'login_to_unlock'
+        ? 'Log in to unlock'
+        : ctaType === 'upgrade_to_pro'
+          ? 'Upgrade to Pro'
+          : 'AI review limit reached',
+      destination: ctaType === 'login_to_unlock'
+        ? '/auth/login'
+        : ctaType === 'upgrade_to_pro'
+          ? '/plans'
+          : '',
+      source: `pro_review_${ctaType}`,
+      reviewStatus: status,
+      exerciseId: this.exerciseId,
+      returnUrl: this.getPostLoginReturnUrl(),
+      measurements: {
+        comparison_count: result.comparisons?.length ?? 0,
+      },
     });
   }
 
@@ -913,6 +1004,16 @@ export class ListenAndWriteComponent implements OnDestroy {
       review_status: this.result()?.mistakePatternStatus ?? '',
       return_url_present: 'true',
     });
+    this.proCtaTelemetry.trackClicked({
+      ctaId: 'pro_review_login_to_unlock',
+      location: 'listen_write_results_pro_review',
+      label: 'Log in to unlock',
+      destination: '/auth/login',
+      source: 'pro_review_login_cta',
+      reviewStatus: this.result()?.mistakePatternStatus ?? '',
+      exerciseId: this.exerciseId,
+      returnUrl,
+    });
 
     void this.router.navigate(['/auth/login'], {
       queryParams: {
@@ -923,17 +1024,28 @@ export class ListenAndWriteComponent implements OnDestroy {
   }
 
   onProReviewUpgradeToPro(): void {
+    const returnUrl = this.getPostLoginReturnUrl();
     this.exerciseSessionTracking.trackEvent('pro_review_cta_clicked', {
       cta_type: 'upgrade_to_pro',
       exercise_id: String(this.exerciseId ?? ''),
       review_status: this.result()?.mistakePatternStatus ?? '',
       return_url_present: 'true',
     });
+    this.proCtaTelemetry.trackClicked({
+      ctaId: 'pro_review_upgrade_to_pro',
+      location: 'listen_write_results_pro_review',
+      label: 'Upgrade to Pro',
+      destination: '/plans',
+      source: 'pro_review_upgrade_cta',
+      reviewStatus: this.result()?.mistakePatternStatus ?? '',
+      exerciseId: this.exerciseId,
+      returnUrl,
+    });
 
     void this.router.navigate(['/plans'], {
       queryParams: {
         source: 'pro_review_upgrade_cta',
-        returnUrl: this.getPostLoginReturnUrl(),
+        returnUrl,
       }
     });
   }

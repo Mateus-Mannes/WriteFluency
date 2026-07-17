@@ -10,6 +10,7 @@ import { PropositionsService } from '../../api/listen-and-write/api/propositions
 import { Insights } from '../../telemetry/insights.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { BrowserService } from '../core/services/browser.service';
+import { ProCtaTelemetryService } from '../core/services/pro-cta-telemetry.service';
 import { BillingApiService } from '../user/services/billing-api.service';
 
 const checkoutLoadingTimeoutMs = 8000;
@@ -29,6 +30,7 @@ export class PlansComponent implements OnDestroy, OnInit {
   private readonly propositionsService = inject(PropositionsService);
   private readonly browser = inject(BrowserService);
   private readonly router = inject(Router);
+  private readonly proCtaTelemetry = inject(ProCtaTelemetryService);
   private readonly insights = inject(Insights, { optional: true });
   private checkoutLoadingTimer: ReturnType<typeof setTimeout> | null = null;
   private catalogCountAnimationFrameId: number | null = null;
@@ -88,6 +90,18 @@ export class PlansComponent implements OnDestroy, OnInit {
     this.checkoutError.set(null);
 
     const state = this.authState();
+    this.proCtaTelemetry.trackClicked({
+      ctaId: this.isPortalEligible() ? 'plans_manage_subscription' : 'plans_subscribe_to_pro',
+      location: 'plans_pro_card',
+      label: this.planCtaLabel(),
+      destination: !state.isAuthenticated
+        ? '/auth/login'
+        : this.isPortalEligible()
+          ? 'stripe_billing_portal'
+          : 'stripe_checkout',
+      source: 'plans_checkout',
+    });
+
     if (!state.isAuthenticated) {
       await this.router.navigate(['/auth/login'], {
         queryParams: {

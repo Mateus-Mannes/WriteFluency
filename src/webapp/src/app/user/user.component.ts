@@ -12,6 +12,7 @@ import { AuthApiService } from '../auth/services/auth-api.service';
 import { AuthSessionStore } from '../auth/services/auth-session.store';
 import { progressFeedbackVideoConfig } from '../core/config/progress-feedback-video.config';
 import { BrowserService } from '../core/services/browser.service';
+import { ProCtaTelemetryService } from '../core/services/pro-cta-telemetry.service';
 import {
   ProgressFeedbackDismissReason,
   ProgressFeedbackModalComponent,
@@ -45,6 +46,7 @@ export class UserComponent implements OnInit, OnDestroy {
   private readonly authApi = inject(AuthApiService);
   private readonly billingApi = inject(BillingApiService);
   private readonly browser = inject(BrowserService);
+  private readonly proCtaTelemetry = inject(ProCtaTelemetryService);
   private readonly userProgressApi = inject(UserProgressApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -212,6 +214,12 @@ export class UserComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.proCtaTelemetry.trackClicked({
+      ctaId: 'progress_manage_subscription',
+      location: 'user_progress_account_card',
+      label: 'Manage my subscription',
+      destination: 'stripe_billing_portal',
+    });
     this.startSubscriptionManagementLoadingTimeout();
     this.isSubscriptionManagementRequestInProgress.set(true);
     this.billingMessage.set(null);
@@ -325,6 +333,18 @@ export class UserComponent implements OnInit, OnDestroy {
       },
       queryParamsHandling: 'merge',
       replaceUrl: true,
+    });
+  }
+
+  onSubscribeToProClick(source: 'account_card' | 'billing_error'): void {
+    this.proCtaTelemetry.trackClicked({
+      ctaId: source === 'account_card'
+        ? 'progress_subscribe_to_pro'
+        : 'progress_billing_error_view_plans',
+      location: `user_progress_${source}`,
+      label: source === 'account_card' ? 'Subscribe to Pro' : 'View plans',
+      destination: '/plans',
+      source: source === 'account_card' ? 'progress_account_card' : 'progress_billing_error',
     });
   }
 
