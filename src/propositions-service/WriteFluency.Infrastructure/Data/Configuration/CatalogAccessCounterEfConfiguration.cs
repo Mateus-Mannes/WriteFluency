@@ -16,6 +16,8 @@ public sealed class CatalogAccessCounterEfConfiguration : IEntityTypeConfigurati
         builder.Property(counter => counter.SubjectKey)
             .IsRequired()
             .HasMaxLength(128);
+        builder.Property(counter => counter.AnonymousClientIpAddress)
+            .HasMaxLength(45);
         builder.Property(counter => counter.Feature)
             .IsRequired()
             .HasMaxLength(80);

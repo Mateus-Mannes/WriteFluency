@@ -16,6 +16,8 @@ public sealed class CatalogExerciseGrantEfConfiguration : IEntityTypeConfigurati
         builder.Property(grant => grant.SubjectKey)
             .IsRequired()
             .HasMaxLength(128);
+        builder.Property(grant => grant.AnonymousClientIpAddress)
+            .HasMaxLength(45);
         builder.Property(grant => grant.Source)
             .IsRequired()
             .HasMaxLength(80);

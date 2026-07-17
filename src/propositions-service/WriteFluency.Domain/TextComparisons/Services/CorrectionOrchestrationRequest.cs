@@ -7,4 +7,5 @@ public sealed record CorrectionOrchestrationRequest(
     bool IsPro,
     string? UserId,
     string? AnonymousFingerprintHash,
+    string? AnonymousClientIpAddress,
     bool EnableFreeReviewTeaser);

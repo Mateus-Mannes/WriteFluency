@@ -483,12 +483,14 @@ public class PropositionServiceTests : ApplicationTestBase
             IsAuthenticated: false,
             IsPro: false,
             UserId: null,
-            AnonymousFingerprintHash: fingerprint);
+            AnonymousFingerprintHash: fingerprint,
+            AnonymousClientIpAddress: "203.0.113.42");
 
     private static PropositionAccessContext LoggedInFreeContext(string userId = "user-1") =>
         new(
             IsAuthenticated: true,
             IsPro: false,
             UserId: userId,
-            AnonymousFingerprintHash: null);
+            AnonymousFingerprintHash: null,
+            AnonymousClientIpAddress: null);
 }

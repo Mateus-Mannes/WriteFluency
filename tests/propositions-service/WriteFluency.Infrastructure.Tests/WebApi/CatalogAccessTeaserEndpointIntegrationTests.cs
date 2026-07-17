@@ -66,12 +66,14 @@ public sealed class CatalogAccessTeaserEndpointIntegrationTests :
         var counter = await _fixture.SingleAsync<CatalogAccessCounter>();
         counter.SubjectType.ShouldBe("anonymous");
         counter.Feature.ShouldBe(CatalogAccessFeatures.AnonymousSample);
+        counter.AnonymousClientIpAddress.ShouldBe("203.0.113.42");
         counter.UsedCount.ShouldBe(1);
 
         var grant = await _fixture.SingleAsync<CatalogExerciseGrant>();
         grant.SubjectType.ShouldBe("anonymous");
         grant.PropositionId.ShouldBe(grantedExercise.Id);
         grant.Source.ShouldBe(CatalogAccessFeatures.AnonymousSample);
+        grant.AnonymousClientIpAddress.ShouldBe("203.0.113.42");
 
         var sameExerciseBegin = await PostJsonAsync<BeginExerciseResultDto>(
             client,
@@ -149,6 +151,33 @@ public sealed class CatalogAccessTeaserEndpointIntegrationTests :
             $"/api/proposition/{otherRestrictedExercise.Id}/begin");
         deniedOtherBegin.Access.ShouldBe(CatalogAccessStatuses.UpgradeRequiredToUnlockExercise);
         deniedOtherBegin.AudioUrl.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task AnonymousProReviewFlow_ShouldPersistNormalizedClientIpAddress()
+    {
+        if (!_fixture.IsAvailable)
+        {
+            return;
+        }
+
+        await _fixture.ResetAsync();
+        _fixture.UsersSessionClient.Session = UsersSession.Anonymous;
+
+        var propositions = await _fixture.SeedCatalogPropositionsAsync(1);
+        using var client = _fixture.CreateClient();
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Forwarded-For", "203.0.113.42:51234");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 Chrome/150");
+
+        var response = await client.PostAsJsonAsync(
+            "/api/text-comparison/compare-texts",
+            new CompareTextsDto(propositions[0].Id, "Different text."));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var counter = await _fixture.SingleAsync<AiUsageCounter>();
+        counter.Feature.ShouldBe(AiUsageFeatures.MistakePatternClassificationAnonymousSample);
+        counter.AnonymousClientIpAddress.ShouldBe("203.0.113.42");
     }
 
     private static void AddAnonymousFingerprintHeaders(HttpClient client)
@@ -363,7 +392,9 @@ public sealed class PropositionsApiWebApplicationFactory : WebApplicationFactory
                 ["Propositions:CatalogAccessTeaser:AnonymousFingerprintSalt"] = "catalog-access-integration-salt",
                 ["Propositions:CatalogAccessTeaser:AnonymousSampleLifetimeLimit"] = "1",
                 ["Propositions:CatalogAccessTeaser:FreeIntroLifetimeLimit"] = "1",
-                ["TextComparison:MistakePatternClassification:Enabled"] = "false",
+                ["TextComparison:MistakePatternClassification:Enabled"] = "true",
+                ["TextComparison:ProReviewTeaser:Enabled"] = "true",
+                ["TextComparison:ProReviewTeaser:AnonymousFingerprintSalt"] = "pro-review-integration-salt",
                 ["FileStorage:Endpoint"] = "127.0.0.1:9000",
                 ["FileStorage:AccessKey"] = "test",
                 ["FileStorage:SecretKey"] = "test"
@@ -385,7 +416,7 @@ public sealed class PropositionsApiWebApplicationFactory : WebApplicationFactory
             services.AddSingleton<IFileService, TestingFileService>();
 
             services.RemoveAll<IMistakePatternClassifier>();
-            services.AddSingleton<IMistakePatternClassifier, DisabledMistakePatternClassifier>();
+            services.AddSingleton<IMistakePatternClassifier, TestingMistakePatternClassifier>();
         });
     }
 }
@@ -444,12 +475,23 @@ public sealed class TestingFileService : IFileService
         Task.FromResult(Result.Ok($"https://audio.test/{bucketName}/{objectName}?signature=test"));
 }
 
-public sealed class DisabledMistakePatternClassifier : IMistakePatternClassifier
+public sealed class TestingMistakePatternClassifier : IMistakePatternClassifier
 {
-    public bool IsEnabled => false;
+    public bool IsEnabled => true;
 
     public Task<MistakePatternClassificationRun> ClassifyWithDiagnosticsAsync(
         MistakePatternClassificationRequest request,
         CancellationToken cancellationToken) =>
-        Task.FromResult(new MistakePatternClassificationRun([], []));
+        Task.FromResult(new MistakePatternClassificationRun(
+            request.Comparisons.Count == 0
+                ? []
+                :
+                [
+                    new MistakePatternAnnotation(
+                        0,
+                        request.Comparisons[0].SourceComparisonIndex,
+                        ["test_pattern"],
+                        request.Comparisons[0].UserText ?? string.Empty)
+                ],
+            []));
 }

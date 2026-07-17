@@ -59,6 +59,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
                     {
                         var counters = await GetOrCreateLockedCountersAsync(
                             request.UserId,
+                            request.AnonymousClientIpAddress,
                             request.Feature,
                             periods,
                             now,
@@ -133,6 +134,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
                     var now = DateTimeOffset.UtcNow;
                     var counters = await GetOrCreateLockedCountersAsync(
                         reservation.UserId,
+                        anonymousClientIpAddress: null,
                         reservation.Feature,
                         reservation.Periods,
                         now,
@@ -161,6 +163,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
 
     private async Task<AiUsageCounter> GetOrCreateLockedCounterAsync(
         string userId,
+        string? anonymousClientIpAddress,
         string feature,
         string periodKind,
         string periodKey,
@@ -187,6 +190,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
         counter = new AiUsageCounter
         {
             UserId = userId,
+            AnonymousClientIpAddress = anonymousClientIpAddress,
             Feature = feature,
             PeriodKind = periodKind,
             PeriodKey = periodKey,
@@ -200,6 +204,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
 
     private async Task<Dictionary<string, AiUsageCounter>> GetOrCreateLockedCountersAsync(
         string userId,
+        string? anonymousClientIpAddress,
         string feature,
         IReadOnlyList<AiUsageReservationPeriod> periods,
         DateTimeOffset now,
@@ -210,6 +215,7 @@ public sealed class EfAiUsageLimiter : IAiUsageLimiter
         {
             counters[period.PeriodKind] = await GetOrCreateLockedCounterAsync(
                 userId,
+                anonymousClientIpAddress,
                 feature,
                 period.PeriodKind,
                 period.PeriodKey,

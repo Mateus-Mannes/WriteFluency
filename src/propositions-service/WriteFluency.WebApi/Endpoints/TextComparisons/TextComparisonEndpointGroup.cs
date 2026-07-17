@@ -62,14 +62,15 @@ public class TextComparisonEndpointGroup : IEndpointMapper
         try
         {
             var session = await usersSessionClient.GetSessionAsync(request, cancellationToken);
-            var catalogAnonymousFingerprintHash = session.IsAuthenticated
+            var catalogAnonymousFingerprint = session.IsAuthenticated
                 ? null
-                : anonymousCatalogAccessFingerprintService.CreateFingerprintHash(request);
+                : anonymousCatalogAccessFingerprintService.CreateFingerprint(request);
             var accessContext = new PropositionAccessContext(
                 session.IsAuthenticated,
                 session.IsPro,
                 session.UserId,
-                catalogAnonymousFingerprintHash);
+                catalogAnonymousFingerprint?.Hash,
+                catalogAnonymousFingerprint?.IpAddress);
             var accessResult = await propositionService.GetExerciseForComparisonAsync(
                 compareTextsDto.PropositionId,
                 accessContext,
@@ -85,9 +86,9 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                 return ProRequired(accessResult.Metadata);
             }
 
-            var anonymousFingerprintHash = session.IsAuthenticated
+            var anonymousFingerprint = session.IsAuthenticated
                 ? null
-                : anonymousFingerprintService.CreateFingerprintHash(request);
+                : anonymousFingerprintService.CreateFingerprint(request);
             var orchestrationResult = await correctionOrchestrationService.CompareTextsAsync(
                 new CorrectionOrchestrationRequest(
                     accessResult.OriginalText,
@@ -95,7 +96,8 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                     session.IsAuthenticated,
                     session.IsPro,
                     session.UserId,
-                    anonymousFingerprintHash,
+                    anonymousFingerprint?.Hash,
+                    anonymousFingerprint?.IpAddress,
                     EnableFreeReviewTeaser: true),
                 cancellationToken);
             var result = orchestrationResult.Result;
@@ -124,7 +126,7 @@ public class TextComparisonEndpointGroup : IEndpointMapper
                     userTextLength,
                     orchestrationResult.StaticComparisonCount,
                     result.Comparisons.Count,
-                    anonymousFingerprintHash is not null);
+                    anonymousFingerprint is not null);
             }
 
             logger.LogInformation(

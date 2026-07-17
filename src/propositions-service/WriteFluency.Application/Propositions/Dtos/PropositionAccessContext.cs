@@ -4,4 +4,5 @@ public sealed record PropositionAccessContext(
     bool IsAuthenticated,
     bool IsPro,
     string? UserId,
-    string? AnonymousFingerprintHash);
+    string? AnonymousFingerprintHash,
+    string? AnonymousClientIpAddress);

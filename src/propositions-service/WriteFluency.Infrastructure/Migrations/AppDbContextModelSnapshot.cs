@@ -294,6 +294,10 @@ namespace WriteFluency.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("AnonymousClientIpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UserId", "Feature", "PeriodKind", "PeriodKey")
@@ -322,6 +326,10 @@ namespace WriteFluency.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<string>("AnonymousClientIpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
 
                     b.Property<string>("SubjectType")
                         .IsRequired()
@@ -365,6 +373,10 @@ namespace WriteFluency.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<string>("AnonymousClientIpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
 
                     b.Property<string>("SubjectType")
                         .IsRequired()

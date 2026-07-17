@@ -80,7 +80,8 @@ public sealed class ProReviewEligibilityService
                 AnonymousSubjectPrefix + request.AnonymousFingerprintHash,
                 AiUsageFeatures.MistakePatternClassificationAnonymousSample,
                 new AiUsageLimitPolicy(
-                    LifetimeSubmissionLimit: _options.AnonymousSampleLifetimeLimit)),
+                    LifetimeSubmissionLimit: _options.AnonymousSampleLifetimeLimit),
+                request.AnonymousClientIpAddress),
             cancellationToken);
 
         return reservation.IsAllowed

@@ -201,6 +201,7 @@ public class CorrectionOrchestrationServiceTests
                 IsPro: false,
                 UserId: null,
                 AnonymousFingerprintHash: "fingerprint-1",
+                AnonymousClientIpAddress: "203.0.113.42",
                 EnableFreeReviewTeaser: true),
             CancellationToken.None)).Result;
 
@@ -209,6 +210,7 @@ public class CorrectionOrchestrationServiceTests
         usageLimiter.LastReservationRequest.Feature.ShouldBe(
             AiUsageFeatures.MistakePatternClassificationAnonymousSample);
         usageLimiter.LastReservationRequest.UserId.ShouldBe("anonymous:fingerprint-1");
+        usageLimiter.LastReservationRequest.AnonymousClientIpAddress.ShouldBe("203.0.113.42");
         result.CorrectionMode.ShouldBe(CorrectionModes.Normalized);
         result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
         result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.AnonymousSample);
@@ -232,6 +234,7 @@ public class CorrectionOrchestrationServiceTests
                 IsPro: false,
                 UserId: null,
                 AnonymousFingerprintHash: "fingerprint-1",
+                AnonymousClientIpAddress: "203.0.113.42",
                 EnableFreeReviewTeaser: true),
             CancellationToken.None)).Result;
 
@@ -259,6 +262,7 @@ public class CorrectionOrchestrationServiceTests
                 IsPro: false,
                 UserId: "user-1",
                 AnonymousFingerprintHash: null,
+                AnonymousClientIpAddress: null,
                 EnableFreeReviewTeaser: true),
             CancellationToken.None)).Result;
 
@@ -288,6 +292,7 @@ public class CorrectionOrchestrationServiceTests
                 IsPro: false,
                 UserId: "user-1",
                 AnonymousFingerprintHash: null,
+                AnonymousClientIpAddress: null,
                 EnableFreeReviewTeaser: true),
             CancellationToken.None)).Result;
 
@@ -317,6 +322,7 @@ public class CorrectionOrchestrationServiceTests
                 IsPro: false,
                 UserId: "user-1",
                 AnonymousFingerprintHash: null,
+                AnonymousClientIpAddress: null,
                 EnableFreeReviewTeaser: true),
             CancellationToken.None)).Result;
 

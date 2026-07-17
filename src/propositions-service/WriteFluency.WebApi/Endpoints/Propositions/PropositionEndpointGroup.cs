@@ -181,14 +181,15 @@ public class PropositionEndpointGroup : IEndpointMapper
         HttpRequest request,
         AnonymousCatalogAccessFingerprintService anonymousFingerprintService)
     {
-        var anonymousFingerprintHash = session.IsAuthenticated
+        var anonymousFingerprint = session.IsAuthenticated
             ? null
-            : anonymousFingerprintService.CreateFingerprintHash(request);
+            : anonymousFingerprintService.CreateFingerprint(request);
 
         return new PropositionAccessContext(
             session.IsAuthenticated,
             session.IsPro,
             session.UserId,
-            anonymousFingerprintHash);
+            anonymousFingerprint?.Hash,
+            anonymousFingerprint?.IpAddress);
     }
 }

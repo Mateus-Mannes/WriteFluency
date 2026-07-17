@@ -4,6 +4,7 @@ public sealed class AiUsageCounter
 {
     public int Id { get; set; }
     public required string UserId { get; set; }
+    public string? AnonymousClientIpAddress { get; set; }
     public required string Feature { get; set; }
     public required string PeriodKind { get; set; }
     public required string PeriodKey { get; set; }

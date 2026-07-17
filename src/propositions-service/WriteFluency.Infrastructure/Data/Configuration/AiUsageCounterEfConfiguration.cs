@@ -13,6 +13,8 @@ public sealed class AiUsageCounterEfConfiguration : IEntityTypeConfiguration<AiU
         builder.Property(counter => counter.UserId)
             .IsRequired()
             .HasMaxLength(128);
+        builder.Property(counter => counter.AnonymousClientIpAddress)
+            .HasMaxLength(45);
         builder.Property(counter => counter.Feature)
             .IsRequired()
             .HasMaxLength(80);

@@ -145,6 +145,7 @@ public sealed class CatalogAccessTeaserService
         {
             SubjectType = subject.SubjectType,
             SubjectKey = subject.SubjectKey,
+            AnonymousClientIpAddress = subject.AnonymousClientIpAddress,
             PropositionId = propositionId,
             Source = quota.Feature,
             CreatedAtUtc = now,
@@ -177,12 +178,15 @@ public sealed class CatalogAccessTeaserService
         {
             return string.IsNullOrWhiteSpace(accessContext.UserId)
                 ? null
-                : new SubjectIdentity(UserSubjectType, accessContext.UserId);
+                : new SubjectIdentity(UserSubjectType, accessContext.UserId, AnonymousClientIpAddress: null);
         }
 
         return string.IsNullOrWhiteSpace(accessContext.AnonymousFingerprintHash)
             ? null
-            : new SubjectIdentity(AnonymousSubjectType, accessContext.AnonymousFingerprintHash);
+            : new SubjectIdentity(
+                AnonymousSubjectType,
+                accessContext.AnonymousFingerprintHash,
+                accessContext.AnonymousClientIpAddress);
     }
 
     private async Task<bool> HasGrantAsync(
@@ -227,6 +231,7 @@ public sealed class CatalogAccessTeaserService
         {
             SubjectType = subject.SubjectType,
             SubjectKey = subject.SubjectKey,
+            AnonymousClientIpAddress = subject.AnonymousClientIpAddress,
             Feature = feature,
             UsedCount = 0,
             CreatedAtUtc = now,
@@ -251,7 +256,10 @@ public sealed class CatalogAccessTeaserService
             ? CatalogAccessDecision.Deny(CatalogAccessStatuses.LoginRequiredToUnlockExercise)
             : CatalogAccessDecision.Deny(CatalogAccessStatuses.UpgradeRequiredToUnlockExercise);
 
-    private sealed record SubjectIdentity(string SubjectType, string SubjectKey);
+    private sealed record SubjectIdentity(
+        string SubjectType,
+        string SubjectKey,
+        string? AnonymousClientIpAddress);
     private sealed record Quota(string Feature, int Limit);
 }
 

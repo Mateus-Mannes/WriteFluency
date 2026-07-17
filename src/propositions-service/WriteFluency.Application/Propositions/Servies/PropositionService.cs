@@ -92,7 +92,8 @@ public class PropositionService
             IsAuthenticated: isPro,
             IsPro: isPro,
             UserId: isPro ? "pro-user" : null,
-            AnonymousFingerprintHash: null);
+            AnonymousFingerprintHash: null,
+            AnonymousClientIpAddress: null);
         return await BeginExerciseAsync(id, accessContext, cancellationToken);
     }
 
@@ -171,7 +172,8 @@ public class PropositionService
             IsAuthenticated: isPro,
             IsPro: isPro,
             UserId: isPro ? "pro-user" : null,
-            AnonymousFingerprintHash: null);
+            AnonymousFingerprintHash: null,
+            AnonymousClientIpAddress: null);
         return await GetExerciseForComparisonAsync(id, accessContext, cancellationToken);
     }
 

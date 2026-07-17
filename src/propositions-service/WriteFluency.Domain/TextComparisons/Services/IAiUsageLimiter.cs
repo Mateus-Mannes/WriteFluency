@@ -19,7 +19,8 @@ public interface IAiUsageLimiter
 public sealed record AiUsageReservationRequest(
     string UserId,
     string Feature,
-    AiUsageLimitPolicy? Policy = null);
+    AiUsageLimitPolicy? Policy = null,
+    string? AnonymousClientIpAddress = null);
 
 public sealed record AiUsageLimitPolicy(
     int? DailySubmissionLimit = null,
