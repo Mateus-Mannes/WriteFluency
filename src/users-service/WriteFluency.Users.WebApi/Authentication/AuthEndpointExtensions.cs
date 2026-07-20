@@ -455,7 +455,7 @@ public static class AuthEndpointExtensions
         var existingLoginSignIn = await signInManager.ExternalLoginSignInAsync(
             externalLoginInfo.LoginProvider,
             externalLoginInfo.ProviderKey,
-            isPersistent: false,
+            isPersistent: true,
             bypassTwoFactor: true);
 
         if (existingLoginSignIn.Succeeded)
@@ -532,7 +532,7 @@ public static class AuthEndpointExtensions
             }
         }
 
-        await signInManager.SignInAsync(user, isPersistent: false, providerDefinition.SchemeName);
+        await signInManager.SignInAsync(user, isPersistent: true, providerDefinition.SchemeName);
         await signInManager.UpdateExternalAuthenticationTokensAsync(externalLoginInfo);
         await httpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
@@ -635,7 +635,7 @@ public static class AuthEndpointExtensions
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
-        await signInManager.SignInAsync(user, isPersistent: false, authenticationMethod: "password");
+        await signInManager.SignInAsync(user, isPersistent: true, authenticationMethod: "password");
         return Results.Ok(new PasswordContinueResponse("signed_in", false));
     }
 

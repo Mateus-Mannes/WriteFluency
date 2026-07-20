@@ -96,7 +96,7 @@ public class PasswordlessOtpService
             }
         }
 
-        await _signInManager.SignInAsync(user, isPersistent: false, authenticationMethod: "passwordless_email_otp");
+        await _signInManager.SignInAsync(user, isPersistent: true, authenticationMethod: "passwordless_email_otp");
         _logger.LogInformation("Passwordless OTP sign-in succeeded for {NormalizedEmail}", normalizedEmail);
         return new PasswordlessOtpVerificationResult(true, isNewPasswordlessUser);
     }

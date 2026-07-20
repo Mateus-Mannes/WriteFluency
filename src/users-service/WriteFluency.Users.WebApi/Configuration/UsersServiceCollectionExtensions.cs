@@ -133,7 +133,7 @@ public static class UsersServiceCollectionExtensions
             options.Cookie.Domain = isProduction ? sharedAuthCookieOptions.CookieDomain : null;
             options.Cookie.SameSite = isProduction ? SameSiteMode.Lax : SameSiteMode.None;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.ExpireTimeSpan = TimeSpan.FromDays(7);
+            options.ExpireTimeSpan = TimeSpan.FromDays(14);
             options.SlidingExpiration = true;
             options.Events = new CookieAuthenticationEvents
             {
