@@ -166,6 +166,10 @@ export class Insights {
             searchableText.includes('ResizeObserver loop limit exceeded') ||
             searchableText.includes('NG0750') ||
             (
+                searchableText.includes('Angular DevTools: Angular debugging APIs are not available') &&
+                searchableText.includes('chrome-extension://')
+            ) ||
+            (
                 properties['operation'] === 'load_user_progress' &&
                 String(properties['http_status']) === '0'
             )

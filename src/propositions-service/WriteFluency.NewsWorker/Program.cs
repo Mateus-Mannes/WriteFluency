@@ -14,6 +14,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,7 @@ builder.Configuration.Sources.Insert(0, CreateSharedAppSettingsSource(builder.En
 builder.AddServiceDefaults();
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 builder.Logging.AddFilter("WriteFluency.Propositions.DailyPropositionGenerator", LogLevel.Warning);
+builder.Logging.AddFilter("Polly", LogLevel.None);
 
 builder.Services.AddDbContext<IAppDbContext, AppDbContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("wf-propositions-postgresdb")));
@@ -49,6 +51,15 @@ builder.Services.AddHttpClient<INewsClient, NewsClient>(client =>
     client.BaseAddress = new Uri(options.BaseAddress);
     client.DefaultRequestHeaders.Accept.Clear();
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+});
+
+builder.Services.Configure<HttpStandardResilienceOptions>("INewsClient-standard", options =>
+{
+    var newsOptions = builder.Configuration.GetSection(NewsOptions.Section).Get<NewsOptions>();
+    ArgumentNullException.ThrowIfNull(newsOptions);
+
+    options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(Math.Clamp(newsOptions.AttemptTimeoutSeconds, 10, 120));
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(Math.Clamp(newsOptions.TotalRequestTimeoutSeconds, 30, 300));
 });
 
 var openAIOptions = builder.Configuration.GetSection(OpenAIOptions.Section).Get<OpenAIOptions>();
