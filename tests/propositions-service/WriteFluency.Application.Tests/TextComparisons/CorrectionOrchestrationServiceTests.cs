@@ -246,7 +246,7 @@ public class CorrectionOrchestrationServiceTests
     }
 
     [Fact]
-    public async Task CompareTextsAsync_ForLoggedInFreeUserWithIntroCredit_ShouldRunFullProReview()
+    public async Task CompareTextsAsync_ForLoggedInFreeUserWithMonthlyCredit_ShouldRunFullProReview()
     {
         var classifier = CreateSingleAnnotationClassifier();
         var usageLimiter = new RecordingAiUsageLimiter(isAllowed: true);
@@ -269,38 +269,7 @@ public class CorrectionOrchestrationServiceTests
         classifier.CallCount.ShouldBe(1);
         usageLimiter.LastReservationRequest.ShouldNotBeNull();
         usageLimiter.LastReservationRequest.Feature.ShouldBe(
-            AiUsageFeatures.MistakePatternClassificationFreeIntro);
-        result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
-        result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.FreeIntro);
-    }
-
-    [Fact]
-    public async Task CompareTextsAsync_ForLoggedInFreeUserWithMonthlyCredit_ShouldUseMonthlyCreditAfterIntroIsUsed()
-    {
-        var classifier = CreateSingleAnnotationClassifier();
-        var usageLimiter = new RecordingAiUsageLimiter(
-            request => request.Feature == AiUsageFeatures.MistakePatternClassificationFreeMonthly);
-        var service = CreateService(
-            mistakePatternClassifier: classifier,
-            aiUsageLimiter: usageLimiter);
-
-        var result = (await service.CompareTextsAsync(
-            new CorrectionOrchestrationRequest(
-                "They may be ready",
-                "They maybe ready",
-                IsAuthenticated: true,
-                IsPro: false,
-                UserId: "user-1",
-                AnonymousFingerprintHash: null,
-                AnonymousClientIpAddress: null,
-                EnableFreeReviewTeaser: true),
-            CancellationToken.None)).Result;
-
-        classifier.CallCount.ShouldBe(1);
-        usageLimiter.ReservationRequests.Select(request => request.Feature).ShouldBe([
-            AiUsageFeatures.MistakePatternClassificationFreeIntro,
-            AiUsageFeatures.MistakePatternClassificationFreeMonthly
-        ]);
+            AiUsageFeatures.MistakePatternClassificationFreeMonthly);
         result.MistakePatternStatus.ShouldBe(MistakePatternStatuses.Generated);
         result.MistakePatternReviewSource.ShouldBe(MistakePatternReviewSources.FreeMonthly);
     }

@@ -12,9 +12,6 @@ public sealed class ProReviewTeaserOptions
     public int AnonymousSampleLifetimeLimit { get; set; } = 1;
 
     [Range(1, 1000)]
-    public int FreeIntroLifetimeLimit { get; set; } = 1;
-
-    [Range(1, 1000)]
     public int FreeMonthlyLimit { get; set; } = 1;
 
     [Range(1, 240)]

@@ -102,21 +102,6 @@ public sealed class ProReviewEligibilityService
             return ProReviewEligibilityDecision.LockedUpgrade("free_missing_user_id");
         }
 
-        var introReservation = await _aiUsageLimiter.TryReserveAsync(
-            new AiUsageReservationRequest(
-                request.UserId,
-                AiUsageFeatures.MistakePatternClassificationFreeIntro,
-                new AiUsageLimitPolicy(
-                    LifetimeSubmissionLimit: _options.FreeIntroLifetimeLimit)),
-            cancellationToken);
-        if (introReservation.IsAllowed)
-        {
-            return ProReviewEligibilityDecision.FullProReview(
-                introReservation,
-                MistakePatternReviewSources.FreeIntro,
-                "free_intro_reserved");
-        }
-
         var monthlyReservation = await _aiUsageLimiter.TryReserveAsync(
             new AiUsageReservationRequest(
                 request.UserId,
