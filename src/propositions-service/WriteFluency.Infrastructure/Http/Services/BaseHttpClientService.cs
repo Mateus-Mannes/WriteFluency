@@ -96,7 +96,7 @@ public abstract class BaseHttpClientService
 
             return Result.Ok(result.Value);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (IsRequestFailure(ex, cancellationToken))
         {
             _logger.LogError(
                 "Network error when calling {Context} API. ExceptionType={ExceptionType} ExceptionMessage={ExceptionMessage}",
@@ -185,6 +185,20 @@ public abstract class BaseHttpClientService
     {
         var messages = string.Join(", ", validation.Errors.Select(e => e.ErrorMessage));
         _logger.LogWarning("{Context} response validation failed: {Errors}", context, messages);
+    }
+
+    private static bool IsRequestFailure(Exception exception, CancellationToken cancellationToken)
+    {
+        return exception is HttpRequestException ||
+               IsRequestTimeoutOrCancellation(exception, cancellationToken);
+    }
+
+    private static bool IsRequestTimeoutOrCancellation(Exception exception, CancellationToken cancellationToken)
+    {
+        return !cancellationToken.IsCancellationRequested &&
+               (exception is OperationCanceledException ||
+                exception is TimeoutException ||
+                string.Equals(exception.GetType().Name, "TimeoutRejectedException", StringComparison.Ordinal));
     }
 
     private Result Fail(string message)

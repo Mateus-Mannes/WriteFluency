@@ -11,6 +11,7 @@ namespace WriteFluency.Infrastructure.ExternalApis;
 public class NewsClientTests : InfrastructureTestBase
 {
     private HttpClient _httpClient = null!;
+    private CapturingLogger<NewsClient> _logger = null!;
 
     protected override void ConfigureServices(IServiceCollection services)
     {
@@ -24,8 +25,8 @@ public class NewsClientTests : InfrastructureTestBase
         optionsMock.CurrentValue.Returns(newsOptions);
         services.AddSingleton(optionsMock);
 
-        var loggerMock = Substitute.For<ILogger<NewsClient>>();
-        services.AddSingleton(loggerMock);
+        _logger = new CapturingLogger<NewsClient>();
+        services.AddSingleton<ILogger<NewsClient>>(_logger);
 
         services.AddSingleton(_ => _httpClient);
         services.AddSingleton<INewsClient, NewsClient>();
@@ -48,6 +49,32 @@ public class NewsClientTests : InfrastructureTestBase
         // Assert
         result.IsFailed.ShouldBe(true);
         result.Errors.ShouldContain(e => e.Message.Contains("Network error when calling /top-stories API"));
+    }
+
+    [Fact]
+    public async Task GetNewsAsync_ShouldLogTimeoutCancellationAsErrorWithoutException()
+    {
+        var attempts = 0;
+        _httpClient = CreateMockHttpClient((request, ct) =>
+        {
+            attempts++;
+            throw new TaskCanceledException("request timed out");
+        });
+
+        var client = GetService<INewsClient>();
+
+        var result = await client.GetNewsAsync(SubjectEnum.Science, DateTime.UtcNow);
+
+        result.IsFailed.ShouldBe(true);
+        attempts.ShouldBe(1);
+        result.Errors.ShouldContain(e => e.Message.Contains("Network error when calling /top-stories API"));
+        _logger.Entries.ShouldContain(entry =>
+            entry.LogLevel == LogLevel.Error &&
+            entry.Exception == null &&
+            entry.Message.Contains("Network error when calling /top-stories API"));
+        _logger.Entries.ShouldNotContain(entry =>
+            entry.LogLevel == LogLevel.Error &&
+            entry.Exception != null);
     }
 
     [Fact]
@@ -266,4 +293,31 @@ public class NewsClientTests : InfrastructureTestBase
         capturedRequestUri.ShouldContain("deadline.com");
         capturedRequestUri.ShouldContain("thedailyblog.co.nz");
     }
+
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<LogEntry> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Entries.Add(new LogEntry(logLevel, formatter(state, exception), exception));
+        }
+    }
+
+    private sealed record LogEntry(LogLevel LogLevel, string Message, Exception? Exception);
 }
