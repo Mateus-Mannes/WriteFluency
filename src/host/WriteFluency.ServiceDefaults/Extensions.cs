@@ -23,6 +23,7 @@ public static class Extensions
     private const string MinioHealthCheckName = "minio_health";
     private const string MinioConnectionStringName = "wf-infra-minio";
     private const string MinioHealthEndpointPrefix = "/minio/health";
+    private const string TheNewsApiHost = "api.thenewsapi.com";
     private static readonly string[] MinioHealthPaths =
     [
         "/minio/health/live",
@@ -130,7 +131,10 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation(tracing =>
-                        tracing.FilterHttpRequestMessage = static request => !IsMinioHealthCheckRequest(request));
+                    {
+                        tracing.FilterHttpRequestMessage = static request => ShouldTraceHttpClientRequest(request);
+                        tracing.RecordException = false;
+                    });
 
                 if (!string.IsNullOrWhiteSpace(aiConnectionString))
                 {
@@ -212,11 +216,13 @@ public static class Extensions
         return app;
     }
 
-    private static bool IsMinioHealthCheckRequest(HttpRequestMessage request)
+    private static bool ShouldTraceHttpClientRequest(HttpRequestMessage request)
     {
         var uri = request.RequestUri;
 
-        return uri is not null && IsMinioHealthPath(uri.AbsolutePath);
+        return uri is not null &&
+               !IsMinioHealthPath(uri.AbsolutePath) &&
+               !string.Equals(uri.Host, TheNewsApiHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsMinioHealthPath(string? path)
