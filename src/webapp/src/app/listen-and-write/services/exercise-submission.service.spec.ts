@@ -159,7 +159,7 @@ describe('ExerciseSubmissionService', () => {
       }),
     );
     expect(gtagSpy).toHaveBeenCalledWith('event', 'conversion', jasmine.objectContaining({
-      send_to: 'AW-17978787910/WruICPy4xoAcEMaQ-vxC',
+      send_to: 'AW-17978787910/L3txCNWKosYcEMaQ-vxC',
     }));
   }));
 

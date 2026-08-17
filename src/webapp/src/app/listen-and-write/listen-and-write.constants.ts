@@ -1,5 +1,5 @@
 export const listenWriteFirstTimeKey = 'listen-write-first-time';
-export const exerciseSubmitConversionSendTo = 'AW-17978787910/WruICPy4xoAcEMaQ-vxC';
+export const exerciseSubmitConversionSendTo = 'AW-17978787910/L3txCNWKosYcEMaQ-vxC';
 export const restoreServerStateTimeoutMs = 3000;
 export const guestBeginAttemptCountStorageKey = 'wf.guest.begin.exercise.attempt.v1';
 export const guestBeginLoginModalLastShownStorageKey = 'wf.guest.login.modal.last-shown-utc.v1';
