@@ -18,7 +18,6 @@ export interface ExerciseSubmissionRequest {
   exerciseId: number | null;
   submittedUserText: string;
   exerciseTimeUsedMs: number | null;
-  trackConversion: boolean;
   onSuccess(result: TextComparisonResult, submittedUserText: string): void;
   onProRequired(): void;
   onFailure(message?: string): void;
@@ -118,10 +117,6 @@ export class ExerciseSubmissionService {
       text_word_count: this.countWords(request.submittedUserText),
     });
 
-    if (request.trackConversion) {
-      this.trackExerciseSubmitConversion();
-    }
-
     const submitRequestedAtMs = Date.now();
     this.textComparisonsService.apiTextComparisonCompareTextsPost({
       propositionId: proposition.id,
@@ -143,6 +138,7 @@ export class ExerciseSubmissionService {
             exerciseTimeUsedMs: request.exerciseTimeUsedMs,
           });
 
+          this.trackExerciseSubmitConversion(result.accuracyPercentage);
           this.exerciseSessionTracking.trackEvent('exercise_submit_succeeded', {
             ...submitSuccessMetadata.properties,
             comparison_count: result.comparisons?.length ?? 0,
@@ -217,7 +213,11 @@ export class ExerciseSubmissionService {
       && error.error?.access === constants.proRequiredAccess;
   }
 
-  private trackExerciseSubmitConversion(): void {
+  private trackExerciseSubmitConversion(accuracyPercentage: number | null | undefined): void {
+    if (!Number.isFinite(accuracyPercentage) || (accuracyPercentage ?? 0) < 0.1) {
+      return;
+    }
+
     if (!this.browserService.isBrowserEnvironment()) {
       return;
     }
