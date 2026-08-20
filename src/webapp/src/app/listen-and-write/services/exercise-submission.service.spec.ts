@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import { TextComparisonsService } from 'src/api/listen-and-write';
 import { BrowserService } from '../../core/services/browser.service';
 import { ExerciseSessionTrackingService } from './exercise-session-tracking.service';
@@ -126,6 +126,7 @@ describe('ExerciseSubmissionService', () => {
       exerciseId: 20,
       submittedUserText: 'submitted text',
       exerciseTimeUsedMs: 1200,
+      trackConversion: true,
       onSuccess,
       onProRequired: jasmine.createSpy('onProRequired'),
       onFailure: jasmine.createSpy('onFailure'),
@@ -138,6 +139,11 @@ describe('ExerciseSubmissionService', () => {
     });
     expect(trackingMock.markSubmitted).toHaveBeenCalled();
     expect(trackingMock.trackTextChanged).toHaveBeenCalledWith('submitted text');
+    expect(gtagSpy).toHaveBeenCalledWith('event', 'conversion', {
+      send_to: 'AW-17978787910/L3txCNWKosYcEMaQ-vxC',
+      value: 1.0,
+      currency: 'BRL',
+    });
 
     tick(1999);
     expect(onSuccess).not.toHaveBeenCalled();
@@ -158,13 +164,13 @@ describe('ExerciseSubmissionService', () => {
         exercise_time_used_ms: 1200,
       }),
     );
-    expect(gtagSpy).toHaveBeenCalledWith('event', 'conversion', jasmine.objectContaining({
-      send_to: 'AW-17978787910/L3txCNWKosYcEMaQ-vxC',
-    }));
+    expect(gtagSpy).toHaveBeenCalledTimes(1);
   }));
 
   it('should reject oversized text before calling the API', () => {
     const onFailure = jasmine.createSpy('onFailure');
+    const gtagSpy = jasmine.createSpy('gtag');
+    (globalThis as typeof globalThis & { gtag?: typeof gtagSpy }).gtag = gtagSpy;
     const oversizedText = 'a'.repeat(3001);
 
     service.submit({
@@ -172,6 +178,7 @@ describe('ExerciseSubmissionService', () => {
       exerciseId: 22,
       submittedUserText: oversizedText,
       exerciseTimeUsedMs: null,
+      trackConversion: true,
       onSuccess: jasmine.createSpy('onSuccess'),
       onProRequired: jasmine.createSpy('onProRequired'),
       onFailure,
@@ -180,6 +187,7 @@ describe('ExerciseSubmissionService', () => {
     expect(service.isSubmitting()).toBeFalse();
     expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost)
       .not.toHaveBeenCalled();
+    expect(gtagSpy).not.toHaveBeenCalled();
     expect(onFailure).toHaveBeenCalledWith(
       'Your answer is too long. Please keep it under 3000 characters.');
     expect(trackingMock.trackEvent).toHaveBeenCalledWith(
@@ -187,6 +195,26 @@ describe('ExerciseSubmissionService', () => {
       jasmine.objectContaining({ reason: 'user_text_too_long' }),
       jasmine.objectContaining({ text_char_count: 3001 }),
     );
+  });
+
+  it('should not track a conversion for an automatic submission', () => {
+    const gtagSpy = jasmine.createSpy('gtag');
+    (globalThis as typeof globalThis & { gtag?: typeof gtagSpy }).gtag = gtagSpy;
+    textComparisonsServiceMock.apiTextComparisonCompareTextsPost.and.returnValue(NEVER as any);
+
+    service.submit({
+      proposition: { id: 23, title: 'Exercise 23' } as any,
+      exerciseId: 23,
+      submittedUserText: 'restored submitted text',
+      exerciseTimeUsedMs: null,
+      trackConversion: false,
+      onSuccess: jasmine.createSpy('onSuccess'),
+      onProRequired: jasmine.createSpy('onProRequired'),
+      onFailure: jasmine.createSpy('onFailure'),
+    });
+
+    expect(textComparisonsServiceMock.apiTextComparisonCompareTextsPost).toHaveBeenCalled();
+    expect(gtagSpy).not.toHaveBeenCalled();
   });
 
   it('should call Pro-required callback for Pro submit failures', fakeAsync(() => {
@@ -204,6 +232,7 @@ describe('ExerciseSubmissionService', () => {
       exerciseId: 21,
       submittedUserText: 'submitted text',
       exerciseTimeUsedMs: null,
+      trackConversion: true,
       onSuccess: jasmine.createSpy('onSuccess'),
       onProRequired,
       onFailure,

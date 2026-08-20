@@ -753,6 +753,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       exerciseId: this.exerciseId,
       submittedUserText,
       exerciseTimeUsedMs: this.getExerciseTimeUsedMs(),
+      trackConversion: true,
       onSuccess: (result, finalSubmittedUserText) => this.applySubmitSuccess(
         proposition,
         result,
@@ -890,6 +891,7 @@ export class ListenAndWriteComponent implements OnDestroy {
       exerciseId: this.exerciseId,
       submittedUserText: consumedRequest.draftUserText,
       exerciseTimeUsedMs: null,
+      trackConversion: false,
       onSuccess: (result, finalSubmittedUserText) => {
         this.pendingProReviewRestoreInFlight = false;
         this.exerciseSessionTracking.trackEvent('pro_review_pending_restore_completed', {
